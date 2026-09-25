@@ -1,7 +1,7 @@
 # AGENTS.md — fontokmai (ฝนตกไหม): ข้อตกลงทีม สถานะ และการตัดสินใจ
 
-> **สถานะ**: **P0-A เสร็จ**: repo สาธารณะ `github.com/dizconnectz/fontokmai` (CI ผ่านทุก job) + private repo `fontokmai-private` · สัญญาข้อมูล v1 ใน `contracts/v1/` พร้อมให้ Codex เริ่มงานเว็บ (C2) · ถัดไป P0-B · แบบระบบ v6.1
-> อัปเดตล่าสุด: 2026-09-25 20:06 ICT (Claude) · เวลาเป็น ICT (UTC+7) · วันที่แบบ ISO (ค.ศ.)
+> **สถานะ**: **P0-B1 ทำงานแล้ว**: VPS เก็บประกาศ TMD CAP และเผยแพร่ `/data/v1` ทุก 15 นาทีที่ `https://dizconnectz.github.io/fontokmai-data/data/v1/` · หน้าเว็บ (Codex, `apps/web`) พักไว้เพราะ Codex หมด token · ถัดไป P0-B2 · แบบระบบ v6.1
+> อัปเดตล่าสุด: 2026-09-25 20:35 ICT (Claude) · เวลาเป็น ICT (UTC+7) · วันที่แบบ ISO (ค.ศ.)
 > ไฟล์นี้เป็นช่องทางสื่อสารหลักระหว่าง Claude ↔ Codex ↔ ผู้ใช้ และ **ต้องมีขนาดไม่เกิน 32 KiB (UTF-8)** เพื่อให้ Codex โหลดได้ครบ
 > เอกสารอื่น: แบบระบบ `docs/design/fontokmai-design.md` · แหล่งข้อมูลและสิทธิ์ `docs/sources.md` · ประวัติเต็ม `private/handoffs/` (อยู่ใน private repo ไม่อยู่ใน repo สาธารณะ)
 
@@ -42,9 +42,19 @@
 ### A5. งานที่กำลังทำ (Active claims)
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
-| — | — | — | ว่าง | — |
+| Codex | 2026-09-25 20:10 | `apps/web/`, `.github/workflows/web.yml`, A5/A6 ใน `AGENTS.md` | เว็บประกาศทางการ v1, แผนที่/รายการ, consumer tests และ E2E (ไม่แก้ generated contracts) | P0-web / C2 |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md`)
+
+#### 2026-09-25 20:35 ICT — P0-B1: ตัวเก็บบน VPS ทุก 15 นาที + เผยแพร่ข้อมูล (Claude)
+- ตามแผน `docs/superpowers/plans/2026-09-25-p0b1-vps-collector-publish.md`: `schedule` (รอบ :03/:18/:33/:48, รอบที่ล้มถูกบันทึกแล้วทำต่อ) และ `publish/git_pages.py` (แทน branch `gh-pages` ด้วย orphan commit เดียวต่อรอบ)
+- Docker image + compose project `fontokmai` บน VPS (ใต้ `~/fontokmai` ตาม `deploy/vps/README.md`): uid ของผู้ใช้ ไม่ใช่ root, CPU 0.5, RAM 512 MB ไม่มี swap เพิ่ม, pids 128, หมุน log · ไม่แตะงานเดิมบนเครื่อง
+- ผู้ใช้อนุญาตสร้าง repo สาธารณะ `dizconnectz/fontokmai-data` · VPS push ด้วย deploy key ที่เขียนได้เฉพาะ repo นี้ และ host key ของ GitHub ที่ปักไว้ (ตรวจ fingerprint แล้ว)
+- **URL ข้อมูลช่วงพัฒนา**: `https://dizconnectz.github.io/fontokmai-data/data/v1/` (CORS `*`, cache 10 นาที → ต่อท้าย manifest ด้วย `?t=`) · บันทึกใน `contracts/v1/README.md` และ design 4.4 ข้อ 11
+- **แก้ระหว่างทาง**: ssh ใน container ต้องมี passwd ของ uid จึงสร้างผู้ใช้ตาม uid ตอน build · ลบโฟลเดอร์ git บน Windows ต้องปลด read-only
+- **ตรวจจริง**: `uv run pytest` 56 passed, `ruff` ผ่าน, CI ผ่าน · ใน container บน VPS รอบแรก `ok` (ใบกลางที่แนบใช้ได้บน Linux) · รอบอัตโนมัติ 20:33 ได้ `ok` 3 active/6 tombstones และเผยแพร่เสร็จใน 12 วินาที · URL สาธารณะแสดงรุ่นใหม่เมื่อ 20:34 · sha256 และ `generation_id` ของไฟล์ตรงกับ manifest · **deploy** ขึ้นจริงแล้วเฉพาะ slice ประกาศ
+- **ข้อจำกัด**: ยังไม่มีรายงาน slot ตามเกณฑ์ P0 (เวลาเผยแพร่แยก, p50/p95), takeover/restore, ตัวตรวจจากนอกเครื่อง, systemd slice และสำรองนอกเครื่อง · GitHub Pages เป็น dev host (หลักตามแบบคือ Cloudflare)
+- **ขั้นต่อไป**: P0-B2 (รายงาน slot, สำรอง SQLite ไป private repo, ตัวตรวจจากนอกเครื่อง, ซ้อม takeover/restore) · Codex ใช้ URL ข้างต้นแทนไฟล์ตัวอย่างได้เมื่อกลับมา
 
 #### 2026-09-25 19:52 ICT — P0-A: repo, สัญญาข้อมูล v1 และตัวเก็บ TMD CAP (Claude) · อัปเดต 20:06
 - **อัปเดต 20:06**: ผู้ใช้อนุญาตให้ใช้ GitHub login ใน keyring → สร้างและ push `dizconnectz/fontokmai` (public) กับ `fontokmai-private` (private) แล้ว · CI รอบแรกล้มเพราะ `astral-sh/setup-uv` ไม่มี tag `v10` จึงปักเป็น commit ของ v10.2.0 · CI รอบถัดมาผ่านทุก job (pipeline, contracts, repo-safety) · ผู้ใช้อนุญาตให้ Claude ใช้กุญแจ SSH แยก (`claude-fontokmai`) เพิ่มลง VPS และทดสอบแล้ว ถอนสิทธิ์ได้โดยลบบรรทัดนั้นใน `authorized_keys`
@@ -67,26 +77,6 @@
 - **ตรวจเอกสารผ่าน**: UTF-8, <32 KiB, A6 = 5, ตารางครบ 13 ข้อ (8/5), ลิงก์ใหม่และประวัติเดิม; SHA-256 ของ design/sources/LICENSE/NOTICE ไม่เปลี่ยน; `git diff --no-index --check` ไม่พบ whitespace error
 - **ตรวจจริง**: อ่านด้วย `Get-Content`/`rg`, เทียบ sources v5/v6 ด้วย `git diff --no-index`, ตรวจเอกสารบริการเฉพาะประเด็น; `git status`/`git log` ยืนยันยังไม่มี repo · **โค้ด** ยังไม่มี tests · **ความแม่น** ยังไม่มี backtest · **deploy** ยังไม่มีและไม่ได้เข้า VPS
 - **ส่งต่อ**: Claude เดินงาน P0 ขั้นแรกและส่งสัญญาขั้นต่ำตามขอบเขตที่ผู้ใช้กำหนด; รายการค้างไม่ใช่เงื่อนไขให้หยุดทั้งโครงการ
-
-#### 2026-09-25 18:10 ICT — ตอบรีวิว v5: แบบ v6 (Claude)
-- ตรวจทุกข้อของรีวิว v5 เทียบกับเอกสารจริงแล้ว เห็นด้วยทุกข้อ ไม่มีข้อที่ค้าน · ตรวจ CAP สดซ้ำ: RSS 13 items ลิงก์ไป XML รายฉบับ และ channel ระบุ public domain
-- **V1–V4 → design 4.3–4.5, 4.9**: token เผยแพร่แยกเครื่อง, runbook takeover/failback, `owner_epoch`, reconcile ด้วย `generation_id` และไม่สลับกลับอัตโนมัติ · ลำดับเขียนไฟล์และ RPO สองกรณี · SQLite Online Backup หรือ `VACUUM INTO` ไป private repo · งบรวมด้วย systemd slice, admission cutoff, งบดิสก์/retention และตัวตรวจจากนอกเครื่อง (เสนอ healthchecks.io ต้องตรวจเงื่อนไขก่อน)
-- **R1–R6 → design 7.3, 7.5, 7.7, 7.9**: เขียนตาราง v0 ใหม่ด้วยนิยาม `Fmax1h`/`Fsum`/`Obs1h`/`H`/`P`/`S`/`G`, ตรรกะสามค่า, กติกาเลือกป้ายกับ `may_be_higher`, hysteresis, freshness และ provenance · คลอง 0–24 และริมเจ้าพระยาเป็น `not_supported`
-- **C1 → 9.2** (connector และวงจร CAP) · **C2** ซิงก์สถานะ (P0 ข้อ 1, 4.7, NWP ขอรายอำเภอ, crosswalk, สถานีพิกัดผิดเป็น unverified/null, ลดถ้อยคำเรื่องระบบสมัคร TMD API, key ตัวอย่างไม่ใช่ dependency) · **C3** P0 เผยแพร่ด้วย CAP/RSS ก่อน, ThaiWater เก็บแบบ private จนได้สิทธิ์, สิทธิ์ input แบบ ODbL, แยกประวัติและข้อมูลเครื่องไป private repo ก่อนเปิด repo, ล็อกนิยาม v1 ก่อนเปิดชุดทดสอบ, แก้ HDX/`flood_road_graph`/ลิงก์ 7.7 และเพิ่มกรณีทดสอบในข้อ 13
-- **ไฟล์**: `docs/design/fontokmai-design.md` (v6) · สำเนา v5 ที่ `private/handoffs/2026-09-25-design-v5.md` · `docs/sources.md` (ข้อ 1, 2, 3, 5, 8, 9) · `private/vps.md` (ใหม่ ห้าม commit) · AGENTS.md (หัวไฟล์, A6, B, C, D) · `private/handoffs/README.md` (ย้าย 14:49 และ 15:13)
-- **ตรวจ**: Python อ่านเป็น UTF-8: AGENTS.md 28.3 KiB (< 32 KiB), design v6 126.5 KiB, sources 39.4 KiB; ทุกตารางคอลัมน์ตรงกัน และ code fence ครบคู่; หัวข้อ 4.3–4.5, 4.9, 7.5, 9.2 มีอย่างละหนึ่ง; design ไม่มีชื่องานเดิม สเปกเครื่อง หรือเวลาห้ามรันจริงแล้ว; A6 มี 4 รายการ; บันทึกที่ย้ายตรงกับต้นฉบับทุกตัวอักษร; ไม่พบ token (JWT) ในไฟล์ใด · ยังไม่มีโค้ด จึงไม่มี tests
-- **ขั้นต่อไป**: ผู้ใช้สั่งเริ่ม P0 · Codex ตรวจ v6 (C2) คู่ขนาน
-
-#### 2026-09-25 17:50 ICT — ตรวจแบบ v5 ตาม C2 (Codex)
-- อ่านรวมสถานะล่าสุด 16:59 แล้ว คำตอบทั้ง 3 ข้อพร้อมกรณีทดสอบอยู่ใน [รีวิว v5](private/handoffs/2026-09-25-codex-v5-review.md)
-- **C2.1 VPS**: เห็นด้วยกับเครื่องหลักและสำรองแบบ manual แต่เช็ก manifest เก่า 45 นาทีไม่กันผู้เขียนสองตัว ต้องยืนยันหยุด/ถอนสิทธิ์ผู้เผยแพร่เดิมก่อน takeover; แยก RPO โปรแกรม crash กับเครื่องเสีย สำรองรายวันไม่ใช่สูญได้เพียงรอบเดียว; กำหนดงบทรัพยากรรวมและ retention
-- **C2.2 v0**: ยังไม่ครบพอเป็นสัญญา แยก 6/24 ชม., ใส่วงเล็บ AND/OR, ระบุอินพุตรายแขนงและ unknown, ไม่ปัดค่าระดับน้ำเพราะไม่พบฝน, เพิ่มฐานเปราะบางและ mapping สถานีสำหรับ high, ไม่ยืนยันพื้นที่ท่วมจากระดับน้ำจุดเดียว
-- **C2.3 ส่วนค้าง**: CAP เป็น RSS ที่ลิงก์ไป XML อีกชั้น; ต้องแยก message/event, Test/Actual, เวลามีผล และสลับแกนพิกัด สถานะล่าสุดเรื่องบัญชี/NWP/VPS ต้องซิงก์กลับแบบ; ห้ามใช้ศูนย์กลางอำเภอแทนพิกัดสถานีจริง
-- คง **D25 PolyForm Noncommercial + CC BY-NC** ตามผู้ใช้ ไม่เปิดเรื่อง AGPL ใหม่ และไม่ขอให้ผู้ใช้ทำรายการที่เสร็จแล้วซ้ำ
-- **ไฟล์**: AGENTS.md, รีวิว v5, private/handoffs/README.md; ไม่แก้ design/sources/LICENSE/NOTICE ฝ่ายเดียว
-- **ตรวจเอกสารผ่าน**: PowerShell ตรวจ UTF-8/ขนาด <32 KiB, A6 = 5, คำตอบ C2 ครบ, ตาราง/ลิงก์ใหม่/code fence และเทียบประวัติเดิม; SHA-256 ของไฟล์แบบ/แหล่งข้อมูล/license ไม่เปลี่ยน; `git diff --no-index --check` ไม่พบ whitespace error
-- **ตรวจจริง**: `Get-Content`/`rg`, `git status`/`git log` (ยังไม่มี repo), เอกสารทางการ และ `Invoke-WebRequest` ตรวจ RSS/CAP โดยไม่ใช้ key; **โค้ด** ยังไม่มี tests, **ความแม่น** ยังไม่มี backtest, **deploy** ยังไม่มีและไม่ได้เข้า VPS
-- **ขั้นต่อไป**: Claude ปรับ 4.3–4.5/4.9, 7.5, 9.2 และ catalog ตามรายการในรีวิว ก่อนใช้สัญญาที่เกี่ยวข้อง รอบนี้ยังไม่เขียนโค้ดหรือสร้าง repo
 
 ## B. การตัดสินใจ
 ข้อเสนอเดิม D1–D10 จากร่างแรกถูกแทนด้วยตารางนี้เพราะขัดกับ D12 (ดูเหตุผลเดิมได้ใน snapshot)
@@ -119,10 +109,10 @@
 
 ### C2. Codex (งาน P0 ตาม D24)
 1. เริ่ม `apps/web` ตาม `contracts/v1/README.md`: ใช้ types จาก `contracts/v1/ts/` และ fixtures จาก `contracts/v1/examples/` (จองใน A5 ก่อน) · ห้ามแก้ไฟล์ generated · ถ้าสัญญาขาดอะไรให้เขียนขอใน A6
-2. slice แรกมีเฉพาะประกาศทางการ (TMD CAP) ส่วนอื่นยังไม่มีใน manifest → UI แสดง “ยังไม่มีข้อมูล” · ยังไม่มี host ข้อมูลจริง ให้ใช้ `DATA_BASE_URL` ที่ชี้ไฟล์ตัวอย่างในเครื่องไปก่อน
+2. slice แรกมีเฉพาะประกาศทางการ (TMD CAP) ส่วนอื่นยังไม่มีใน manifest → UI แสดง “ยังไม่มีข้อมูล” · ข้อมูลจริงอยู่ที่ `DATA_BASE_URL = https://dizconnectz.github.io/fontokmai-data/data/v1/` (อัปเดตทุก 15 นาที ดู README ของสัญญาเรื่อง cache) ส่วนไฟล์ตัวอย่างใช้ทำ test
 
 ## D. ขั้นต่อไป
-1. (เสร็จ) ขึ้น GitHub ทั้งสอง repo และ CI ผ่าน
-2. Codex เริ่มหน้าเว็บตามสัญญา v1 (C2) คู่ขนาน
-3. Claude เขียนแผน P0-B: ติดตั้งบน VPS (slice, งบดิสก์, ช่วงห้ามรัน), เผยแพร่ข้อมูลขึ้น host, ตัวตรวจจากนอกเครื่อง และซ้อม takeover/restore
-4. Claude ตรวจสิทธิ์ ThaiWater และร่างจดหมายขออนุญาตให้ผู้ใช้
+1. (เสร็จ) P0-A และ P0-B1: repo, สัญญา v1, ตัวเก็บ TMD CAP บน VPS และเผยแพร่ข้อมูลทุก 15 นาที
+2. Codex ทำหน้าเว็บต่อตาม C2 เมื่อกลับมา (ตอนนี้หมด token)
+3. Claude ทำ P0-B2: รายงาน slot ตามเกณฑ์ P0, สำรอง SQLite ไป private repo, ตัวตรวจจากนอกเครื่อง และซ้อม takeover/restore
+4. Claude ตรวจสิทธิ์ ThaiWater และร่างจดหมายขออนุญาตให้ผู้ใช้ แล้วเพิ่มแหล่งถัดไปตาม design ข้อ 3
