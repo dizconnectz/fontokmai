@@ -1,0 +1,121 @@
+{
+  "$defs": {
+    "Camera": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "river",
+            "canal",
+            "dam",
+            "road"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "[lon, lat]; null when the place is not known well enough to pin",
+          "title": "Location"
+        },
+        "name_th": {
+          "title": "Name Th",
+          "type": "string"
+        },
+        "note_th": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Note Th"
+        },
+        "owner_th": {
+          "title": "Owner Th",
+          "type": "string"
+        },
+        "page_url": {
+          "description": "Owner page that shows the camera; open it in a new tab, never embed it",
+          "title": "Page Url",
+          "type": "string"
+        },
+        "position": {
+          "description": "source = coordinates published with the camera list; approximate = placed by fontokmai from a landmark",
+          "enum": [
+            "source",
+            "approximate"
+          ],
+          "title": "Position",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name_th",
+        "owner_th",
+        "kind",
+        "location",
+        "position",
+        "page_url",
+        "note_th"
+      ],
+      "title": "Camera",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "cameras": {
+      "description": "Sorted by id",
+      "items": {
+        "$ref": "#/$defs/Camera"
+      },
+      "title": "Cameras",
+      "type": "array"
+    },
+    "notes_th": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Notes Th",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1",
+      "default": "1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "updated": {
+      "format": "date",
+      "title": "Updated",
+      "type": "string"
+    }
+  },
+  "required": [
+    "updated",
+    "cameras",
+    "notes_th"
+  ],
+  "title": "CctvRegistry",
+  "type": "object"
+}

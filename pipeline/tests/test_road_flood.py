@@ -155,12 +155,12 @@ def test_snapshot_publishes_a_valid_ref_file_and_skips_a_broken_one(tmp_path):
     run_cap_snapshot(db=tmp_path / "s.db", out=out, fetch=fixture_fetcher(CAP_FIXTURES), now=now, writer="t",
                      owner_epoch=1)
     manifest = Manifest.model_validate_json((out / "manifest.json").read_bytes())
-    assert [f.path for f in manifest.files] == ["alerts.json", REF_PATH]
+    assert REF_PATH in [f.path for f in manifest.files]
     (out / REF_PATH).write_text('{"schema_version": "1"}', encoding="utf-8")
     run_cap_snapshot(db=tmp_path / "s.db", out=out, fetch=fixture_fetcher(CAP_FIXTURES), now=now, writer="t",
                      owner_epoch=1)
     manifest = Manifest.model_validate_json((out / "manifest.json").read_bytes())
-    assert [f.path for f in manifest.files] == ["alerts.json"]
+    assert REF_PATH not in [f.path for f in manifest.files]
 
 
 def test_cli_builds_from_fixtures(tmp_path, capsys):

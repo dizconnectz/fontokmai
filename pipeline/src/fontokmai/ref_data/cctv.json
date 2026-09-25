@@ -1,0 +1,1155 @@
+{
+ "schema_version": "1",
+ "updated": "2026-09-26",
+ "cameras": [
+  {
+   "id": "bma-dds-2",
+   "name_th": "สะพานปิ่นเกล้า",
+   "owner_th": "สำนักการระบายน้ำ กรุงเทพมหานคร",
+   "kind": "river",
+   "location": [
+    100.493,
+    13.7627
+   ],
+   "position": "approximate",
+   "page_url": "https://dds.bangkok.go.th/cctv2.php",
+   "note_th": "ตำแหน่งโดยประมาณที่สะพาน"
+  },
+  {
+   "id": "dwr-1",
+   "name_th": "บ้านท่าสะอาด",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    103.76615,
+    17.95565
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-10",
+   "name_th": "โรงเรียนเชียงใหม่คริสเตียน",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    98.95967,
+    19.01347
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-100",
+   "name_th": "สะพานสมเด็จพระศรีสุริเยนทร์",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.96122,
+    13.41918
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-101",
+   "name_th": "สะพานประวัติศาสตร์",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    98.46504,
+    19.29733
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-102",
+   "name_th": "สะพานข้ามคลองแม่ลาง",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    98.24709,
+    19.519
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-11",
+   "name_th": "บ้านหาดเสลา",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.05343,
+    15.8506
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-12",
+   "name_th": "ปากแม่น้ำปิง",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.97699,
+    15.93482
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-13",
+   "name_th": "วัดเกาะวารุการาม",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.49757,
+    18.29202
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-16",
+   "name_th": "บ้านทับกฤช",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.24618,
+    15.74971
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-17",
+   "name_th": "ปากแม่น้ำน่าน",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.2644,
+    15.86877
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-18",
+   "name_th": "แม่น้ำน่านที่ อ.เมือง พิษณุโลก",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.26024,
+    16.82232
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-20",
+   "name_th": "สามเสน",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.50978,
+    13.78875
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-21",
+   "name_th": "ปากคลองลัดโพธิ์",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.54004,
+    13.66731
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-22",
+   "name_th": "สุวรรณภูมิ",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.74515,
+    13.50768
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-24",
+   "name_th": "ปากเกร็ด",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.49194,
+    13.89474
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-25",
+   "name_th": "บ้านท้ายดง",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.53529,
+    14.11974
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-26",
+   "name_th": "บ้านป้อม",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.52908,
+    14.36839
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-27",
+   "name_th": "อ.เสนา",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.405,
+    14.3163
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-29",
+   "name_th": "ปากคลองบางบาล",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.48342,
+    14.42791
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-3",
+   "name_th": "วัดศรีชมภูองค์ตื้อ",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    102.57567,
+    17.87617
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-30",
+   "name_th": "C.35 บางบาล",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.52755,
+    14.36906
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-32",
+   "name_th": "ป่าสัก",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.58044,
+    14.35861
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-33",
+   "name_th": "บางไทร",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.50262,
+    14.19457
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-34",
+   "name_th": "ปากคลองบางแก้ว-อ่างทอง",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.46041,
+    14.58934
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-35",
+   "name_th": "ปากคลองโผงเผง(บางหลวง)",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.46069,
+    14.44824
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-37",
+   "name_th": "สะพานสิงห์บุรี",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.40103,
+    14.89902
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-38",
+   "name_th": "ปากแม่น้ำลพบุรี",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.40802,
+    14.87816
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-4",
+   "name_th": "วัดบ้านทุ่งธาตุ",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    103.09077,
+    18.00995
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-40",
+   "name_th": "ปตร.มโนรมย์",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.10329,
+    15.33047
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-41",
+   "name_th": "ปากแม่น้ำสะแกกรัง",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.08334,
+    15.30343
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-42",
+   "name_th": "ปตร.พลเทพ",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.0727,
+    15.21595
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-43",
+   "name_th": "ปตร.บรมธาตุ",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.15431,
+    15.15702
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-44",
+   "name_th": "ปตร.มหาราช",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.17307,
+    15.15998
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-49",
+   "name_th": "สะพานเดชาติวงศ์",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.12306,
+    15.68933
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-50",
+   "name_th": "แม่น้ำเจ้าพระยา",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.1096,
+    15.67049
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-52",
+   "name_th": "อุทัยใหม่",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.05767,
+    15.41132
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-53",
+   "name_th": "ปตร.มะขามเฒ่า-อู่ทอง",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.06305,
+    15.22315
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-55",
+   "name_th": "ร.ร.อนุบาลบางสะพาน",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.50834,
+    11.20522
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-56",
+   "name_th": "อู่ตะเภาตอนล่าง",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.456,
+    7.002
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-58",
+   "name_th": "คลองตะโหมด",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.109,
+    7.338
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-59",
+   "name_th": "ลำปำ",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.158,
+    7.625
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-65",
+   "name_th": "สำนักงานส่วนอุทกหนองคาย",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    102.71674,
+    17.8776
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-66",
+   "name_th": "สถานีวัดแม่น้ำโขง (MRC) เชียงคาน",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    101.67018,
+    17.89975
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-67",
+   "name_th": "สถานีวัดแม่น้ำ (MRC) โขงเจียม",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    105.49322,
+    15.32187
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-68",
+   "name_th": "สถานี ประปาบ้านปากล้อง",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    98.93584,
+    18.54331
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-69",
+   "name_th": "บ้านปากร้องห้วยจี้",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.08279,
+    17.02019
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-7",
+   "name_th": "จุดสกัดหัวฝาย",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.87447,
+    20.44375
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-70",
+   "name_th": "สะพานมหาโพธิ์",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.13763,
+    18.15035
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-71",
+   "name_th": "สะพานศรีสัชนาลัย",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.75836,
+    17.51717
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-72",
+   "name_th": "สะพานบ้านบางระกำ",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.12109,
+    16.76207
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-73",
+   "name_th": "วัดเกยไชยเหนือ",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.26407,
+    15.8692
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-74",
+   "name_th": "สะพานท่าเสา",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.1172,
+    17.64285
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-75",
+   "name_th": "สะพานนครน่านพัฒนา",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.79102,
+    18.79501
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-76",
+   "name_th": "สะพานเฉลิมพระเกียรติ ร.9 72 พรรษา",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.36887,
+    16.00952
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-77",
+   "name_th": "สะพานสุพรรณกัลยา",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.24568,
+    16.8053
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-78",
+   "name_th": "วัดโคกจันทร์",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.26741,
+    15.10848
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-79",
+   "name_th": "บ้านยางมณี",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.4151,
+    14.73518
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-8",
+   "name_th": "บ้านเหล่านกชุม",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    102.88127,
+    16.36923
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-80",
+   "name_th": "แม่น้ำป่าสักที่ อ.เสาไห้",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.85651,
+    14.55615
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-81",
+   "name_th": "แม่น้ำป่าสักที่ อ.แก่งคอย",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    101.00391,
+    14.59235
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-82",
+   "name_th": "วัดทรงเสวย",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.05471,
+    15.16075
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-83",
+   "name_th": "สะพานข้ามแม่น้ำท่าจีน 3",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.23125,
+    13.5859
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-84",
+   "name_th": "สะพานบุญรัตน์ประชานุวัฒน์",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.216,
+    13.7235
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-85",
+   "name_th": "สะพานหลวงพ่อเปิ่น",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.21246,
+    13.89884
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-86",
+   "name_th": "สะพานข้ามแม่น้ำท่าจีน (ทางหลวง 346)",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.18,
+    14.01599
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-87",
+   "name_th": "สะพานวัดพระรูป",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.11514,
+    14.47044
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-88",
+   "name_th": "สะพานข้ามแม่น้ำท่าจีน (ทางหลวง 3365)",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.09594,
+    14.75148
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-89",
+   "name_th": "เชิงสะพานฉะเชิงเทรา",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    101.0768,
+    13.68868
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-9",
+   "name_th": "โรงเรียนเทศบาล 4",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    102.0929,
+    14.98455
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-90",
+   "name_th": "สะพานตรงข้ามวัดจันทนาราม",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    102.1138,
+    12.61389
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-91",
+   "name_th": "สตึก",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    103.29242,
+    15.29939
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-95",
+   "name_th": "สะพานบ้านหนองปรือ",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.45713,
+    14.60692
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-96",
+   "name_th": "สะพานแควใหญ่",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.51567,
+    14.03401
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-97",
+   "name_th": "สะพานบ้านท่าเรือ",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.74969,
+    13.94975
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "dwr-99",
+   "name_th": "สะพานธนะรัชต์",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.82409,
+    13.54085
+   ],
+   "position": "source",
+   "page_url": "https://mekhala.dwr.go.th/cctv",
+   "note_th": null
+  },
+  {
+   "id": "egat-105",
+   "name_th": "เขื่อนจุฬาภรณ์",
+   "owner_th": "การไฟฟ้าฝ่ายผลิตแห่งประเทศไทย",
+   "kind": "dam",
+   "location": [
+    101.6525,
+    16.53333
+   ],
+   "position": "source",
+   "page_url": "https://egatwater.egat.co.th/",
+   "note_th": null
+  },
+  {
+   "id": "egat-106",
+   "name_th": "เขื่อนน้ำพุง",
+   "owner_th": "การไฟฟ้าฝ่ายผลิตแห่งประเทศไทย",
+   "kind": "dam",
+   "location": [
+    103.94722,
+    16.97167
+   ],
+   "position": "source",
+   "page_url": "https://egatwater.egat.co.th/",
+   "note_th": null
+  },
+  {
+   "id": "egat-60",
+   "name_th": "เขื่อนอุบลรัตน์",
+   "owner_th": "การไฟฟ้าฝ่ายผลิตแห่งประเทศไทย",
+   "kind": "dam",
+   "location": [
+    102.63254,
+    16.75267
+   ],
+   "position": "source",
+   "page_url": "https://egatwater.egat.co.th/",
+   "note_th": null
+  },
+  {
+   "id": "egat-61",
+   "name_th": "เขื่อนสิริกิติ์",
+   "owner_th": "การไฟฟ้าฝ่ายผลิตแห่งประเทศไทย",
+   "kind": "dam",
+   "location": [
+    100.56485,
+    17.76507
+   ],
+   "position": "source",
+   "page_url": "https://egatwater.egat.co.th/",
+   "note_th": null
+  },
+  {
+   "id": "egat-62",
+   "name_th": "เขื่อนภูมิพล",
+   "owner_th": "การไฟฟ้าฝ่ายผลิตแห่งประเทศไทย",
+   "kind": "dam",
+   "location": [
+    98.97269,
+    17.24412
+   ],
+   "position": "source",
+   "page_url": "https://egatwater.egat.co.th/",
+   "note_th": null
+  },
+  {
+   "id": "egat-63",
+   "name_th": "เขื่อนศรีนครินทร์",
+   "owner_th": "การไฟฟ้าฝ่ายผลิตแห่งประเทศไทย",
+   "kind": "dam",
+   "location": [
+    99.12867,
+    14.4079
+   ],
+   "position": "source",
+   "page_url": "https://egatwater.egat.co.th/",
+   "note_th": null
+  },
+  {
+   "id": "egat-64",
+   "name_th": "เขื่อนวชิราลงกรณ์",
+   "owner_th": "การไฟฟ้าฝ่ายผลิตแห่งประเทศไทย",
+   "kind": "dam",
+   "location": [
+    98.59285,
+    14.79745
+   ],
+   "position": "source",
+   "page_url": "https://egatwater.egat.co.th/",
+   "note_th": null
+  },
+  {
+   "id": "egat-92",
+   "name_th": "เขื่อนบางลาง",
+   "owner_th": "การไฟฟ้าฝ่ายผลิตแห่งประเทศไทย",
+   "kind": "dam",
+   "location": [
+    101.27583,
+    6.32028
+   ],
+   "position": "source",
+   "page_url": "https://egatwater.egat.co.th/",
+   "note_th": null
+  },
+  {
+   "id": "egat-93",
+   "name_th": "เขื่อนรัชชประภา",
+   "owner_th": "การไฟฟ้าฝ่ายผลิตแห่งประเทศไทย",
+   "kind": "dam",
+   "location": [
+    98.78333,
+    8.96667
+   ],
+   "position": "source",
+   "page_url": "https://egatwater.egat.co.th/",
+   "note_th": null
+  },
+  {
+   "id": "egat-94",
+   "name_th": "เขื่อนสิรินธร",
+   "owner_th": "การไฟฟ้าฝ่ายผลิตแห่งประเทศไทย",
+   "kind": "dam",
+   "location": [
+    105.43222,
+    15.20278
+   ],
+   "position": "source",
+   "page_url": "https://egatwater.egat.co.th/",
+   "note_th": null
+  },
+  {
+   "id": "user-chaophraya-pathum",
+   "name_th": "แม่น้ำเจ้าพระยา ปทุมธานี",
+   "owner_th": "ไม่ระบุเจ้าของ (น่าจะเป็นกรมทรัพยากรน้ำ)",
+   "kind": "river",
+   "location": [
+    100.53422,
+    14.01966
+   ],
+   "position": "approximate",
+   "page_url": "http://101.109.253.60:8999/",
+   "note_th": "ผู้ใช้แนะนำ · ตำแหน่งโดยประมาณริมเจ้าพระยาย่านเมืองปทุมธานี · หน้าเว็บเป็น http"
+  },
+  {
+   "id": "user-saphandaeng-rangsit",
+   "name_th": "ระดับน้ำสะพานแดง คลองรังสิต",
+   "owner_th": "ไม่ระบุเจ้าของ (ipcamlive)",
+   "kind": "canal",
+   "location": [
+    100.62528,
+    13.98517
+   ],
+   "position": "approximate",
+   "page_url": "https://www.ipcamlive.com/6ab688b9f0f7d",
+   "note_th": "ผู้ใช้แนะนำ · ลิงก์ใหม่ 2026-09-26 (ลิงก์เดิมใช้ไม่ได้) · ตำแหน่งโดยประมาณที่ตลาดสะพานแดง"
+  }
+ ],
+ "notes_th": [
+  "fontokmai แสดงเฉพาะตำแหน่งและลิงก์ไปหน้าของเจ้าของกล้อง ไม่ได้ฝังหรือเก็บภาพ",
+  "กล้องบางตัวอาจปิดหรือย้ายโดยไม่แจ้ง และตำแหน่งที่ติดป้าย “โดยประมาณ” ยังไม่ได้ยืนยัน",
+  "ภาพจากกล้องใช้ดูสถานการณ์ ไม่ใช่ค่าระดับน้ำที่วัดได้"
+ ]
+}

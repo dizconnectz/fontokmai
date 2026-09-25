@@ -4,17 +4,19 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from importlib import resources
 from pathlib import Path
 
 from pydantic import BaseModel, ValidationError
 
 from fontokmai.contracts.alerts import AlertsFeed
+from fontokmai.contracts.cctv import CctvRegistry
 from fontokmai.contracts.common import SourceStatus
 from fontokmai.contracts.manifest import Manifest
 from fontokmai.contracts.radar import RadarFeed
 from fontokmai.contracts.road_flood import RoadFloodHistory
 from fontokmai.feeds.alerts import assemble_alerts_feed
-from fontokmai.publish.snapshot import write_snapshot
+from fontokmai.publish.snapshot import atomic_write, write_snapshot
 from fontokmai.sources.tmd_cap.collect import collect, load_messages
 from fontokmai.sources.tmd_cap.fetch import Fetcher
 from fontokmai.sources.tmd_cap.lifecycle import alert_candidates, group_events
@@ -23,7 +25,10 @@ from fontokmai.sources.tmd_radar import collect_radar, prune_frames
 from fontokmai.state import StateStore
 
 SNAPSHOT_INTERVAL = timedelta(minutes=15)
-REF_MODELS: dict[str, type[BaseModel]] = {"ref/road_flood_history.json": RoadFloodHistory}
+REF_MODELS: dict[str, type[BaseModel]] = {"ref/road_flood_history.json": RoadFloodHistory,
+                                          "ref/cctv.json": CctvRegistry}
+# curated files shipped with the package and copied into every snapshot
+STATIC_REFS = {"ref/cctv.json": "cctv.json"}
 LAST_SUCCESS_KEY = "tmd_cap.last_success_at"
 RADAR_SUCCESS_KEY = "tmd_radar.last_success_at"
 RECOVERY_EPOCH_KEY = "recovery_epoch"
@@ -39,6 +44,16 @@ class SnapshotResult:
 
 def generation_id_for(now: datetime, writer: str) -> str:
     return f"{now.astimezone(UTC):%Y%m%dT%H%M%SZ}-{writer}"
+
+
+def sync_static_refs(out: Path) -> None:
+    """Copy the curated reference files of this release into the snapshot directory when they differ."""
+    for rel, name in STATIC_REFS.items():
+        content = resources.files("fontokmai.ref_data").joinpath(name).read_bytes()
+        REF_MODELS[rel].model_validate_json(content)
+        target = out / rel
+        if not target.is_file() or target.read_bytes() != content:
+            atomic_write(target, content)
 
 
 def read_ref_files(out: Path) -> dict[str, bytes]:
@@ -79,6 +94,7 @@ def run_cap_snapshot(*, db: Path, out: Path, fetch: Fetcher, now: datetime, writ
         candidates = alert_candidates(group_events(msg for msg, _ in pairs), urls, now)
         feed = assemble_alerts_feed(candidates, store, now=now, generation_id=generation_id,
                                     recovery_epoch=recovery_epoch, source_status=[status])
+        sync_static_refs(out)
         files = {"alerts.json": feed.model_dump_json().encode("utf-8"), **read_ref_files(out)}
         statuses = [status]
         radar = collect_radar(radar_fetch, out, generation_id) if radar_fetch is not None else None

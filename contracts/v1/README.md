@@ -1,11 +1,11 @@
-# สัญญาข้อมูล v1 — ประกาศทางการ (TMD CAP), เรดาร์ฝน และประวัติน้ำท่วมถนน
+# สัญญาข้อมูล v1 — ประกาศทางการ (TMD CAP), เรดาร์ฝน, ประวัติน้ำท่วมถนน และกล้อง CCTV
 
 สิ่งที่ Claude ส่งให้ Codex เริ่มหน้าเว็บ (D24) ตามหัวข้อ 3 ของรีวิว v6 · ต้นทางของสัญญาคือ Pydantic ใน `pipeline/src/fontokmai/contracts/`
 
 | ส่วน | ที่อยู่ | หมายเหตุ |
 |---|---|---|
-| JSON Schema | `schema/alerts.schema.json`, `schema/manifest.schema.json`, `schema/radar.schema.json`, `schema/road_flood_history.schema.json` | generated ห้ามแก้ด้วยมือ |
-| TypeScript types | `ts/alerts.ts`, `ts/manifest.ts`, `ts/radar.ts`, `ts/road_flood_history.ts` | generated ด้วย `scripts/gen-ts-types.sh` (json-schema-to-typescript 16.0.0) ห้ามแก้ด้วยมือ |
+| JSON Schema | `schema/alerts.schema.json`, `schema/cctv.schema.json`, `schema/manifest.schema.json`, `schema/radar.schema.json`, `schema/road_flood_history.schema.json` | generated ห้ามแก้ด้วยมือ |
+| TypeScript types | `ts/alerts.ts`, `ts/cctv.ts`, `ts/manifest.ts`, `ts/radar.ts`, `ts/road_flood_history.ts` | generated ด้วย `scripts/gen-ts-types.sh` (json-schema-to-typescript 16.0.0) ห้ามแก้ด้วยมือ |
 | ตัวอย่าง | `examples/<กรณี>/manifest.json`, `alerts.json`, `expected.json` | สองไฟล์แรกคือสิ่งที่ producer เขียนจริงทุกไบต์ ส่วน `expected.json` คือผลที่ consumer ต้องได้ |
 
 สร้างใหม่ทั้งหมด (CI ตรวจว่าไฟล์ที่ commit ตรงกับที่สร้างได้):
@@ -157,3 +157,11 @@ cd .. && bash scripts/gen-ts-types.sh
   - อ่านค่าที่หมุด: หา pixel จาก lon/lat ตาม `coordinates` (ภาพเป็นกริดละติจูด–ลองจิจูดเท่ากัน) แล้วเทียบสีกับ `legend` หลังคิดความทึบ
 - ถ้าดึงภาพใหม่ไม่ได้ `source_status` ของ `tmd_radar` เป็น `failed` และ `frames` เป็นชุดเดิม → ถ้าภาพล่าสุดเก่ากว่า 45 นาทีให้ขึ้นป้าย “ภาพเรดาร์ไม่อัปเดต”
 - ต้องแสดงเครดิต “กรมอุตุนิยมวิทยา”, เวลาภาพ และ `notes_th` (เรดาร์ไม่ใช่ปริมาณฝนที่วัดได้)
+
+## 10. กล้อง CCTV `ref/cctv.json`
+ทะเบียนกล้องที่ fontokmai คัดเอง (ไฟล์ต้นทาง `pipeline/src/fontokmai/ref_data/cctv.json`) เผยแพร่ทุกรอบ
+
+- แสดงเป็นหมุดกล้องบนแผนที่ กดแล้วเปิด popup: ชื่อ, เจ้าของ (`owner_th`), หมายเหตุ และปุ่ม “เปิดดูกล้อง” ไป `page_url` ในแท็บใหม่
+- **ห้ามฝังหรือดึงภาพจากกล้อง** (สิทธิ์ยังไม่ชัด และหลายหน้าเป็น http) ใช้ลิงก์ออกอย่างเดียว
+- `position` = `approximate` ต้องมีป้าย “ตำแหน่งโดยประมาณ” · `location` เป็น null ได้ (ไม่ปักหมุด แสดงในรายการได้)
+- แสดง `notes_th` ในรายละเอียด เช่น “ภาพจากกล้องใช้ดูสถานการณ์ ไม่ใช่ค่าระดับน้ำที่วัดได้”
