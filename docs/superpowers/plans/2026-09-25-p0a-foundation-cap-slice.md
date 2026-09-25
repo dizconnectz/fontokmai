@@ -193,6 +193,7 @@ description = "fontokmai data pipeline: source collectors, public data contract 
 requires-python = ">=3.12"
 license = "PolyForm-Noncommercial-1.0.0"
 dependencies = [
+    "certifi>=2024.2.2",
     "httpx>=0.27",
     "pydantic>=2.8",
 ]
@@ -218,7 +219,7 @@ testpaths = ["tests"]
 addopts = "-q"
 
 [tool.ruff]
-line-length = 110
+line-length = 120
 target-version = "py312"
 
 [tool.ruff.lint]
@@ -738,7 +739,8 @@ def test_parse_real_update_message():
     assert [(r.identifier, r.sent) for r in msg.references] == [("TMD20260925071317_2", T("2026-09-25T07:10:00+07:00"))]
     info = msg.infos[0]
     assert (info.language, info.event) == ("th-TH", "Very Heavy Rain")
-    assert (info.effective, info.expires, info.onset) == (T("2026-09-25T08:00:00+07:00"), T("2026-09-26T06:00:00+07:00"), None)
+    assert (info.effective, info.expires, info.onset) == (
+        T("2026-09-25T08:00:00+07:00"), T("2026-09-26T06:00:00+07:00"), None)
     area = info.areas[0]
     assert len(area.polygons) == 52
     assert ("ISO3166-2", "TH-10") in area.geocodes
@@ -1524,7 +1526,7 @@ def alert_candidates(lineages: Iterable[EventLineage], urls: dict[str, str],
 import httpx
 import pytest
 
-from fontokmai.sources.tmd_cap.fetch import FetchError, LiveFetcher, get_bytes, is_allowed_cap_url
+from fontokmai.sources.tmd_cap.fetch import FetchError, LiveFetcher, get_bytes, is_allowed_cap_url, make_ssl_context
 
 INDEX = "https://www.tmd.go.th/api/xml/CAP"
 
@@ -1576,6 +1578,14 @@ def test_transport_errors_become_fetch_errors():
     with _client(handler) as client:
         with pytest.raises(FetchError, match="ConnectError"):
             get_bytes(client, INDEX)
+
+
+def test_ssl_context_adds_the_intermediate_that_the_tmd_server_does_not_send():
+    ctx = make_ssl_context()
+    names = [dict(part[0] for part in cert["subject"]).get("commonName") for cert in ctx.get_ca_certs()]
+    assert "GlobalSign GCC R6 AlphaSSL CA 2025" in names
+    assert "GlobalSign" in names  # the root still has to be trusted on its own
+    assert ctx.verify_mode.name == "CERT_REQUIRED" and ctx.check_hostname
 ```
 
 ```python
@@ -1635,10 +1645,13 @@ def test_missing_document_makes_the_round_degraded(tmp_path):
 
 from __future__ import annotations
 
+import ssl
 from collections.abc import Callable
+from importlib import resources
 from pathlib import Path
 from urllib.parse import urlsplit
 
+import certifi
 import httpx
 
 INDEX_URL = "https://www.tmd.go.th/api/xml/CAP"
@@ -1646,6 +1659,8 @@ ALLOWED_HOSTS = frozenset({"www.tmd.go.th", "tmd.go.th"})
 CAP_PATH_PREFIX = "/uploads/CAP/"
 MAX_BYTES = 5_000_000
 USER_AGENT = "fontokmai/0.1 (+https://github.com/dizconnectz/fontokmai)"
+# www.tmd.go.th sends only its leaf certificate (checked 2026-09-25); see certs/ for the provenance.
+EXTRA_INTERMEDIATE = "globalsign-gcc-r6-alphassl-ca-2025.pem"
 
 Fetcher = Callable[[str], bytes]
 
@@ -1658,6 +1673,18 @@ def is_allowed_cap_url(url: str) -> bool:
     parts = urlsplit(url)
     return (parts.scheme == "https" and parts.hostname in ALLOWED_HOSTS
             and parts.path.startswith(CAP_PATH_PREFIX) and parts.path.endswith(".xml"))
+
+
+def make_ssl_context() -> ssl.SSLContext:
+    """Normal certificate verification plus the public intermediate that www.tmd.go.th does not send.
+
+    The intermediate only helps to build the chain: verification still has to end at a trusted root,
+    and hostname checking stays on.
+    """
+    ctx = ssl.create_default_context(cafile=certifi.where())
+    text = resources.files("fontokmai.sources.tmd_cap").joinpath("certs", EXTRA_INTERMEDIATE).read_text("ascii")
+    ctx.load_verify_locations(cadata=text[text.index("-----BEGIN CERTIFICATE-----"):])
+    return ctx
 
 
 def get_bytes(client: httpx.Client, url: str, max_bytes: int = MAX_BYTES) -> bytes:
@@ -1678,11 +1705,11 @@ def get_bytes(client: httpx.Client, url: str, max_bytes: int = MAX_BYTES) -> byt
 
 
 class LiveFetcher:
-    """Fetch over HTTPS without following redirects to other hosts."""
+    """Fetch over verified HTTPS; redirects are not followed."""
 
     def __init__(self, transport: httpx.BaseTransport | None = None) -> None:
         self._client = httpx.Client(headers={"User-Agent": USER_AGENT}, timeout=httpx.Timeout(30.0),
-                                    transport=transport)
+                                    verify=make_ssl_context(), transport=transport)
 
     def __call__(self, url: str) -> bytes:
         return get_bytes(self._client, url)
@@ -1769,6 +1796,7 @@ def load_messages(store: StateStore) -> list[tuple[CapMessage, str]]:
 ```
 
 - [ ] **Step 4: Run** `uv run pytest tests/test_tmd_cap_fetch.py tests/test_tmd_cap_collect.py` · Expected: PASS
+- [ ] **Step 4b: ใบรับรอง** (พบตอนลองกับเว็บจริงใน Task 10) — `www.tmd.go.th` ส่งใบรับรองมาแค่ใบปลาย จึงแนบใบกลางสาธารณะ `certs/globalsign-gcc-r6-alphassl-ca-2025.pem` (ตรวจด้วย `openssl verify` กับใบรากของ certifi แล้ว) และให้ `make_ssl_context()` ใช้ร่วมกับการตรวจปกติ ไม่ปิดการตรวจใบรับรอง · เพิ่ม `certifi` (MPL-2.0 แบบรายไฟล์ ไม่กระทบ license ของเรา) เป็น dependency ตรง
 - [ ] **Step 5: Commit** `feat(tmd-cap): allowlisted fetch and collection round`
 
 ### Task 9: เขียน snapshot
