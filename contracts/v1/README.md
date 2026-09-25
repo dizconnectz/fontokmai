@@ -1,11 +1,11 @@
-# สัญญาข้อมูล v1 — ประกาศทางการ (TMD CAP) และประวัติน้ำท่วมถนน
+# สัญญาข้อมูล v1 — ประกาศทางการ (TMD CAP), เรดาร์ฝน และประวัติน้ำท่วมถนน
 
 สิ่งที่ Claude ส่งให้ Codex เริ่มหน้าเว็บ (D24) ตามหัวข้อ 3 ของรีวิว v6 · ต้นทางของสัญญาคือ Pydantic ใน `pipeline/src/fontokmai/contracts/`
 
 | ส่วน | ที่อยู่ | หมายเหตุ |
 |---|---|---|
-| JSON Schema | `schema/alerts.schema.json`, `schema/manifest.schema.json`, `schema/road_flood_history.schema.json` | generated ห้ามแก้ด้วยมือ |
-| TypeScript types | `ts/alerts.ts`, `ts/manifest.ts`, `ts/road_flood_history.ts` | generated ด้วย `scripts/gen-ts-types.sh` (json-schema-to-typescript 16.0.0) ห้ามแก้ด้วยมือ |
+| JSON Schema | `schema/alerts.schema.json`, `schema/manifest.schema.json`, `schema/radar.schema.json`, `schema/road_flood_history.schema.json` | generated ห้ามแก้ด้วยมือ |
+| TypeScript types | `ts/alerts.ts`, `ts/manifest.ts`, `ts/radar.ts`, `ts/road_flood_history.ts` | generated ด้วย `scripts/gen-ts-types.sh` (json-schema-to-typescript 16.0.0) ห้ามแก้ด้วยมือ |
 | ตัวอย่าง | `examples/<กรณี>/manifest.json`, `alerts.json`, `expected.json` | สองไฟล์แรกคือสิ่งที่ producer เขียนจริงทุกไบต์ ส่วน `expected.json` คือผลที่ consumer ต้องได้ |
 
 สร้างใหม่ทั้งหมด (CI ตรวจว่าไฟล์ที่ commit ตรงกับที่สร้างได้):
@@ -146,3 +146,14 @@ cd .. && bash scripts/gen-ts-types.sh
 - สรุปหนึ่งบรรทัด เช่น “ถ.สุขุมวิท เคยมีรายงานน้ำท่วม 7 วัน (2022–2025) ล่าสุด 10 พ.ค. 2025” พร้อมเครดิตแหล่ง
 - กดดูต่อจึงแสดง `recent` (วันเวลา จุด ความลึก เลน ฝน และลิงก์ต้นทาง) และ `days_by_year`
 - ใช้คำว่า “เคยมีรายงาน” ไม่ใช่ “ท่วมแน่” และห้ามแสดงเป็นการพยากรณ์
+
+## 9. เรดาร์ฝน `radar.json` และภาพ `radar/*.png`
+ภาพเรดาร์รวมทั้งประเทศของกรมอุตุฯ (ความเข้มฝนที่ระดับ 2 กม., Z = 200R^1.6) 4 ภาพล่าสุด (1 ชั่วโมง) อัปเดตทุก 15 นาที
+
+- `radar.json` เป็นส่วนหนึ่งของ snapshot: มี `generation_id` ที่ต้องตรงกับ manifest แบบเดียวกับ `alerts.json`
+- `frames[]` เรียงเก่าไปใหม่ ภาพล่าสุดคือตัวสุดท้าย · `time` เป็นเวลาถ่ายภาพ (UTC) ให้แสดงเป็นเวลาไทย · `path` อยู่ใต้ `DATA_BASE_URL`
+- `coordinates` คือมุมภาพ [lon, lat] เรียง บนซ้าย → บนขวา → ล่างขวา → ล่างซ้าย ใช้กับ MapLibre image source ได้ตรงๆ
+- `legend[]` เรียงจากฝนแรงไปเบา (มม./ชม.) ตามแถบสีของกรมอุตุฯ · พิกเซลในภาพเป็นสี legend ที่ผสมพื้นขาวด้วยความทึบ `legend_opacity` · พิกเซลโปร่งใส = ไม่มีเสียงสะท้อนฝน
+  - อ่านค่าที่หมุด: หา pixel จาก lon/lat ตาม `coordinates` (ภาพเป็นกริดละติจูด–ลองจิจูดเท่ากัน) แล้วเทียบสีกับ `legend` หลังคิดความทึบ
+- ถ้าดึงภาพใหม่ไม่ได้ `source_status` ของ `tmd_radar` เป็น `failed` และ `frames` เป็นชุดเดิม → ถ้าภาพล่าสุดเก่ากว่า 45 นาทีให้ขึ้นป้าย “ภาพเรดาร์ไม่อัปเดต”
+- ต้องแสดงเครดิต “กรมอุตุนิยมวิทยา”, เวลาภาพ และ `notes_th` (เรดาร์ไม่ใช่ปริมาณฝนที่วัดได้)

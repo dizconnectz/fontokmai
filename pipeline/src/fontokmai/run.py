@@ -11,17 +11,21 @@ from pydantic import BaseModel, ValidationError
 from fontokmai.contracts.alerts import AlertsFeed
 from fontokmai.contracts.common import SourceStatus
 from fontokmai.contracts.manifest import Manifest
+from fontokmai.contracts.radar import RadarFeed
 from fontokmai.contracts.road_flood import RoadFloodHistory
 from fontokmai.feeds.alerts import assemble_alerts_feed
 from fontokmai.publish.snapshot import write_snapshot
 from fontokmai.sources.tmd_cap.collect import collect, load_messages
 from fontokmai.sources.tmd_cap.fetch import Fetcher
 from fontokmai.sources.tmd_cap.lifecycle import alert_candidates, group_events
+from fontokmai.sources.tmd_radar import SOURCE_ID as RADAR_SOURCE_ID
+from fontokmai.sources.tmd_radar import collect_radar, prune_frames
 from fontokmai.state import StateStore
 
 SNAPSHOT_INTERVAL = timedelta(minutes=15)
 REF_MODELS: dict[str, type[BaseModel]] = {"ref/road_flood_history.json": RoadFloodHistory}
 LAST_SUCCESS_KEY = "tmd_cap.last_success_at"
+RADAR_SUCCESS_KEY = "tmd_radar.last_success_at"
 RECOVERY_EPOCH_KEY = "recovery_epoch"
 
 
@@ -30,6 +34,7 @@ class SnapshotResult:
     manifest: Manifest
     feed: AlertsFeed
     status: SourceStatus
+    radar: RadarFeed | None = None
 
 
 def generation_id_for(now: datetime, writer: str) -> str:
@@ -53,7 +58,7 @@ def read_ref_files(out: Path) -> dict[str, bytes]:
 
 
 def run_cap_snapshot(*, db: Path, out: Path, fetch: Fetcher, now: datetime, writer: str,
-                     owner_epoch: int) -> SnapshotResult:
+                     owner_epoch: int, radar_fetch: Fetcher | None = None) -> SnapshotResult:
     if now.tzinfo is None:
         raise ValueError("now must carry a UTC offset")
     generation_id = generation_id_for(now, writer)
@@ -75,8 +80,22 @@ def run_cap_snapshot(*, db: Path, out: Path, fetch: Fetcher, now: datetime, writ
         feed = assemble_alerts_feed(candidates, store, now=now, generation_id=generation_id,
                                     recovery_epoch=recovery_epoch, source_status=[status])
         files = {"alerts.json": feed.model_dump_json().encode("utf-8"), **read_ref_files(out)}
+        statuses = [status]
+        radar = collect_radar(radar_fetch, out, generation_id) if radar_fetch is not None else None
+        if radar is not None:
+            if radar.ok:
+                store.set_meta(RADAR_SUCCESS_KEY, now.isoformat())
+            radar_success = store.get_meta(RADAR_SUCCESS_KEY)
+            statuses.append(SourceStatus(
+                source_id=RADAR_SOURCE_ID, status="ok" if radar.ok else "failed", last_attempt_at=now,
+                last_success_at=datetime.fromisoformat(radar_success) if radar_success else None,
+                items_seen=radar.frames_seen, items_rejected=radar.rejected, message=radar.message,
+            ))
+            files.update(radar.files)
         manifest = write_snapshot(out, files, store,
                                   generation_id=generation_id, now=now, writer=writer,
                                   owner_epoch=owner_epoch, recovery_epoch=recovery_epoch,
-                                  due=SNAPSHOT_INTERVAL, source_status=[status])
-    return SnapshotResult(manifest=manifest, feed=feed, status=status)
+                                  due=SNAPSHOT_INTERVAL, source_status=statuses)
+        if radar is not None:
+            prune_frames(out, radar.feed)
+    return SnapshotResult(manifest=manifest, feed=feed, status=status, radar=radar.feed if radar else None)

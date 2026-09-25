@@ -1,0 +1,149 @@
+{
+  "$defs": {
+    "RadarFrame": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "description": "PNG path relative to the data base URL",
+          "title": "Path",
+          "type": "string"
+        },
+        "time": {
+          "description": "Observation time of the frame (UTC)",
+          "format": "date-time",
+          "title": "Time",
+          "type": "string"
+        }
+      },
+      "required": [
+        "time",
+        "path"
+      ],
+      "title": "RadarFrame",
+      "type": "object"
+    },
+    "RadarLegendItem": {
+      "additionalProperties": false,
+      "properties": {
+        "color": {
+          "description": "Legend colour as TMD publishes it",
+          "pattern": "^#[0-9A-F]{6}$",
+          "title": "Color",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "min_mm_per_hr": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Lower bound of the class; null for the no-data colour",
+          "title": "Min Mm Per Hr"
+        }
+      },
+      "required": [
+        "min_mm_per_hr",
+        "color",
+        "label"
+      ],
+      "title": "RadarLegendItem",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "coordinates": {
+      "description": "Image corners [lon, lat] in the order top-left, top-right, bottom-right, bottom-left (a MapLibre image source takes them as they are)",
+      "items": {
+        "items": {
+          "type": "number"
+        },
+        "maxItems": 2,
+        "minItems": 2,
+        "type": "array"
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "title": "Coordinates",
+      "type": "array"
+    },
+    "credit_th": {
+      "title": "Credit Th",
+      "type": "string"
+    },
+    "frames": {
+      "description": "Oldest first; the last frame is the latest; may be empty",
+      "items": {
+        "$ref": "#/$defs/RadarFrame"
+      },
+      "title": "Frames",
+      "type": "array"
+    },
+    "generation_id": {
+      "title": "Generation Id",
+      "type": "string"
+    },
+    "legend": {
+      "description": "Highest class first, as on the TMD page",
+      "items": {
+        "$ref": "#/$defs/RadarLegendItem"
+      },
+      "title": "Legend",
+      "type": "array"
+    },
+    "legend_opacity": {
+      "description": "Pixels show a legend colour blended over white at this opacity; undo it before matching a pixel to a class. Transparent pixels mean no echo",
+      "exclusiveMinimum": 0,
+      "maximum": 1,
+      "title": "Legend Opacity",
+      "type": "number"
+    },
+    "name_th": {
+      "title": "Name Th",
+      "type": "string"
+    },
+    "notes_th": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Notes Th",
+      "type": "array"
+    },
+    "product": {
+      "const": "tmd_composite_zr",
+      "default": "tmd_composite_zr",
+      "title": "Product",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1",
+      "default": "1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_url": {
+      "title": "Source Url",
+      "type": "string"
+    }
+  },
+  "required": [
+    "generation_id",
+    "name_th",
+    "credit_th",
+    "source_url",
+    "coordinates",
+    "frames",
+    "legend",
+    "legend_opacity",
+    "notes_th"
+  ],
+  "title": "RadarFeed",
+  "type": "object"
+}

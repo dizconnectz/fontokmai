@@ -18,6 +18,7 @@ from fontokmai.run import SnapshotResult, run_cap_snapshot
 from fontokmai.schedule import run_forever
 from fontokmai.sources.open_data.http import fixture_opener, open_url
 from fontokmai.sources.tmd_cap.fetch import LiveFetcher, fixture_fetcher
+from fontokmai.sources.tmd_radar import summary as radar_summary
 
 ROAD_FLOOD_RETRY = timedelta(hours=6)
 
@@ -31,9 +32,13 @@ def ssh_command(key: Path, known_hosts: Path) -> str:
 
 
 def _summary(result: SnapshotResult) -> dict[str, Any]:
-    return {"generation_id": result.manifest.generation_id, "feed_sequence": result.feed.feed_sequence,
-            "alerts": len(result.feed.alerts), "tombstones": len(result.feed.tombstones),
-            "source_status": result.status.status}
+    summary = {"generation_id": result.manifest.generation_id, "feed_sequence": result.feed.feed_sequence,
+               "alerts": len(result.feed.alerts), "tombstones": len(result.feed.tombstones),
+               "source_status": result.status.status}
+    if result.radar is not None:
+        radar_status = next(s.status for s in result.manifest.source_status if s.source_id == "tmd_radar")
+        summary["radar"] = {**radar_summary(result.radar), "status": radar_status}
+    return summary
 
 
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:
@@ -53,6 +58,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     cap.add_argument("--now", help="evaluation time, ISO 8601 with offset (default: current time)")
     cap.add_argument("--writer", default="local")
     cap.add_argument("--owner-epoch", type=int, default=1)
+    cap.add_argument("--radar", action="store_true", help="also republish the latest TMD radar frames (network)")
     road = sub.add_parser("road-flood-history", help="build ref/road_flood_history.json from BMA and iTIC open data")
     road.add_argument("--out", type=Path, required=True, help="snapshot directory; the file goes to ref/")
     road.add_argument("--cache", type=Path, required=True, help="directory for the per-year iTIC caches")
@@ -100,7 +106,7 @@ def _scheduled_job(args: argparse.Namespace) -> Callable[[datetime], dict[str, A
         fetch = LiveFetcher()
         try:
             result = run_cap_snapshot(db=args.db, out=args.out, fetch=fetch, now=now, writer=args.writer,
-                                      owner_epoch=args.owner_epoch)
+                                      owner_epoch=args.owner_epoch, radar_fetch=fetch)
         finally:
             fetch.close()
         summary = _summary(result)
@@ -145,8 +151,9 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("--now needs a UTC offset, e.g. 2026-09-25T18:20:00+07:00")
     fetch = fixture_fetcher(args.fixtures) if args.fixtures else LiveFetcher()
     try:
+        radar_fetch = LiveFetcher() if args.radar else None
         result = run_cap_snapshot(db=args.db, out=args.out, fetch=fetch, now=now, writer=args.writer,
-                                  owner_epoch=args.owner_epoch)
+                                  owner_epoch=args.owner_epoch, radar_fetch=radar_fetch)
     finally:
         close = getattr(fetch, "close", None)
         if close is not None:
