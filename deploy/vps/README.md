@@ -46,6 +46,19 @@ docker compose logs --tail 20 cap-collector                                     
 docker compose stop                                                                # หยุด (ข้อมูลใน var/ ยังอยู่)
 ```
 
+## ข้อมูลอยู่ที่ไหนและโตแค่ไหน (วัด 2026-09-25)
+| ที่เก็บ | มีอะไร | ขนาดและการโต |
+|---|---|---|
+| `var/state/fontokmai.db` (SQLite ไฟล์เดียว ไม่มี database server) | ประกาศ CAP ดิบแบบบีบอัด, revision ของเหตุ/ไฟล์, ค่า meta | ~0.5 MB · โตราว 40 KB ต่อประกาศ (ประมาณ 70–150 MB ต่อปี) · **ยังไม่มีงานลบและสำเนานอกเครื่อง** |
+| `var/out/data/v1` | snapshot ล่าสุด (`manifest.json`, `alerts.json`) | ~0.5 MB เขียนทับทุกรอบ |
+| `var/pages` | ไฟล์ที่ประกอบเป็น commit เผยแพร่ | ~1 MB สร้างใหม่ทุกรอบ |
+| repo `fontokmai-data` (GitHub Pages) | สำเนาสาธารณะของ snapshot | force-push commit เดียวต่อรอบ จึงมีแค่รุ่นล่าสุด |
+| log ของ container | JSON หนึ่งบรรทัดต่อรอบ | หมุนที่ 10 MB × 3 |
+| image `fontokmai-pipeline:local` | Python + โค้ด | ~450 MB · build ใหม่แต่ละครั้งทิ้ง image เก่าและ build cache ไว้ |
+
+- ตัวคุมงบดิสก์, retention และสำรองนอกเครื่องตาม design 4.9 เป็นงาน P0-B2 และต้องเสร็จก่อนเพิ่มแหล่งที่ดึงข้อมูลจำนวนมาก
+- เครื่องนี้ใช้ร่วมกับงานเดิม: `docker image prune` และ `docker builder prune` กระทบของงานเดิมด้วย จึงต้องถามผู้ใช้ก่อนล้าง
+
 ## ความปลอดภัยและขอบเขต
 - **container**:
   - รันด้วย uid ของผู้ใช้ (ไม่ใช่ root)
