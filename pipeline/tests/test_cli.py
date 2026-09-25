@@ -1,6 +1,8 @@
 import json
 
-from fontokmai.cli import main
+import pytest
+
+from fontokmai.cli import main, ssh_command
 from fontokmai.contracts.alerts import AlertsFeed
 from fontokmai.contracts.manifest import Manifest
 from helpers import FIXTURES
@@ -23,3 +25,15 @@ def test_cap_snapshot_from_fixtures(tmp_path, capsys):
 def test_export_schemas_command(tmp_path, capsys):
     assert main(["export-schemas", "--out", str(tmp_path)]) == 0
     assert (tmp_path / "alerts.schema.json").is_file()
+
+
+def test_schedule_requires_a_work_dir_when_publishing(tmp_path):
+    with pytest.raises(SystemExit):
+        main(["schedule", "--db", str(tmp_path / "s.db"), "--out", str(tmp_path / "v1"),
+              "--publish-remote", "git@github.com:dizconnectz/fontokmai-data.git"])
+
+
+def test_ssh_command_pins_key_and_known_hosts(tmp_path):
+    cmd = ssh_command(tmp_path / "deploy key", tmp_path / "known_hosts")
+    assert "-o IdentitiesOnly=yes" in cmd and "-o StrictHostKeyChecking=yes" in cmd
+    assert "'" + str(tmp_path / "deploy key") + "'" in cmd
