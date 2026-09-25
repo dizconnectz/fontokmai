@@ -1,0 +1,32 @@
+# fontokmai on the VPS (design 4.3, 4.9). Values come from deploy/vps/.env, which is never committed.
+name: fontokmai
+services:
+  cap-collector:
+    build:
+      context: ../../pipeline
+    image: fontokmai-pipeline:local
+    user: "${FONTOKMAI_UID}:${FONTOKMAI_GID}"
+    command:
+      - schedule
+      - --db=/var/lib/fontokmai/state/fontokmai.db
+      - --out=/var/lib/fontokmai/out/data/v1
+      - --writer=vps
+      - --owner-epoch=${OWNER_EPOCH:-1}
+      - --publish-remote=${PUBLISH_REMOTE:-}
+      - --publish-work=/var/lib/fontokmai/pages
+      - --ssh-key=/run/secrets/deploy_key
+      - --known-hosts=/etc/fontokmai/github_known_hosts
+    volumes:
+      - ${FONTOKMAI_VAR}:/var/lib/fontokmai
+      - ${DEPLOY_KEY}:/run/secrets/deploy_key:ro
+      - ./github_known_hosts:/etc/fontokmai/github_known_hosts:ro
+    restart: unless-stopped
+    cpus: 0.5
+    mem_limit: 512m
+    memswap_limit: 512m
+    pids_limit: 128
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"

@@ -34,6 +34,12 @@ jobs:
           bash scripts/gen-ts-types.sh
       - name: Generated files must be committed
         run: git diff --exit-code -- contracts/
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker build -t fontokmai-pipeline:ci pipeline
+      - run: docker run --rm fontokmai-pipeline:ci --help
   repo-safety:
     runs-on: ubuntu-latest
     steps:
