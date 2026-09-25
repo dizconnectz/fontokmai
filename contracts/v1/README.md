@@ -17,7 +17,10 @@ cd .. && bash scripts/gen-ts-types.sh
 ```
 
 ## 1. Data base URL และลำดับการโหลด
-- ไฟล์ข้อมูลอยู่ใต้ `DATA_BASE_URL` (เช่น `https://<host>/data/v1/`) ซึ่งเป็น config ของเว็บ และเปลี่ยน host ได้โดยไม่ rebuild · P0-A ยังไม่มี host จริง (อยู่ใน P0-B)
+- ไฟล์ข้อมูลอยู่ใต้ `DATA_BASE_URL` ซึ่งเป็น config ของเว็บ และเปลี่ยน host ได้โดยไม่ rebuild
+  - **ช่วงพัฒนา (ใช้งานได้แล้ว)**: `https://dizconnectz.github.io/fontokmai-data/data/v1/` อัปเดตจาก VPS ทุก 15 นาที (รอบ :03/:18/:33/:48) และ GitHub Pages อาจใช้เวลาอีก 1–3 นาทีหลังอัปโหลด
+  - host นี้ส่ง `Access-Control-Allow-Origin: *` และ `Cache-Control: max-age=600` จึงต้องต่อท้าย `manifest.json?t=<เวลาปัจจุบัน>` เพื่อข้าม cache ของ CDN
+  - host หลักตามแบบคือ Cloudflare Pages (ย้ายภายหลังโดยเปลี่ยนค่านี้อย่างเดียว)
 - ลำดับ:
   1. โหลด `manifest.json` แบบไม่ใช้ cache และตรวจ `schema_version === "1"`
   2. โหลดไฟล์ตาม `files[].path` (ต่อท้าย `?g=<generation_id>` เพื่อกัน cache เก่า)
