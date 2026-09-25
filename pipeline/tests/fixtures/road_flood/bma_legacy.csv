@@ -1,0 +1,3 @@
+frd_id,frd_rain_datestart,frd_rain_start,frd_rain_datestop,frd_rain_stop,district,frd_road,frd_area,frd_flood_height,frd_flood_distance,frd_flood_lane,frd_flood_date_begin,frd_flood_begin,frd_flood_date_end,frd_flood_end,frd_flood_total,frd_total_rainfall
+1,30/4/2023,7:20,30/4/2023,9:15,เขตดินแดง,ประชาสงเคราะห์,ปากซอย 24,15,800,เต็มผิว,30/4/2023,8:30,30/4/2023,9:30,1:00,54.5
+2,15/2/2023,6:00,15/2/2023,12:50,เขตประเวศ,เฉลิมพระเกียรติ ร.๙,แยกศรีอุดม (ขาเข้า) ,15,100,เต็มผิว,15/2/2023,8:15,15/2/2023,9:50,1:35,35.5

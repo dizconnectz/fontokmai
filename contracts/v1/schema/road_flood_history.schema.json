@@ -1,0 +1,428 @@
+{
+  "$defs": {
+    "RoadFloodReport": {
+      "additionalProperties": false,
+      "properties": {
+        "date": {
+          "description": "Local date (Asia/Bangkok) the flooding started",
+          "format": "date",
+          "title": "Date",
+          "type": "string"
+        },
+        "depth_cm": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Depth Cm"
+        },
+        "district": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "District"
+        },
+        "lanes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Traffic lanes affected as written by the source, e.g. เต็มผิว",
+          "title": "Lanes"
+        },
+        "length_m": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Length M"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "[lon, lat] of the report when the source gives one",
+          "title": "Location"
+        },
+        "rain_mm": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rain total of the event reported by the source",
+          "title": "Rain Mm"
+        },
+        "source_id": {
+          "enum": [
+            "bma_road_flood_stats",
+            "itic_longdo_events"
+          ],
+          "title": "Source Id",
+          "type": "string"
+        },
+        "spot": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Place on the road, or the report title, as written by the source",
+          "title": "Spot"
+        },
+        "start": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Start"
+        },
+        "stop": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Stop"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Page of this report at the source, when the source has one",
+          "title": "Url"
+        }
+      },
+      "required": [
+        "date",
+        "source_id",
+        "start",
+        "stop",
+        "spot",
+        "district",
+        "depth_cm",
+        "length_m",
+        "lanes",
+        "rain_mm",
+        "location",
+        "url"
+      ],
+      "title": "RoadFloodReport",
+      "type": "object"
+    },
+    "RoadFloodRoad": {
+      "additionalProperties": false,
+      "properties": {
+        "days_by_year": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "description": "Gregorian year → flood_days in that year",
+          "title": "Days By Year",
+          "type": "object"
+        },
+        "districts": {
+          "description": "Most reported first",
+          "items": {
+            "type": "string"
+          },
+          "title": "Districts",
+          "type": "array"
+        },
+        "first_date": {
+          "format": "date",
+          "title": "First Date",
+          "type": "string"
+        },
+        "flood_days": {
+          "description": "Distinct local dates with at least one report",
+          "minimum": 1,
+          "title": "Flood Days",
+          "type": "integer"
+        },
+        "key": {
+          "description": "Search key; see contracts/v1/README.md section 8",
+          "title": "Key",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "road",
+            "soi",
+            "tunnel"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "last_date": {
+          "format": "date",
+          "title": "Last Date",
+          "type": "string"
+        },
+        "max_depth_cm": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Max Depth Cm"
+        },
+        "name_th": {
+          "title": "Name Th",
+          "type": "string"
+        },
+        "points": {
+          "description": "Distinct report locations [lon, lat] rounded to 4 decimals, newest first; empty when no report of this road has coordinates (the BMA statistics give road names only). Used to find roads near a pin",
+          "items": {
+            "items": {
+              "type": "number"
+            },
+            "maxItems": 2,
+            "minItems": 2,
+            "type": "array"
+          },
+          "maxItems": 30,
+          "title": "Points",
+          "type": "array"
+        },
+        "recent": {
+          "description": "Newest first",
+          "items": {
+            "$ref": "#/$defs/RoadFloodReport"
+          },
+          "maxItems": 10,
+          "title": "Recent",
+          "type": "array"
+        },
+        "reports": {
+          "minimum": 1,
+          "title": "Reports",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "key",
+        "name_th",
+        "kind",
+        "districts",
+        "flood_days",
+        "reports",
+        "first_date",
+        "last_date",
+        "days_by_year",
+        "max_depth_cm",
+        "points",
+        "recent"
+      ],
+      "title": "RoadFloodRoad",
+      "type": "object"
+    },
+    "RoadFloodSource": {
+      "additionalProperties": false,
+      "properties": {
+        "credit_th": {
+          "description": "Show this with every number that uses the source",
+          "title": "Credit Th",
+          "type": "string"
+        },
+        "license": {
+          "title": "License",
+          "type": "string"
+        },
+        "name_th": {
+          "title": "Name Th",
+          "type": "string"
+        },
+        "period_from": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Period From"
+        },
+        "period_to": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Period To"
+        },
+        "rejected": {
+          "description": "Rows dropped by QC, e.g. a date outside the year of its file",
+          "minimum": 0,
+          "title": "Rejected",
+          "type": "integer"
+        },
+        "reports": {
+          "description": "Reports read from the source after QC",
+          "minimum": 0,
+          "title": "Reports",
+          "type": "integer"
+        },
+        "reports_without_place": {
+          "description": "Reports without a road, soi or tunnel name we could read",
+          "minimum": 0,
+          "title": "Reports Without Place",
+          "type": "integer"
+        },
+        "retrieved_at": {
+          "format": "date-time",
+          "title": "Retrieved At",
+          "type": "string"
+        },
+        "source_id": {
+          "enum": [
+            "bma_road_flood_stats",
+            "itic_longdo_events"
+          ],
+          "title": "Source Id",
+          "type": "string"
+        },
+        "url": {
+          "description": "Dataset page for the 'read more' link",
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_id",
+        "name_th",
+        "credit_th",
+        "license",
+        "url",
+        "period_from",
+        "period_to",
+        "reports",
+        "reports_without_place",
+        "rejected",
+        "retrieved_at"
+      ],
+      "title": "RoadFloodSource",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "area_th": {
+      "title": "Area Th",
+      "type": "string"
+    },
+    "bbox": {
+      "description": "[lon_min, lat_min, lon_max, lat_max] in WGS84",
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "title": "Bbox",
+      "type": "array"
+    },
+    "built_at": {
+      "format": "date-time",
+      "title": "Built At",
+      "type": "string"
+    },
+    "notes_th": {
+      "description": "Limits every reader must see next to the numbers",
+      "items": {
+        "type": "string"
+      },
+      "title": "Notes Th",
+      "type": "array"
+    },
+    "roads": {
+      "description": "Sorted by key",
+      "items": {
+        "$ref": "#/$defs/RoadFloodRoad"
+      },
+      "title": "Roads",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1",
+      "default": "1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "sources": {
+      "items": {
+        "$ref": "#/$defs/RoadFloodSource"
+      },
+      "title": "Sources",
+      "type": "array"
+    }
+  },
+  "required": [
+    "built_at",
+    "area_th",
+    "bbox",
+    "sources",
+    "roads",
+    "notes_th"
+  ],
+  "title": "RoadFloodHistory",
+  "type": "object"
+}

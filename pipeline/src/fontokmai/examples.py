@@ -123,3 +123,46 @@ def write_examples(out: Path, *, real: Path, synthetic: Path) -> list[Path]:
                                                    encoding="utf-8", newline="\n")
             written.extend(target / f for f in ("manifest.json", "alerts.json", "expected.json"))
     return written
+
+
+ROAD_FLOOD_BUILT_AT = "2025-12-20T10:00:00+07:00"
+ROAD_FLOOD_NORMALIZE = ["ถนนสุขุมวิท", "ถ.พระราม 2", "สุขุมวิท 21(อโศก)", "ซ.เพชรเกษม 42 *", "เฉลิมพระเกียรติ ร.๙", "ถนน"]
+ROAD_FLOOD_SEARCHES = ["สุขุมวิท", "ถนนสุขุมวิท", "ดินแดง", "ถนนที่ไม่มีในข้อมูล", "ถนน"]
+ROAD_FLOOD_PINS = [[100.6015, 13.7005], [100.5, 13.9]]
+
+
+def write_road_flood_example(out: Path, fixtures: Path) -> list[Path]:
+    """contracts/v1/examples/road-flood-history: the producer file and the answers a consumer must reproduce."""
+    from fontokmai.feeds.road_flood import roads_near, search_roads
+    from fontokmai.feeds.road_names import search_key
+    from fontokmai.road_flood_build import REF_PATH, build_road_flood_history, fixture_files
+    from fontokmai.sources.open_data.http import fixture_opener
+
+    target = out / "road-flood-history"
+    if target.exists():
+        shutil.rmtree(target)
+    target.mkdir(parents=True)
+    with tempfile.TemporaryDirectory() as tmp:
+        work = Path(tmp)
+        history = build_road_flood_history(work / "out", work / "cache", datetime.fromisoformat(ROAD_FLOOD_BUILT_AT),
+                                           opener=fixture_opener(fixture_files(fixtures)), first_year=2024)
+        shutil.copyfile(work / "out" / REF_PATH, target / "road_flood_history.json")
+
+    def brief(road):
+        return {"key": road.key, "name_th": road.name_th, "kind": road.kind, "flood_days": road.flood_days,
+                "reports": road.reports, "last_date": road.last_date.isoformat(), "max_depth_cm": road.max_depth_cm}
+
+    expected = {
+        "scenario": "road-flood-history",
+        "description_th": "ประวัติน้ำท่วมถนนจากไฟล์ตัวอย่าง (สถิติ กทม. ปี 2022, 2024, 2025 และเหตุการณ์ iTIC สังเคราะห์"
+                          " ปี 2024–2025): การแปลงคำค้น ผลค้นชื่อถนน และถนนใกล้หมุดที่ consumer ต้องได้ตรงกัน",
+        "normalize": [{"input": text, "key": search_key(text)} for text in ROAD_FLOOD_NORMALIZE],
+        "searches": [{"query": q, "results": [brief(r) for r in search_roads(history, q)]}
+                     for q in ROAD_FLOOD_SEARCHES],
+        "near": [{"pin": pin, "radius_m": 2000,
+                  "results": [dict(brief(road), distance_m=round(dist)) for road, dist in roads_near(history, pin)]}
+                 for pin in ROAD_FLOOD_PINS],
+    }
+    (target / "expected.json").write_text(json.dumps(expected, ensure_ascii=False, indent=2) + "\n",
+                                          encoding="utf-8", newline="\n")
+    return [target / "road_flood_history.json", target / "expected.json"]

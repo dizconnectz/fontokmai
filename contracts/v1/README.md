@@ -1,18 +1,18 @@
-# สัญญาข้อมูล v1 — slice แรก: ประกาศทางการจาก TMD CAP
+# สัญญาข้อมูล v1 — ประกาศทางการ (TMD CAP) และประวัติน้ำท่วมถนน
 
 สิ่งที่ Claude ส่งให้ Codex เริ่มหน้าเว็บ (D24) ตามหัวข้อ 3 ของรีวิว v6 · ต้นทางของสัญญาคือ Pydantic ใน `pipeline/src/fontokmai/contracts/`
 
 | ส่วน | ที่อยู่ | หมายเหตุ |
 |---|---|---|
-| JSON Schema | `schema/alerts.schema.json`, `schema/manifest.schema.json` | generated ห้ามแก้ด้วยมือ |
-| TypeScript types | `ts/alerts.ts`, `ts/manifest.ts` | generated ด้วย `scripts/gen-ts-types.sh` (json-schema-to-typescript 16.0.0) ห้ามแก้ด้วยมือ |
+| JSON Schema | `schema/alerts.schema.json`, `schema/manifest.schema.json`, `schema/road_flood_history.schema.json` | generated ห้ามแก้ด้วยมือ |
+| TypeScript types | `ts/alerts.ts`, `ts/manifest.ts`, `ts/road_flood_history.ts` | generated ด้วย `scripts/gen-ts-types.sh` (json-schema-to-typescript 16.0.0) ห้ามแก้ด้วยมือ |
 | ตัวอย่าง | `examples/<กรณี>/manifest.json`, `alerts.json`, `expected.json` | สองไฟล์แรกคือสิ่งที่ producer เขียนจริงทุกไบต์ ส่วน `expected.json` คือผลที่ consumer ต้องได้ |
 
 สร้างใหม่ทั้งหมด (CI ตรวจว่าไฟล์ที่ commit ตรงกับที่สร้างได้):
 ```bash
 cd pipeline
 uv run fontokmai export-schemas --out ../contracts/v1/schema
-uv run fontokmai contract-examples --out ../contracts/v1/examples --real-fixtures tests/fixtures/tmd_cap --synthetic-fixtures tests/fixtures/tmd_cap_synthetic
+uv run fontokmai contract-examples --out ../contracts/v1/examples --real-fixtures tests/fixtures/tmd_cap --synthetic-fixtures tests/fixtures/tmd_cap_synthetic --road-flood-fixtures tests/fixtures/road_flood
 cd .. && bash scripts/gen-ts-types.sh
 ```
 
@@ -24,7 +24,7 @@ cd .. && bash scripts/gen-ts-types.sh
 - ลำดับ:
   1. โหลด `manifest.json` แบบไม่ใช้ cache และตรวจ `schema_version === "1"`
   2. โหลดไฟล์ตาม `files[].path` (ต่อท้าย `?g=<generation_id>` เพื่อกัน cache เก่า)
-  3. ตรวจว่า `generation_id` ในไฟล์ข้อมูลตรงกับ manifest
+  3. ตรวจว่า `generation_id` ในไฟล์ข้อมูลตรงกับ manifest (ยกเว้นไฟล์ใน `ref/` ซึ่งสร้างเป็นรอบของตัวเองและไม่มี `generation_id` ดูข้อ 8)
 - ถ้าไม่ตรงกัน แปลว่าไฟล์ปนรุ่น:
   - โหลด manifest ใหม่ 1 ครั้ง
   - ถ้ายังไม่ตรง ให้แสดงชุดก่อนหน้าที่ครบพร้อมข้อความ “กำลังอัปเดต”
@@ -75,10 +75,9 @@ cd .. && bash scripts/gen-ts-types.sh
 - `owner_epoch` ใน manifest เป็นหมายเลขผู้เผยแพร่ปัจจุบัน (เพิ่มเมื่อ takeover หรือ failback) ใช้ตรวจสอบย้อนหลัง consumer ไม่ต้องตัดสินใจจากค่านี้
 
 ## 6. ยังไม่รองรับใน slice นี้
-- ยังไม่มีข้อมูลเหล่านี้ใน manifest: พยากรณ์, โซนเสี่ยงน้ำท่วม, สถานีฝนและระดับน้ำ, เขื่อน, CCTV และข่าว
+- ยังไม่มีข้อมูลเหล่านี้ใน manifest: พยากรณ์, โซนเสี่ยงน้ำท่วม, สถานีฝนและระดับน้ำ, เขื่อน, CCTV และข่าว (ประวัติน้ำท่วมถนนมีแล้ว ดูข้อ 8)
   - UI ต้องแสดง “ยังไม่มีข้อมูล” ห้ามแสดงศูนย์หรือข้อมูลจำลองเหมือนข้อมูลจริง
   - ต้องรองรับไฟล์ใหม่ใน `files[]` ในอนาคตโดยไม่พัง
-- ยังไม่มี host และการ deploy จริง (P0-B)
 
 ## 7. ตัวอย่าง
 | กรณี | สิ่งที่ครอบคลุม |
@@ -102,3 +101,47 @@ cd .. && bash scripts/gen-ts-types.sh
 - `source_status[]`
 
 ข้อมูลสังเคราะห์ระบุชัดในหัวข้อว่าไม่ใช่ประกาศจริง
+
+## 8. ประวัติน้ำท่วมถนน `ref/road_flood_history.json`
+ตอบคำถาม “ถนนนี้เคยท่วมกี่ครั้ง” และ “ถนนแถวหมุดนี้เคยท่วมไหม” ในกรุงเทพฯ และปริมณฑล · ตัวอย่างอยู่ที่ `examples/road-flood-history/`
+
+**ไฟล์และรอบอัปเดต**
+- อยู่ใน `files[]` ของ manifest เมื่อมีไฟล์ที่ผ่าน schema · ไม่มีในบางรอบได้ ให้ UI แสดง “ยังไม่มีข้อมูล”
+- สร้างใหม่สัปดาห์ละครั้ง (`built_at`) จึงไม่มี `generation_id` · โหลดด้วย `?r=<revision>` จาก manifest เพื่อข้าม cache เก่า และตรวจ `sha256` ได้ถ้าต้องการ
+- ขนาดจริงราว 1–2 MB (GitHub Pages ส่งแบบบีบอัด) จึงควรโหลดเมื่อผู้ใช้เปิดส่วนนี้ ไม่ต้องโหลดตอนเปิดหน้าแรก
+
+**ความหมาย**
+- `sources[]`: ที่มาแต่ละแหล่ง ต้องแสดง `credit_th` คู่กับตัวเลขทุกครั้ง และลิงก์ `url` ไปหน้าชุดข้อมูล
+  - `bma_road_flood_stats`: สถิติของสำนักการระบายน้ำ กทม. (CC BY) มีความลึก ความยาว เลนที่กระทบ และฝนรวม แต่ไม่มีพิกัด
+  - `itic_longdo_events`: เหตุการณ์น้ำท่วมจาก iTIC/Longdo (CC BY 4.0) มีพิกัดและลิงก์รายเหตุการณ์ แต่ชื่อถนนอ่านจากหัวเรื่อง
+- `roads[]` เรียงตาม `key` · `flood_days` = จำนวนวันที่มีรายงานอย่างน้อยหนึ่งครั้ง · `reports` = จำนวนรายงาน · `days_by_year` = วันต่อปี ค.ศ.
+- `points` = พิกัด `[lon, lat]` ของรายงาน (เฉพาะที่มีพิกัด สูงสุด 30 จุด) · `recent` = รายงานล่าสุด 10 รายการ ใหม่สุดก่อน พร้อม `url` ถ้าต้นทางมีหน้ารายงาน
+- **ต้องแสดง `notes_th` ใกล้ตัวเลขเสมอ** โดยเฉพาะ “ถนนที่ไม่มีรายงานไม่ได้แปลว่าไม่เคยท่วม”
+
+**กติกาค้นชื่อถนน** (ต้องได้ผลตรงกับ `expected.json` ส่วน `normalize` และ `searches`)
+1. แปลงคำค้นเป็น key:
+   - Unicode NFC และเลขไทยเป็นเลขอารบิก
+   - ลบ `*` และข้อความในวงเล็บ ยุบช่องว่าง แล้วตัด ` -–,.:;` ที่หัวท้าย
+   - ตัด `ถนน`, `ถ.` หรือ `ถ ` ที่ขึ้นต้น และแปลง `ซ.` ที่ขึ้นต้นเป็น `ซอย`
+   - ตัดหัวท้ายอีกครั้ง ลบช่องว่างทั้งหมด แล้วทำเป็นตัวพิมพ์เล็ก
+2. ถ้า key ว่าง (เช่นพิมพ์แค่ “ถนน”) ไม่ต้องค้น ให้แสดงคำแนะนำแทน
+3. ผลคือถนนที่ `key` มีคำค้นอยู่ข้างใน เรียงตาม `flood_days` มากไปน้อย แล้ว `last_date` ใหม่ไปเก่า แล้ว `key`
+
+| คำค้น | key |
+|---|---|
+| `ถนนสุขุมวิท` | `สุขุมวิท` |
+| `ถ.พระราม 2` | `พระราม2` |
+| `สุขุมวิท 21(อโศก)` | `สุขุมวิท21` |
+| `ซ.เพชรเกษม 42 *` | `ซอยเพชรเกษม42` |
+| `เฉลิมพระเกียรติ ร.๙` | `เฉลิมพระเกียรติร.9` |
+| `ถนน` | (ว่าง ไม่ต้องค้น) |
+
+**กติกาถนนใกล้หมุด** (ต้องตรงกับ `expected.json` ส่วน `near`)
+- ใช้ระยะ haversine (R = 6,371,008.8 ม.) จากหมุดไปยังจุดใน `points` ที่ใกล้ที่สุด แล้วเก็บถนนที่ไม่เกิน `radius_m` (ค่าตั้งต้น 2,000 ม.)
+- เรียงตามระยะ (ปัดเป็นเมตร) ใกล้ไปไกล แล้ว `flood_days` มากไปน้อย แล้ว `key`
+- ถนนที่มีแต่สถิติ กทม. ไม่มีพิกัด จึงหาด้วยระยะไม่ได้ ให้บอกผู้ใช้ว่าค้นด้วยชื่อถนนได้
+
+**การแสดงผลที่แนะนำ**
+- สรุปหนึ่งบรรทัด เช่น “ถ.สุขุมวิท เคยมีรายงานน้ำท่วม 7 วัน (2022–2025) ล่าสุด 10 พ.ค. 2025” พร้อมเครดิตแหล่ง
+- กดดูต่อจึงแสดง `recent` (วันเวลา จุด ความลึก เลน ฝน และลิงก์ต้นทาง) และ `days_by_year`
+- ใช้คำว่า “เคยมีรายงาน” ไม่ใช่ “ท่วมแน่” และห้ามแสดงเป็นการพยากรณ์

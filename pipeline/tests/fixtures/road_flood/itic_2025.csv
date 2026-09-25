@@ -1,0 +1,10 @@
+﻿﻿eid,title,title_en,description,description_en,latitude,longitude,type,start,stop,contributor
+856697,น้ำท่วม(น้ำทะเลหนุน) ถนนสุขสวัสดิ์,Tidal flood on Suk Sawat Rd,,,13.6600,100.4900,6,2025-01-28 06:41:01,2025-01-28 09:41:01,itic.sample
+861225,น้ำท่วม ถนนสุขุมวิท,Flood on Sukhumvit Rd,"วันที่ 18 ก.พ.
+น้ำท่วมขัง ขาเข้า
+
+Cr. ศูนย์วิทยุ","multi-line
+description",13.7010,100.6010,6,2025-02-18 13:09:08,2025-02-18 16:09:08,itic.sample
+861226,น้ำท่วม ซอยสุขุมวิท 107 (ซอยแบริ่ง),Flood in Soi Bearing,,,13.6640,100.6090,6,2025-02-18 13:30:00,,itic.sample
+861227,น้ำท่วม ถนนบางนา-ตราด,Flood with a broken location,,,,100.6500,6,2025-02-18 14:00:00,,itic.sample
+861228,ฝนตก ถนนสุขุมวิท,Rain,,,13.7010,100.6010,5,2025-02-18 12:00:00,,itic.sample

@@ -1,0 +1,29 @@
+{
+ "success": true,
+ "result": {
+  "name": "frd_dds",
+  "license_title": "Creative Commons Attributions",
+  "resources": [
+   {
+    "name": "ข้อมูลสถิติน้ำท่วมขังบนถนนสายหลักในความรับผิดชอบของสำนักการระบายน้ำ",
+    "format": "CSV",
+    "url": "https://data.bangkok.go.th/dataset/42dc1a21-b8c7-4372-a79d-b2776c90214c/resource/95716a53-4544-4c9b-af07-63298ace7c07/download/frd_dds.csv"
+   },
+   {
+    "name": "ข้อมูลสถิติน้ำท่วมขังบนถนนสายหลักในความรับผิดชอบของสำนักการระบายน้ำ (2022)",
+    "format": "CSV",
+    "url": "https://data.bangkok.go.th/dataset/42dc1a21-b8c7-4372-a79d-b2776c90214c/resource/d37b1d75-9b11-4db9-8f1e-5d4ce49bc9bf/download/-2022.csv"
+   },
+   {
+    "name": "ข้อมูลสถิติน้ำท่วมขังบนถนนสายหลักในความรับผิดชอบของสำนักการระบายน้ำ (2024)",
+    "format": "CSV",
+    "url": "https://data.bangkok.go.th/dataset/42dc1a21-b8c7-4372-a79d-b2776c90214c/resource/ebcc95bb-1567-4da4-9eec-8d715eb2ccd0/download/-2024.csv"
+   },
+   {
+    "name": "ข้อมูลสถิติน้ำท่วมขังบนถนนสายหลักในความรับผิดชอบของสำนักการระบายน้ำ (2025)",
+    "format": "CSV",
+    "url": "https://data.bangkok.go.th/dataset/42dc1a21-b8c7-4372-a79d-b2776c90214c/resource/9d924c20-8f56-46ae-9bd3-4c2a1c0d83ef/download/-2025.csv"
+   }
+  ]
+ }
+}

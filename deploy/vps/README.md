@@ -54,10 +54,21 @@ docker compose stop                                                             
 | `var/pages` | ไฟล์ที่ประกอบเป็น commit เผยแพร่ | ~1 MB สร้างใหม่ทุกรอบ |
 | repo `fontokmai-data` (GitHub Pages) | สำเนาสาธารณะของ snapshot | force-push commit เดียวต่อรอบ จึงมีแค่รุ่นล่าสุด |
 | log ของ container | JSON หนึ่งบรรทัดต่อรอบ | หมุนที่ 10 MB × 3 |
+| `var/state/cache/itic_flood_YYYY.json` | เหตุน้ำท่วมของ iTIC/Longdo ปีที่จบแล้ว เฉพาะกรอบ กทม.–ปริมณฑล | ไม่กี่ร้อย KB ต่อปี ไม่เก็บไฟล์ดิบ (อ่านแบบ stream) |
+| `var/out/data/v1/ref/road_flood_history.json` | ประวัติน้ำท่วมถนน (สัญญาข้อ 8) | สร้างใหม่สัปดาห์ละครั้ง เขียนทับ |
 | image `fontokmai-pipeline:local` | Python + โค้ด | ~450 MB · build ใหม่แต่ละครั้งทิ้ง image เก่าและ build cache ไว้ |
 
 - ตัวคุมงบดิสก์, retention และสำรองนอกเครื่องตาม design 4.9 เป็นงาน P0-B2 และต้องเสร็จก่อนเพิ่มแหล่งที่ดึงข้อมูลจำนวนมาก
 - เครื่องนี้ใช้ร่วมกับงานเดิม: `docker image prune` และ `docker builder prune` กระทบของงานเดิมด้วย จึงต้องถามผู้ใช้ก่อนล้าง
+
+## ประวัติน้ำท่วมถนน (ครั้งแรกต้องสั่งเอง)
+ตัวตั้งเวลาสร้าง `ref/road_flood_history.json` ใหม่สัปดาห์ละครั้ง แต่จะไม่โหลดเหตุการณ์ย้อนหลังทั้งชุดเอง (ปีละ 20–50 MB) จึงต้องสั่งครั้งแรกนอกรอบ 15 นาที:
+```bash
+cd ~/fontokmai/app/deploy/vps
+docker compose run --rm cap-collector road-flood-history --out /var/lib/fontokmai/out/data/v1 --cache /var/lib/fontokmai/state/cache
+```
+- อ่านแบบ stream ไม่เก็บไฟล์ดิบ เก็บเฉพาะเหตุน้ำท่วมในกรอบนำร่องเป็น cache รายปี
+- ถ้า cache หาย รอบอัตโนมัติจะรายงาน `BackfillNeeded` ใน log แทนการโหลดเองทั้งชุด
 
 ## ความปลอดภัยและขอบเขต
 - **container**:

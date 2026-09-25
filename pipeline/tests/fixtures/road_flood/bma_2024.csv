@@ -1,0 +1,4 @@
+﻿frd_id,frd_rain_datestart,frd_rain_start,frd_rain_datestop,frd_rain_stop,district,frd_road,frd_area,frd_flood_height,frd_flood_distance,frd_flood_lane,frd_flood_date_begin,frd_flood_begin,frd_flood_date_end,frd_flood_end,frd_flood_total,frd_total_rainfall
+1,3/20/2024,5:50,3/20/2024,8:30,เขตพระนคร,มหาราช,วัดโพธิ์,15,300,เต็มผิว,3/20/2024,8:15,3/20/2024,8:50,00:35,50.5
+118,7/13/2026,:,0000-00-00,:,เขตวัฒนา,สุขุมวิท 71,ปากซอยปรีดีพนมยงค์ 20-25,15,300,2 เลน,9/3/2024,1:35,9/3/2024,2:25,00:50,32
+213,11/17/2024,13:20,11/17/2024,14:00,เขตคลองเตย,สุขุมวิท,สุขุมวิท 24,10,,เต็มผิว,11/17/2024,14:00,11/17/2024,15:15,01:15,32.5

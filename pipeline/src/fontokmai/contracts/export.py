@@ -9,10 +9,12 @@ from pydantic import BaseModel
 
 from fontokmai.contracts.alerts import AlertsFeed
 from fontokmai.contracts.manifest import Manifest
+from fontokmai.contracts.road_flood import RoadFloodHistory
 
 SCHEMAS: dict[str, type[BaseModel]] = {
     "alerts.schema.json": AlertsFeed,
     "manifest.schema.json": Manifest,
+    "road_flood_history.schema.json": RoadFloodHistory,
 }
 
 

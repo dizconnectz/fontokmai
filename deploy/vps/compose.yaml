@@ -19,6 +19,7 @@ services:
       - --publish-work=/var/lib/fontokmai/pages
       - --ssh-key=/run/secrets/deploy_key
       - --known-hosts=/etc/fontokmai/github_known_hosts
+      - --cache=/var/lib/fontokmai/state/cache
     volumes:
       - ${FONTOKMAI_VAR}:/var/lib/fontokmai
       - ${DEPLOY_KEY}:/run/secrets/deploy_key:ro

@@ -1,0 +1,147 @@
+{
+  "scenario": "road-flood-history",
+  "description_th": "ประวัติน้ำท่วมถนนจากไฟล์ตัวอย่าง (สถิติ กทม. ปี 2022, 2024, 2025 และเหตุการณ์ iTIC สังเคราะห์ ปี 2024–2025): การแปลงคำค้น ผลค้นชื่อถนน และถนนใกล้หมุดที่ consumer ต้องได้ตรงกัน",
+  "normalize": [
+    {
+      "input": "ถนนสุขุมวิท",
+      "key": "สุขุมวิท"
+    },
+    {
+      "input": "ถ.พระราม 2",
+      "key": "พระราม2"
+    },
+    {
+      "input": "สุขุมวิท 21(อโศก)",
+      "key": "สุขุมวิท21"
+    },
+    {
+      "input": "ซ.เพชรเกษม 42 *",
+      "key": "ซอยเพชรเกษม42"
+    },
+    {
+      "input": "เฉลิมพระเกียรติ ร.๙",
+      "key": "เฉลิมพระเกียรติร.9"
+    },
+    {
+      "input": "ถนน",
+      "key": ""
+    }
+  ],
+  "searches": [
+    {
+      "query": "สุขุมวิท",
+      "results": [
+        {
+          "key": "สุขุมวิท",
+          "name_th": "สุขุมวิท",
+          "kind": "road",
+          "flood_days": 7,
+          "reports": 8,
+          "last_date": "2025-05-10",
+          "max_depth_cm": 20
+        },
+        {
+          "key": "ซอยสุขุมวิท107",
+          "name_th": "ซอยสุขุมวิท 107",
+          "kind": "soi",
+          "flood_days": 1,
+          "reports": 1,
+          "last_date": "2025-02-18",
+          "max_depth_cm": null
+        },
+        {
+          "key": "สุขุมวิท71",
+          "name_th": "สุขุมวิท 71",
+          "kind": "road",
+          "flood_days": 1,
+          "reports": 1,
+          "last_date": "2024-09-03",
+          "max_depth_cm": 15
+        }
+      ]
+    },
+    {
+      "query": "ถนนสุขุมวิท",
+      "results": [
+        {
+          "key": "สุขุมวิท",
+          "name_th": "สุขุมวิท",
+          "kind": "road",
+          "flood_days": 7,
+          "reports": 8,
+          "last_date": "2025-05-10",
+          "max_depth_cm": 20
+        },
+        {
+          "key": "ซอยสุขุมวิท107",
+          "name_th": "ซอยสุขุมวิท 107",
+          "kind": "soi",
+          "flood_days": 1,
+          "reports": 1,
+          "last_date": "2025-02-18",
+          "max_depth_cm": null
+        },
+        {
+          "key": "สุขุมวิท71",
+          "name_th": "สุขุมวิท 71",
+          "kind": "road",
+          "flood_days": 1,
+          "reports": 1,
+          "last_date": "2024-09-03",
+          "max_depth_cm": 15
+        }
+      ]
+    },
+    {
+      "query": "ดินแดง",
+      "results": [
+        {
+          "key": "อุโมงค์แยกดินแดง",
+          "name_th": "อุโมงค์แยกดินแดง",
+          "kind": "tunnel",
+          "flood_days": 1,
+          "reports": 1,
+          "last_date": "2024-09-10",
+          "max_depth_cm": null
+        }
+      ]
+    },
+    {
+      "query": "ถนนที่ไม่มีในข้อมูล",
+      "results": []
+    },
+    {
+      "query": "ถนน",
+      "results": []
+    }
+  ],
+  "near": [
+    {
+      "pin": [
+        100.6015,
+        13.7005
+      ],
+      "radius_m": 2000,
+      "results": [
+        {
+          "key": "สุขุมวิท",
+          "name_th": "สุขุมวิท",
+          "kind": "road",
+          "flood_days": 7,
+          "reports": 8,
+          "last_date": "2025-05-10",
+          "max_depth_cm": 20,
+          "distance_m": 78
+        }
+      ]
+    },
+    {
+      "pin": [
+        100.5,
+        13.9
+      ],
+      "radius_m": 2000,
+      "results": []
+    }
+  ]
+}

@@ -8,8 +8,10 @@ const examples = fileURLToPath(new URL('../../contracts/v1/examples/', import.me
 // Serve and bundle the producer's fixtures without maintaining a second copy.
 function contractExamples(): Plugin {
   const assets = new Map<string, Buffer>();
+  // every producer file of every example (snapshots have manifest/alerts; ref examples have their own file)
   for (const scenario of readdirSync(examples)) {
-    for (const file of ['manifest.json', 'alerts.json']) {
+    for (const file of readdirSync(`${examples}/${scenario}`)) {
+      if (!file.endsWith('.json') || file === 'expected.json') continue;
       assets.set(`examples/${scenario}/${file}`, readFileSync(`${examples}/${scenario}/${file}`));
     }
   }

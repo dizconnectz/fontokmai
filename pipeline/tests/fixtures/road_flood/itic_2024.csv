@@ -1,0 +1,6 @@
+﻿eid,title,title_en,description,description_en,latitude,longitude,type,start,stop,contributor
+800001,น้ำท่วม ถนนสุขุมวิท,Flood on Sukhumvit Rd,ฝนตกหนัก น้ำท่วมขังผิวจราจร,,13.7300,100.5800,6,2024-09-10 16:20:00,2024-09-10 19:20:00,itic.sample
+800002,อุบัติเหตุ ถนนพระราม 4,Accident,,,13.7200,100.5500,3,2024-09-10 08:00:00,2024-09-10 09:00:00,itic.sample
+800003,น้ำท่วม อุโมงค์แยกดินแดง,Flood in Din Daeng underpass,,,13.7650,100.5520,6,2024-09-10 17:00:00,2024-09-10 20:00:00,itic.sample
+800004,น้ำท่วม ถนนนิมมานเหมินท์,Flood in Chiang Mai,,,18.7960,98.9680,6,2024-09-11 10:00:00,2024-09-11 12:00:00,itic.sample
+800005,น้ำท่วม แขวงสีลม,Flood in Silom,,,13.7280,100.5300,6,2024-10-02 18:00:00,,itic.sample
