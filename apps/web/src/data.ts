@@ -2,13 +2,22 @@ import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
 import manifestSchema from '../../../contracts/v1/schema/manifest.schema.json';
 import alertsSchema from '../../../contracts/v1/schema/alerts.schema.json';
+import radarSchema from '../../../contracts/v1/schema/radar.schema.json';
+import cctvSchema from '../../../contracts/v1/schema/cctv.schema.json';
+import roadFloodSchema from '../../../contracts/v1/schema/road_flood_history.schema.json';
 import type { Manifest } from '../../../contracts/v1/ts/manifest';
 import type { Alert, AlertsFeed } from '../../../contracts/v1/ts/alerts';
+import type { RadarFeed } from '../../../contracts/v1/ts/radar';
+import type { CctvRegistry } from '../../../contracts/v1/ts/cctv';
+import type { RoadFloodHistory } from '../../../contracts/v1/ts/road_flood_history';
 
-export type { Alert, AlertsFeed, Manifest };
+export type { Alert, AlertsFeed, CctvRegistry, Manifest, RadarFeed, RoadFloodHistory };
+export type Camera = CctvRegistry['cameras'][number];
 export interface Snapshot {
   manifest: Manifest;
   feed: AlertsFeed | null;
+  /** Latest radar frames of the same generation, when the snapshot has them. */
+  radar?: RadarFeed | null;
 }
 export interface RuntimeConfig {
   DATA_BASE_URL: string;
@@ -38,6 +47,20 @@ const ajv = new Ajv({ strict: false });
 addFormats(ajv);
 const validManifest = ajv.compile<Manifest>(allowAdditions(manifestSchema) as object);
 const validFeed = ajv.compile<AlertsFeed>(allowAdditions(alertsSchema) as object);
+const validRadar = ajv.compile<RadarFeed>(allowAdditions(radarSchema) as object);
+export const validCctv = ajv.compile<CctvRegistry>(allowAdditions(cctvSchema) as object);
+export const validRoadFlood = ajv.compile<RoadFloodHistory>(
+  allowAdditions(roadFloodSchema) as object,
+);
+
+/** radar.json belongs to the snapshot generation, like alerts.json. */
+export function validateRadar(manifest: Manifest, radar: unknown): RadarFeed {
+  if (!validRadar(radar) || radar.schema_version !== '1')
+    throw new DataError('invalid', 'รูปแบบข้อมูลเรดาร์ไม่รองรับ');
+  if (radar.generation_id !== manifest.generation_id)
+    throw new DataError('mixed', 'ไฟล์ข้อมูลเป็นคนละชุด');
+  return radar;
+}
 
 export function validateSnapshot(manifest: unknown, feed: unknown | null): Snapshot {
   if (!validManifest(manifest) || manifest.schema_version !== '1')
@@ -124,10 +147,24 @@ export async function loadSnapshot(
         priorFile.sha256 === file.sha256 &&
         priorFile.size === file.size &&
         priorFile.revision === file.revision;
-      const next = validateSnapshot(
+      const next: Snapshot = validateSnapshot(
         manifest,
         file ? (canReuse ? previous.feed : await getJson(url.href, fetcher, signal)) : null,
       );
+      const radarFile = manifest.files.find((f) => f.path === 'radar.json');
+      if (radarFile) {
+        const radarUrl = new URL('radar.json', base);
+        radarUrl.searchParams.set('g', manifest.generation_id);
+        const priorRadar = previous?.manifest.files.find((f) => f.path === 'radar.json');
+        const reuseRadar =
+          previous?.radar &&
+          previous.manifest.generation_id === manifest.generation_id &&
+          priorRadar?.sha256 === radarFile.sha256;
+        next.radar = validateRadar(
+          manifest,
+          reuseRadar ? previous.radar : await getJson(radarUrl.href, fetcher, signal),
+        );
+      }
       if (previous) {
         const oldEpoch = previous.manifest.recovery_epoch;
         const epoch = manifest.recovery_epoch;
@@ -149,6 +186,30 @@ export async function loadSnapshot(
     }
   }
   throw new DataError('mixed', 'ไฟล์ข้อมูลเป็นคนละชุด');
+}
+
+/** A reference file of the manifest (ref/…), fetched by revision so a changed file is never served stale. */
+export async function loadRef<T extends { schema_version?: string }>(
+  base: string,
+  manifest: Manifest,
+  path: string,
+  valid: (value: unknown) => value is T,
+  fetcher: Fetcher = fetch,
+  signal?: AbortSignal,
+): Promise<T | null> {
+  const file = manifest.files.find((f) => f.path === path);
+  if (!file) return null;
+  const url = new URL(path, base);
+  url.searchParams.set('r', `${file.revision}-${file.sha256.slice(0, 12)}`);
+  const value = await getJson(url.href, fetcher, signal);
+  if (!valid(value) || value.schema_version !== '1')
+    throw new DataError('invalid', 'รูปแบบข้อมูลอ้างอิงไม่รองรับ');
+  return value;
+}
+/** Minutes since the latest radar frame, or null without frames. */
+export function radarAgeMinutes(radar: RadarFeed | null | undefined, now: number): number | null {
+  const latest = radar?.frames.at(-1);
+  return latest ? Math.round((now - Date.parse(latest.time)) / 60_000) : null;
 }
 
 export function staleAfter(manifest: Manifest): number {
