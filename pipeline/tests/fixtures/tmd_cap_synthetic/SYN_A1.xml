@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<alert xmlns="urn:oasis:names:tc:emergency:cap:1.2">
+  <identifier>SYN20260925100000_1</identifier>
+  <sender>TMD</sender>
+  <sent>2026-09-25T10:00:00+07:00</sent>
+  <status>Actual</status>
+  <msgType>Alert</msgType>
+  <scope>Public</scope>
+  <info>
+    <language>th-TH</language>
+    <category>Met</category>
+    <event>Heavy Rain</event>
+    <urgency>Expected</urgency>
+    <severity>Moderate</severity>
+    <certainty>Likely</certainty>
+    <effective>2026-09-25T10:00:00+07:00</effective>
+    <expires>2026-09-26T10:00:00+07:00</expires>
+    <senderName>TMD</senderName>
+    <headline>ข้อมูลสังเคราะห์สำหรับทดสอบ fontokmai: ฝนตกหนัก (ไม่ใช่ประกาศจริง)</headline>
+    <description>ข้อความสังเคราะห์ ไม่ใช่ประกาศของกรมอุตุนิยมวิทยา</description>
+    <area>
+      <areaDesc>ปทุมธานี</areaDesc>
+      <polygon>14.00,100.50 14.00,100.70 14.15,100.70 14.15,100.50 14.00,100.50</polygon>
+      <geocode><valueName>ISO3166-2</valueName><value>TH-13</value></geocode>
+    </area>
+  </info>
+</alert>
