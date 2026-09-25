@@ -1,0 +1,8 @@
+node_modules/
+dist/
+playwright-report/
+test-results/
+package-lock.json
+public/THIRD-PARTY-NOTICES.txt
+public/_headers
+build-output.log
