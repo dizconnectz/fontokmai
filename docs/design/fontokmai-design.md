@@ -144,6 +144,7 @@
 
 ### ไม่อยู่ในขอบเขตตอนนี้
 - ความลึกน้ำรายบ้าน คำสั่งอพยพ แอปมือถือ native และระบบสมาชิก
+- ให้ผู้ใช้รายงานน้ำท่วมเองแบบ iTIC (มีภาพ พิกัด เวลาเริ่ม/จบ และผู้ดูแลคัดกรอง) · ไว้พิจารณาหลัง P2 เพราะต้องมีระบบคัดกรองและบัญชีผู้ใช้
 
 ## 4. สถาปัตยกรรม
 
@@ -487,6 +488,7 @@ flowchart LR
 ### 7.9 เกณฑ์ v0 → v1
 - logistic regression เป็นผู้ท้าชิงได้ แต่ไม่ถือว่า ML แม่นกว่าโดยอัตโนมัติ และต้องแช่เวอร์ชันกับเกณฑ์ของ v0 ไว้ก่อนประเมิน
 - ต้องมี label น้ำท่วมที่เวลาและพื้นที่ตรงกับเป้าหมาย ทั้งช่วงที่ท่วมและไม่ท่วม ระดับคลองย้อนหลังไม่ใช่ label น้ำท่วมถนน “ไม่มีรายงาน” ไม่เท่ากับไม่ท่วม และหลายร้อย sample ในฝนก้อนเดียวไม่ใช่หลายร้อยเหตุการณ์อิสระ
+- **แหล่ง label ที่ใช้ได้แล้ว**: เหตุการณ์ฝนตก/น้ำท่วมของ iTIC/Longdo (type 5/6, CC BY 4.0, 2012–2026 ทั่วประเทศ) และสถิติ น้ำท่วมขังถนน กทม. (CC BY, 2021–2025) · ทั้งสองเป็นรายงาน ไม่ครบทุกจุด จึงยืนยันได้ว่า “มีรายงานท่วม” แต่ไม่ยืนยันว่าไม่ท่วม
 - แบ่ง train/calibration/test ตามเหตุการณ์และเวลา และอินพุตต้องเป็นข้อมูลที่มีให้ใช้ตอนคาดจริง (ห้ามใช้ฝนอนาคตที่วัดแล้ว)
 - ตัวชี้วัดหลักคือ miss rate และ lead time โดยใช้ false alarms เป็น guardrail ราย hazard/horizon/พื้นที่ พร้อมจำนวนเหตุการณ์และช่วงความไม่แน่นอน
 - **ก่อนเปิดชุดทดสอบ** ต้องล็อก tolerance, นิยามเหตุการณ์ (เวลาเริ่ม/จบ และพื้นที่), ช่วงนับ lead time และ false alarm ไว้ล่วงหน้า · การเริ่ม collector ไม่ต้องรอข้อนี้ และความครบของเอกสารไม่ใช่ผล backtest
@@ -634,6 +636,7 @@ flowchart LR
 - กรมอุตุฯ: CAP https://www.tmd.go.th/api/xml/CAP · RSS https://www.tmd.go.th/service/rss · เงื่อนไขข้อมูล https://www.tmd.go.th/service/tmdData · NWP https://data.tmd.go.th/nwpapi/doc/main/getting_start.html
 - ความสามารถระบายน้ำของ กทม. 60 มม./ชม. (ปรับเป็น 80 บางพื้นที่): https://thaipublica.org/2025/06/green-up-the-world-02/
 - จุดเสี่ยงน้ำท่วม กทม. 216 จุด (ปี 2568): https://www.infoquest.co.th/2026/596117
+- iTIC/Longdo ข้อมูลเปิด: https://itic.longdo.com/opendata/ · https://traffic.longdo.com/download · iTIC live: https://live.iticfoundation.org/
 - Thailand Water Watch (ตัวอย่าง UX): https://thailandwaterwatch.investic.ai/ · กทม.: https://weather.bangkok.go.th/water/summary, https://data.bangkok.go.th/ · สสน. ข้อมูลเปิด: https://data.hii.or.th/
 - Open-Meteo: https://open-meteo.com/en/pricing · ECMWF Open Data: https://www.ecmwf.int/en/forecasts/datasets/open-data
 - Cloudflare Pages: https://developers.cloudflare.com/pages/platform/limits/ · GitHub Pages: https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits · GitHub Actions terms: https://docs.github.com/en/site-policy/github-terms/github-terms-for-additional-products-and-features
