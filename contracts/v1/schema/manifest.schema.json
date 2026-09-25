@@ -1,0 +1,177 @@
+{
+  "$defs": {
+    "ManifestFile": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "description": "Path relative to the data base URL (/data/v1/)",
+          "title": "Path",
+          "type": "string"
+        },
+        "revision": {
+          "description": "Increases only when the file bytes change",
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "size": {
+          "minimum": 0,
+          "title": "Size",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "path",
+        "sha256",
+        "size",
+        "revision"
+      ],
+      "title": "ManifestFile",
+      "type": "object"
+    },
+    "SourceStatus": {
+      "additionalProperties": false,
+      "properties": {
+        "items_rejected": {
+          "minimum": 0,
+          "title": "Items Rejected",
+          "type": "integer"
+        },
+        "items_seen": {
+          "minimum": 0,
+          "title": "Items Seen",
+          "type": "integer"
+        },
+        "last_attempt_at": {
+          "format": "date-time",
+          "title": "Last Attempt At",
+          "type": "string"
+        },
+        "last_success_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Last Success At"
+        },
+        "message": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Message"
+        },
+        "source_id": {
+          "title": "Source Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "ok",
+            "degraded",
+            "failed"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_id",
+        "status",
+        "last_attempt_at",
+        "last_success_at",
+        "items_seen",
+        "items_rejected"
+      ],
+      "title": "SourceStatus",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "completeness": {
+      "enum": [
+        "complete",
+        "partial"
+      ],
+      "title": "Completeness",
+      "type": "string"
+    },
+    "files": {
+      "items": {
+        "$ref": "#/$defs/ManifestFile"
+      },
+      "title": "Files",
+      "type": "array"
+    },
+    "generated_at": {
+      "format": "date-time",
+      "title": "Generated At",
+      "type": "string"
+    },
+    "generation_id": {
+      "title": "Generation Id",
+      "type": "string"
+    },
+    "next_due_at": {
+      "format": "date-time",
+      "title": "Next Due At",
+      "type": "string"
+    },
+    "owner_epoch": {
+      "minimum": 1,
+      "title": "Owner Epoch",
+      "type": "integer"
+    },
+    "recovery_epoch": {
+      "minimum": 1,
+      "title": "Recovery Epoch",
+      "type": "integer"
+    },
+    "schema_version": {
+      "const": "1",
+      "default": "1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_status": {
+      "items": {
+        "$ref": "#/$defs/SourceStatus"
+      },
+      "title": "Source Status",
+      "type": "array"
+    },
+    "writer": {
+      "title": "Writer",
+      "type": "string"
+    }
+  },
+  "required": [
+    "generation_id",
+    "generated_at",
+    "next_due_at",
+    "writer",
+    "owner_epoch",
+    "recovery_epoch",
+    "completeness",
+    "files",
+    "source_status"
+  ],
+  "title": "Manifest",
+  "type": "object"
+}

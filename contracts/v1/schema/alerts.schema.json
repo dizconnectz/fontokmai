@@ -1,0 +1,456 @@
+{
+  "$defs": {
+    "Alert": {
+      "additionalProperties": false,
+      "properties": {
+        "area_desc_th": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Area Desc Th"
+        },
+        "body_th": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Body Th"
+        },
+        "certainty": {
+          "title": "Certainty",
+          "type": "string"
+        },
+        "credit_th": {
+          "title": "Credit Th",
+          "type": "string"
+        },
+        "effective": {
+          "format": "date-time",
+          "title": "Effective",
+          "type": "string"
+        },
+        "event": {
+          "title": "Event",
+          "type": "string"
+        },
+        "event_id": {
+          "description": "Namespaced id of the event lineage",
+          "pattern": "^[a-z0-9_]+:\\S+$",
+          "title": "Event Id",
+          "type": "string"
+        },
+        "expires": {
+          "format": "date-time",
+          "title": "Expires",
+          "type": "string"
+        },
+        "expires_policy": {
+          "enum": [
+            "source",
+            "default_24h"
+          ],
+          "title": "Expires Policy",
+          "type": "string"
+        },
+        "geometry": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/GeoMultiPolygon"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "headline_th": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Headline Th"
+        },
+        "instruction_th": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Instruction Th"
+        },
+        "is_effective": {
+          "title": "Is Effective",
+          "type": "boolean"
+        },
+        "issuer": {
+          "title": "Issuer",
+          "type": "string"
+        },
+        "lifecycle_status": {
+          "enum": [
+            "pending",
+            "active",
+            "expired",
+            "cancelled"
+          ],
+          "title": "Lifecycle Status",
+          "type": "string"
+        },
+        "message_type": {
+          "enum": [
+            "new",
+            "update",
+            "cancel"
+          ],
+          "title": "Message Type",
+          "type": "string"
+        },
+        "notify_eligible": {
+          "title": "Notify Eligible",
+          "type": "boolean"
+        },
+        "onset": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Onset"
+        },
+        "origin": {
+          "const": "official",
+          "title": "Origin",
+          "type": "string"
+        },
+        "qc_flags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Qc Flags",
+          "type": "array"
+        },
+        "revision": {
+          "description": "Increases only when the published content of the event changes",
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "sent": {
+          "format": "date-time",
+          "title": "Sent",
+          "type": "string"
+        },
+        "severity": {
+          "title": "Severity",
+          "type": "string"
+        },
+        "source_message_id": {
+          "title": "Source Message Id",
+          "type": "string"
+        },
+        "source_url": {
+          "title": "Source Url",
+          "type": "string"
+        },
+        "supersedes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Supersedes",
+          "type": "array"
+        },
+        "targets": {
+          "items": {
+            "$ref": "#/$defs/AlertTarget"
+          },
+          "title": "Targets",
+          "type": "array"
+        },
+        "urgency": {
+          "title": "Urgency",
+          "type": "string"
+        }
+      },
+      "required": [
+        "event_id",
+        "revision",
+        "message_type",
+        "lifecycle_status",
+        "is_effective",
+        "origin",
+        "issuer",
+        "source_message_id",
+        "supersedes",
+        "event",
+        "severity",
+        "urgency",
+        "certainty",
+        "headline_th",
+        "body_th",
+        "instruction_th",
+        "area_desc_th",
+        "sent",
+        "effective",
+        "onset",
+        "expires",
+        "expires_policy",
+        "qc_flags",
+        "targets",
+        "geometry",
+        "source_url",
+        "credit_th",
+        "notify_eligible"
+      ],
+      "title": "Alert",
+      "type": "object"
+    },
+    "AlertTarget": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "description": "ISO 3166-2 code",
+          "pattern": "^TH-[0-9A-Z]{1,2}$",
+          "title": "Code",
+          "type": "string"
+        },
+        "kind": {
+          "const": "province",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "code"
+      ],
+      "title": "AlertTarget",
+      "type": "object"
+    },
+    "AlertTombstone": {
+      "additionalProperties": false,
+      "properties": {
+        "ended_at": {
+          "format": "date-time",
+          "title": "Ended At",
+          "type": "string"
+        },
+        "event_id": {
+          "pattern": "^[a-z0-9_]+:\\S+$",
+          "title": "Event Id",
+          "type": "string"
+        },
+        "lifecycle_status": {
+          "enum": [
+            "expired",
+            "cancelled"
+          ],
+          "title": "Lifecycle Status",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "event_id",
+        "revision",
+        "lifecycle_status",
+        "ended_at"
+      ],
+      "title": "AlertTombstone",
+      "type": "object"
+    },
+    "GeoMultiPolygon": {
+      "additionalProperties": false,
+      "properties": {
+        "coordinates": {
+          "items": {
+            "items": {
+              "items": {
+                "items": {
+                  "type": "number"
+                },
+                "maxItems": 2,
+                "minItems": 2,
+                "type": "array"
+              },
+              "minItems": 4,
+              "type": "array"
+            },
+            "type": "array"
+          },
+          "title": "Coordinates",
+          "type": "array"
+        },
+        "type": {
+          "const": "MultiPolygon",
+          "default": "MultiPolygon",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "coordinates"
+      ],
+      "title": "GeoMultiPolygon",
+      "type": "object"
+    },
+    "SourceStatus": {
+      "additionalProperties": false,
+      "properties": {
+        "items_rejected": {
+          "minimum": 0,
+          "title": "Items Rejected",
+          "type": "integer"
+        },
+        "items_seen": {
+          "minimum": 0,
+          "title": "Items Seen",
+          "type": "integer"
+        },
+        "last_attempt_at": {
+          "format": "date-time",
+          "title": "Last Attempt At",
+          "type": "string"
+        },
+        "last_success_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Last Success At"
+        },
+        "message": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Message"
+        },
+        "source_id": {
+          "title": "Source Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "ok",
+            "degraded",
+            "failed"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_id",
+        "status",
+        "last_attempt_at",
+        "last_success_at",
+        "items_seen",
+        "items_rejected"
+      ],
+      "title": "SourceStatus",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "alerts": {
+      "items": {
+        "$ref": "#/$defs/Alert"
+      },
+      "title": "Alerts",
+      "type": "array"
+    },
+    "feed_generated_at": {
+      "format": "date-time",
+      "title": "Feed Generated At",
+      "type": "string"
+    },
+    "feed_sequence": {
+      "description": "Increases only when alerts or tombstones change",
+      "minimum": 1,
+      "title": "Feed Sequence",
+      "type": "integer"
+    },
+    "generation_id": {
+      "description": "Must equal manifest.generation_id; otherwise the files are mixed",
+      "title": "Generation Id",
+      "type": "string"
+    },
+    "history_since": {
+      "format": "date-time",
+      "title": "History Since",
+      "type": "string"
+    },
+    "recovery_epoch": {
+      "description": "Changes when published state could not be recovered",
+      "minimum": 1,
+      "title": "Recovery Epoch",
+      "type": "integer"
+    },
+    "schema_version": {
+      "const": "1",
+      "default": "1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_status": {
+      "items": {
+        "$ref": "#/$defs/SourceStatus"
+      },
+      "title": "Source Status",
+      "type": "array"
+    },
+    "tombstones": {
+      "items": {
+        "$ref": "#/$defs/AlertTombstone"
+      },
+      "title": "Tombstones",
+      "type": "array"
+    }
+  },
+  "required": [
+    "generation_id",
+    "recovery_epoch",
+    "feed_generated_at",
+    "feed_sequence",
+    "history_since",
+    "alerts",
+    "tombstones",
+    "source_status"
+  ],
+  "title": "AlertsFeed",
+  "type": "object"
+}
