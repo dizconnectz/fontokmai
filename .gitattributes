@@ -1,0 +1,3 @@
+* text=auto eol=lf
+# real source documents are kept byte-for-byte (BOM, CRLF, signatures)
+pipeline/tests/fixtures/** -text

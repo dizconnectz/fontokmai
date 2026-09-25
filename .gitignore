@@ -1,0 +1,21 @@
+# private material (history, machine notes, backups) lives in a separate private repo
+private/
+.env
+.env.*
+!.env.example
+.claude/
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+# runtime state and output
+state/
+out/
+*.db
+*.db-wal
+*.db-shm
+# web (later)
+node_modules/
+dist/

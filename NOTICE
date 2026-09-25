@@ -1,0 +1,19 @@
+Required Notice: Copyright (c) 2026 fontokmai by Takuma (https://fontokmai.pages.dev)
+
+fontokmai (ฝนตกไหม) — เว็บติดตามฝน น้ำ และน้ำท่วมของประเทศไทย
+
+## เงื่อนไขการนำไปใช้ (สรุป)
+- โค้ดของโปรเจกต์นี้เผยแพร่ภายใต้ PolyForm Noncommercial License 1.0.0 (ข้อความเต็มอยู่ในไฟล์ LICENSE)
+- ใช้ ศึกษา และแก้ไขได้ฟรีเพื่อวัตถุประสงค์ที่ไม่ใช่เชิงพาณิชย์ ซึ่งตามใบอนุญาตรวมถึงหน่วยงานรัฐ สถานศึกษา องค์กรการกุศล องค์กรวิจัยสาธารณะ และองค์กรด้านความปลอดภัยหรือสุขภาพสาธารณะ
+- ห้ามใช้เชิงพาณิชย์ เช่น ขาย หรือให้บริการที่เก็บเงิน เว้นแต่ได้รับอนุญาตเป็นลายลักษณ์อักษรจากเจ้าของ (ติดต่อผ่าน issue ใน GitHub repository ของโปรเจกต์)
+- ผู้ที่ได้รับสำเนาโค้ดส่วนใดก็ตาม ต้องได้รับบรรทัด "Required Notice" ด้านบนและข้อกำหนดของใบอนุญาตไปด้วยทุกครั้ง
+- เนื้อหาและข้อมูลที่ fontokmai สร้างขึ้นเอง (ข้อความ แผนที่ที่เราสร้าง และผลประเมิน) เผยแพร่ภายใต้ CC BY-NC 4.0 (https://creativecommons.org/licenses/by-nc/4.0/) ผู้นำไปใช้ต้องให้เครดิต "fontokmai by Takuma" พร้อมลิงก์ และห้ามใช้เชิงพาณิชย์
+- ข้อมูลจากหน่วยงานและผู้ให้บริการอื่นยังเป็นไปตามเงื่อนไขของแหล่งนั้น (ดู docs/sources.md)
+- ชื่อ "fontokmai" "ฝนตกไหม" และโลโก้ ไม่รวมอยู่ในสิทธิ์ตามใบอนุญาตนี้
+
+## Terms of use (summary)
+- Code: PolyForm Noncommercial License 1.0.0 (full text in LICENSE). Noncommercial use only; any commercial use requires prior written permission from the licensor.
+- Anyone who receives a copy of any part of the code must also receive the "Required Notice" line above and the license terms.
+- Original content and data produced by fontokmai: CC BY-NC 4.0 — credit "fontokmai by Takuma" with a link; no commercial use.
+- Third-party data remains under its own terms (see docs/sources.md).
+- The names "fontokmai" / "ฝนตกไหม" and the logo are not licensed.

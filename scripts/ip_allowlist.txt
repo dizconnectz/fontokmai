@@ -1,0 +1,2 @@
+# IPv4 addresses allowed in tracked files: value, then optional comment
+101.109.253.60  # third-party public camera page listed in docs/sources.md (not the user's machine)
