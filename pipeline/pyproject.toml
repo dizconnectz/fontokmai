@@ -5,6 +5,7 @@ description = "fontokmai data pipeline: source collectors, public data contract 
 requires-python = ">=3.12"
 license = "PolyForm-Noncommercial-1.0.0"
 dependencies = [
+    "certifi>=2024.2.2",
     "httpx>=0.27",
     "pydantic>=2.8",
 ]
@@ -30,7 +31,7 @@ testpaths = ["tests"]
 addopts = "-q"
 
 [tool.ruff]
-line-length = 110
+line-length = 120
 target-version = "py312"
 
 [tool.ruff.lint]

@@ -1,7 +1,7 @@
 import httpx
 import pytest
 
-from fontokmai.sources.tmd_cap.fetch import FetchError, LiveFetcher, get_bytes, is_allowed_cap_url
+from fontokmai.sources.tmd_cap.fetch import FetchError, LiveFetcher, get_bytes, is_allowed_cap_url, make_ssl_context
 
 INDEX = "https://www.tmd.go.th/api/xml/CAP"
 
@@ -53,3 +53,11 @@ def test_transport_errors_become_fetch_errors():
     with _client(handler) as client:
         with pytest.raises(FetchError, match="ConnectError"):
             get_bytes(client, INDEX)
+
+
+def test_ssl_context_adds_the_intermediate_that_the_tmd_server_does_not_send():
+    ctx = make_ssl_context()
+    names = [dict(part[0] for part in cert["subject"]).get("commonName") for cert in ctx.get_ca_certs()]
+    assert "GlobalSign GCC R6 AlphaSSL CA 2025" in names
+    assert "GlobalSign" in names  # the root still has to be trusted on its own
+    assert ctx.verify_mode.name == "CERT_REQUIRED" and ctx.check_hostname

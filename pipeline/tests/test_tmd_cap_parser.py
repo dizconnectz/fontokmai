@@ -22,7 +22,8 @@ def test_parse_real_update_message():
     assert [(r.identifier, r.sent) for r in msg.references] == [("TMD20260925071317_2", T("2026-09-25T07:10:00+07:00"))]
     info = msg.infos[0]
     assert (info.language, info.event) == ("th-TH", "Very Heavy Rain")
-    assert (info.effective, info.expires, info.onset) == (T("2026-09-25T08:00:00+07:00"), T("2026-09-26T06:00:00+07:00"), None)
+    assert (info.effective, info.expires, info.onset) == (
+        T("2026-09-25T08:00:00+07:00"), T("2026-09-26T06:00:00+07:00"), None)
     area = info.areas[0]
     assert len(area.polygons) == 52
     assert ("ISO3166-2", "TH-10") in area.geocodes
