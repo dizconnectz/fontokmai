@@ -1,6 +1,6 @@
 @font-face {
   font-family: 'Noto Static';
-  src: url('/fonts/noto-sans-thai-400.woff2') format('woff2');
+  src: url('fonts/noto-sans-thai-400.woff2') format('woff2');
   font-weight: 100 900;
   font-display: swap;
 }

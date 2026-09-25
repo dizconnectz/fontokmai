@@ -69,9 +69,9 @@ npm run smoke:live
 
 ## การเผยแพร่เว็บ
 
-โค้ดเว็บกับข้อมูลแยกกัน Build จาก repo root ด้วย `npm --prefix apps/web ci` และ `npm --prefix apps/web run build` แล้วนำ `apps/web/dist` ไปใช้กับ static host (Cloudflare Pages ตามแบบ) ไม่ต้องมี secret ใน browser และไม่ต้องอัปโหลดเว็บใหม่ทุกครั้งที่ข้อมูลเปลี่ยน
+โค้ดเว็บกับข้อมูลแยกกัน Build จาก repo root ด้วย `npm --prefix apps/web ci` และ `npm --prefix apps/web run build` แล้วนำ `apps/web/dist` ไปใช้กับ static host · **ตอนนี้ใช้ GitHub Pages ที่ https://dizconnectz.github.io/fontokmai/** (D28): `.github/workflows/pages.yml` build ด้วย `WEB_BASE=/fontokmai/` แล้ว deploy หลัง workflow `web` ผ่านบน `main` · ลิงก์ภายในเว็บจึงต้องอิง `import.meta.env.BASE_URL` (ใน HTML ใช้ `%BASE_URL%`) และหน้า static ใน `public/` ใช้ลิงก์แบบ relative ไม่ต้องมี secret ใน browser และไม่ต้องอัปโหลดเว็บใหม่ทุกครั้งที่ข้อมูลเปลี่ยน
 
-`/sources/` และ `/method/` เป็น HTML ที่อ่านได้แม้ปิด JavaScript ลิงก์ประกาศใช้ `/?alert=<event_id>` จึงไม่ต้องตั้ง route รายประกาศ `public/_headers` เตรียม cache ของ config และ security headers สำหรับ Cloudflare Pages ต้องตรวจ headers และลิงก์บน host จริงอีกครั้งเมื่อ deploy
+`/sources/` และ `/method/` เป็น HTML ที่อ่านได้แม้ปิด JavaScript ลิงก์ประกาศใช้ `/?alert=<event_id>` จึงไม่ต้องตั้ง route รายประกาศ `public/_headers` เตรียม cache ของ config และ security headers สำหรับ Cloudflare Pages (ไม่มีผลบน GitHub Pages ซึ่งตั้ง header เองไม่ได้และ cache ทุกไฟล์ 10 นาที) ต้องตรวจ headers และลิงก์บน host จริงอีกครั้งเมื่อ deploy
 
 ยังไม่ติดตั้ง service worker เพื่อไม่ cache ประกาศเก่าข้าม session ยังไม่ได้ deploy เว็บด้วยงานนี้ การโหลด MapLibre แยก chunk ประมาณ 276 KB gzip จากหน้าแรก มีมุมมองรายการและ fallback เมื่อ WebGL/แผนที่ฐาน/ส่วนแผนที่โหลดไม่ได้
 

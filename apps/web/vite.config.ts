@@ -59,6 +59,8 @@ function contractExamples(): Plugin {
 }
 
 export default defineConfig({
+  // GitHub Pages serves the site under /fontokmai/; local dev, preview and tests stay at /
+  base: process.env.WEB_BASE ?? '/',
   plugins: [react(), contractExamples()],
   test: { include: ['src/**/*.test.ts'] },
 });

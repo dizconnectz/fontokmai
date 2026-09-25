@@ -71,7 +71,10 @@ async function getJson(url: string, fetcher: Fetcher, signal?: AbortSignal): Pro
 }
 
 export async function loadConfig(origin: string): Promise<RuntimeConfig> {
-  const value = await getJson(new URL('/config.json', origin).href, fetch);
+  const value = await getJson(
+    new URL(`${import.meta.env.BASE_URL}config.json`, origin).href,
+    fetch,
+  );
   if (
     !value ||
     typeof value !== 'object' ||

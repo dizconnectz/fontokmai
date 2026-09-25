@@ -1,8 +1,15 @@
 # fontokmai (ฝนตกไหม)
 
-เว็บติดตามฝน น้ำ และน้ำท่วมของประเทศไทย ใช้ฟรีและไม่แสวงหากำไร · **กำลังพัฒนา (เฟส P0)** ยังไม่เปิดให้ใช้งาน
+เว็บติดตามฝน น้ำ และน้ำท่วมของประเทศไทย ใช้ฟรีและไม่แสวงหากำไร · **กำลังพัฒนา (เฟส P0)** เปิดดูรุ่นพัฒนาได้ที่ลิงก์ด้านล่าง
 
 A free, noncommercial Thai rain and flood tracker. Work in progress (phase P0).
+
+## เปิดเว็บ
+- **หน้าเว็บ**: https://dizconnectz.github.io/fontokmai/
+  - รุ่นพัฒนา P0 ตอนนี้มีประกาศเตือนภัยของกรมอุตุนิยมวิทยาบนแผนที่
+  - อัปเดตเว็บอัตโนมัติเมื่อโค้ดบน `main` ผ่านการทดสอบ
+- **ไฟล์ข้อมูล** (สำหรับนักพัฒนา): https://dizconnectz.github.io/fontokmai-data/data/v1/manifest.json อัปเดตทุก 15 นาทีจาก VPS
+- **เปิดในเครื่อง**: ดู [apps/web/README.md](apps/web/README.md) (ต้องมี Node.js 24)
 
 ## เอกสาร
 - แบบระบบ: [docs/design/fontokmai-design.md](docs/design/fontokmai-design.md)

@@ -33,6 +33,8 @@ import { useData } from './useData';
 import MapBoundary from './MapBoundary';
 
 const AlertMap = lazy(() => import('./AlertMap'));
+// "/" in development, "/fontokmai/" on GitHub Pages (WEB_BASE at build time)
+const BASE = import.meta.env.BASE_URL;
 const modes = [
   { id: 'official', label: 'น้ำและประกาศ', Icon: ShieldCheck },
   { id: 'rain', label: 'ฝนล่าสุด', Icon: CloudRain },
@@ -194,7 +196,7 @@ export default function App() {
       </a>
       <header className="site-header">
         <div className="header-inner">
-          <a className="brand" href="/">
+          <a className="brand" href={BASE}>
             <span className="brand-symbol">
               <Droplets size={26} strokeWidth={1.8} />
             </span>
@@ -206,15 +208,15 @@ export default function App() {
             </span>
           </a>
           <nav aria-label="เมนูหลัก">
-            <a href="/" aria-current="page">
+            <a href={BASE} aria-current="page">
               ภาพรวม
             </a>
             <a href="#data-status">สถานะข้อมูล</a>
-            <a href="/sources/">
+            <a href={`${BASE}sources/`}>
               แหล่งข้อมูล <ArrowUpRight size={13} />
             </a>
           </nav>
-          <a className="about-link" href="/method/">
+          <a className="about-link" href={`${BASE}method/`}>
             <CircleHelp size={18} />
             <span>อ่านแผนที่อย่างไร</span>
           </a>
@@ -603,7 +605,7 @@ export default function App() {
             <div>
               <h2>สีบนแผนที่บอกอะไร?</h2>
               <p>พื้นที่สีคือขอบเขตตามประกาศกรมอุตุฯ ไม่ใช่ฝนที่กำลังตกหรือพื้นที่ตรวจพบน้ำท่วม</p>
-              <a className="text-link" href="/method/">
+              <a className="text-link" href={`${BASE}method/`}>
                 วิธีอ่านข้อมูลและข้อจำกัด <ArrowUpRight size={15} />
               </a>
             </div>
@@ -708,12 +710,12 @@ export default function App() {
           <p>{disclaimer}</p>
         </div>
         <div>
-          <a href="/sources/">แหล่งข้อมูล</a>
-          <a href="/method/">วิธีอ่านข้อมูล</a>
-          <a href="/LICENSE">
+          <a href={`${BASE}sources/`}>แหล่งข้อมูล</a>
+          <a href={`${BASE}method/`}>วิธีอ่านข้อมูล</a>
+          <a href={`${BASE}LICENSE`}>
             License <ArrowDownToLine size={12} />
           </a>
-          <a href="/NOTICE">เครดิต</a>
+          <a href={`${BASE}NOTICE`}>เครดิต</a>
         </div>
       </footer>
     </>
