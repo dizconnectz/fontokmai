@@ -4,6 +4,9 @@ services:
   cap-collector:
     build:
       context: ../../pipeline
+      args:
+        APP_UID: ${FONTOKMAI_UID}
+        APP_GID: ${FONTOKMAI_GID}
     image: fontokmai-pipeline:local
     user: "${FONTOKMAI_UID}:${FONTOKMAI_GID}"
     command:
