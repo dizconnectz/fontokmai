@@ -30,9 +30,15 @@ def clean_name(raw: str) -> str:
     return text.strip(_EDGE)
 
 
+_KEY_DROP = str.maketrans("", "", " -–—")
+
+
 def search_key(text: str) -> str:
-    """The key both sides of a search compare: clean_name() without spaces, case-folded."""
-    return clean_name(text).replace(" ", "").casefold()
+    """The key both sides of a search compare: clean_name() without spaces or dashes, case-folded.
+
+    Dashes go too because sources write the same road both ways (รังสิต-นครนายก and รังสิตนครนายก).
+    """
+    return clean_name(text).translate(_KEY_DROP).casefold()
 
 
 def kind_of(key: str) -> str:

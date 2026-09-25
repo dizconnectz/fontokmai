@@ -11,6 +11,7 @@ from fontokmai.feeds.road_names import clean_name, kind_of, names_in_text, searc
     ("เฉลิมพระเกียรติ ร.๙", "เฉลิมพระเกียรติ ร.9", "เฉลิมพระเกียรติร.9"),
     ("ซ.เพชรเกษม 42 *", "ซอยเพชรเกษม 42", "ซอยเพชรเกษม42"),
     ("ถนน", "", ""),
+    ("ถนนรังสิต-นครนายก", "รังสิต-นครนายก", "รังสิตนครนายก"),
     ("Ratchadaphisek Rd", "Ratchadaphisek Rd", "ratchadaphisekrd"),
 ])
 def test_clean_name_and_search_key(raw, clean, key):
