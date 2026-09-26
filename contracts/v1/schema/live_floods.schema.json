@@ -1,0 +1,132 @@
+{
+  "$defs": {
+    "LiveFloodReport": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "longdo:<event id>",
+          "title": "Id",
+          "type": "string"
+        },
+        "location": {
+          "description": "[lon, lat] of the report (placed by the reporter)",
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "title": "Location",
+          "type": "array"
+        },
+        "reporter": {
+          "description": "Who reported it: Department of Highways, iTIC staff or a member of the public (names are not published)",
+          "enum": [
+            "highway_department",
+            "itic_staff",
+            "public"
+          ],
+          "title": "Reporter",
+          "type": "string"
+        },
+        "road_th": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Road Th"
+        },
+        "start": {
+          "description": "When the report began (Thai time)",
+          "format": "date-time",
+          "title": "Start",
+          "type": "string"
+        },
+        "stop": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "When the report is set to end; public reports last one hour",
+          "title": "Stop"
+        },
+        "title_th": {
+          "description": "Short title as reported, e.g. น้ำท่วม ถนนรัชดาภิเษก",
+          "title": "Title Th",
+          "type": "string"
+        },
+        "url": {
+          "description": "The report on Longdo Traffic; link out, never copy its photos",
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title_th",
+        "road_th",
+        "location",
+        "start",
+        "stop",
+        "reporter",
+        "url"
+      ],
+      "title": "LiveFloodReport",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "credit_th": {
+      "title": "Credit Th",
+      "type": "string"
+    },
+    "fetched_at": {
+      "format": "date-time",
+      "title": "Fetched At",
+      "type": "string"
+    },
+    "notes_th": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Notes Th",
+      "type": "array"
+    },
+    "reports": {
+      "description": "Newest start first; ongoing or ended within 2 hours",
+      "items": {
+        "$ref": "#/$defs/LiveFloodReport"
+      },
+      "title": "Reports",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1",
+      "default": "1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_url": {
+      "title": "Source Url",
+      "type": "string"
+    }
+  },
+  "required": [
+    "fetched_at",
+    "source_url",
+    "credit_th",
+    "reports",
+    "notes_th"
+  ],
+  "title": "LiveFloods",
+  "type": "object"
+}

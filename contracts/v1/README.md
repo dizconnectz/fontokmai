@@ -12,7 +12,7 @@
 ```bash
 cd pipeline
 uv run fontokmai export-schemas --out ../contracts/v1/schema
-uv run fontokmai contract-examples --out ../contracts/v1/examples --real-fixtures tests/fixtures/tmd_cap --synthetic-fixtures tests/fixtures/tmd_cap_synthetic --road-flood-fixtures tests/fixtures/road_flood --forecast-fixtures tests/fixtures/open_meteo
+uv run fontokmai contract-examples --out ../contracts/v1/examples --real-fixtures tests/fixtures/tmd_cap --synthetic-fixtures tests/fixtures/tmd_cap_synthetic --road-flood-fixtures tests/fixtures/road_flood --forecast-fixtures tests/fixtures/open_meteo --live-floods-fixtures tests/fixtures/longdo_live
 cd .. && bash scripts/gen-ts-types.sh
 ```
 
@@ -194,3 +194,11 @@ cd .. && bash scripts/gen-ts-types.sh
 - `days[d]` วันตามปฏิทินไทย 7 วันเริ่มวันนี้ · `day_rain` (0.1 มม.), `day_probability` (โอกาสฝนสูงสุดของวัน %), `day_code` (WMO weather code)
 - ค่าระหว่างจุดใช้ bilinear จากจุดรอบข้างที่มีค่า และไม่มีค่าเมื่อจุดตาข่ายที่ใกล้ที่สุดไม่มีข้อมูล (นอกประเทศ) · ภาพบนแผนที่ต้องวาดเป็น Web Mercator เหมือนเรดาร์ (ข้อ 9) และใช้สีตาม `legend` ของเรดาร์ เพื่อให้สีเดียวกันหมายถึงฝน มม./ชม. เท่ากัน
 - ต้องติดป้าย “พยากรณ์” แยกจากเรดาร์ (สังเกตจริง) และประกาศทางการ แสดงเครดิต `credit_th` กับเวลา `fetched_at` และถ้าเก่ากว่า 12 ชั่วโมงให้ขึ้น “พยากรณ์ไม่อัปเดต”
+
+## 13. รายงานน้ำท่วมตอนนี้ `live/floods.json`
+รายงานน้ำท่วมจากฟีดเหตุการณ์ของ Longdo (iTIC และ Longdo Traffic, CC BY 4.0) ดึงทุกรอบ 15 นาที อยู่ใน manifest เหมือนไฟล์ `ref/` (โหลดใหม่เมื่อ sha256 เปลี่ยน) และมีสถานะแหล่ง `longdo_floods` · ตัวอย่างสังเคราะห์อยู่ที่ `examples/live-floods/floods.json`
+
+- `reports[]` เรียงเริ่มล่าสุดก่อน เก็บเฉพาะที่ยังเปิดอยู่หรือจบไม่เกิน 2 ชั่วโมง · `start`/`stop` เป็นเวลาไทย (`stop` อาจเป็น null) · รายงานของผู้ใช้มีอายุ 1 ชั่วโมง ของกรมทางหลวงอยู่จนถนนผ่านได้
+- `reporter` = `highway_department` | `itic_staff` | `public` ไม่มีชื่อผู้รายงาน · `url` ลิงก์ออกไปหน้าเหตุการณ์ ห้ามคัดลอกรูปหรือคำอธิบาย
+- ต้องแสดงว่าเป็น “รายงาน” ไม่ใช่การตรวจวัด พร้อมเวลา และบอกว่าไม่มีรายงานไม่ได้แปลว่าไม่ท่วม · ถ้า `fetched_at` เก่ากว่า 45 นาทีให้ขึ้นว่าไม่อัปเดต
+- เมื่อดึงไม่ได้ producer เผยแพร่ไฟล์เดิมต่อ (สถานะ `longdo_floods` เป็น failed) เว็บจึงต้องดูอายุจาก `fetched_at`

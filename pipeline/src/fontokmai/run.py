@@ -19,6 +19,8 @@ from fontokmai.contracts.radar import RadarFeed
 from fontokmai.contracts.road_flood import RoadFloodHistory
 from fontokmai.feeds.alerts import LIVE_STATUSES, AlertCandidate, assemble_alerts_feed
 from fontokmai.publish.snapshot import atomic_write, write_snapshot
+from fontokmai.sources.open_data import longdo_live
+from fontokmai.sources.open_data.http import Opener
 from fontokmai.sources.tmd_cap.collect import collect, load_messages
 from fontokmai.sources.tmd_cap.fetch import Fetcher
 from fontokmai.sources.tmd_cap.lifecycle import alert_candidates, group_events
@@ -35,6 +37,7 @@ REF_MODELS: dict[str, type[BaseModel]] = {"ref/road_flood_history.json": RoadFlo
 STATIC_REFS = {"ref/cctv.json": "cctv.json", "ref/places.json": "places.json"}
 LAST_SUCCESS_KEY = "tmd_cap.last_success_at"
 RADAR_SUCCESS_KEY = "tmd_radar.last_success_at"
+FLOODS_SUCCESS_KEY = "longdo_floods.last_success_at"
 RECOVERY_EPOCH_KEY = "recovery_epoch"
 
 
@@ -92,7 +95,8 @@ def _valid_candidates(candidates: list[AlertCandidate]) -> tuple[list[AlertCandi
 
 
 def run_cap_snapshot(*, db: Path, out: Path, fetch: Fetcher, now: datetime, writer: str,
-                     owner_epoch: int, radar_fetch: Fetcher | None = None) -> SnapshotResult:
+                     owner_epoch: int, radar_fetch: Fetcher | None = None,
+                     floods_opener: Opener | None = None) -> SnapshotResult:
     if now.tzinfo is None:
         raise ValueError("now must carry a UTC offset")
     generation_id = generation_id_for(now, writer)
@@ -132,6 +136,18 @@ def run_cap_snapshot(*, db: Path, out: Path, fetch: Fetcher, now: datetime, writ
                 items_seen=radar.frames_seen, items_rejected=radar.rejected, message=radar.message,
             ))
             files.update(radar.files)
+        if floods_opener is not None:
+            floods = longdo_live.collect_floods(floods_opener, out, now)
+            if floods.ok:
+                store.set_meta(FLOODS_SUCCESS_KEY, now.isoformat())
+            floods_success = store.get_meta(FLOODS_SUCCESS_KEY)
+            statuses.append(SourceStatus(
+                source_id=longdo_live.SOURCE_ID, status="ok" if floods.ok else "failed", last_attempt_at=now,
+                last_success_at=datetime.fromisoformat(floods_success) if floods_success else None,
+                items_seen=floods.seen, items_rejected=floods.rejected, message=floods.message,
+            ))
+            if floods.feed is not None:
+                files[longdo_live.FILE_PATH] = floods.feed.model_dump_json().encode("utf-8")
         manifest = write_snapshot(out, files, store,
                                   generation_id=generation_id, now=now, writer=writer,
                                   owner_epoch=owner_epoch, recovery_epoch=recovery_epoch,

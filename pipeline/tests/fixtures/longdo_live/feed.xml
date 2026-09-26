@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+  <channel>
+    <title>Longdo Event</title>
+    <link>https://event.longdo.com/</link>
+    <description>Longdo Event Feed (synthetic test copy: same structure, made-up events)</description>
+    <item>
+      <title>น้ำท่วม ซอยทดสอบ 1</title>
+      <link>https://traffic.longdo.com/e/A00900001</link>
+      <eid>900001</eid>
+      <latitude>13.80</latitude>
+      <longitude>100.58</longitude>
+      <type>6</type>
+      <description>ซอยทดสอบ 1 รายงานโดย someone</description>
+      <starttime>2026-09-26 15:20:00</starttime>
+      <starttimestamp>1790410800</starttimestamp>
+      <stoptime>2026-09-26 16:20:00</stoptime>
+      <stoptimestamp>1790414400</stoptimestamp>
+      <status>1</status>
+      <image>https://event.longdo.com/image/view/1</image>
+      <contributor>itic_user</contributor>
+      <road>ซอยทดสอบ 1</road>
+    </item>
+    <item>
+      <title>น้ำท่วมทางหลวง 32 ช่วงทดสอบ (ผ่านได้)</title>
+      <link>https://traffic.longdo.com/e/A00900002</link>
+      <eid>900002</eid>
+      <latitude>14.51</latitude>
+      <longitude>100.51</longitude>
+      <type>6</type>
+      <starttime>2026-09-20 01:00:00</starttime>
+      <starttimestamp>1789840800</starttimestamp>
+      <stoptime>2026-09-30 00:00:00</stoptime>
+      <stoptimestamp>1790701200</stoptimestamp>
+      <status>1</status>
+      <contributor>DOH Admin</contributor>
+      <road></road>
+    </item>
+    <item>
+      <title>น้ำท่วม ถนนทดสอบ</title>
+      <link>https://example.org/not-longdo</link>
+      <eid>900003</eid>
+      <latitude>13.75</latitude>
+      <longitude>100.52</longitude>
+      <type>6</type>
+      <starttime>2026-09-26 14:40:00</starttime>
+      <starttimestamp>1790408400</starttimestamp>
+      <stoptime>2026-09-26 15:40:00</stoptime>
+      <stoptimestamp>1790412000</stoptimestamp>
+      <status>1</status>
+      <contributor>itic.staff1</contributor>
+      <road>ถนนทดสอบ</road>
+    </item>
+    <item>
+      <title>น้ำท่วม เมื่อเช้า (จบนานแล้ว)</title>
+      <eid>900004</eid>
+      <latitude>13.70</latitude>
+      <longitude>100.50</longitude>
+      <type>6</type>
+      <starttimestamp>1790370000</starttimestamp>
+      <stoptimestamp>1790373600</stoptimestamp>
+      <status>1</status>
+      <contributor>itic_user</contributor>
+    </item>
+    <item>
+      <title>อุบัติเหตุ ถนนทดสอบ</title>
+      <eid>900005</eid>
+      <latitude>13.74</latitude>
+      <longitude>100.53</longitude>
+      <type>3</type>
+      <starttimestamp>1790410800</starttimestamp>
+      <stoptimestamp>1790414400</stoptimestamp>
+      <status>1</status>
+      <contributor>itic_user</contributor>
+    </item>
+    <item>
+      <title>น้ำท่วม พิกัดผิด</title>
+      <eid>900006</eid>
+      <latitude>0</latitude>
+      <longitude>0</longitude>
+      <type>6</type>
+      <starttimestamp>1790410800</starttimestamp>
+      <stoptimestamp>1790414400</stoptimestamp>
+      <status>1</status>
+      <contributor>itic_user</contributor>
+    </item>
+  </channel>
+</rss>

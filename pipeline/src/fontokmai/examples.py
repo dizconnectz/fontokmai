@@ -218,3 +218,23 @@ def write_forecast_example(out: Path, fixtures: Path) -> list[Path]:
         target.mkdir(parents=True)
         shutil.copyfile(Path(tmp) / FORECAST_PATH, target / "rain.json")
     return [target / "rain.json"]
+
+
+LIVE_FLOODS_AT = "2026-09-26T15:30:00+07:00"
+
+
+def write_live_floods_example(out: Path, fixtures: Path) -> list[Path]:
+    """contracts/v1/examples/live-floods: live/floods.json from the synthetic Longdo feed at 15:30."""
+    from fontokmai.sources.open_data.http import fixture_opener
+    from fontokmai.sources.open_data.longdo_live import FEED_URL, collect_floods
+
+    target = out / "live-floods"
+    if target.exists():
+        shutil.rmtree(target)
+    target.mkdir(parents=True)
+    floods = collect_floods(fixture_opener({FEED_URL: fixtures / "feed.xml"}), target, datetime.fromisoformat(
+        LIVE_FLOODS_AT))
+    assert floods.feed is not None
+    path = target / "floods.json"
+    path.write_text(floods.feed.model_dump_json(indent=2) + "\n", encoding="utf-8", newline="\n")
+    return [path]

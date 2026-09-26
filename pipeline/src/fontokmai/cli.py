@@ -14,6 +14,7 @@ from fontokmai.contracts.export import export_schemas
 from fontokmai.examples import (
     write_examples,
     write_forecast_example,
+    write_live_floods_example,
     write_places_example,
     write_road_flood_example,
 )
@@ -24,6 +25,7 @@ from fontokmai.road_flood_build import build_road_flood_history, fixture_files, 
 from fontokmai.run import SnapshotResult, run_cap_snapshot
 from fontokmai.schedule import run_forever
 from fontokmai.sources.open_data.http import fixture_opener, open_url
+from fontokmai.sources.open_data.longdo_live import FEED_URL as LONGDO_FEED_URL
 from fontokmai.sources.tmd_cap.fetch import LiveFetcher, fixture_fetcher
 from fontokmai.sources.tmd_radar import summary as radar_summary
 
@@ -60,6 +62,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     examples.add_argument("--synthetic-fixtures", type=Path, required=True)
     examples.add_argument("--road-flood-fixtures", type=Path, help="also write the road-flood-history example")
     examples.add_argument("--forecast-fixtures", type=Path, help="also write the rain forecast example")
+    examples.add_argument("--live-floods-fixtures", type=Path, help="also write the live flood reports example")
     cap = sub.add_parser("cap-snapshot", help="collect TMD CAP alerts and write a /data/v1 snapshot")
     cap.add_argument("--db", type=Path, required=True, help="SQLite state file")
     cap.add_argument("--out", type=Path, required=True, help="snapshot directory")
@@ -68,6 +71,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     cap.add_argument("--writer", default="local")
     cap.add_argument("--owner-epoch", type=int, default=1)
     cap.add_argument("--radar", action="store_true", help="also republish the latest TMD radar frames (network)")
+    cap.add_argument("--floods", type=Path, help="read live flood reports from this RSS file (tests and examples)")
     road = sub.add_parser("road-flood-history", help="build ref/road_flood_history.json from BMA and iTIC open data")
     road.add_argument("--out", type=Path, required=True, help="snapshot directory; the file goes to ref/")
     road.add_argument("--cache", type=Path, required=True, help="directory for the per-year iTIC caches")
@@ -135,7 +139,7 @@ def _scheduled_job(args: argparse.Namespace) -> Callable[[datetime], dict[str, A
         fetch = LiveFetcher()
         try:
             result = run_cap_snapshot(db=args.db, out=args.out, fetch=fetch, now=now, writer=args.writer,
-                                      owner_epoch=args.owner_epoch, radar_fetch=fetch)
+                                      owner_epoch=args.owner_epoch, radar_fetch=fetch, floods_opener=open_url)
         finally:
             fetch.close()
         summary = _summary(result)
@@ -168,6 +172,8 @@ def main(argv: list[str] | None = None) -> int:
             written += write_road_flood_example(args.out, args.road_flood_fixtures)
         if args.forecast_fixtures:
             written += write_forecast_example(args.out, args.forecast_fixtures)
+        if args.live_floods_fixtures:
+            written += write_live_floods_example(args.out, args.live_floods_fixtures)
         for path in written:
             print(path.as_posix())
         return 0
@@ -199,8 +205,9 @@ def main(argv: list[str] | None = None) -> int:
     fetch = fixture_fetcher(args.fixtures) if args.fixtures else LiveFetcher()
     try:
         radar_fetch = LiveFetcher() if args.radar else None
+        floods = fixture_opener({LONGDO_FEED_URL: args.floods}) if args.floods else None
         result = run_cap_snapshot(db=args.db, out=args.out, fetch=fetch, now=now, writer=args.writer,
-                                  owner_epoch=args.owner_epoch, radar_fetch=radar_fetch)
+                                  owner_epoch=args.owner_epoch, radar_fetch=radar_fetch, floods_opener=floods)
     finally:
         close = getattr(fetch, "close", None)
         if close is not None:

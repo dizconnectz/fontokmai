@@ -1,0 +1,52 @@
+{
+  "schema_version": "1",
+  "fetched_at": "2026-09-26T15:30:00+07:00",
+  "source_url": "https://traffic.longdo.com/",
+  "credit_th": "iTIC และ Longdo Traffic (CC BY 4.0)",
+  "reports": [
+    {
+      "id": "longdo:900001",
+      "title_th": "น้ำท่วม ซอยทดสอบ 1",
+      "road_th": "ซอยทดสอบ 1",
+      "location": [
+        100.58,
+        13.8
+      ],
+      "start": "2026-09-26T15:20:00+07:00",
+      "stop": "2026-09-26T16:20:00+07:00",
+      "reporter": "public",
+      "url": "https://traffic.longdo.com/e/A00900001"
+    },
+    {
+      "id": "longdo:900003",
+      "title_th": "น้ำท่วม ถนนทดสอบ",
+      "road_th": "ถนนทดสอบ",
+      "location": [
+        100.52,
+        13.75
+      ],
+      "start": "2026-09-26T14:40:00+07:00",
+      "stop": "2026-09-26T15:40:00+07:00",
+      "reporter": "itic_staff",
+      "url": "https://traffic.longdo.com/e/A00900003"
+    },
+    {
+      "id": "longdo:900002",
+      "title_th": "น้ำท่วมทางหลวง 32 ช่วงทดสอบ (ผ่านได้)",
+      "road_th": null,
+      "location": [
+        100.51,
+        14.51
+      ],
+      "start": "2026-09-20T01:00:00+07:00",
+      "stop": "2026-09-30T00:00:00+07:00",
+      "reporter": "highway_department",
+      "url": "https://traffic.longdo.com/e/A00900002"
+    }
+  ],
+  "notes_th": [
+    "เป็นรายงานจากผู้ใช้ เจ้าหน้าที่ iTIC และกรมทางหลวง ไม่ใช่การตรวจวัด และไม่ครบทุกจุดที่ท่วม",
+    "รายงานของผู้ใช้มีอายุ 1 ชั่วโมง น้ำอาจยังท่วมอยู่หรือลดลงแล้ว",
+    "ไม่มีรายงานใกล้จุดหนึ่งไม่ได้แปลว่าที่นั่นไม่ท่วม"
+  ]
+}
