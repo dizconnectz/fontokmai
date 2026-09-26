@@ -4,8 +4,6 @@ import type { RainForecast } from '../../../contracts/v1/ts/forecast';
 import type { RadarLegendItem } from './geo';
 
 export type { RainForecast };
-type LngLat = [number, number];
-export type Corners = [LngLat, LngLat, LngLat, LngLat];
 
 /** Values of one hour on the lattice (NaN where the lattice has no point). */
 interface Grid {
@@ -104,24 +102,7 @@ export function dayRainWords(mm: number | null): string {
   return 'ฝนหนักมาก';
 }
 
-function mercatorY(lat: number): number {
-  return Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
-}
-function latitudeOf(y: number): number {
-  return ((2 * Math.atan(Math.exp(y)) - Math.PI / 2) * 180) / Math.PI;
-}
-
-/** Legend class of a rain rate, as the radar colours it; null below 0.1 mm/hr. */
-export function rainClass(mm: number, legend: RadarLegendItem[]): RadarLegendItem | null {
-  if (!(mm >= 0.1)) return null;
-  return (
-    legend.find(
-      (item) => item.min_mm_per_hr !== null && item.min_mm_per_hr > 0 && mm >= item.min_mm_per_hr,
-    ) ?? null
-  );
-}
-
-// TMD radar legend (radar.json carries the same list); forecast colours use it when radar.json is absent
+// TMD radar legend (radar.json carries the same list), for the key when radar.json is absent
 export const RAIN_LEGEND: RadarLegendItem[] = [
   { min_mm_per_hr: 80, color: '#DD0000', label: '> 80' },
   { min_mm_per_hr: 56, color: '#FE45A2', label: '56' },
@@ -140,7 +121,8 @@ export const RAIN_LEGEND: RadarLegendItem[] = [
 
 // Forecast areas are drawn as vector shapes, so their edges stay sharp at every zoom (an image of the
 // 25 km model grid blurs when the map zooms in). Rain under 0.5 mm in the hour is left out: a model spreads
-// drizzle over wide areas and a pale wash over the whole map hides more than it tells.
+// drizzle over wide areas and a pale wash over the whole map hides more than it tells. These colours are
+// the forecast's own scale (contract section 12), not the radar legend; the map key switches with the mode.
 export const FORECAST_LEVELS: { min: number; color: string }[] = [
   { min: 0.5, color: '#cfe8fb' },
   { min: 1, color: '#9fd0f5' },
@@ -198,77 +180,4 @@ export function forecastAreas(forecast: RainForecast, hour: number): ForecastAre
   };
   byHour.set(hour, result);
   return result;
-}
-
-export interface ForecastFrame {
-  url: string;
-  coordinates: Corners;
-}
-const PIXELS_PER_STEP = 10;
-const frames = new WeakMap<RainForecast, Map<number, ForecastFrame>>();
-/**
- * One forecast hour as a PNG for a MapLibre image source. Rows are laid out in Web Mercator, like the
- * radar frames, so the drawn rain sits where forecastAt() reads it; colours follow the radar legend.
- */
-export function forecastFrame(
-  forecast: RainForecast,
-  hour: number,
-  legend: RadarLegendItem[],
-): ForecastFrame | null {
-  let byHour = frames.get(forecast);
-  if (!byHour) frames.set(forecast, (byHour = new Map()));
-  const known = byHour.get(hour);
-  if (known) return known;
-  const grid = gridOf(forecast, hour);
-  const { west: lon0, south: lat0, step } = forecast.lattice;
-  // the image covers the cells around the lattice points
-  const west = lon0 - step / 2;
-  const east = west + grid.cols * step;
-  const south = lat0 - step / 2;
-  const north = south + grid.rows * step;
-  const width = grid.cols * PIXELS_PER_STEP;
-  const top = mercatorY(north);
-  const bottom = mercatorY(south);
-  const height = Math.round((width * (top - bottom)) / (((east - west) * Math.PI) / 180));
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  const context = canvas.getContext('2d');
-  if (!context) return null;
-  const image = context.createImageData(width, height);
-  // light rain is a light tint, so the streets stay readable under a wide area of drizzle
-  const colours = new Map<RadarLegendItem, number[]>();
-  for (const item of legend) {
-    const hex = item.color.slice(1);
-    const rate = item.min_mm_per_hr ?? 0;
-    const alpha = rate < 1 ? 80 : rate < 4 ? 120 : rate < 16 ? 160 : 200;
-    colours.set(item, [...[0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16)), alpha]);
-  }
-  for (let y = 0; y < height; y++) {
-    const lat = latitudeOf(top - ((y + 0.5) / height) * (top - bottom));
-    const row = (lat - lat0) / step;
-    for (let x = 0; x < width; x++) {
-      const col = (west + ((x + 0.5) / width) * (east - west) - lon0) / step;
-      const item = rainClass(sample(grid, col, row), legend);
-      if (!item) continue;
-      const [r, g, b, a] = colours.get(item)!;
-      const at = (y * width + x) * 4;
-      image.data[at] = r;
-      image.data[at + 1] = g;
-      image.data[at + 2] = b;
-      image.data[at + 3] = a;
-    }
-  }
-  context.putImageData(image, 0, 0);
-  const frame: ForecastFrame = {
-    url: canvas.toDataURL('image/png'),
-    coordinates: [
-      [west, north],
-      [east, north],
-      [east, south],
-      [west, south],
-    ],
-  };
-  byHour.set(hour, frame);
-  return frame;
 }

@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest';
 import {
   dayRainWords,
   daysAt,
+  forecastAreas,
   forecastAt,
-  RAIN_LEGEND,
-  rainClass,
+  FORECAST_LEVELS,
   type RainForecast,
 } from './forecast';
 
@@ -45,16 +45,47 @@ describe('rain forecast on the lattice', () => {
     });
   });
 
-  it('colours a rain rate with the radar legend and names a day total like TMD', () => {
-    expect(rainClass(0.05, RAIN_LEGEND)).toBeNull();
-    expect(rainClass(0.5, RAIN_LEGEND)?.label).toBe('0.1');
-    expect(rainClass(5, RAIN_LEGEND)?.label).toBe('4');
-    expect(rainClass(120, RAIN_LEGEND)?.label).toBe('> 80');
+  it('names a day total like TMD', () => {
     expect(dayRainWords(0)).toBe('ไม่มีฝน');
     expect(dayRainWords(10)).toBe('ฝนเล็กน้อย');
     expect(dayRainWords(10.1)).toBe('ฝนปานกลาง');
     expect(dayRainWords(35.1)).toBe('ฝนหนัก');
     expect(dayRainWords(90.1)).toBe('ฝนหนักมาก');
     expect(dayRainWords(null)).toBe('ไม่มีข้อมูล');
+  });
+});
+
+// contracts/v1/README.md section 12: the forecast has its own colour scale, starting at 0.5 mm/h
+describe('forecast colours (contract section 12)', () => {
+  const flat = (mmPerHour: number): RainForecast => ({
+    ...forecast,
+    rain: forecast.rain.map((hour) =>
+      hour.map((value) => (value === null ? null : mmPerHour * 10)),
+    ),
+  });
+
+  it('keeps the colour scale written in the contract', () => {
+    expect(FORECAST_LEVELS).toEqual([
+      { min: 0.5, color: '#cfe8fb' },
+      { min: 1, color: '#9fd0f5' },
+      { min: 2, color: '#5eaee9' },
+      { min: 4, color: '#2f86d8' },
+      { min: 8, color: '#2fb15a' },
+      { min: 16, color: '#f2c500' },
+      { min: 32, color: '#f76707' },
+      { min: 48, color: '#e03131' },
+      { min: 80, color: '#9c36b5' },
+    ]);
+  });
+
+  it('leaves rain under 0.5 mm/h uncoloured and colours 0.5 mm/h with the first level', () => {
+    expect(forecastAreas(flat(0.4), 0).features).toEqual([]);
+    const light = forecastAreas(flat(0.5), 0).features;
+    expect(light.map((shape) => shape.properties)).toEqual([{ min: 0.5, color: '#cfe8fb' }]);
+  });
+
+  it('nests the levels: heavy rain is also inside every lighter area', () => {
+    const heavy = forecastAreas(flat(20), 0).features.map((shape) => shape.properties.min);
+    expect(heavy).toEqual([0.5, 1, 2, 4, 8, 16]);
   });
 });

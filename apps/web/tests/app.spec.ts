@@ -494,6 +494,8 @@ test('the timeline slides from now into the forecast and the map and pin follow'
   await expect(slider).toHaveAttribute('aria-valuetext', /^พยากรณ์ · \S+ \d\d:\d\d–\d\d:\d\d น\.$/);
   await expect(page.locator('.timeline')).toHaveClass(/is-forecast/);
   await expect(page.locator('.map-legend')).toContainText('พยากรณ์ฝน');
+  // the forecast key is its own scale and says where colouring starts (contract section 12)
+  await expect(page.locator('.map-legend')).toContainText('ระบายสีตั้งแต่ 0.5 มม./ชม.');
   const first = forecast.rain[0][4] / 10;
   await expect(card.locator('#pin-rain')).toHaveText(/ฝนที่พยากรณ์ตรงจุดนี้/);
   await expect(card).toContainText(

@@ -455,6 +455,11 @@ export default function App() {
               )}
             </div>
           )}
+          {layers.radar && step.kind === 'forecast' && (
+            <div className="legend-row">
+              <small>ระบายสีตั้งแต่ 0.5 มม./ชม. · ไม่มีสีไม่ได้แปลว่าไม่มีฝน</small>
+            </div>
+          )}
           {layers.floods && step.kind !== 'forecast' && (
             <div className="legend-row">
               <span>
