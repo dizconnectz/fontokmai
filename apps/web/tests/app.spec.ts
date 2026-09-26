@@ -561,6 +561,33 @@ test('live flood reports list the roads flooded now and fill the pin card, histo
   await expect(history.locator('summary')).toContainText('ข้อมูลย้อนหลัง ไม่ใช่ตอนนี้');
 });
 
+test('one place can be saved as "my place" and opened again from the map or the overview', async ({
+  page,
+}) => {
+  await prepare(page);
+  await page.goto('/?pin=13.9,100.6');
+  const save = page.getByRole('button', { name: 'ตั้งเป็นที่ของฉัน' });
+  await save.click();
+  await expect(page.getByRole('button', { name: 'ที่ของฉัน', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  // later, without a pin in the link
+  await page.goto('/');
+  await expect(page.getByTestId('map-surface')).toHaveAttribute('aria-busy', 'false', {
+    timeout: 15_000,
+  });
+  const card = page.locator('.favorite-card');
+  await expect(card).toContainText('ที่ของฉัน · แขวงสีกัน'); // named after the nearest subdistrict
+  await page.getByRole('button', { name: /^ไปที่ของฉัน/ }).click();
+  await expect(page.getByTestId('pin-card')).toBeVisible();
+  await expect(page).toHaveURL(/pin=13\.90000(?:,|%2C)100\.60000/);
+  // and it can be taken off again
+  await page.getByRole('button', { name: 'ที่ของฉัน', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'ตั้งเป็นที่ของฉัน' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^ไปที่ของฉัน/ })).toHaveCount(0);
+});
+
 test('a missing map chunk leaves the rest of the page usable', async ({ page }) => {
   await prepare(page);
   await page.route('**/assets/MapView-*.js', (route) => route.abort());

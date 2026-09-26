@@ -17,8 +17,10 @@ import { useData } from './useData';
 import MapBoundary from './MapBoundary';
 import { AlertDetails, Hotlines, Overview, PinCard, RoadCard } from './Panel';
 import PlaceSearch from './PlaceSearch';
+import { loadFavorite, saveFavorite, type Favorite } from './favorite';
+import { distanceM } from './roads';
 import Timeline, { type TimeStep } from './Timeline';
-import { forecastFrame, RAIN_LEGEND } from './forecast';
+import { FORECAST_LEVELS, forecastAreas, RAIN_LEGEND } from './forecast';
 import { LEVEL_FILL, LEVEL_LABEL, type Level } from './alerts';
 import { nearestSubdistrict, type FoundPlace } from './places';
 import type { Focus, Layers, LngLat } from './MapView';
@@ -99,6 +101,7 @@ export default function App() {
       : null;
   });
   const [layersOpen, setLayersOpen] = useState(false);
+  const [favorite, setFavoriteState] = useState<Favorite | null>(loadFavorite);
   // on a phone the colour key folds into a chip so it does not cover the pin; always open on wider screens
   const [legendOpen, setLegendOpen] = useState(false);
   const panel = useRef<HTMLElement>(null);
@@ -133,9 +136,8 @@ export default function App() {
   const step = steps[stepIndex];
   const rainLegend = snapshot?.radar?.legend ?? RAIN_LEGEND;
   const forecastLayer = useMemo(
-    () =>
-      step.kind === 'forecast' && forecast ? forecastFrame(forecast, step.hour, rainLegend) : null,
-    [step, forecast, rainLegend],
+    () => (step.kind === 'forecast' && forecast ? forecastAreas(forecast, step.hour) : null),
+    [step, forecast],
   );
   // alert zones as they stand at the chosen time (only alerts already issued)
   const mapTime = step.kind === 'forecast' ? step.time - 1_800_000 : now;
@@ -169,6 +171,24 @@ export default function App() {
     setSelectedId(id);
     setRoadKey(null);
     setParam('alert', id);
+    panel.current?.scrollTo({ top: 0 });
+  };
+  const setFavorite = (next: Favorite | null) => {
+    saveFavorite(next);
+    setFavoriteState(next);
+  };
+  const pinIsFavorite = !!favorite && !!pin && distanceM(favorite.location, pin) < 30;
+  const openFavorite = () => {
+    if (!favorite) return;
+    setPin(favorite.location);
+    const [lon, lat] = favorite.location;
+    setFocus({
+      key: `favorite:${Date.now()}`,
+      bounds: [
+        [lon - 0.02, lat - 0.02],
+        [lon + 0.02, lat + 0.02],
+      ],
+    });
     panel.current?.scrollTo({ top: 0 });
   };
   const openPlace = (place: FoundPlace) => {
@@ -257,7 +277,7 @@ export default function App() {
               radar={snapshot?.radar ?? null}
               dataBase={config?.DATA_BASE_URL ?? null}
               radarFrame={step.kind === 'radar' ? step.frame : null}
-              forecastFrame={forecastLayer}
+              forecastAreas={forecastLayer}
               radarOpacity={radarOpacity}
               cameras={cameras?.cameras ?? []}
               floods={step.kind === 'forecast' ? [] : (floods?.reports ?? [])}
@@ -266,6 +286,8 @@ export default function App() {
               pinLabel={pinTitle}
               focus={focus}
               onPin={(point) => setPin(point)}
+              favoriteLabel={favorite?.label ?? null}
+              onFavorite={openFavorite}
               onList={() => panel.current?.focus()}
             />
           </Suspense>
@@ -344,11 +366,13 @@ export default function App() {
               <span
                 className="radar-gradient"
                 style={{
-                  background: `linear-gradient(90deg, ${[...rainLegend]
-                    .reverse()
-                    .filter((item) => item.min_mm_per_hr !== null && item.min_mm_per_hr > 0)
-                    .map((item) => item.color)
-                    .join(', ')})`,
+                  background: `linear-gradient(90deg, ${(step.kind === 'forecast'
+                    ? FORECAST_LEVELS.map((level) => level.color)
+                    : [...rainLegend]
+                        .reverse()
+                        .filter((item) => item.min_mm_per_hr !== null && item.min_mm_per_hr > 0)
+                        .map((item) => item.color)
+                  ).join(', ')})`,
                 }}
               />
               <span>หนัก</span>
@@ -451,6 +475,20 @@ export default function App() {
             onClose={() => setPin(null)}
             onSelectAlert={selectAlert}
             onRoad={(r) => openRoad(r.key)}
+            favorite={pinIsFavorite}
+            onFavorite={() =>
+              setFavorite(
+                pinIsFavorite
+                  ? null
+                  : {
+                      location: pin,
+                      label:
+                        pinPlace?.title ??
+                        (nearby ? nearby.place.label.split(' ')[0] : null) ??
+                        `${pin[1].toFixed(4)}, ${pin[0].toFixed(4)}`,
+                    },
+              )
+            }
           />
         ) : (
           <>
@@ -473,6 +511,8 @@ export default function App() {
               loading={loading}
               floods={floods}
               floodsState={floodsState}
+              favoriteLabel={favorite?.label ?? null}
+              onFavorite={openFavorite}
               onSelectAlert={selectAlert}
               onFlood={(report) => {
                 setPin(report.location as LngLat);

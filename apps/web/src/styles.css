@@ -976,8 +976,12 @@ details > ul {
 @media (max-width: 640px) {
   .stage .map-legend,
   .stage.has-timeline .map-legend {
-    top: 142px;
+    /* under the layer button on the right, clear of the map buttons on the left */
+    top: 58px;
+    right: 12px;
+    left: auto;
     bottom: auto;
+    justify-items: end;
     padding: 0;
     background: transparent;
     box-shadow: none;
@@ -986,7 +990,7 @@ details > ul {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    justify-self: start;
+    justify-self: end;
     padding: 6px 10px;
     border: 1px solid var(--line);
     border-radius: 10px;
@@ -1247,4 +1251,56 @@ details > ul {
 }
 .flood-history[open] summary {
   margin-bottom: 6px;
+}
+
+/* ---------- my place ---------- */
+.pin-buttons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.favorite-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.favorite-toggle.on {
+  border-color: #e0a800;
+  background: #fff6d6;
+  color: #7a5a00;
+}
+.favorite-toggle.on svg {
+  fill: #f2b705;
+  stroke: #b38600;
+}
+.favorite-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: 1px solid #f0d27a;
+  background: #fffaf0;
+  text-align: left;
+  cursor: pointer;
+}
+.favorite-card svg {
+  fill: #f2b705;
+  stroke: #b38600;
+}
+.favorite-card span {
+  display: grid;
+}
+.favorite-card small {
+  color: var(--muted);
+}
+.map-actions .favorite-action svg {
+  fill: #f2b705;
+  stroke: #b38600;
 }

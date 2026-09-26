@@ -21,6 +21,7 @@
     "@fontsource/noto-sans-thai": "5.3.0",
     "ajv": "8.20.0",
     "ajv-formats": "^3.0.1",
+    "d3-contour": "4.0.2",
     "lucide-react": "1.48.0",
     "maplibre-gl": "6.11.2",
     "react": "19.3.0",
@@ -29,6 +30,7 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.11.1",
     "@playwright/test": "1.63.0",
+    "@types/d3-contour": "^3.0.6",
     "@types/geojson": "^7946.0.16",
     "@types/node": "^24.0.0",
     "@types/react": "^19.0.0",

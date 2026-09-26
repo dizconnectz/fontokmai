@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Crosshair, Expand, LocateFixed, MapPin, Map as MapIcon } from 'lucide-react';
+import { Crosshair, Expand, LocateFixed, MapPin, Map as MapIcon, Star } from 'lucide-react';
 import type {
   GeoJSONSource,
   ImageSource,
@@ -11,7 +11,7 @@ import type {
 import type { FeatureCollection, MultiPolygon, Point } from 'geojson';
 import { displayStatus, type Alert, type Camera, type RadarFeed } from './data';
 import { LEVEL_FILL, LEVEL_LINE, levelOf } from './alerts';
-import type { ForecastFrame } from './forecast';
+import type { ForecastAreas } from './forecast';
 import { agoText, isOngoing, REPORTER_TH, type FloodReport } from './floods';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
@@ -37,8 +37,8 @@ interface Props {
   dataBase: string | null;
   /** radar frame to show, or null when the timeline is on a forecast hour */
   radarFrame: number | null;
-  /** forecast rain image of the chosen hour, or null */
-  forecastFrame: ForecastFrame | null;
+  /** forecast rain areas of the chosen hour, or null */
+  forecastAreas: ForecastAreas | null;
   radarOpacity: number;
   cameras: Camera[];
   /** flood reports to draw (empty while the timeline shows the forecast) */
@@ -49,6 +49,9 @@ interface Props {
   pinLabel: string | null;
   focus: Focus | null;
   onPin: (point: LngLat) => void;
+  /** name of the saved place, or null when none is saved */
+  favoriteLabel: string | null;
+  onFavorite: () => void;
   onList: () => void;
 }
 const THAILAND: { center: LngLat; zoom: number } = { center: [101, 13.2], zoom: 5 };
@@ -57,6 +60,23 @@ const blankStyle: StyleSpecification = {
   sources: {},
   layers: [{ id: 'background', type: 'background', paint: { 'background-color': '#e7ede8' } }],
 };
+// strong at country scale, light when zoomed in so streets stay readable
+const ALERT_FILL_OPACITY = [
+  'interpolate',
+  ['linear'],
+  ['zoom'],
+  5,
+  [
+    'case',
+    ['==', ['get', 'selected'], true],
+    0.42,
+    ['==', ['get', 'status'], 'pending'],
+    0.12,
+    0.28,
+  ],
+  11,
+  ['case', ['==', ['get', 'selected'], true], 0.2, ['==', ['get', 'status'], 'pending'], 0.05, 0.1],
+];
 const levelMatch = (colors: Record<string, string>) =>
   [
     'match',
@@ -214,29 +234,7 @@ export default function MapView(props: Props) {
             paint: {
               'fill-color': levelMatch(LEVEL_FILL),
               // strong at country scale, light when zoomed in so streets stay readable
-              'fill-opacity': [
-                'interpolate',
-                ['linear'],
-                ['zoom'],
-                5,
-                [
-                  'case',
-                  ['==', ['get', 'selected'], true],
-                  0.42,
-                  ['==', ['get', 'status'], 'pending'],
-                  0.12,
-                  0.28,
-                ],
-                11,
-                [
-                  'case',
-                  ['==', ['get', 'selected'], true],
-                  0.2,
-                  ['==', ['get', 'status'], 'pending'],
-                  0.05,
-                  0.1,
-                ],
-              ],
+              'fill-opacity': ALERT_FILL_OPACITY as unknown as number,
             },
           });
           instance.addLayer({
@@ -407,42 +405,46 @@ export default function MapView(props: Props) {
     ready,
   ]);
 
-  // Forecast rain of the chosen hour, drawn like the radar (same colours, same place in the layer order)
+  // Forecast rain of the chosen hour: vector areas under the basemap roads and labels, so the edges stay
+  // sharp at every zoom and street names remain readable on top of the colour
   useEffect(() => {
     const instance = map.current;
     if (!ready || !instance) return;
-    const frame = props.forecastFrame;
-    if (!props.layers.radar || !frame) {
-      if (instance.getLayer('forecast'))
-        instance.setLayoutProperty('forecast', 'visibility', 'none');
-      return;
-    }
-    const source = instance.getSource('forecast') as ImageSource | undefined;
-    if (!source) {
+    const shapes = props.layers.radar ? props.forecastAreas : null;
+    if (!instance.getSource('forecast')) {
       instance.addSource('forecast', {
-        type: 'image',
-        url: frame.url,
-        coordinates: frame.coordinates,
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
       });
+      const basemap = instance
+        .getStyle()
+        .layers.find(
+          (layer) =>
+            (layer.type === 'line' || layer.type === 'symbol') &&
+            !['alert-line', 'camera-dot', 'flood-dot', 'radar'].includes(layer.id),
+        );
       instance.addLayer(
         {
           id: 'forecast',
-          type: 'raster',
+          type: 'fill',
           source: 'forecast',
-          paint: {
-            'raster-opacity': props.radarOpacity,
-            'raster-resampling': 'linear',
-            'raster-fade-duration': 0,
-          },
+          paint: { 'fill-color': ['get', 'color'], 'fill-opacity': props.radarOpacity },
         },
-        'camera-dot',
+        basemap?.id ?? 'alert-fill',
       );
-    } else {
-      source.updateImage({ url: frame.url, coordinates: frame.coordinates });
-      instance.setLayoutProperty('forecast', 'visibility', 'visible');
-      instance.setPaintProperty('forecast', 'raster-opacity', props.radarOpacity);
     }
-  }, [props.forecastFrame, props.radarOpacity, props.layers.radar, ready]);
+    (instance.getSource('forecast') as GeoJSONSource).setData(
+      shapes ?? { type: 'FeatureCollection', features: [] },
+    );
+    instance.setPaintProperty('forecast', 'fill-opacity', props.radarOpacity);
+    // alert zones stay as outlines with a faint fill, so the forecast colours read clearly
+    if (instance.getLayer('alert-fill'))
+      instance.setPaintProperty(
+        'alert-fill',
+        'fill-opacity',
+        shapes ? 0.06 : (ALERT_FILL_OPACITY as unknown as number),
+      );
+  }, [props.forecastAreas, props.radarOpacity, props.layers.radar, ready]);
 
   // Camera dots
   useEffect(() => {
@@ -596,6 +598,16 @@ export default function MapView(props: Props) {
             <Expand size={17} />
             <span>ทั้งประเทศ</span>
           </button>
+          {props.favoriteLabel && (
+            <button
+              className="favorite-action"
+              aria-label={`ไปที่ของฉัน ${props.favoriteLabel}`}
+              onClick={props.onFavorite}
+            >
+              <Star size={17} />
+              <span>ที่ของฉัน</span>
+            </button>
+          )}
         </div>
       )}
     </div>

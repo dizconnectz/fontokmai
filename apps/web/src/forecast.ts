@@ -1,3 +1,5 @@
+import { contours } from 'd3-contour';
+import type { FeatureCollection, MultiPolygon } from 'geojson';
 import type { RainForecast } from '../../../contracts/v1/ts/forecast';
 import type { RadarLegendItem } from './geo';
 
@@ -135,6 +137,68 @@ export const RAIN_LEGEND: RadarLegendItem[] = [
   { min_mm_per_hr: 1, color: '#003C6C', label: '1' },
   { min_mm_per_hr: 0.1, color: '#0077C6', label: '0.1' },
 ];
+
+// Forecast areas are drawn as vector shapes, so their edges stay sharp at every zoom (an image of the
+// 25 km model grid blurs when the map zooms in). Rain under 0.5 mm in the hour is left out: a model spreads
+// drizzle over wide areas and a pale wash over the whole map hides more than it tells.
+export const FORECAST_LEVELS: { min: number; color: string }[] = [
+  { min: 0.5, color: '#cfe8fb' },
+  { min: 1, color: '#9fd0f5' },
+  { min: 2, color: '#5eaee9' },
+  { min: 4, color: '#2f86d8' },
+  { min: 8, color: '#2fb15a' },
+  { min: 16, color: '#f2c500' },
+  { min: 32, color: '#f76707' },
+  { min: 48, color: '#e03131' },
+  { min: 80, color: '#9c36b5' },
+];
+const UPSAMPLE = 4;
+export type ForecastAreas = FeatureCollection<MultiPolygon, { min: number; color: string }>;
+const areas = new WeakMap<RainForecast, Map<number, ForecastAreas>>();
+/**
+ * One forecast hour as nested areas (rain ≥ each level), from the same bilinear field forecastAt() reads:
+ * the grid is sampled four times finer, then traced with marching squares.
+ */
+export function forecastAreas(forecast: RainForecast, hour: number): ForecastAreas {
+  let byHour = areas.get(forecast);
+  if (!byHour) areas.set(forecast, (byHour = new Map()));
+  const known = byHour.get(hour);
+  if (known) return known;
+  const grid = gridOf(forecast, hour);
+  const width = (grid.cols - 1) * UPSAMPLE + 1;
+  const height = (grid.rows - 1) * UPSAMPLE + 1;
+  const values = new Array<number>(width * height);
+  for (let y = 0; y < height; y++)
+    for (let x = 0; x < width; x++) {
+      const value = sample(grid, x / UPSAMPLE, y / UPSAMPLE);
+      values[y * width + x] = Number.isNaN(value) ? 0 : value;
+    }
+  const { west, south, step } = forecast.lattice;
+  const size = step / UPSAMPLE;
+  // d3-contour puts value i at coordinate i + 0.5
+  const lonLat = ([x, y]: number[]) => [west + (x - 0.5) * size, south + (y - 0.5) * size];
+  const shapes = contours()
+    .size([width, height])
+    .thresholds(FORECAST_LEVELS.map((level) => level.min))(values);
+  const result: ForecastAreas = {
+    type: 'FeatureCollection',
+    features: shapes
+      .filter((shape) => shape.coordinates.length > 0)
+      .map((shape) => ({
+        type: 'Feature' as const,
+        properties: {
+          min: shape.value,
+          color: FORECAST_LEVELS.find((level) => level.min === shape.value)!.color,
+        },
+        geometry: {
+          type: 'MultiPolygon' as const,
+          coordinates: shape.coordinates.map((polygon) => polygon.map((ring) => ring.map(lonLat))),
+        },
+      })),
+  };
+  byHour.set(hour, result);
+  return result;
+}
 
 export interface ForecastFrame {
   url: string;

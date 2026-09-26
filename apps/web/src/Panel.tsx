@@ -14,6 +14,7 @@ import {
   Info,
   MapPin,
   Phone,
+  Star,
   Route,
   ShieldAlert,
   ShieldCheck,
@@ -389,8 +390,10 @@ export function Overview({
   loading,
   floods,
   floodsState,
+  favoriteLabel,
   onSelectAlert,
   onFlood,
+  onFavorite,
 }: {
   snapshot: Snapshot | null;
   alerts: Alert[];
@@ -398,13 +401,24 @@ export function Overview({
   loading: boolean;
   floods: LiveFloods | null;
   floodsState: RefState;
+  favoriteLabel: string | null;
   onSelectAlert: (id: string) => void;
   onFlood: (report: FloodReport) => void;
+  onFavorite: () => void;
 }) {
   const worst = worstLevel(alerts);
   const trusted = feedTrust(snapshot, now) === 'ok';
   return (
     <>
+      {favoriteLabel && (
+        <button className="panel-section favorite-card" onClick={onFavorite}>
+          <Star size={18} />
+          <span>
+            <strong>ที่ของฉัน · {favoriteLabel}</strong>
+            <small>แตะเพื่อดูประกาศ ฝน และน้ำท่วมของที่นี่</small>
+          </span>
+        </button>
+      )}
       <section className="panel-section" aria-labelledby="alerts-heading">
         <h2
           id="alerts-heading"
@@ -487,6 +501,8 @@ export function PinCard({
   onClose,
   onSelectAlert,
   onRoad,
+  favorite,
+  onFavorite,
 }: {
   pin: number[];
   /** chosen in the search box */
@@ -510,6 +526,9 @@ export function PinCard({
   onClose: () => void;
   onSelectAlert: (id: string) => void;
   onRoad: (road: Road) => void;
+  /** this pin is the saved place */
+  favorite: boolean;
+  onFavorite: () => void;
 }) {
   // A DOPA area is also covered when an alert lists its province (TMD warns province by province),
   // which still works for an alert without a boundary.
@@ -614,9 +633,18 @@ export function PinCard({
             {pin[1].toFixed(4)}, {pin[0].toFixed(4)}
           </small>
         </div>
-        <button className="icon-button" aria-label="ปิดหมุด" onClick={onClose}>
-          <X size={19} />
-        </button>
+        <div className="pin-buttons">
+          <button
+            className={`favorite-toggle ${favorite ? 'on' : ''}`}
+            aria-pressed={favorite}
+            onClick={onFavorite}
+          >
+            <Star size={16} /> {favorite ? 'ที่ของฉัน' : 'ตั้งเป็นที่ของฉัน'}
+          </button>
+          <button className="icon-button" aria-label="ปิดหมุด" onClick={onClose}>
+            <X size={19} />
+          </button>
+        </div>
       </div>
 
       <section className="panel-section" aria-labelledby="pin-now">
