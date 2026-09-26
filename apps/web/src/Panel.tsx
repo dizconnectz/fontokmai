@@ -333,11 +333,14 @@ function FloodsNow({
   floods,
   floodsState,
   now,
+  openId,
   onFlood,
 }: {
   floods: LiveFloods | null;
   floodsState: RefState;
   now: number;
+  /** report whose popup is open on the map */
+  openId: string | null;
   onFlood: (report: FloodReport) => void;
 }) {
   const latest = floods ? latestFloods(floods, now) : [];
@@ -361,7 +364,12 @@ function FloodsNow({
         <ul className="flood-list">
           {latest.map((report) => (
             <li key={report.id}>
-              <button className="road-button" onClick={() => onFlood(report)}>
+              <button
+                id={`flood-${report.id}`}
+                className="road-button"
+                aria-current={report.id === openId ? 'true' : undefined}
+                onClick={() => onFlood(report)}
+              >
                 <FloodLine report={report} now={now} />
               </button>
             </li>
@@ -376,7 +384,7 @@ function FloodsNow({
       {floods && (
         <small className="source-note">
           รายงานจากผู้ใช้ เจ้าหน้าที่ iTIC และกรมทางหลวง ไม่ใช่การตรวจวัด · {floods.credit_th} ·
-          แตะรายการหรือจุดสีน้ำเงินบนแผนที่เพื่อดูตำแหน่ง
+          แตะรายการเพื่อดูบนแผนที่ หรือแตะหมุดสีน้ำเงินบนแผนที่
         </small>
       )}
     </section>
@@ -391,6 +399,7 @@ export function Overview({
   floods,
   floodsState,
   favoriteLabel,
+  openFloodId,
   onSelectAlert,
   onFlood,
   onFavorite,
@@ -402,6 +411,7 @@ export function Overview({
   floods: LiveFloods | null;
   floodsState: RefState;
   favoriteLabel: string | null;
+  openFloodId: string | null;
   onSelectAlert: (id: string) => void;
   onFlood: (report: FloodReport) => void;
   onFavorite: () => void;
@@ -454,7 +464,13 @@ export function Overview({
           ))}
         </div>
       </section>
-      <FloodsNow floods={floods} floodsState={floodsState} now={now} onFlood={onFlood} />
+      <FloodsNow
+        floods={floods}
+        floodsState={floodsState}
+        now={now}
+        openId={openFloodId}
+        onFlood={onFlood}
+      />
       <RadarNow radar={snapshot?.radar} now={now} />
       <section className="panel-section pin-hint">
         <MapPin size={20} />

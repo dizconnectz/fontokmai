@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ArrowDown,
   Camera as CameraIcon,
   CircleHelp,
   Moon,
@@ -104,6 +105,11 @@ export default function App() {
       : null;
   });
   const [layersOpen, setLayersOpen] = useState(false);
+  // a flood report chosen in the list opens on the map only; the list stays where it is
+  const [openFlood, setOpenFlood] = useState<{ id: string; key: string } | null>(null);
+  const [floodPopupId, setFloodPopupId] = useState<string | null>(null);
+  // on a phone the map sits above the list: a chip on the map leads back to the chosen report
+  const [backToList, setBackToList] = useState<string | null>(null);
   const [favorite, setFavoriteState] = useState<Favorite | null>(loadFavorite);
   const [theme, setTheme] = useState<Theme>(() => storedTheme() ?? systemTheme());
   useEffect(() => applyTheme(theme), [theme]);
@@ -184,6 +190,7 @@ export default function App() {
   const pinTitle = pinPlace?.title ?? (nearby ? nearby.place.label.split(' ')[0] : null);
 
   const setPin = (point: LngLat | null, place: FoundPlace | null = null) => {
+    setBackToList(null);
     setPinState(point);
     setPinPlace(place);
     setSelectedId(null);
@@ -236,6 +243,17 @@ export default function App() {
       });
     }
     panel.current?.scrollTo({ top: 0 });
+  };
+  const openFloodReport = (id: string) => {
+    // the reports are drawn for now, not for a forecast hour, and only while their layer is on
+    setSelectedTime(null);
+    setPlaying(false);
+    setLayers((current) => (current.floods ? current : { ...current, floods: true }));
+    setOpenFlood({ id, key: `${id}:${Date.now()}` });
+    if (typeof matchMedia === 'function' && matchMedia('(max-width: 899px)').matches) {
+      setBackToList(id);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
   const toggle = (name: keyof Layers) =>
     setLayers((current) => ({ ...current, [name]: !current[name] }));
@@ -329,9 +347,25 @@ export default function App() {
               onFavorite={openFavorite}
               theme={theme}
               onList={() => panel.current?.focus()}
+              openFlood={openFlood}
+              onFloodPopup={setFloodPopupId}
             />
           </Suspense>
         </MapBoundary>
+
+        {backToList && (
+          <button
+            className="back-to-list"
+            onClick={() => {
+              document
+                .getElementById(`flood-${backToList}`)
+                ?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+              setBackToList(null);
+            }}
+          >
+            <ArrowDown size={16} /> กลับไปที่รายการน้ำท่วม
+          </button>
+        )}
 
         <Timeline
           steps={steps}
@@ -424,14 +458,21 @@ export default function App() {
           {layers.floods && step.kind !== 'forecast' && (
             <div className="legend-row">
               <span>
-                <i className="legend-flood" /> รายงานน้ำท่วม (จางลง = ครบเวลารายงานแล้ว)
+                <i className="legend-pin legend-flood" /> รายงานน้ำท่วม (สีอ่อน = ครบเวลารายงานแล้ว)
+              </span>
+            </div>
+          )}
+          {(layers.cameras || (layers.floods && step.kind !== 'forecast')) && (
+            <div className="legend-row">
+              <span>
+                <i className="legend-bubble">3</i> จุดที่อยู่ใกล้กัน แตะเพื่อซูมเข้า
               </span>
             </div>
           )}
           {layers.cameras && (
             <div className="legend-row">
               <span>
-                <i className="legend-camera" /> กล้อง (แตะเพื่อเปิดดู)
+                <i className="legend-pin legend-camera" /> กล้อง (แตะหมุดเพื่อเปิดดู)
                 {camerasState === 'error' && ' · โหลดทะเบียนกล้องไม่สำเร็จ'}
               </span>
             </div>
@@ -554,17 +595,8 @@ export default function App() {
               favoriteLabel={favorite?.label ?? null}
               onFavorite={openFavorite}
               onSelectAlert={selectAlert}
-              onFlood={(report) => {
-                setPin(report.location as LngLat);
-                setFocus({
-                  key: `${report.id}:${Date.now()}`,
-                  bounds: [
-                    [report.location[0] - 0.006, report.location[1] - 0.006],
-                    [report.location[0] + 0.006, report.location[1] + 0.006],
-                  ],
-                  maxZoom: 16,
-                });
-              }}
+              openFloodId={floodPopupId}
+              onFlood={(report) => openFloodReport(report.id)}
             />
           </>
         )}

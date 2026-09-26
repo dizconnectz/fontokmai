@@ -515,7 +515,7 @@ test('the timeline slides from now into the forecast and the map and pin follow'
   await expect(card.locator('#pin-rain')).toHaveText(/ฝนตอนนี้ตรงจุดนี้/);
 });
 
-test('live flood reports list the roads flooded now and fill the pin card, history stays folded', async ({
+test('a flood report opens on the map without leaving the list, and its popup leads to the pin card', async ({
   page,
 }) => {
   await prepare(page);
@@ -551,7 +551,24 @@ test('live flood reports list the roads flooded now and fill the pin card, histo
   );
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'รายงานน้ำท่วมตอนนี้ 1 จุด' })).toBeVisible();
-  await page.getByRole('button', { name: /ซอยทดสอบ/ }).click();
+  await expect(page.getByTestId('map-surface')).toHaveAttribute('aria-busy', 'false', {
+    timeout: 15_000,
+  });
+  // choosing a report opens it on the map only: the list stays and marks the open report
+  const item = page.getByRole('button', { name: /ซอยทดสอบ/ });
+  await item.click();
+  const popup = page.locator('.maplibregl-popup');
+  await expect(popup).toContainText('น้ำท่วม ซอยทดสอบ');
+  await expect(item).toHaveAttribute('aria-current', 'true');
+  await expect(page.getByTestId('pin-card')).toHaveCount(0);
+  if ((page.viewportSize()?.width ?? 1280) < 900) {
+    // on a phone the map sits above the list: a chip leads back to the report
+    await page.getByRole('button', { name: 'กลับไปที่รายการน้ำท่วม' }).click();
+    await expect(item).toBeInViewport();
+  }
+  // the spot's own data opens in the side panel only when asked for
+  await popup.getByRole('button', { name: 'ดูฝนและประกาศตรงนี้' }).click();
+  await expect(popup).toHaveCount(0);
   const here = page.getByTestId('pin-card').getByTestId('floods-here');
   await expect(here).toContainText('ซอยทดสอบ');
   await expect(here).toContainText('เมื่อ 10 นาทีก่อน · ผู้ใช้รายงาน');

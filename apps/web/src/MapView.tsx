@@ -6,6 +6,7 @@ import type {
   Map as LibreMap,
   Marker,
   Popup,
+  PositionAnchor,
   StyleSpecification,
 } from 'maplibre-gl';
 import type { FeatureCollection, MultiPolygon, Point } from 'geojson';
@@ -13,6 +14,7 @@ import { displayStatus, type Alert, type Camera, type RadarFeed } from './data';
 import { LEVEL_FILL, LEVEL_LINE, levelOf } from './alerts';
 import type { ForecastAreas } from './forecast';
 import { agoText, isOngoing, REPORTER_TH, type FloodReport } from './floods';
+import { MAP_IMAGE_RATIO, mapImage } from './mapIcons';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 
@@ -55,6 +57,10 @@ interface Props {
   favoriteLabel: string | null;
   onFavorite: () => void;
   onList: () => void;
+  /** a report chosen in the list: fly there and open its popup, without touching the side panel */
+  openFlood: { id: string; key: string } | null;
+  /** id of the report whose popup is open, or null */
+  onFloodPopup: (id: string | null) => void;
 }
 const THAILAND: { center: LngLat; zoom: number } = { center: [101, 13.2], zoom: 5 };
 // strong at country scale, light when zoomed in so streets stay readable
@@ -129,9 +135,8 @@ async function loadBasemap(
   }
 }
 /** Our sources and layers; added on load and again after the basemap changes with the theme. */
-function addOverlays(instance: LibreMap, theme: 'light' | 'dark') {
+function addOverlays(instance: LibreMap) {
   const empty: FeatureCollection = { type: 'FeatureCollection', features: [] };
-  const dark = theme === 'dark';
   instance.addSource('alerts', { type: 'geojson', data: empty });
   instance.addLayer({
     id: 'alert-fill',
@@ -158,39 +163,65 @@ function addOverlays(instance: LibreMap, theme: 'light' | 'dark') {
       ],
     },
   });
-  instance.addSource('cameras', { type: 'geojson', data: empty });
-  instance.addLayer({
-    id: 'camera-dot',
-    type: 'circle',
-    source: 'cameras',
-    paint: {
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 4, 12, 8],
-      'circle-color': [
-        'case',
-        ['==', ['get', 'approximate'], true],
-        dark ? '#90a4ae' : '#78909c',
-        dark ? '#eceff1' : '#263238',
-      ],
-      'circle-stroke-color': dark ? '#263238' : '#ffffff',
-      'circle-stroke-width': 2,
-    },
-  });
-  instance.addSource('floods', { type: 'geojson', data: empty });
-  instance.addLayer({
-    id: 'flood-dot',
-    type: 'circle',
-    source: 'floods',
-    paint: {
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 3.5, 12, 8],
-      'circle-color': dark ? '#42a5f5' : '#1565c0',
-      'circle-opacity': ['case', ['==', ['get', 'ongoing'], true], 1, 0.45],
-      'circle-stroke-color': '#ffffff',
-      'circle-stroke-width': 2,
-    },
-  });
+  // cameras under flood reports; points close together merge into a numbered bubble until zoom 14
+  for (const [kind, source] of [
+    ['camera', 'cameras'],
+    ['flood', 'floods'],
+  ] as const) {
+    instance.addSource(source, {
+      type: 'geojson',
+      data: empty,
+      cluster: true,
+      clusterRadius: 44,
+      clusterMaxZoom: 13,
+    });
+    instance.addLayer({
+      id: `${kind}-cluster`,
+      type: 'symbol',
+      source,
+      filter: ['has', 'point_count'],
+      layout: {
+        'icon-image': ['concat', `cluster-${kind}-`, ['get', 'point_count_abbreviated']],
+        'icon-allow-overlap': true,
+        'icon-ignore-placement': true,
+      },
+    });
+    instance.addLayer({
+      id: `${kind}-pin`,
+      type: 'symbol',
+      source,
+      filter: ['!', ['has', 'point_count']],
+      layout: {
+        'icon-image':
+          kind === 'camera'
+            ? ['case', ['==', ['get', 'approximate'], true], 'pin-camera-approx', 'pin-camera']
+            : ['case', ['==', ['get', 'ongoing'], true], 'pin-flood', 'pin-flood-ended'],
+        // the picture has 2 px under the tip
+        'icon-offset': [0, 2],
+        'icon-anchor': 'bottom',
+        'icon-allow-overlap': true,
+        'icon-ignore-placement': true,
+        'symbol-sort-key': ['case', ['==', ['get', 'ongoing'], true], 1, 0],
+      },
+    });
+  }
 }
+// popups open above the pin head, or below the tip when there is no room above
+const PIN_POPUP_OFFSET: Record<PositionAnchor, [number, number]> = {
+  center: [0, -18],
+  top: [0, 4],
+  'top-left': [0, 4],
+  'top-right': [0, 4],
+  bottom: [0, -34],
+  'bottom-left': [0, -34],
+  'bottom-right': [0, -34],
+  left: [14, -18],
+  right: [-14, -18],
+};
+/** Layers that answer a tap with a popup (pins) or a zoom (bubbles), topmost last. */
+const POINT_LAYERS = ['camera-cluster', 'camera-pin', 'flood-cluster', 'flood-pin'];
 
-function floodPopup(report: FloodReport, now: number): HTMLElement {
+function floodPopup(report: FloodReport, now: number, onHere: () => void): HTMLElement {
   const root = document.createElement('div');
   root.className = 'camera-popup flood-popup';
   const title = document.createElement('strong');
@@ -206,7 +237,12 @@ function floodPopup(report: FloodReport, now: number): HTMLElement {
   link.target = '_blank';
   link.rel = 'noopener noreferrer';
   link.textContent = 'ดูรายงานต้นทาง ↗';
-  root.append(title, when, note, link);
+  const here = document.createElement('button');
+  here.type = 'button';
+  here.className = 'popup-action';
+  here.textContent = 'ดูฝนและประกาศตรงนี้';
+  here.addEventListener('click', onHere);
+  root.append(title, when, note, link, here);
   return root;
 }
 
@@ -243,6 +279,8 @@ export default function MapView(props: Props) {
   const pinMarker = useRef<Marker | null>(null);
   const pinTag = useRef<HTMLSpanElement | null>(null);
   const popup = useRef<Popup | null>(null);
+  const popupKind = useRef<'flood' | 'camera' | null>(null);
+  const showFlood = useRef<(report: FloodReport) => void>(() => undefined);
   const latest = useRef(props);
   latest.current = props;
   const [ready, setReady] = useState(false);
@@ -283,6 +321,11 @@ export default function MapView(props: Props) {
           },
         });
         map.current = instance;
+        instance.on('styleimagemissing', (event) => {
+          const picture = mapImage(event.id);
+          if (picture && !instance.hasImage(event.id))
+            instance.addImage(event.id, picture, { pixelRatio: MAP_IMAGE_RATIO });
+        });
         instance.addControl(new maplibre.NavigationControl({ showCompass: false }), 'bottom-right');
         instance.addControl(
           new maplibre.AttributionControl({
@@ -314,43 +357,79 @@ export default function MapView(props: Props) {
           if (!disposed) setUnavailable(true);
         });
         instance.on('load', () => {
-          addOverlays(instance, theme);
+          addOverlays(instance);
+          const open = (kind: 'flood' | 'camera', at: LngLat, content: HTMLElement) => {
+            popup.current?.remove();
+            const next = new maplibre.Popup({
+              closeButton: true,
+              maxWidth: '270px',
+              offset: PIN_POPUP_OFFSET,
+            })
+              .setLngLat(at)
+              .setDOMContent(content);
+            next.on('close', () => {
+              if (popup.current !== next) return;
+              popup.current = null;
+              if (popupKind.current === 'flood') latest.current.onFloodPopup(null);
+              popupKind.current = null;
+            });
+            popup.current = next;
+            popupKind.current = kind;
+            next.addTo(instance);
+          };
+          showFlood.current = (report) => {
+            const at = report.location as LngLat;
+            open(
+              'flood',
+              at,
+              floodPopup(report, Date.now(), () => {
+                popup.current?.remove();
+                latest.current.onPin(at);
+              }),
+            );
+            latest.current.onFloodPopup(report.id);
+          };
           instance.on('click', (event) => {
-            const flood = instance.getLayer('flood-dot')
-              ? instance.queryRenderedFeatures(event.point, { layers: ['flood-dot'] })[0]
+            const { x, y } = event.point;
+            const layers = POINT_LAYERS.filter((id) => instance.getLayer(id));
+            // a little slack around each pin for fingers
+            const hit = layers.length
+              ? instance.queryRenderedFeatures(
+                  [
+                    [x - 4, y - 4],
+                    [x + 4, y + 4],
+                  ],
+                  { layers },
+                )[0]
               : undefined;
-            const report = latest.current.floods.find((r) => r.id === flood?.properties?.id);
-            if (report) {
-              popup.current?.remove();
-              popup.current = new maplibre.Popup({ closeButton: true, maxWidth: '260px' })
-                .setLngLat(report.location as LngLat)
-                .setDOMContent(floodPopup(report, Date.now()))
-                .addTo(instance);
+            const layer = hit?.layer.id;
+            if (hit && (layer === 'flood-cluster' || layer === 'camera-cluster')) {
+              const center = (hit.geometry as Point).coordinates as LngLat;
+              void (instance.getSource(hit.source) as GeoJSONSource)
+                .getClusterExpansionZoom(hit.properties.cluster_id as number)
+                .then((zoom) => instance.easeTo({ center, zoom: Math.min(zoom + 0.5, 16) }))
+                .catch(() => instance.easeTo({ center, zoom: instance.getZoom() + 2 }));
               return;
             }
-            const hit = instance.getLayer('camera-dot')
-              ? instance.queryRenderedFeatures(event.point, { layers: ['camera-dot'] })[0]
-              : undefined;
-            const id = hit?.properties?.id;
-            const camera = latest.current.cameras.find((c) => c.id === id);
-            if (camera?.location) {
-              popup.current?.remove();
-              popup.current = new maplibre.Popup({ closeButton: true, maxWidth: '260px' })
-                .setLngLat(camera.location as LngLat)
-                .setDOMContent(cameraPopup(camera))
-                .addTo(instance);
-              return;
+            if (layer === 'flood-pin') {
+              const report = latest.current.floods.find((r) => r.id === hit?.properties.id);
+              if (report) return showFlood.current(report);
+            }
+            if (layer === 'camera-pin') {
+              const camera = latest.current.cameras.find((c) => c.id === hit?.properties.id);
+              if (camera?.location)
+                return open('camera', camera.location as LngLat, cameraPopup(camera));
             }
             latest.current.onPin([event.lngLat.lng, event.lngLat.lat]);
           });
-          for (const layer of ['camera-dot', 'flood-dot'])
+          for (const layer of POINT_LAYERS) {
             instance.on('mouseenter', layer, () => {
               instance.getCanvas().style.cursor = 'pointer';
             });
-          for (const layer of ['camera-dot', 'flood-dot'])
             instance.on('mouseleave', layer, () => {
               instance.getCanvas().style.cursor = '';
             });
+          }
           const marker = document.createElement('div');
           marker.className = 'pin';
           marker.setAttribute('aria-hidden', 'true');
@@ -387,7 +466,7 @@ export default function MapView(props: Props) {
     void loadBasemap(theme, controller.signal).then((style) => {
       if (controller.signal.aborted || map.current !== instance) return;
       instance.once('style.load', () => {
-        addOverlays(instance, theme);
+        addOverlays(instance);
         setStyleVersion((version) => version + 1);
       });
       instance.setStyle(style ?? blankStyle(theme), { diff: false });
@@ -448,7 +527,7 @@ export default function MapView(props: Props) {
           source: 'radar',
           paint: { 'raster-opacity': props.radarOpacity, 'raster-resampling': 'linear' },
         },
-        'camera-dot',
+        'camera-cluster',
       );
     } else {
       source.updateImage({ url, coordinates });
@@ -481,7 +560,7 @@ export default function MapView(props: Props) {
         .layers.find(
           (layer) =>
             (layer.type === 'line' || layer.type === 'symbol') &&
-            !['alert-line', 'camera-dot', 'flood-dot', 'radar'].includes(layer.id),
+            !['alert-line', 'radar', ...POINT_LAYERS].includes(layer.id),
         );
       instance.addLayer(
         {
@@ -526,7 +605,7 @@ export default function MapView(props: Props) {
         : [],
     };
     (map.current.getSource('cameras') as GeoJSONSource | undefined)?.setData(collection);
-    if (!props.layers.cameras) popup.current?.remove();
+    if (!props.layers.cameras && popupKind.current === 'camera') popup.current?.remove();
   }, [props.cameras, props.layers.cameras, ready, styleVersion]);
 
   // Flood reports (live), faded once their own report window has passed
@@ -543,7 +622,25 @@ export default function MapView(props: Props) {
         : [],
     };
     (map.current.getSource('floods') as GeoJSONSource | undefined)?.setData(collection);
+    if (!collection.features.length && popupKind.current === 'flood') popup.current?.remove();
   }, [props.floods, props.layers.floods, props.now, ready, styleVersion]);
+
+  // A report chosen in the list: fly there and open its popup. Only a new choice moves the map,
+  // never a refresh of the reports.
+  useEffect(() => {
+    const instance = map.current;
+    if (!ready || !instance || !props.openFlood) return;
+    const report = latest.current.floods.find((r) => r.id === props.openFlood?.id);
+    if (!report) return;
+    // the pin ends a little below the middle, so its popup has room under the map buttons
+    instance.flyTo({
+      center: report.location as LngLat,
+      zoom: Math.max(instance.getZoom(), 15),
+      offset: [0, Math.round(instance.getContainer().clientHeight * 0.22)],
+      duration: 700,
+    });
+    showFlood.current(report);
+  }, [props.openFlood, ready]);
 
   // Pin marker
   useEffect(() => {

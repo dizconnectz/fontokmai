@@ -666,12 +666,7 @@ svg {
   opacity: 0.85;
 }
 .legend-row i.legend-camera {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--camera);
-  border: 2px solid var(--surface);
-  box-shadow: 0 0 0 1px var(--camera);
+  background: #37474f;
 }
 .radar-gradient {
   width: 110px;
@@ -1377,12 +1372,7 @@ details > ul {
   color: var(--muted);
 }
 .legend-row i.legend-flood {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
   background: #1565c0;
-  border: 2px solid #fff;
-  box-shadow: 0 0 0 1px #1565c0;
 }
 .flood-history summary {
   display: flex;
@@ -1445,4 +1435,112 @@ details > ul {
 .map-actions .favorite-action svg {
   fill: #f2b705;
   stroke: #b38600;
+}
+
+/* ---------- map pins, bubbles and popups ---------- */
+/* the same teardrop as the map pins (mapIcons.ts), point down */
+.legend-row i.legend-pin {
+  width: 11px;
+  height: 11px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  border: 1.5px solid #fff;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 25%);
+}
+.legend-row i.legend-bubble {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #1565c0;
+  border: 1.5px solid #fff;
+  box-shadow: 0 0 0 3px rgb(21 101 192 / 28%);
+  color: #fff;
+  font-style: normal;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+/* over the map buttons while open; the timeline stays on top */
+.map-surface .maplibregl-popup {
+  z-index: 3;
+}
+.map-surface .maplibregl-popup-content {
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 10px;
+  box-shadow: 0 4px 14px var(--shadow);
+  padding: 12px 30px 12px 14px;
+}
+.map-surface .maplibregl-popup-close-button {
+  width: 28px;
+  height: 28px;
+  font-size: 1.2rem;
+  color: var(--muted);
+  border-radius: 0 10px 0 8px;
+}
+.map-surface .maplibregl-popup-close-button:hover {
+  background: var(--hover);
+}
+.map-surface .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+.map-surface .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+.map-surface .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+  border-top-color: var(--surface);
+}
+.map-surface .maplibregl-popup-anchor-top .maplibregl-popup-tip,
+.map-surface .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+.map-surface .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+  border-bottom-color: var(--surface);
+}
+.map-surface .maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: var(--surface);
+}
+.map-surface .maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: var(--surface);
+}
+.popup-action {
+  margin-top: 6px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--chip-bg);
+  color: var(--chip-ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.popup-action:hover {
+  border-color: var(--brand);
+}
+/* the report whose popup is open on the map */
+.flood-list .road-button[aria-current='true'] {
+  border-color: var(--brand);
+  background: var(--hover);
+  box-shadow: inset 3px 0 0 var(--brand);
+}
+.back-to-list {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--brand);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  box-shadow: 0 2px 8px var(--shadow);
+  cursor: pointer;
+}
+.stage.has-timeline .back-to-list {
+  bottom: 88px;
+}
+@media (min-width: 900px) {
+  .back-to-list {
+    display: none;
+  }
 }
