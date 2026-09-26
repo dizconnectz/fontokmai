@@ -515,6 +515,52 @@ test('the timeline slides from now into the forecast and the map and pin follow'
   await expect(card.locator('#pin-rain')).toHaveText(/ฝนตอนนี้ตรงจุดนี้/);
 });
 
+test('live flood reports list the roads flooded now and fill the pin card, history stays folded', async ({
+  page,
+}) => {
+  await prepare(page);
+  const manifest = read('active', 'manifest');
+  manifest.files.push({ path: 'live/floods.json', sha256: 'a'.repeat(64), size: 1, revision: 1 });
+  await page.route('**/examples/active/manifest.json?*', (route) =>
+    route.fulfill({ json: manifest }),
+  );
+  const now = Date.parse(manifest.generated_at);
+  const iso = (ms: number) => new Date(ms).toISOString();
+  await page.route('**/live/floods.json?*', (route) =>
+    route.fulfill({
+      json: {
+        schema_version: '1',
+        fetched_at: iso(now - 5 * 60_000),
+        source_url: 'https://traffic.longdo.com/',
+        credit_th: 'iTIC และ Longdo Traffic (CC BY 4.0)',
+        notes_th: [],
+        reports: [
+          {
+            id: 'longdo:1',
+            title_th: 'น้ำท่วม ซอยทดสอบ',
+            road_th: 'ซอยทดสอบ',
+            location: [100.6, 13.9],
+            start: iso(now - 10 * 60_000),
+            stop: iso(now + 50 * 60_000),
+            reporter: 'public',
+            url: 'https://traffic.longdo.com/e/A00000001',
+          },
+        ],
+      },
+    }),
+  );
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'รายงานน้ำท่วมตอนนี้ 1 จุด' })).toBeVisible();
+  await page.getByRole('button', { name: /ซอยทดสอบ/ }).click();
+  const here = page.getByTestId('pin-card').getByTestId('floods-here');
+  await expect(here).toContainText('ซอยทดสอบ');
+  await expect(here).toContainText('เมื่อ 10 นาทีก่อน · ผู้ใช้รายงาน');
+  // past floods are still there, folded and labelled as the past
+  const history = page.getByTestId('pin-card').locator('.flood-history');
+  await expect(history).not.toHaveAttribute('open');
+  await expect(history.locator('summary')).toContainText('ข้อมูลย้อนหลัง ไม่ใช่ตอนนี้');
+});
+
 test('a missing map chunk leaves the rest of the page usable', async ({ page }) => {
   await prepare(page);
   await page.route('**/assets/MapView-*.js', (route) => route.abort());

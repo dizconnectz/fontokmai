@@ -7,6 +7,7 @@ import {
   Info,
   Layers as LayersIcon,
   Palette,
+  Waves,
   RefreshCw,
   ShieldAlert,
   X,
@@ -64,8 +65,15 @@ export default function App() {
     loadPlaces,
     forecast,
     forecastState,
+    floods,
+    floodsState,
   } = data;
-  const [layers, setLayers] = useState<Layers>({ alerts: true, radar: true, cameras: true });
+  const [layers, setLayers] = useState<Layers>({
+    alerts: true,
+    radar: true,
+    cameras: true,
+    floods: true,
+  });
   // the time the map shows: null = now (the latest radar frame); otherwise a radar or forecast time
   const [selectedTime, setSelectedTime] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -252,6 +260,7 @@ export default function App() {
               forecastFrame={forecastLayer}
               radarOpacity={radarOpacity}
               cameras={cameras?.cameras ?? []}
+              floods={step.kind === 'forecast' ? [] : (floods?.reports ?? [])}
               layers={layers}
               pin={pin}
               pinLabel={pinTitle}
@@ -292,6 +301,9 @@ export default function App() {
             </button>
             <button aria-pressed={layers.cameras} onClick={() => toggle('cameras')}>
               <CameraIcon size={16} /> กล้อง CCTV
+            </button>
+            <button aria-pressed={layers.floods} onClick={() => toggle('floods')}>
+              <Waves size={16} /> รายงานน้ำท่วมตอนนี้
             </button>
             {layers.radar && (
               <label className="slider">
@@ -343,6 +355,13 @@ export default function App() {
               {step.kind === 'radar' && radarAge !== null && radarAge > 45 && (
                 <b className="stale-mark">เก่า</b>
               )}
+            </div>
+          )}
+          {layers.floods && step.kind !== 'forecast' && (
+            <div className="legend-row">
+              <span>
+                <i className="legend-flood" /> รายงานน้ำท่วม (จางลง = ครบเวลารายงานแล้ว)
+              </span>
             </div>
           )}
           {layers.cameras && (
@@ -427,6 +446,8 @@ export default function App() {
             roadsState={roadsState}
             cameras={cameras?.cameras ?? []}
             camerasState={camerasState}
+            floods={floods}
+            floodsState={floodsState}
             onClose={() => setPin(null)}
             onSelectAlert={selectAlert}
             onRoad={(r) => openRoad(r.key)}
@@ -450,7 +471,20 @@ export default function App() {
               alerts={alerts}
               now={now}
               loading={loading}
+              floods={floods}
+              floodsState={floodsState}
               onSelectAlert={selectAlert}
+              onFlood={(report) => {
+                setPin(report.location as LngLat);
+                setFocus({
+                  key: `${report.id}:${Date.now()}`,
+                  bounds: [
+                    [report.location[0] - 0.006, report.location[1] - 0.006],
+                    [report.location[0] + 0.006, report.location[1] + 0.006],
+                  ],
+                  maxZoom: 16,
+                });
+              }}
             />
           </>
         )}

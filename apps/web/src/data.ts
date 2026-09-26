@@ -7,6 +7,7 @@ import cctvSchema from '../../../contracts/v1/schema/cctv.schema.json';
 import roadFloodSchema from '../../../contracts/v1/schema/road_flood_history.schema.json';
 import placesSchema from '../../../contracts/v1/schema/places.schema.json';
 import forecastSchema from '../../../contracts/v1/schema/forecast.schema.json';
+import liveFloodsSchema from '../../../contracts/v1/schema/live_floods.schema.json';
 import type { Manifest } from '../../../contracts/v1/ts/manifest';
 import type { Alert, AlertsFeed } from '../../../contracts/v1/ts/alerts';
 import type { RadarFeed } from '../../../contracts/v1/ts/radar';
@@ -14,11 +15,13 @@ import type { CctvRegistry } from '../../../contracts/v1/ts/cctv';
 import type { RoadFloodHistory } from '../../../contracts/v1/ts/road_flood_history';
 import type { PlaceGazetteer } from '../../../contracts/v1/ts/places';
 import type { RainForecast } from '../../../contracts/v1/ts/forecast';
+import type { LiveFloods } from '../../../contracts/v1/ts/live_floods';
 
 export type {
   Alert,
   AlertsFeed,
   CctvRegistry,
+  LiveFloods,
   Manifest,
   PlaceGazetteer,
   RadarFeed,
@@ -67,6 +70,7 @@ export const validRoadFlood = ajv.compile<RoadFloodHistory>(
 );
 export const validPlaces = ajv.compile<PlaceGazetteer>(allowAdditions(placesSchema) as object);
 export const validForecast = ajv.compile<RainForecast>(allowAdditions(forecastSchema) as object);
+export const validLiveFloods = ajv.compile<LiveFloods>(allowAdditions(liveFloodsSchema) as object);
 
 /** radar.json belongs to the snapshot generation, like alerts.json. */
 export function validateRadar(manifest: Manifest, radar: unknown): RadarFeed {

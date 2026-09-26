@@ -1195,3 +1195,56 @@ details > ul {
 .hotlines small {
   color: var(--muted);
 }
+
+/* ---------- live flood reports ---------- */
+.heading-rain {
+  color: var(--rain-ink);
+}
+.flood-list {
+  display: grid;
+  gap: 4px;
+  padding: 0;
+  list-style: none;
+}
+.flood-list a {
+  display: block;
+  padding: 6px 8px;
+  border-radius: 8px;
+  text-decoration: none;
+}
+.flood-list a:hover {
+  background: #f0f5f2;
+}
+.flood-line {
+  display: grid;
+  gap: 1px;
+  text-align: left;
+}
+.flood-line strong {
+  color: var(--rain-ink);
+}
+.flood-line small {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.flood-line.ended strong {
+  color: var(--muted);
+}
+.legend-row i.legend-flood {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #1565c0;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #1565c0;
+}
+.flood-history summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+.flood-history[open] summary {
+  margin-bottom: 6px;
+}

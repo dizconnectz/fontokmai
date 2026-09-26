@@ -12,6 +12,7 @@ import type { FeatureCollection, MultiPolygon, Point } from 'geojson';
 import { displayStatus, type Alert, type Camera, type RadarFeed } from './data';
 import { LEVEL_FILL, LEVEL_LINE, levelOf } from './alerts';
 import type { ForecastFrame } from './forecast';
+import { agoText, isOngoing, REPORTER_TH, type FloodReport } from './floods';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 
@@ -19,6 +20,7 @@ export interface Layers {
   alerts: boolean;
   radar: boolean;
   cameras: boolean;
+  floods: boolean;
 }
 export type LngLat = [number, number];
 export interface Focus {
@@ -39,6 +41,8 @@ interface Props {
   forecastFrame: ForecastFrame | null;
   radarOpacity: number;
   cameras: Camera[];
+  /** flood reports to draw (empty while the timeline shows the forecast) */
+  floods: FloodReport[];
   layers: Layers;
   pin: LngLat | null;
   /** short name shown on the pin, e.g. ต.คลองหนึ่ง */
@@ -60,6 +64,26 @@ const levelMatch = (colors: Record<string, string>) =>
     ...Object.entries(colors).flatMap(([level, color]) => [level, color]),
     colors.unknown,
   ] as unknown as string;
+
+function floodPopup(report: FloodReport, now: number): HTMLElement {
+  const root = document.createElement('div');
+  root.className = 'camera-popup flood-popup';
+  const title = document.createElement('strong');
+  title.textContent = report.title_th;
+  const when = document.createElement('span');
+  when.textContent = `${agoText(report.start, now)} · ${REPORTER_TH[report.reporter]}${
+    isOngoing(report, now) ? '' : ' · ครบเวลารายงานแล้ว อาจลดลง'
+  }`;
+  const note = document.createElement('small');
+  note.textContent = 'เป็นรายงาน ไม่ใช่การตรวจวัด · iTIC และ Longdo Traffic (CC BY 4.0)';
+  const link = document.createElement('a');
+  link.href = report.url;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  link.textContent = 'ดูรายงานต้นทาง ↗';
+  root.append(title, when, note, link);
+  return root;
+}
 
 function cameraPopup(camera: Camera): HTMLElement {
   const root = document.createElement('div');
@@ -243,7 +267,30 @@ export default function MapView(props: Props) {
               'circle-stroke-width': 2,
             },
           });
+          instance.addSource('floods', { type: 'geojson', data: empty });
+          instance.addLayer({
+            id: 'flood-dot',
+            type: 'circle',
+            source: 'floods',
+            paint: {
+              'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 3.5, 12, 8],
+              'circle-color': '#1565c0',
+              'circle-opacity': ['case', ['==', ['get', 'ongoing'], true], 1, 0.45],
+              'circle-stroke-color': '#ffffff',
+              'circle-stroke-width': 2,
+            },
+          });
           instance.on('click', (event) => {
+            const flood = instance.queryRenderedFeatures(event.point, { layers: ['flood-dot'] })[0];
+            const report = latest.current.floods.find((r) => r.id === flood?.properties?.id);
+            if (report) {
+              popup.current?.remove();
+              popup.current = new maplibre.Popup({ closeButton: true, maxWidth: '260px' })
+                .setLngLat(report.location as LngLat)
+                .setDOMContent(floodPopup(report, Date.now()))
+                .addTo(instance);
+              return;
+            }
             const hit = instance.queryRenderedFeatures(event.point, { layers: ['camera-dot'] })[0];
             const id = hit?.properties?.id;
             const camera = latest.current.cameras.find((c) => c.id === id);
@@ -257,12 +304,14 @@ export default function MapView(props: Props) {
             }
             latest.current.onPin([event.lngLat.lng, event.lngLat.lat]);
           });
-          instance.on('mouseenter', 'camera-dot', () => {
-            instance.getCanvas().style.cursor = 'pointer';
-          });
-          instance.on('mouseleave', 'camera-dot', () => {
-            instance.getCanvas().style.cursor = '';
-          });
+          for (const layer of ['camera-dot', 'flood-dot'])
+            instance.on('mouseenter', layer, () => {
+              instance.getCanvas().style.cursor = 'pointer';
+            });
+          for (const layer of ['camera-dot', 'flood-dot'])
+            instance.on('mouseleave', layer, () => {
+              instance.getCanvas().style.cursor = '';
+            });
           const marker = document.createElement('div');
           marker.className = 'pin';
           marker.setAttribute('aria-hidden', 'true');
@@ -417,6 +466,22 @@ export default function MapView(props: Props) {
     (map.current.getSource('cameras') as GeoJSONSource).setData(collection);
     if (!props.layers.cameras) popup.current?.remove();
   }, [props.cameras, props.layers.cameras, ready]);
+
+  // Flood reports (live), faded once their own report window has passed
+  useEffect(() => {
+    if (!ready || !map.current) return;
+    const collection: FeatureCollection<Point> = {
+      type: 'FeatureCollection',
+      features: props.layers.floods
+        ? props.floods.map((report) => ({
+            type: 'Feature' as const,
+            geometry: { type: 'Point' as const, coordinates: report.location },
+            properties: { id: report.id, ongoing: isOngoing(report, props.now) },
+          }))
+        : [],
+    };
+    (map.current.getSource('floods') as GeoJSONSource).setData(collection);
+  }, [props.floods, props.layers.floods, props.now, ready]);
 
   // Pin marker
   useEffect(() => {

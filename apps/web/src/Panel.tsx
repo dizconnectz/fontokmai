@@ -18,6 +18,7 @@ import {
   ShieldAlert,
   ShieldCheck,
   Sun,
+  Waves,
   X,
 } from 'lucide-react';
 import {
@@ -29,6 +30,7 @@ import {
   type Alert,
   type Camera,
   type RadarFeed,
+  type LiveFloods,
   type RainForecast,
   type RoadFloodHistory,
   type Snapshot,
@@ -50,6 +52,16 @@ import {
 import { inMultiPolygon, rainWords } from './geo';
 import type { FoundPlace, Place } from './places';
 import { dayRainWords, daysAt, forecastAt } from './forecast';
+import {
+  agoText,
+  floodsNear,
+  FLOOD_RADIUS_M,
+  FLOODS_STALE_MS,
+  isOngoing,
+  latestFloods,
+  REPORTER_TH,
+  type FloodReport,
+} from './floods';
 import type { TimeStep } from './Timeline';
 import { distanceM, roadsNear } from './roads';
 import { useRadarAt } from './radarAt';
@@ -95,6 +107,7 @@ function WeatherIcon({ code }: { code: number | null }) {
     </span>
   );
 }
+const CAMERA_RADIUS_M = 25_000;
 const distanceText = (metres: number) =>
   metres < 1000 ? `${Math.round(metres / 10) * 10} ม.` : `${(metres / 1000).toFixed(1)} กม.`;
 
@@ -293,18 +306,100 @@ export function Hotlines() {
   );
 }
 
+function FloodLine({
+  report,
+  now,
+  distance,
+}: {
+  report: FloodReport;
+  now: number;
+  distance?: number;
+}) {
+  const ongoing = isOngoing(report, now);
+  return (
+    <span className={`flood-line ${ongoing ? '' : 'ended'}`}>
+      <strong>{report.road_th ?? report.title_th.replace(/^น้ำท่วม\s*/, '')}</strong>
+      <small>
+        {agoText(report.start, now)} · {REPORTER_TH[report.reporter]}
+        {distance !== undefined && ` · ห่าง ${distanceText(distance)}`}
+        {!ongoing && ' · ครบเวลารายงานแล้ว อาจลดลง'}
+      </small>
+    </span>
+  );
+}
+
+function FloodsNow({
+  floods,
+  floodsState,
+  now,
+  onFlood,
+}: {
+  floods: LiveFloods | null;
+  floodsState: RefState;
+  now: number;
+  onFlood: (report: FloodReport) => void;
+}) {
+  const latest = floods ? latestFloods(floods, now) : [];
+  const ongoing = floods ? floods.reports.filter((r) => isOngoing(r, now)).length : 0;
+  const old = floods ? now - Date.parse(floods.fetched_at) > FLOODS_STALE_MS : false;
+  return (
+    <section className="panel-section" aria-labelledby="floods-now-heading">
+      <h2 id="floods-now-heading" className={ongoing ? 'heading-rain' : undefined}>
+        <Waves size={18} /> {ongoing ? `รายงานน้ำท่วมตอนนี้ ${ongoing} จุด` : 'รายงานน้ำท่วมตอนนี้'}
+      </h2>
+      {(floodsState === 'idle' || floodsState === 'loading') && (
+        <p className="quiet">กำลังโหลดรายงานน้ำท่วม…</p>
+      )}
+      {(floodsState === 'missing' || floodsState === 'error') && (
+        <p className="missing-value">ยังไม่มีข้อมูลรายงานน้ำท่วมสด</p>
+      )}
+      {floods && ongoing === 0 && (
+        <p className="quiet">ยังไม่มีรายงานที่ยังไม่หมดเวลา · ไม่ได้แปลว่าไม่มีน้ำท่วม</p>
+      )}
+      {latest.length > 0 && (
+        <ul className="flood-list">
+          {latest.map((report) => (
+            <li key={report.id}>
+              <button className="road-button" onClick={() => onFlood(report)}>
+                <FloodLine report={report} now={now} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {old && (
+        <p className="inline-warning">
+          <Info size={15} /> รายงานน้ำท่วมไม่อัปเดตตั้งแต่ {formatTime(floods!.fetched_at)} น.
+        </p>
+      )}
+      {floods && (
+        <small className="source-note">
+          รายงานจากผู้ใช้ เจ้าหน้าที่ iTIC และกรมทางหลวง ไม่ใช่การตรวจวัด · {floods.credit_th} ·
+          แตะรายการหรือจุดสีน้ำเงินบนแผนที่เพื่อดูตำแหน่ง
+        </small>
+      )}
+    </section>
+  );
+}
+
 export function Overview({
   snapshot,
   alerts,
   now,
   loading,
+  floods,
+  floodsState,
   onSelectAlert,
+  onFlood,
 }: {
   snapshot: Snapshot | null;
   alerts: Alert[];
   now: number;
   loading: boolean;
+  floods: LiveFloods | null;
+  floodsState: RefState;
   onSelectAlert: (id: string) => void;
+  onFlood: (report: FloodReport) => void;
 }) {
   const worst = worstLevel(alerts);
   const trusted = feedTrust(snapshot, now) === 'ok';
@@ -345,6 +440,7 @@ export function Overview({
           ))}
         </div>
       </section>
+      <FloodsNow floods={floods} floodsState={floodsState} now={now} onFlood={onFlood} />
       <RadarNow radar={snapshot?.radar} now={now} />
       <section className="panel-section pin-hint">
         <MapPin size={20} />
@@ -386,6 +482,8 @@ export function PinCard({
   roadsState,
   cameras,
   camerasState,
+  floods,
+  floodsState,
   onClose,
   onSelectAlert,
   onRoad,
@@ -407,6 +505,8 @@ export function PinCard({
   roadsState: RefState;
   cameras: Camera[];
   camerasState: RefState;
+  floods: LiveFloods | null;
+  floodsState: RefState;
   onClose: () => void;
   onSelectAlert: (id: string) => void;
   onRoad: (road: Road) => void;
@@ -468,11 +568,16 @@ export function PinCard({
       cameras
         .filter((c) => c.location)
         .map((c) => ({ camera: c, distance: distanceM(pin, c.location!) }))
-        .filter((c) => c.distance <= 10_000)
+        .filter((c) => c.distance <= CAMERA_RADIUS_M)
         .sort((a, b) => a.distance - b.distance)
         .slice(0, 3),
     [cameras, pin],
   );
+  const floodsHere = useMemo(
+    () => (floods ? floodsNear(floods, pin, now) : []),
+    [floods, pin, now],
+  );
+  const floodsOld = floods ? now - Date.parse(floods.fetched_at) > FLOODS_STALE_MS : false;
   const worst = worstLevel(here);
   return (
     <div className="pin-card" data-testid="pin-card">
@@ -670,47 +775,86 @@ export function PinCard({
       </section>
 
       <section className="panel-section" aria-labelledby="pin-flood">
-        <h2 id="pin-flood">
-          <Route size={18} /> น้ำท่วมแถวนี้ (รัศมี 2 กม.)
+        <h2
+          id="pin-flood"
+          className={floodsHere.some((f) => isOngoing(f.report, now)) ? 'heading-rain' : undefined}
+        >
+          <Waves size={18} /> น้ำท่วมตอนนี้ (รายงานในรัศมี {FLOOD_RADIUS_M / 1000} กม.)
         </h2>
-        {(roadsState === 'loading' || roadsState === 'idle') && (
-          <p className="quiet">กำลังโหลดประวัติน้ำท่วมถนน…</p>
+        {(floodsState === 'idle' || floodsState === 'loading') && (
+          <p className="quiet">กำลังโหลดรายงานน้ำท่วม…</p>
         )}
-        {(roadsState === 'missing' || roadsState === 'error') && (
-          <p className="missing-value">ยังไม่มีข้อมูลประวัติน้ำท่วมถนน</p>
+        {(floodsState === 'missing' || floodsState === 'error') && (
+          <p className="missing-value">ยังไม่มีข้อมูลรายงานน้ำท่วมสด</p>
         )}
-        {roads && !inRoadArea && (
-          <p className="missing-value">ตอนนี้มีประวัติน้ำท่วมถนนเฉพาะ กทม. และปริมณฑล</p>
+        {floods && floodsHere.length === 0 && (
+          <p className="quiet">ยังไม่มีรายงานน้ำท่วมใกล้จุดนี้ในช่วง 2 ชม. · ไม่ได้แปลว่าไม่ท่วม</p>
         )}
-        {roads && inRoadArea && near.length === 0 && (
-          <p className="quiet">ไม่พบรายงานน้ำท่วมถนนใกล้จุดนี้ · ไม่ได้แปลว่าไม่เคยท่วม</p>
-        )}
-        {near.length > 0 && (
-          <ul className="road-list">
-            {near.map(({ road, distance }) => (
-              <li key={road.key}>
-                <button className="road-button" onClick={() => onRoad(road)}>
-                  <RoadLine road={road} distance={distance} />
-                </button>
+        {floodsHere.length > 0 && (
+          <ul className="flood-list" data-testid="floods-here">
+            {floodsHere.slice(0, 5).map(({ report, distance }) => (
+              <li key={report.id}>
+                <a href={report.url} target="_blank" rel="noopener noreferrer">
+                  <FloodLine report={report} now={now} distance={distance} />
+                </a>
               </li>
             ))}
           </ul>
         )}
-        {roadsState === 'outdated' && (
+        {floodsOld && (
           <p className="inline-warning">
-            <Info size={15} /> ประวัติชุดก่อน เพราะโหลดรุ่นใหม่ไม่สำเร็จ
+            <Info size={15} /> รายงานน้ำท่วมไม่อัปเดตตั้งแต่ {formatTime(floods!.fetched_at)} น.
           </p>
         )}
-        {roads && (
+        {floods && (
           <small className="source-note">
-            ที่มา: {roads.sources.map((s) => s.credit_th).join(' · ')}
+            รายงานจากผู้ใช้และหน่วยงาน ไม่ใช่การตรวจวัด · {floods.credit_th}
           </small>
         )}
+        <details className="history-details flood-history">
+          <summary>
+            <Route size={15} /> ประวัติ: ถนนแถวนี้ที่เคยมีรายงานน้ำท่วม (ข้อมูลย้อนหลัง
+            ไม่ใช่ตอนนี้)
+          </summary>
+          {(roadsState === 'loading' || roadsState === 'idle') && (
+            <p className="quiet">กำลังโหลดประวัติน้ำท่วมถนน…</p>
+          )}
+          {(roadsState === 'missing' || roadsState === 'error') && (
+            <p className="missing-value">ยังไม่มีข้อมูลประวัติน้ำท่วมถนน</p>
+          )}
+          {roads && !inRoadArea && (
+            <p className="missing-value">ตอนนี้มีประวัติน้ำท่วมถนนเฉพาะ กทม. และปริมณฑล</p>
+          )}
+          {roads && inRoadArea && near.length === 0 && (
+            <p className="quiet">ไม่พบรายงานน้ำท่วมถนนใกล้จุดนี้ · ไม่ได้แปลว่าไม่เคยท่วม</p>
+          )}
+          {near.length > 0 && (
+            <ul className="road-list">
+              {near.map(({ road, distance }) => (
+                <li key={road.key}>
+                  <button className="road-button" onClick={() => onRoad(road)}>
+                    <RoadLine road={road} distance={distance} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {roadsState === 'outdated' && (
+            <p className="inline-warning">
+              <Info size={15} /> ประวัติชุดก่อน เพราะโหลดรุ่นใหม่ไม่สำเร็จ
+            </p>
+          )}
+          {roads && (
+            <small className="source-note">
+              ที่มา: {roads.sources.map((s) => s.credit_th).join(' · ')}
+            </small>
+          )}
+        </details>
       </section>
 
       <section className="panel-section" aria-labelledby="pin-cameras">
         <h2 id="pin-cameras">
-          <CameraIcon size={18} /> กล้องใกล้ๆ (10 กม.)
+          <CameraIcon size={18} /> กล้องใกล้ๆ ({CAMERA_RADIUS_M / 1000} กม.)
         </h2>
         {(camerasState === 'idle' || camerasState === 'loading') && (
           <p className="quiet">กำลังโหลดทะเบียนกล้อง…</p>
