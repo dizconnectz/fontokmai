@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -104,13 +105,23 @@ def _geometry(info: CapInfo) -> dict[str, Any] | None:
     return {"type": "MultiPolygon", "coordinates": polygons} if polygons else None
 
 
-def _targets(info: CapInfo) -> list[dict[str, str]]:
+# Thai provinces in ISO 3166-2 (TH-10 … TH-96, TH-S). TMD has also sent region codes such as "R-04" under the
+# ISO3166-2 name; they are not provinces, so they are left out of targets and the alert gets a qc flag.
+_PROVINCE_CODE = re.compile(r"^TH-[0-9A-Z]{1,2}$")
+
+
+def _targets(info: CapInfo) -> tuple[list[dict[str, str]], list[str]]:
     codes: list[str] = []
+    flags: list[str] = []
     for area in info.areas:
         for name, value in area.geocodes:
-            if name.upper() == "ISO3166-2" and value not in codes:
+            if name.upper() != "ISO3166-2" or value in codes:
+                continue
+            if _PROVINCE_CODE.match(value):
                 codes.append(value)
-    return [{"kind": "province", "code": code} for code in codes]
+            elif "geocode_not_a_province" not in flags:
+                flags.append("geocode_not_a_province")
+    return [{"kind": "province", "code": code} for code in codes], flags
 
 
 def alert_candidates(lineages: Iterable[EventLineage], urls: dict[str, str],
@@ -126,6 +137,7 @@ def alert_candidates(lineages: Iterable[EventLineage], urls: dict[str, str],
             continue
         shown_msg, info = shown
         effective, expires, policy, flags = _times(shown_msg, info)
+        targets, target_flags = _targets(info)
         if current.msg_type == "Cancel":
             status, ended_at = "cancelled", current.sent
         elif now >= expires:
@@ -156,8 +168,8 @@ def alert_candidates(lineages: Iterable[EventLineage], urls: dict[str, str],
             "onset": info.onset,
             "expires": expires,
             "expires_policy": policy,
-            "qc_flags": flags,
-            "targets": _targets(info),
+            "qc_flags": flags + target_flags,
+            "targets": targets,
             "geometry": _geometry(info),
             "source_url": urls[current.key],
             "credit_th": CREDIT_TH,

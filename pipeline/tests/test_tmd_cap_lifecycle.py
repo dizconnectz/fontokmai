@@ -93,3 +93,18 @@ def test_missing_expires_uses_default_and_flag():
     assert cand.payload["effective"] == T("2026-09-25T10:00:00+07:00")
     assert cand.payload["expires"] == T("2026-09-26T10:00:00+07:00")
     assert cand.payload["qc_flags"] == ["missing_expires"]
+
+
+def test_a_region_code_under_iso3166_is_not_a_province_target():
+    raw = ("<alert xmlns='urn:oasis:names:tc:emergency:cap:1.2'><identifier>R1</identifier><sender>TMD</sender>"
+           "<sent>2026-09-26T13:00:00+07:00</sent><status>Actual</status><msgType>Alert</msgType>"
+           "<scope>Public</scope><info><event>Heavy Rain</event><urgency>Expected</urgency>"
+           "<severity>Severe</severity><certainty>Likely</certainty><area><areaDesc>x</areaDesc>"
+           "<polygon>13.0,100.0 13.0,101.0 14.0,101.0 13.0,100.0</polygon>"
+           "<geocode><valueName>ISO3166-2</valueName><value>R-04</value></geocode>"
+           "<geocode><valueName>ISO3166-2</valueName><value>TH-10</value></geocode></area></info></alert>")
+    msg = parse_cap(raw.encode())
+    [candidate] = alert_candidates(group_events([msg]), {msg.key: "https://x/R1.xml"}, T("2026-09-26T13:10:00+07:00"))
+    assert candidate.payload["targets"] == [{"kind": "province", "code": "TH-10"}]
+    assert "geocode_not_a_province" in candidate.payload["qc_flags"]
+
