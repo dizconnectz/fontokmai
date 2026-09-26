@@ -4,7 +4,8 @@
 name: data-watch
 on:
   schedule:
-    - cron: "8,23,38,53 * * * *" # 5 minutes after each publish slot (:03, :18, :33, :48)
+    # 5 minutes after each publish slot (:03, :18, :33, :48); GitHub may start a scheduled run late or skip one
+    - cron: "8,23,38,53 * * * *"
   workflow_dispatch:
 permissions:
   contents: read
