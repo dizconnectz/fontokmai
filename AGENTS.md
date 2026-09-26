@@ -43,6 +43,7 @@
 ### A5. งานที่กำลังทำ (Active claims)
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
+| Claude | 2026-09-26 13:00 | `pipeline/src/fontokmai/sources/tmd_cap/`, `pipeline/tests/` | ประกาศ TMD 1 ฉบับถูกปัดทิ้ง (`invalid polygon: too many values to unpack`) ทำให้ tmd_cap เป็น degraded และหมุดขึ้นสีเทา | พบจาก manifest จริง |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md`)
 
