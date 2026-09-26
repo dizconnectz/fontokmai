@@ -87,6 +87,10 @@ export function shortTime(value: string | number, now: number): string {
   if (day === DAY.format(now - 86_400_000)) return `เมื่อวาน ${clock}`;
   return `${DATE.format(time)} ${clock}`;
 }
+/** "วันนี้ 17:00–18:00 น." for the hour that ends at `end`. */
+export function hourRange(end: number, now: number): string {
+  return `${shortTime(end - 3_600_000, now).replace(/ น\.$/, '')}–${CLOCK.format(end)} น.`;
+}
 export function whenText(alert: Alert, now: number): string {
   if (displayStatus(alert, now) === 'pending') return `เริ่ม ${shortTime(alert.effective, now)}`;
   const approx = alert.expires_policy === 'default_24h' ? ' (โดยประมาณ)' : '';

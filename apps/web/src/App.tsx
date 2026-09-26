@@ -6,6 +6,7 @@ import {
   Droplets,
   Info,
   Layers as LayersIcon,
+  Palette,
   RefreshCw,
   ShieldAlert,
   X,
@@ -13,8 +14,10 @@ import {
 import { formatTime, isStale, radarAgeMinutes, staleAfter, visibleAlerts } from './data';
 import { useData } from './useData';
 import MapBoundary from './MapBoundary';
-import { AlertDetails, Overview, PinCard, RoadCard } from './Panel';
+import { AlertDetails, Hotlines, Overview, PinCard, RoadCard } from './Panel';
 import PlaceSearch from './PlaceSearch';
+import Timeline, { type TimeStep } from './Timeline';
+import { forecastFrame, RAIN_LEGEND } from './forecast';
 import { LEVEL_FILL, LEVEL_LABEL, type Level } from './alerts';
 import { nearestSubdistrict, type FoundPlace } from './places';
 import type { Focus, Layers, LngLat } from './MapView';
@@ -57,9 +60,13 @@ export default function App() {
     places,
     placesState,
     loadPlaces,
+    forecast,
+    forecastState,
   } = data;
   const [layers, setLayers] = useState<Layers>({ alerts: true, radar: true, cameras: true });
-  const [radarFrame, setRadarFrame] = useState<number | null>(null);
+  // the time the map shows: null = now (the latest radar frame); otherwise a radar or forecast time
+  const [selectedTime, setSelectedTime] = useState<number | null>(null);
+  const [playing, setPlaying] = useState(false);
   const [radarOpacity, setRadarOpacity] = useState(0.75);
   const [pin, setPinState] = useState<LngLat | null>(readPin);
   // the place chosen in the search box, while the pin stays where the search put it
@@ -82,6 +89,8 @@ export default function App() {
       : null;
   });
   const [layersOpen, setLayersOpen] = useState(false);
+  // on a phone the colour key folds into a chip so it does not cover the pin; always open on wider screens
+  const [legendOpen, setLegendOpen] = useState(false);
   const panel = useRef<HTMLElement>(null);
 
   const alerts = useMemo(() => visibleAlerts(snapshot?.feed, now), [snapshot, now]);
@@ -94,9 +103,36 @@ export default function App() {
   }, [pin, snapshot, loadRoads, loadPlaces]);
   const selected = alerts.find((a) => a.event_id === selectedId);
   const road = roads?.roads.find((r) => r.key === roadKey) ?? null;
-  const frames = snapshot?.radar?.frames ?? [];
-  const frameIndex =
-    radarFrame === null ? frames.length - 1 : Math.min(radarFrame, frames.length - 1);
+  const frames = useMemo(() => snapshot?.radar?.frames ?? [], [snapshot]);
+  const steps = useMemo<TimeStep[]>(() => {
+    const past: TimeStep[] = frames.map((frame, i) => ({
+      kind: 'radar',
+      time: Date.parse(frame.time),
+      frame: i,
+      latest: i === frames.length - 1,
+    }));
+    const future: TimeStep[] = (forecast?.hours ?? []).flatMap((hour, i) => {
+      const time = Date.parse(hour);
+      return time > now ? [{ kind: 'forecast' as const, time, hour: i }] : [];
+    });
+    return [...(past.length ? past : [{ kind: 'now' as const, time: now }]), ...future];
+  }, [frames, forecast, now]);
+  const nowIndex = Math.max(frames.length - 1, 0);
+  const chosen = selectedTime === null ? -1 : steps.findIndex((s) => s.time === selectedTime);
+  const stepIndex = chosen >= 0 ? chosen : nowIndex;
+  const step = steps[stepIndex];
+  const rainLegend = snapshot?.radar?.legend ?? RAIN_LEGEND;
+  const forecastLayer = useMemo(
+    () =>
+      step.kind === 'forecast' && forecast ? forecastFrame(forecast, step.hour, rainLegend) : null,
+    [step, forecast, rainLegend],
+  );
+  // alert zones as they stand at the chosen time (only alerts already issued)
+  const mapTime = step.kind === 'forecast' ? step.time - 1_800_000 : now;
+  const mapAlerts = useMemo(
+    () => (mapTime === now ? alerts : visibleAlerts(snapshot?.feed, mapTime)),
+    [alerts, snapshot, mapTime, now],
+  );
   const stale = snapshot ? isStale(snapshot.manifest, now) : false;
   const partial =
     snapshot?.manifest.completeness === 'partial' ||
@@ -199,16 +235,17 @@ export default function App() {
         </a>
       </header>
 
-      <main className="stage">
+      <main className={`stage ${steps.length > 1 ? 'has-timeline' : ''}`}>
         <MapBoundary onList={() => panel.current?.focus()}>
           <Suspense fallback={<div className="map-loading">กำลังเตรียมแผนที่…</div>}>
             <MapView
-              alerts={alerts}
-              now={now}
+              alerts={mapAlerts}
+              now={mapTime}
               selectedAlertId={selectedId}
               radar={snapshot?.radar ?? null}
               dataBase={config?.DATA_BASE_URL ?? null}
-              radarFrame={frameIndex}
+              radarFrame={step.kind === 'radar' ? step.frame : null}
+              forecastFrame={forecastLayer}
               radarOpacity={radarOpacity}
               cameras={cameras?.cameras ?? []}
               layers={layers}
@@ -220,6 +257,16 @@ export default function App() {
             />
           </Suspense>
         </MapBoundary>
+
+        <Timeline
+          steps={steps}
+          index={stepIndex}
+          nowIndex={nowIndex}
+          now={now}
+          playing={playing}
+          onChange={(index) => setSelectedTime(index === nowIndex ? null : steps[index].time)}
+          onPlay={setPlaying}
+        />
 
         <div className={`layer-control ${layersOpen ? 'open' : ''}`}>
           <button
@@ -234,27 +281,14 @@ export default function App() {
               <ShieldAlert size={16} /> ประกาศเตือนภัย
             </button>
             <button aria-pressed={layers.radar} onClick={() => toggle('radar')}>
-              <CloudRain size={16} /> ฝนตอนนี้ (เรดาร์)
+              <CloudRain size={16} /> ฝน (เรดาร์และพยากรณ์)
             </button>
             <button aria-pressed={layers.cameras} onClick={() => toggle('cameras')}>
               <CameraIcon size={16} /> กล้อง CCTV
             </button>
-            {layers.radar && frames.length > 1 && (
+            {layers.radar && (
               <label className="slider">
-                <span>เวลาเรดาร์ {formatTime(frames[frameIndex].time).replace(/^.* /, '')} น.</span>
-                <input
-                  type="range"
-                  min={0}
-                  max={frames.length - 1}
-                  step={1}
-                  value={frameIndex}
-                  onChange={(event) => setRadarFrame(Number(event.target.value))}
-                />
-              </label>
-            )}
-            {layers.radar && frames.length > 0 && (
-              <label className="slider">
-                <span>ความทึบเรดาร์ {Math.round(radarOpacity * 100)}%</span>
+                <span>ความทึบชั้นฝน {Math.round(radarOpacity * 100)}%</span>
                 <input
                   type="range"
                   min={0.2}
@@ -268,7 +302,14 @@ export default function App() {
           </div>
         </div>
 
-        <div className="map-legend" aria-label="คำอธิบายสี">
+        <div className={`map-legend ${legendOpen ? 'open' : ''}`} aria-label="คำอธิบายสี">
+          <button
+            className="legend-toggle"
+            aria-expanded={legendOpen}
+            onClick={() => setLegendOpen((open) => !open)}
+          >
+            <Palette size={15} /> สีบนแผนที่
+          </button>
           {layers.alerts && (
             <div className="legend-row">
               {LEGEND_LEVELS.map((level) => (
@@ -278,21 +319,23 @@ export default function App() {
               ))}
             </div>
           )}
-          {layers.radar && snapshot?.radar && snapshot.radar.frames.length > 0 && (
+          {layers.radar && (step.kind !== 'now' || frames.length > 0) && (
             <div className="legend-row radar-scale">
-              <span>ฝน</span>
+              <span>{step.kind === 'forecast' ? 'พยากรณ์ฝน' : 'ฝน'}</span>
               <span
                 className="radar-gradient"
                 style={{
-                  background: `linear-gradient(90deg, ${[...snapshot.radar.legend]
+                  background: `linear-gradient(90deg, ${[...rainLegend]
                     .reverse()
-                    .filter((item) => item.min_mm_per_hr !== null)
+                    .filter((item) => item.min_mm_per_hr !== null && item.min_mm_per_hr > 0)
                     .map((item) => item.color)
                     .join(', ')})`,
                 }}
               />
               <span>หนัก</span>
-              {radarAge !== null && radarAge > 45 && <b className="stale-mark">เก่า</b>}
+              {step.kind === 'radar' && radarAge !== null && radarAge > 45 && (
+                <b className="stale-mark">เก่า</b>
+              )}
             </div>
           )}
           {layers.cameras && (
@@ -370,7 +413,9 @@ export default function App() {
             alerts={alerts}
             now={now}
             dataBase={config?.DATA_BASE_URL ?? null}
-            radarFrame={frameIndex}
+            step={step}
+            forecast={forecast}
+            forecastState={forecastState}
             roads={roads}
             roadsState={roadsState}
             cameras={cameras?.cameras ?? []}
@@ -402,6 +447,8 @@ export default function App() {
             />
           </>
         )}
+
+        <Hotlines />
 
         <section
           id="data-status"

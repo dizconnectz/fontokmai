@@ -4,13 +4,20 @@ import {
   Camera as CameraIcon,
   CheckCircle2,
   CircleHelp,
+  Cloud,
+  CloudDrizzle,
+  CloudFog,
+  CloudLightning,
   CloudRain,
+  CloudSun,
   ExternalLink,
   Info,
   MapPin,
+  Phone,
   Route,
   ShieldAlert,
   ShieldCheck,
+  Sun,
   X,
 } from 'lucide-react';
 import {
@@ -22,6 +29,7 @@ import {
   type Alert,
   type Camera,
   type RadarFeed,
+  type RainForecast,
   type RoadFloodHistory,
   type Snapshot,
 } from './data';
@@ -29,6 +37,7 @@ import {
   LEVEL_LABEL,
   feedTrust,
   hazardTitle,
+  hourRange,
   levelOf,
   provincesOf,
   shortTime,
@@ -39,6 +48,8 @@ import {
 } from './alerts';
 import { inMultiPolygon, rainWords } from './geo';
 import type { FoundPlace, Place } from './places';
+import { dayRainWords, daysAt, forecastAt } from './forecast';
+import type { TimeStep } from './Timeline';
 import { distanceM, roadsNear } from './roads';
 import { useRadarAt } from './radarAt';
 import type { RefState } from './useData';
@@ -47,6 +58,42 @@ type Road = RoadFloodHistory['roads'][number];
 const RADAR_STALE_MIN = 45;
 const be = (year: string | number) => Number(year) + 543;
 const dayText = (date: string) => formatTime(`${date}T12:00:00+07:00`).replace(/ \d\d:\d\d$/, '');
+const FORECAST_STALE_MS = 12 * 3_600_000;
+const DAY = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' });
+const WEEKDAY = new Intl.DateTimeFormat('th-TH', {
+  timeZone: 'Asia/Bangkok',
+  weekday: 'short',
+  day: 'numeric',
+});
+function dayName(date: string, now: number): string {
+  if (date === DAY.format(now)) return 'วันนี้';
+  if (date === DAY.format(now + 86_400_000)) return 'พรุ่งนี้';
+  return WEEKDAY.format(new Date(`${date}T12:00:00+07:00`));
+}
+/** Icon and words of a WMO weather code (Open-Meteo daily weather_code). */
+function WeatherIcon({ code }: { code: number | null }) {
+  const [Icon, words] =
+    code === null
+      ? [Cloud, 'ไม่มีข้อมูล']
+      : code <= 1
+        ? [Sun, 'แจ่มใส']
+        : code === 2
+          ? [CloudSun, 'มีเมฆบางส่วน']
+          : code === 3
+            ? [Cloud, 'เมฆมาก']
+            : code <= 48
+              ? [CloudFog, 'หมอก']
+              : code <= 57
+                ? [CloudDrizzle, 'ฝนละออง']
+                : code <= 82
+                  ? [CloudRain, 'ฝน']
+                  : [CloudLightning, 'ฝนฟ้าคะนอง'];
+  return (
+    <span className="weather-icon" role="img" aria-label={words} title={words}>
+      <Icon size={18} />
+    </span>
+  );
+}
 const distanceText = (metres: number) =>
   metres < 1000 ? `${Math.round(metres / 10) * 10} ม.` : `${(metres / 1000).toFixed(1)} กม.`;
 
@@ -209,6 +256,39 @@ function RadarNow({ radar, now }: { radar: RadarFeed | null | undefined; now: nu
   );
 }
 
+// Public hotlines of the agencies (as of September 2026); tel: links call them on a phone.
+const HOTLINES = [
+  { number: '1784', name: 'ปภ. ขอความช่วยเหลือและอพยพ', note: 'LINE @1784DDPM' },
+  { number: '1669', name: 'เจ็บป่วยฉุกเฉิน (สพฉ.)' },
+  { number: '1586', name: 'กรมทางหลวง · สอบถามเส้นทาง' },
+  { number: '1146', name: 'กรมทางหลวงชนบท · สอบถามเส้นทาง' },
+  { number: '1129', name: 'ไฟฟ้าส่วนภูมิภาค (กฟภ.)' },
+  { number: '1130', name: 'ไฟฟ้านครหลวง (กฟน.) กทม. นนทบุรี สมุทรปราการ' },
+];
+export function Hotlines() {
+  return (
+    <section className="panel-section hotlines" aria-labelledby="hotlines-heading">
+      <h2 id="hotlines-heading">
+        <Phone size={18} /> สายด่วนเมื่อน้ำท่วม
+      </h2>
+      <ul>
+        {HOTLINES.map((line) => (
+          <li key={line.number}>
+            <a href={`tel:${line.number}`} aria-label={`โทร ${line.number} ${line.name}`}>
+              <strong>{line.number}</strong>
+              <span>
+                {line.name}
+                {line.note && <small> · {line.note}</small>}
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+      <small className="source-note">เบอร์ที่หน่วยงานประกาศ ณ กันยายน 2569 · แตะเพื่อโทร</small>
+    </section>
+  );
+}
+
 export function Overview({
   snapshot,
   alerts,
@@ -295,7 +375,9 @@ export function PinCard({
   alerts,
   now,
   dataBase,
-  radarFrame,
+  step,
+  forecast,
+  forecastState,
   roads,
   roadsState,
   cameras,
@@ -313,7 +395,10 @@ export function PinCard({
   alerts: Alert[];
   now: number;
   dataBase: string | null;
-  radarFrame: number;
+  /** the time the map shows (timeline) */
+  step: TimeStep;
+  forecast: RainForecast | null;
+  forecastState: RefState;
   roads: RoadFloodHistory | null;
   roadsState: RefState;
   cameras: Camera[];
@@ -349,7 +434,23 @@ export function PinCard({
           ? 'unplaced'
           : 'clear';
   const area = place !== null && place.scale !== 'subdistrict' && place.scale !== 'point';
-  const reading = useRadarAt(snapshot?.radar, dataBase, pin, radarFrame);
+  const reading = useRadarAt(
+    snapshot?.radar,
+    dataBase,
+    pin,
+    step.kind === 'radar' ? step.frame : -1,
+  );
+  const future =
+    step.kind === 'forecast' && forecast ? forecastAt(forecast, step.hour, pin) : undefined;
+  const days = useMemo(() => {
+    const all = forecast ? daysAt(forecast, pin) : null;
+    return all?.filter((day) => day.date >= DAY.format(now)) ?? null;
+  }, [forecast, pin, now]);
+  const wettest = Math.max(10, ...(days ?? []).map((day) => day.rainMm ?? 0));
+  const forecastOld = forecast ? now - Date.parse(forecast.fetched_at) > FORECAST_STALE_MS : false;
+  const forecastSource = forecast
+    ? `พยากรณ์จากแบบจำลอง ${forecast.credit_th} · ออกเมื่อ ${formatTime(forecast.fetched_at)} น. · ไม่ใช่ประกาศทางการ`
+    : '';
   const radarAge = radarAgeMinutes(snapshot?.radar, now);
   const inRoadArea =
     !roads ||
@@ -473,38 +574,95 @@ export function PinCard({
         {status === 'clear' && <p className="quiet">ตามประกาศกรมอุตุนิยมวิทยาที่มีผลตอนนี้</p>}
       </section>
 
-      <section className="panel-section" aria-labelledby="pin-rain">
-        <h2 id="pin-rain">
-          <CloudRain size={18} /> {area ? 'ฝนตอนนี้ที่จุดกลางพื้นที่' : 'ฝนตอนนี้ตรงจุดนี้'}
-        </h2>
-        {area && <p className="quiet">ดูฝนทั้งพื้นที่ได้จากสีบนแผนที่</p>}
-        {reading.state === 'none' && <p className="missing-value">ยังไม่มีข้อมูลเรดาร์</p>}
-        {reading.state === 'loading' && <p className="quiet">กำลังอ่านภาพเรดาร์…</p>}
-        {reading.state === 'error' && <p className="missing-value">อ่านภาพเรดาร์ไม่สำเร็จ</p>}
-        {reading.state === 'outside' && <p className="missing-value">จุดนี้อยู่นอกภาพเรดาร์</p>}
-        {reading.state === 'ready' && (
-          <p className={reading.item ? 'rain-value' : 'ok-value'}>
-            {reading.item
-              ? `${rainWords(reading.item.min_mm_per_hr)} ประมาณ ${reading.item.label} มม./ชม.`
-              : 'ไม่พบฝนจากเรดาร์'}
-          </p>
-        )}
-        {reading.time && (
-          <small className="source-note">
-            ภาพเรดาร์ {shortTime(reading.time, now)} · กรมอุตุนิยมวิทยา · เป็นค่าประมาณจากเรดาร์
-            ไม่ใช่ฝนที่วัดได้
-          </small>
-        )}
-        {radarAge !== null && radarAge > RADAR_STALE_MIN && (
-          <p className="inline-warning">
-            <Info size={15} /> ภาพเรดาร์ไม่อัปเดต {radarAge} นาที
-          </p>
-        )}
-      </section>
+      {step.kind === 'forecast' ? (
+        <section className="panel-section forecast-now" aria-labelledby="pin-rain">
+          <h2 id="pin-rain">
+            <CloudRain size={18} />{' '}
+            {area ? 'ฝนที่พยากรณ์ที่จุดกลางพื้นที่' : 'ฝนที่พยากรณ์ตรงจุดนี้'}
+          </h2>
+          <p className="quiet">ช่วง {hourRange(step.time, now)}</p>
+          {future === null && (
+            <p className="missing-value">จุดนี้อยู่นอกพื้นที่พยากรณ์ (เฉพาะประเทศไทย)</p>
+          )}
+          {future !== null && future !== undefined && (
+            <p className={future >= 0.1 ? 'rain-value' : 'ok-value'}>
+              {future >= 0.1
+                ? `${rainWords(future)} ราว ${future.toFixed(1)} มม. ในชั่วโมงนั้น`
+                : 'ไม่มีฝนในพยากรณ์ชั่วโมงนั้น'}
+            </p>
+          )}
+          <small className="source-note">{forecastSource}</small>
+        </section>
+      ) : (
+        <section className="panel-section" aria-labelledby="pin-rain">
+          <h2 id="pin-rain">
+            <CloudRain size={18} /> {area ? 'ฝนตอนนี้ที่จุดกลางพื้นที่' : 'ฝนตอนนี้ตรงจุดนี้'}
+          </h2>
+          {area && <p className="quiet">ดูฝนทั้งพื้นที่ได้จากสีบนแผนที่</p>}
+          {reading.state === 'none' && <p className="missing-value">ยังไม่มีข้อมูลเรดาร์</p>}
+          {reading.state === 'loading' && <p className="quiet">กำลังอ่านภาพเรดาร์…</p>}
+          {reading.state === 'error' && <p className="missing-value">อ่านภาพเรดาร์ไม่สำเร็จ</p>}
+          {reading.state === 'outside' && <p className="missing-value">จุดนี้อยู่นอกภาพเรดาร์</p>}
+          {reading.state === 'ready' && (
+            <p className={reading.item ? 'rain-value' : 'ok-value'}>
+              {reading.item
+                ? `${rainWords(reading.item.min_mm_per_hr)} ประมาณ ${reading.item.label} มม./ชม.`
+                : 'ไม่พบฝนจากเรดาร์'}
+            </p>
+          )}
+          {reading.time && (
+            <small className="source-note">
+              ภาพเรดาร์ {shortTime(reading.time, now)} · กรมอุตุนิยมวิทยา · เป็นค่าประมาณจากเรดาร์
+              ไม่ใช่ฝนที่วัดได้
+            </small>
+          )}
+          {radarAge !== null && radarAge > RADAR_STALE_MIN && (
+            <p className="inline-warning">
+              <Info size={15} /> ภาพเรดาร์ไม่อัปเดต {radarAge} นาที
+            </p>
+          )}
+        </section>
+      )}
 
       <section className="panel-section" aria-labelledby="pin-forecast">
         <h2 id="pin-forecast">ฝน 7 วัน</h2>
-        <p className="missing-value">ยังไม่มีข้อมูล · กำลังเพิ่มพยากรณ์</p>
+        {(forecastState === 'idle' || forecastState === 'loading') && (
+          <p className="quiet">กำลังโหลดพยากรณ์…</p>
+        )}
+        {(forecastState === 'missing' || forecastState === 'error') && (
+          <p className="missing-value">ยังไม่มีข้อมูลพยากรณ์</p>
+        )}
+        {forecast && !days && (
+          <p className="missing-value">จุดนี้อยู่นอกพื้นที่พยากรณ์ (เฉพาะประเทศไทย)</p>
+        )}
+        {days && days.length > 0 && (
+          <ul className="forecast-days" data-testid="forecast-days">
+            {days.map((day) => (
+              <li key={day.date}>
+                <span className="day-name">{dayName(day.date, now)}</span>
+                <WeatherIcon code={day.code} />
+                <span className="day-words">{dayRainWords(day.rainMm)}</span>
+                <span className="day-bar" aria-hidden="true">
+                  <i style={{ width: `${Math.min(100, ((day.rainMm ?? 0) / wettest) * 100)}%` }} />
+                </span>
+                <span className="day-numbers">
+                  {day.rainMm === null ? '–' : `${Math.round(day.rainMm)} มม.`}
+                  {day.probability !== null && <small> · {day.probability}%</small>}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {forecastOld && (
+          <p className="inline-warning">
+            <Info size={15} /> พยากรณ์ไม่อัปเดต
+          </p>
+        )}
+        {forecast && (
+          <small className="source-note">
+            ฝนรวมทั้งวันและโอกาสฝนสูงสุดของวัน · {forecastSource}
+          </small>
+        )}
       </section>
 
       <section className="panel-section" aria-labelledby="pin-flood">

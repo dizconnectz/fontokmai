@@ -28,6 +28,9 @@
   --rain-ink: #0b4f8a;
   --rain-bg: #e3f0fb;
   --panel-width: 400px;
+  --timeline-space: 78px;
+  --forecast-bg: #efe9fb;
+  --forecast-ink: #4a2c8f;
 }
 * {
   box-sizing: border-box;
@@ -721,9 +724,14 @@ svg {
   background: #e8eefc;
   color: #1f3f8a;
 }
-.pill.official {
+.pill.official,
+.pill.observed {
   background: #eef4f2;
   color: #0b4f48;
+}
+.pill.forecast {
+  background: var(--forecast-bg);
+  color: var(--forecast-ink);
 }
 .alert-select {
   display: grid;
@@ -951,4 +959,226 @@ details > ul {
   .icon-button.is-loading svg {
     animation: none;
   }
+}
+
+/* ---------- timeline: radar of the last hour, then the forecast ---------- */
+.stage.has-timeline .maplibregl-ctrl-bottom-right {
+  bottom: var(--timeline-space);
+}
+.stage.has-timeline .map-legend {
+  bottom: calc(var(--timeline-space) + 12px);
+}
+.legend-toggle {
+  display: none;
+}
+/* on a phone the colour key is a chip under the map buttons (the map attribution opens across the bottom
+   until the first drag, and an open key would cover the pin); tap to open it */
+@media (max-width: 640px) {
+  .stage .map-legend,
+  .stage.has-timeline .map-legend {
+    top: 142px;
+    bottom: auto;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .legend-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    justify-self: start;
+    padding: 6px 10px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: rgb(255 255 255 / 95%);
+    box-shadow: 0 2px 8px rgb(0 0 0 / 10%);
+    font-size: 0.82rem;
+  }
+  .map-legend:not(.open) .legend-row {
+    display: none;
+  }
+  .map-legend.open .legend-row {
+    padding: 4px 10px;
+    background: rgb(255 255 255 / 95%);
+  }
+  .map-legend.open .legend-row:last-child {
+    padding-bottom: 8px;
+    border-radius: 0 0 10px 10px;
+  }
+}
+.timeline {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px 6px 8px;
+  border-radius: 14px;
+  background: rgb(255 255 255 / 95%);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 14%);
+}
+.timeline.is-forecast {
+  box-shadow:
+    0 0 0 2px var(--forecast-ink),
+    0 2px 10px rgb(0 0 0 / 14%);
+}
+.timeline-play {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--brand);
+  color: #fff;
+}
+.timeline-body {
+  flex: 1;
+  min-width: 0;
+}
+.timeline-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+  font-size: 0.86rem;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.timeline-label strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.timeline-now {
+  margin-left: auto;
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 0.75rem;
+}
+.timeline-track {
+  position: relative;
+  padding-bottom: 14px;
+}
+.timeline-track input {
+  width: 100%;
+  margin: 4px 0 0;
+  accent-color: var(--brand);
+  /* observed part in green-grey, forecast part in purple */
+  background: linear-gradient(90deg, #cfe3dc 0 var(--now), var(--forecast-bg) var(--now) 100%);
+  border-radius: 999px;
+  height: 8px;
+}
+.timeline.is-forecast .timeline-track input {
+  accent-color: var(--forecast-ink);
+}
+.timeline-marks {
+  position: absolute;
+  inset: auto 0 0;
+  height: 14px;
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+.timeline-marks span {
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+.timeline-marks span::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -7px;
+  width: 1px;
+  height: 5px;
+  background: var(--muted);
+}
+.timeline-marks .mark-now {
+  color: var(--brand);
+  font-weight: 600;
+}
+
+/* ---------- 7-day forecast of a pin ---------- */
+.forecast-days {
+  display: grid;
+  gap: 4px;
+  padding: 0;
+  list-style: none;
+}
+.forecast-days li {
+  display: grid;
+  grid-template-columns: 4.2em 22px minmax(0, 1fr) 70px auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.86rem;
+}
+.day-name {
+  font-weight: 600;
+}
+.weather-icon {
+  display: inline-grid;
+  color: var(--rain-ink);
+}
+.day-words {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.day-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--rain-bg);
+  overflow: hidden;
+}
+.day-bar i {
+  display: block;
+  height: 100%;
+  background: var(--rain-ink);
+}
+.day-numbers {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.day-numbers small {
+  color: var(--muted);
+}
+.forecast-now {
+  border-left: 3px solid var(--forecast-ink);
+}
+
+/* ---------- hotlines ---------- */
+.hotlines ul {
+  display: grid;
+  gap: 4px;
+  padding: 0;
+  list-style: none;
+}
+.hotlines a {
+  display: grid;
+  grid-template-columns: 3.4em minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  text-decoration: none;
+}
+.hotlines a:hover {
+  background: #f0f5f2;
+}
+.hotlines strong {
+  font-size: 1.05rem;
+  color: var(--extreme-ink);
+  font-variant-numeric: tabular-nums;
+}
+.hotlines span {
+  font-size: 0.86rem;
+}
+.hotlines small {
+  color: var(--muted);
 }

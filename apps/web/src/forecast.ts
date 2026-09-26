@@ -1,0 +1,210 @@
+import type { RainForecast } from '../../../contracts/v1/ts/forecast';
+import type { RadarLegendItem } from './geo';
+
+export type { RainForecast };
+type LngLat = [number, number];
+export type Corners = [LngLat, LngLat, LngLat, LngLat];
+
+/** Values of one hour on the lattice (NaN where the lattice has no point). */
+interface Grid {
+  cols: number;
+  rows: number;
+  values: Float32Array;
+}
+const grids = new WeakMap<RainForecast, Map<number, Grid>>();
+function gridOf(forecast: RainForecast, hour: number): Grid {
+  let byHour = grids.get(forecast);
+  if (!byHour) grids.set(forecast, (byHour = new Map()));
+  let grid = byHour.get(hour);
+  if (!grid) {
+    const cols = Math.max(...forecast.points.map((p) => p[0])) + 1;
+    const rows = Math.max(...forecast.points.map((p) => p[1])) + 1;
+    const values = new Float32Array(cols * rows).fill(NaN);
+    forecast.points.forEach(([col, row], i) => {
+      const tenths = forecast.rain[hour]?.[i];
+      if (tenths !== null && tenths !== undefined) values[row * cols + col] = tenths / 10;
+    });
+    grid = { cols, rows, values };
+    byHour.set(hour, grid);
+  }
+  return grid;
+}
+
+/**
+ * Rain (mm in the hour) at fractional lattice coordinates: bilinear between the four points around,
+ * using the ones that exist; NaN when the nearest lattice point has no data (outside the forecast area).
+ */
+function sample(grid: Grid, col: number, row: number): number {
+  const nearest = Math.round(row) * grid.cols + Math.round(col);
+  if (
+    Math.round(col) < 0 ||
+    Math.round(row) < 0 ||
+    Math.round(col) >= grid.cols ||
+    Math.round(row) >= grid.rows ||
+    Number.isNaN(grid.values[nearest])
+  )
+    return NaN;
+  const c0 = Math.floor(col);
+  const r0 = Math.floor(row);
+  let sum = 0;
+  let weights = 0;
+  for (const [c, r] of [
+    [c0, r0],
+    [c0 + 1, r0],
+    [c0, r0 + 1],
+    [c0 + 1, r0 + 1],
+  ]) {
+    if (c < 0 || r < 0 || c >= grid.cols || r >= grid.rows) continue;
+    const value = grid.values[r * grid.cols + c];
+    if (Number.isNaN(value)) continue;
+    const weight = (1 - Math.abs(col - c)) * (1 - Math.abs(row - r));
+    sum += value * weight;
+    weights += weight;
+  }
+  return weights > 0 ? sum / weights : NaN;
+}
+
+/** Forecast rain (mm in the hour ending at hours[hour]) at [lon, lat], or null outside the forecast area. */
+export function forecastAt(forecast: RainForecast, hour: number, point: number[]): number | null {
+  const { west, south, step } = forecast.lattice;
+  const value = sample(gridOf(forecast, hour), (point[0] - west) / step, (point[1] - south) / step);
+  return Number.isNaN(value) ? null : value;
+}
+
+export interface ForecastDay {
+  date: string;
+  rainMm: number | null;
+  probability: number | null;
+  code: number | null;
+}
+/** The seven days of the lattice point nearest to [lon, lat] (within one lattice step), or null. */
+export function daysAt(forecast: RainForecast, point: number[]): ForecastDay[] | null {
+  const { west, south, step } = forecast.lattice;
+  const col = Math.round((point[0] - west) / step);
+  const row = Math.round((point[1] - south) / step);
+  const index = forecast.points.findIndex((p) => p[0] === col && p[1] === row);
+  if (index < 0) return null;
+  return forecast.days.map((date, d) => ({
+    date,
+    rainMm: forecast.day_rain[d][index] === null ? null : forecast.day_rain[d][index]! / 10,
+    probability: forecast.day_probability[d][index],
+    code: forecast.day_code[d][index],
+  }));
+}
+
+/** TMD words for a day's rain total (24-hour classes of the design, section 12). */
+export function dayRainWords(mm: number | null): string {
+  if (mm === null) return 'ไม่มีข้อมูล';
+  if (mm < 0.1) return 'ไม่มีฝน';
+  if (mm <= 10) return 'ฝนเล็กน้อย';
+  if (mm <= 35) return 'ฝนปานกลาง';
+  if (mm <= 90) return 'ฝนหนัก';
+  return 'ฝนหนักมาก';
+}
+
+function mercatorY(lat: number): number {
+  return Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
+}
+function latitudeOf(y: number): number {
+  return ((2 * Math.atan(Math.exp(y)) - Math.PI / 2) * 180) / Math.PI;
+}
+
+/** Legend class of a rain rate, as the radar colours it; null below 0.1 mm/hr. */
+export function rainClass(mm: number, legend: RadarLegendItem[]): RadarLegendItem | null {
+  if (!(mm >= 0.1)) return null;
+  return (
+    legend.find(
+      (item) => item.min_mm_per_hr !== null && item.min_mm_per_hr > 0 && mm >= item.min_mm_per_hr,
+    ) ?? null
+  );
+}
+
+// TMD radar legend (radar.json carries the same list); forecast colours use it when radar.json is absent
+export const RAIN_LEGEND: RadarLegendItem[] = [
+  { min_mm_per_hr: 80, color: '#DD0000', label: '> 80' },
+  { min_mm_per_hr: 56, color: '#FE45A2', label: '56' },
+  { min_mm_per_hr: 48, color: '#FF86FF', label: '48' },
+  { min_mm_per_hr: 40, color: '#FF8000', label: '40' },
+  { min_mm_per_hr: 32, color: '#FFFF00', label: '32' },
+  { min_mm_per_hr: 24, color: '#7CCE02', label: '24' },
+  { min_mm_per_hr: 16, color: '#46FF09', label: '16' },
+  { min_mm_per_hr: 12, color: '#00E10C', label: '12' },
+  { min_mm_per_hr: 8, color: '#00B347', label: '8' },
+  { min_mm_per_hr: 4, color: '#009375', label: '4' },
+  { min_mm_per_hr: 2, color: '#0006F0', label: '2' },
+  { min_mm_per_hr: 1, color: '#003C6C', label: '1' },
+  { min_mm_per_hr: 0.1, color: '#0077C6', label: '0.1' },
+];
+
+export interface ForecastFrame {
+  url: string;
+  coordinates: Corners;
+}
+const PIXELS_PER_STEP = 10;
+const frames = new WeakMap<RainForecast, Map<number, ForecastFrame>>();
+/**
+ * One forecast hour as a PNG for a MapLibre image source. Rows are laid out in Web Mercator, like the
+ * radar frames, so the drawn rain sits where forecastAt() reads it; colours follow the radar legend.
+ */
+export function forecastFrame(
+  forecast: RainForecast,
+  hour: number,
+  legend: RadarLegendItem[],
+): ForecastFrame | null {
+  let byHour = frames.get(forecast);
+  if (!byHour) frames.set(forecast, (byHour = new Map()));
+  const known = byHour.get(hour);
+  if (known) return known;
+  const grid = gridOf(forecast, hour);
+  const { west: lon0, south: lat0, step } = forecast.lattice;
+  // the image covers the cells around the lattice points
+  const west = lon0 - step / 2;
+  const east = west + grid.cols * step;
+  const south = lat0 - step / 2;
+  const north = south + grid.rows * step;
+  const width = grid.cols * PIXELS_PER_STEP;
+  const top = mercatorY(north);
+  const bottom = mercatorY(south);
+  const height = Math.round((width * (top - bottom)) / (((east - west) * Math.PI) / 180));
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext('2d');
+  if (!context) return null;
+  const image = context.createImageData(width, height);
+  // light rain is a light tint, so the streets stay readable under a wide area of drizzle
+  const colours = new Map<RadarLegendItem, number[]>();
+  for (const item of legend) {
+    const hex = item.color.slice(1);
+    const rate = item.min_mm_per_hr ?? 0;
+    const alpha = rate < 1 ? 80 : rate < 4 ? 120 : rate < 16 ? 160 : 200;
+    colours.set(item, [...[0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16)), alpha]);
+  }
+  for (let y = 0; y < height; y++) {
+    const lat = latitudeOf(top - ((y + 0.5) / height) * (top - bottom));
+    const row = (lat - lat0) / step;
+    for (let x = 0; x < width; x++) {
+      const col = (west + ((x + 0.5) / width) * (east - west) - lon0) / step;
+      const item = rainClass(sample(grid, col, row), legend);
+      if (!item) continue;
+      const [r, g, b, a] = colours.get(item)!;
+      const at = (y * width + x) * 4;
+      image.data[at] = r;
+      image.data[at + 1] = g;
+      image.data[at + 2] = b;
+      image.data[at + 3] = a;
+    }
+  }
+  context.putImageData(image, 0, 0);
+  const frame: ForecastFrame = {
+    url: canvas.toDataURL('image/png'),
+    coordinates: [
+      [west, north],
+      [east, north],
+      [east, south],
+      [west, south],
+    ],
+  };
+  byHour.set(hour, frame);
+  return frame;
+}

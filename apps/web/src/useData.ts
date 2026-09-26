@@ -5,11 +5,13 @@ import {
   loadRef,
   loadSnapshot,
   validCctv,
+  validForecast,
   validPlaces,
   validRoadFlood,
   type CctvRegistry,
   type Manifest,
   type PlaceGazetteer,
+  type RainForecast,
   type RoadFloodHistory,
   type RuntimeConfig,
   type Snapshot,
@@ -17,12 +19,14 @@ import {
 import { RefSync, type RefSlot } from './refSync';
 
 export type { RefState } from './refSync';
-type RefName = 'cameras' | 'roads' | 'places';
-// Reference files of the manifest. Cameras are small and always shown; the others load on first need.
+type RefName = 'cameras' | 'roads' | 'places' | 'forecast';
+// Files of the manifest outside the snapshot generation. Cameras and the forecast (timeline, ~50 KB gzip)
+// load at once; the others on first need.
 const REF_FILES: Record<RefName, { path: string; valid: (value: unknown) => boolean }> = {
   cameras: { path: 'ref/cctv.json', valid: validCctv },
   roads: { path: 'ref/road_flood_history.json', valid: validRoadFlood },
   places: { path: 'ref/places.json', valid: validPlaces },
+  forecast: { path: 'forecast/rain.json', valid: validForecast },
 };
 const IDLE: RefSlot<never> = { value: null, state: 'idle' };
 
@@ -35,10 +39,11 @@ export function useData() {
   const [cameras, setCameras] = useState<RefSlot<CctvRegistry>>(IDLE);
   const [roads, setRoads] = useState<RefSlot<RoadFloodHistory>>(IDLE);
   const [places, setPlaces] = useState<RefSlot<PlaceGazetteer>>(IDLE);
+  const [forecast, setForecast] = useState<RefSlot<RainForecast>>(IDLE);
   const current = useRef<Snapshot | null>(null);
   const settings = useRef<RuntimeConfig | null>(null);
   const flight = useRef<AbortController | null>(null);
-  const wanted = useRef(new Set<RefName>(['cameras']));
+  const wanted = useRef(new Set<RefName>(['cameras', 'forecast']));
   const refreshRef = useRef<() => Promise<void>>(async () => undefined);
   const syncs = useRef<Record<RefName, Pick<RefSync<unknown>, 'sync'>> | null>(null);
   if (!syncs.current) {
@@ -58,6 +63,9 @@ export function useData() {
       ),
       places: new RefSync(REF_FILES.places.path, loader('places'), (slot) =>
         setPlaces(slot as RefSlot<PlaceGazetteer>),
+      ),
+      forecast: new RefSync(REF_FILES.forecast.path, loader('forecast'), (slot) =>
+        setForecast(slot as RefSlot<RainForecast>),
       ),
     };
   }
@@ -150,5 +158,7 @@ export function useData() {
     places: places.value,
     placesState: places.state,
     loadPlaces,
+    forecast: forecast.value,
+    forecastState: forecast.state,
   };
 }

@@ -464,6 +464,57 @@ test('the camera list tells a failed, removed or older registry apart from "no c
   await expect(card).not.toContainText('ชุดก่อน');
 });
 
+test('the timeline slides from now into the forecast and the map and pin follow', async ({
+  page,
+}) => {
+  await prepare(page);
+  const manifest = read('active', 'manifest');
+  manifest.files.push({ path: 'forecast/rain.json', sha256: 'f'.repeat(64), size: 1, revision: 1 });
+  await page.route('**/examples/active/manifest.json?*', (route) =>
+    route.fulfill({ json: manifest }),
+  );
+  const forecast = JSON.parse(
+    readFileSync(
+      new URL('../../../contracts/v1/examples/forecast/rain.json', import.meta.url),
+      'utf8',
+    ),
+  );
+  await page.route('**/forecast/rain.json?*', (route) => route.fulfill({ json: forecast }));
+  // Bangkok is a lattice point of the example (col 1, row 1 → index 4)
+  await page.goto('/?pin=13.75,100.5');
+  const card = page.getByTestId('pin-card');
+  await expect(card.getByTestId('forecast-days').locator('li')).toHaveCount(7);
+  await expect(card.getByTestId('forecast-days')).toContainText('พรุ่งนี้');
+  await expect(card).toContainText('Open-Meteo.com (CC BY 4.0)');
+
+  const slider = page.getByRole('slider', { name: 'เลื่อนดูเวลาของแผนที่' });
+  await expect(slider).toHaveAttribute('aria-valuetext', /^ตอนนี้/);
+  await slider.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(slider).toHaveAttribute('aria-valuetext', /^พยากรณ์ · \S+ \d\d:\d\d–\d\d:\d\d น\.$/);
+  await expect(page.locator('.timeline')).toHaveClass(/is-forecast/);
+  await expect(page.locator('.map-legend')).toContainText('พยากรณ์ฝน');
+  const first = forecast.rain[0][4] / 10;
+  await expect(card.locator('#pin-rain')).toHaveText(/ฝนที่พยากรณ์ตรงจุดนี้/);
+  await expect(card).toContainText(
+    first >= 0.1 ? `ราว ${first.toFixed(1)} มม. ในชั่วโมงนั้น` : 'ไม่มีฝนในพยากรณ์ชั่วโมงนั้น',
+  );
+  // the accessibility check covers the timeline in forecast mode
+  const result = await new AxeBuilder({ page })
+    .include('.timeline')
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
+    .analyze();
+  expect(result.violations.map((v) => v.id)).toEqual([]);
+
+  // play moves forward on its own, and "back to now" returns to the present
+  await page.getByRole('button', { name: 'เล่นต่อเนื่องไปข้างหน้า' }).click();
+  await page.clock.fastForward(1_500);
+  await expect(slider).not.toHaveValue('1');
+  await page.getByRole('button', { name: 'กลับมาตอนนี้' }).click();
+  await expect(slider).toHaveAttribute('aria-valuetext', /^ตอนนี้/);
+  await expect(card.locator('#pin-rain')).toHaveText(/ฝนตอนนี้ตรงจุดนี้/);
+});
+
 test('a missing map chunk leaves the rest of the page usable', async ({ page }) => {
   await prepare(page);
   await page.route('**/assets/MapView-*.js', (route) => route.abort());

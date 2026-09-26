@@ -11,6 +11,7 @@ import type {
 import type { FeatureCollection, MultiPolygon, Point } from 'geojson';
 import { displayStatus, type Alert, type Camera, type RadarFeed } from './data';
 import { LEVEL_FILL, LEVEL_LINE, levelOf } from './alerts';
+import type { ForecastFrame } from './forecast';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 
@@ -32,7 +33,10 @@ interface Props {
   selectedAlertId: string | null;
   radar: RadarFeed | null;
   dataBase: string | null;
-  radarFrame: number;
+  /** radar frame to show, or null when the timeline is on a forecast hour */
+  radarFrame: number | null;
+  /** forecast rain image of the chosen hour, or null */
+  forecastFrame: ForecastFrame | null;
   radarOpacity: number;
   cameras: Camera[];
   layers: Layers;
@@ -320,7 +324,7 @@ export default function MapView(props: Props) {
   useEffect(() => {
     const instance = map.current;
     if (!ready || !instance) return;
-    const frame = props.radar?.frames[props.radarFrame];
+    const frame = props.radarFrame === null ? undefined : props.radar?.frames[props.radarFrame];
     const visible = props.layers.radar && frame && props.dataBase;
     if (!visible) {
       if (instance.getLayer('radar')) instance.setLayoutProperty('radar', 'visibility', 'none');
@@ -353,6 +357,43 @@ export default function MapView(props: Props) {
     props.dataBase,
     ready,
   ]);
+
+  // Forecast rain of the chosen hour, drawn like the radar (same colours, same place in the layer order)
+  useEffect(() => {
+    const instance = map.current;
+    if (!ready || !instance) return;
+    const frame = props.forecastFrame;
+    if (!props.layers.radar || !frame) {
+      if (instance.getLayer('forecast'))
+        instance.setLayoutProperty('forecast', 'visibility', 'none');
+      return;
+    }
+    const source = instance.getSource('forecast') as ImageSource | undefined;
+    if (!source) {
+      instance.addSource('forecast', {
+        type: 'image',
+        url: frame.url,
+        coordinates: frame.coordinates,
+      });
+      instance.addLayer(
+        {
+          id: 'forecast',
+          type: 'raster',
+          source: 'forecast',
+          paint: {
+            'raster-opacity': props.radarOpacity,
+            'raster-resampling': 'linear',
+            'raster-fade-duration': 0,
+          },
+        },
+        'camera-dot',
+      );
+    } else {
+      source.updateImage({ url: frame.url, coordinates: frame.coordinates });
+      instance.setLayoutProperty('forecast', 'visibility', 'visible');
+      instance.setPaintProperty('forecast', 'raster-opacity', props.radarOpacity);
+    }
+  }, [props.forecastFrame, props.radarOpacity, props.layers.radar, ready]);
 
   // Camera dots
   useEffect(() => {
