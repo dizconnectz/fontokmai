@@ -9,7 +9,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ValidationError
 
-from fontokmai.contracts.alerts import AlertsFeed
+from fontokmai.contracts.alerts import Alert, AlertsFeed
 from fontokmai.contracts.cctv import CctvRegistry
 from fontokmai.contracts.common import SourceStatus
 from fontokmai.contracts.forecast import RainForecast
@@ -17,7 +17,7 @@ from fontokmai.contracts.manifest import Manifest
 from fontokmai.contracts.places import PlaceGazetteer
 from fontokmai.contracts.radar import RadarFeed
 from fontokmai.contracts.road_flood import RoadFloodHistory
-from fontokmai.feeds.alerts import assemble_alerts_feed
+from fontokmai.feeds.alerts import LIVE_STATUSES, AlertCandidate, assemble_alerts_feed
 from fontokmai.publish.snapshot import atomic_write, write_snapshot
 from fontokmai.sources.tmd_cap.collect import collect, load_messages
 from fontokmai.sources.tmd_cap.fetch import Fetcher
@@ -76,6 +76,21 @@ def read_ref_files(out: Path) -> dict[str, bytes]:
     return files
 
 
+def _valid_candidates(candidates: list[AlertCandidate]) -> tuple[list[AlertCandidate], list[str]]:
+    """Candidates whose live payload passes the Alert contract, and a note for each one that does not."""
+    valid, broken = [], []
+    for candidate in candidates:
+        if candidate.payload["lifecycle_status"] in LIVE_STATUSES:
+            try:
+                Alert(revision=1, **candidate.payload)
+            except ValidationError as exc:
+                field = ".".join(str(part) for part in exc.errors()[0]["loc"])
+                broken.append(f"{candidate.event_id}: {field} {exc.errors()[0]['msg']}"[:200])
+                continue
+        valid.append(candidate)
+    return valid, broken
+
+
 def run_cap_snapshot(*, db: Path, out: Path, fetch: Fetcher, now: datetime, writer: str,
                      owner_epoch: int, radar_fetch: Fetcher | None = None) -> SnapshotResult:
     if now.tzinfo is None:
@@ -83,6 +98,14 @@ def run_cap_snapshot(*, db: Path, out: Path, fetch: Fetcher, now: datetime, writ
     generation_id = generation_id_for(now, writer)
     with StateStore(db) as store:
         result = collect(store, fetch, now)
+        pairs = load_messages(store)
+        urls = {msg.key: url for msg, url in pairs}
+        candidates = alert_candidates(group_events(msg for msg, _ in pairs), urls, now)
+        # an event whose content breaks the contract is left out and reported, never the whole round
+        candidates, broken = _valid_candidates(candidates)
+        if broken:
+            result.rejected += len(broken)
+            result.errors.extend(broken)
         if result.index_ok:
             store.set_meta(LAST_SUCCESS_KEY, now.isoformat())
         last_success = store.get_meta(LAST_SUCCESS_KEY)
@@ -93,9 +116,6 @@ def run_cap_snapshot(*, db: Path, out: Path, fetch: Fetcher, now: datetime, writ
             items_seen=result.items_seen, items_rejected=result.rejected,
             message="; ".join(result.errors[:3]) or None,
         )
-        pairs = load_messages(store)
-        urls = {msg.key: url for msg, url in pairs}
-        candidates = alert_candidates(group_events(msg for msg, _ in pairs), urls, now)
         feed = assemble_alerts_feed(candidates, store, now=now, generation_id=generation_id,
                                     recovery_epoch=recovery_epoch, source_status=[status])
         sync_static_refs(out)
