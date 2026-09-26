@@ -11,6 +11,9 @@ import liveFloodsSchema from '../../../contracts/v1/schema/live_floods.schema.js
 import bkkWaterSchema from '../../../contracts/v1/schema/bkk_water.schema.json';
 import bkkRainSchema from '../../../contracts/v1/schema/bkk_rain.schema.json';
 import bkkFloodingSchema from '../../../contracts/v1/schema/bkk_flooding.schema.json';
+import bkkNewsSchema from '../../../contracts/v1/schema/bkk_news.schema.json';
+import damsSchema from '../../../contracts/v1/schema/dams.schema.json';
+import weatherTodaySchema from '../../../contracts/v1/schema/weather_today.schema.json';
 import type { Manifest } from '../../../contracts/v1/ts/manifest';
 import type { Alert, AlertsFeed } from '../../../contracts/v1/ts/alerts';
 import type { RadarFeed } from '../../../contracts/v1/ts/radar';
@@ -22,12 +25,16 @@ import type { LiveFloods } from '../../../contracts/v1/ts/live_floods';
 import type { CanalLevels } from '../../../contracts/v1/ts/bkk_water';
 import type { RainGauges } from '../../../contracts/v1/ts/bkk_rain';
 import type { RoadFloodingDaily } from '../../../contracts/v1/ts/bkk_flooding';
+import type { SituationReport } from '../../../contracts/v1/ts/bkk_news';
+import type { DamReport } from '../../../contracts/v1/ts/dams';
+import type { WeatherToday } from '../../../contracts/v1/ts/weather_today';
 
 export type {
   Alert,
   AlertsFeed,
   CanalLevels,
   CctvRegistry,
+  DamReport,
   LiveFloods,
   Manifest,
   PlaceGazetteer,
@@ -36,6 +43,8 @@ export type {
   RainGauges,
   RoadFloodHistory,
   RoadFloodingDaily,
+  SituationReport,
+  WeatherToday,
 };
 export type Camera = CctvRegistry['cameras'][number];
 export interface Snapshot {
@@ -84,6 +93,11 @@ export const validCanalLevels = ajv.compile<CanalLevels>(allowAdditions(bkkWater
 export const validRainGauges = ajv.compile<RainGauges>(allowAdditions(bkkRainSchema) as object);
 export const validRoadFlooding = ajv.compile<RoadFloodingDaily>(
   allowAdditions(bkkFloodingSchema) as object,
+);
+export const validSituation = ajv.compile<SituationReport>(allowAdditions(bkkNewsSchema) as object);
+export const validDams = ajv.compile<DamReport>(allowAdditions(damsSchema) as object);
+export const validWeatherToday = ajv.compile<WeatherToday>(
+  allowAdditions(weatherTodaySchema) as object,
 );
 
 /** radar.json belongs to the snapshot generation, like alerts.json. */

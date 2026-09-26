@@ -702,6 +702,50 @@ test('Bangkok rain gauges and canal levels show as measured values near a pin', 
   );
 });
 
+test('the department situation text and the Chao Phraya dams show, with a note once a day old', async ({
+  page,
+}) => {
+  await prepare(page);
+  const manifest = read('active', 'manifest');
+  manifest.files.push({ path: 'bkk/news.json', sha256: 'e'.repeat(64), size: 1, revision: 1 });
+  manifest.files.push({ path: 'water/dams.json', sha256: 'f'.repeat(64), size: 1, revision: 1 });
+  await page.route('**/examples/active/manifest.json?*', (route) =>
+    route.fulfill({ json: manifest }),
+  );
+  const at = Date.parse(manifest.generated_at);
+  let fetchedAt = at;
+  const example = (file: string) => {
+    const data = JSON.parse(
+      readFileSync(new URL(`../../../contracts/v1/examples/bkk/${file}`, import.meta.url), 'utf8'),
+    );
+    data.fetched_at = new Date(fetchedAt).toISOString();
+    return data;
+  };
+  await page.route('**/bkk/news.json?*', (route) => route.fulfill({ json: example('news.json') }));
+  await page.route('**/water/dams.json?*', (route) =>
+    route.fulfill({ json: example('dams.json') }),
+  );
+  await page.goto('/');
+  const situation = page.getByTestId('situation');
+  await expect(situation).toContainText('รายงานสถานการณ์ทดสอบประจำวัน');
+  await expect(situation).toContainText('ฝนเล็กน้อย & ลมแรง');
+  await expect(situation).toContainText('ไม่ใช่ประกาศเตือนภัยของกรมอุตุฯ');
+  const dams = page.getByTestId('dams');
+  await expect(dams).toContainText('เขื่อนภูมิพล · น้ำ 62.68%');
+  await expect(dams).toContainText('เขื่อนป่าสักชลสิทธิ์');
+  await expect(dams).not.toContainText('ไม่ใช่ข้อมูลเรียลไทม์');
+  // choosing a dam moves the map only
+  await dams.getByRole('button', { name: /เขื่อนภูมิพล/ }).click();
+  await expect(dams).toBeVisible();
+  // fetched two days before: both say it is not real time and give the date
+  fetchedAt = at - 2 * 24 * 3_600_000;
+  await page.goto('/');
+  await expect(page.getByTestId('situation')).toContainText(
+    'ข้อมูลนี้ไม่ใช่ข้อมูลเรียลไทม์ · ข้อมูล ณ วันที่',
+  );
+  await expect(page.getByTestId('dams')).toContainText('ข้อมูลนี้ไม่ใช่ข้อมูลเรียลไทม์');
+});
+
 test('the Bangkok layers have no switch until their files are published', async ({ page }) => {
   await prepare(page);
   await page.goto('/');

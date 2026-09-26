@@ -4,10 +4,26 @@
 
 const RATIO = 2;
 
-import { RAIN_HOUR_CLASSES, RAIN_OLD_COLOR } from './bkk';
+import {
+  DAM_CLASSES,
+  DAM_UNKNOWN_COLOR,
+  DAY_RAIN_CLASSES,
+  RAIN_HOUR_CLASSES,
+  RAIN_OLD_COLOR,
+} from './bkk';
 
-// lucide "waves", "video", "droplet" and "cloud-rain", in their 24 × 24 box
+// lucide "waves", "video", "droplet", "cloud-rain", "dam" and "thermometer", in their 24 × 24 box
 const GLYPHS = {
+  dam: [
+    'M11 11.31c1.17.56 1.54 1.69 3.5 1.69 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1',
+    'M11.75 18c.35.5 1.45 1 2.75 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1',
+    'M2 10h4',
+    'M2 14h4',
+    'M2 18h4',
+    'M2 6h4',
+    'M7 3a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1L10 4a1 1 0 0 0-1-1z',
+  ],
+  weather: ['M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z'],
   water: [
     'M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z',
   ],
@@ -38,6 +54,14 @@ const PINS: Record<string, { kind: Kind; color: string }> = {
   'pin-water': { kind: 'water', color: '#00838f' },
   'pin-water-old': { kind: 'water', color: '#90a4ae' },
   'pin-rain-old': { kind: 'rain', color: RAIN_OLD_COLOR },
+  'pin-dam-unknown': { kind: 'dam', color: DAM_UNKNOWN_COLOR },
+  'pin-wx-none': { kind: 'weather', color: RAIN_OLD_COLOR },
+  ...Object.fromEntries(
+    DAM_CLASSES.map((item) => [item.pin, { kind: 'dam' as const, color: item.color }]),
+  ),
+  ...Object.fromEntries(
+    DAY_RAIN_CLASSES.map((item) => [item.pin, { kind: 'weather' as const, color: item.color }]),
+  ),
   ...Object.fromEntries(
     RAIN_HOUR_CLASSES.map((item) => [item.pin, { kind: 'rain' as const, color: item.color }]),
   ),
@@ -47,6 +71,8 @@ export const CLUSTER_COLOR: Record<Kind, string> = {
   camera: '#37474f',
   water: '#00838f',
   rain: '#1e6fd9',
+  dam: '#1e88e5',
+  weather: '#546e7a',
 };
 
 export interface MapImage {
@@ -136,7 +162,7 @@ function cluster(kind: Kind, label: string): MapImage | null {
 export function mapImage(name: string): MapImage | null {
   const found = PINS[name];
   if (found) return pin(found.kind, found.color);
-  const match = /^cluster-(flood|camera|water|rain)-(.+)$/.exec(name);
+  const match = /^cluster-(flood|camera|water|rain|dam|weather)-(.+)$/.exec(name);
   return match ? cluster(match[1] as Kind, match[2]) : null;
 }
 export const MAP_IMAGE_RATIO = RATIO;

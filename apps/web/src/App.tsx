@@ -15,6 +15,8 @@ import {
   RefreshCw,
   ShieldAlert,
   Umbrella,
+  Dam,
+  Thermometer,
   X,
 } from 'lucide-react';
 import { formatTime, isStale, radarAgeMinutes, staleAfter, visibleAlerts } from './data';
@@ -29,7 +31,13 @@ import Timeline, { type TimeStep } from './Timeline';
 import { FORECAST_LEVELS, forecastAreas, RAIN_LEGEND } from './forecast';
 import { feedTrust, LEVEL_FILL, LEVEL_LABEL, worstLevel, type Level } from './alerts';
 import { nearestSubdistrict, type FoundPlace } from './places';
-import { RAIN_HOUR_CLASSES, RAIN_OLD_COLOR, roadKey as roadNameKey } from './bkk';
+import {
+  DAM_CLASSES,
+  DAY_RAIN_CLASSES,
+  RAIN_HOUR_CLASSES,
+  RAIN_OLD_COLOR,
+  roadKey as roadNameKey,
+} from './bkk';
 import type { Focus, Layers, LngLat } from './MapView';
 
 const MapView = lazy(() => import('./MapView'));
@@ -81,6 +89,9 @@ export default function App() {
     rain,
     rainState,
     flooding,
+    news,
+    dams,
+    weather,
   } = data;
   const [layers, setLayers] = useState<Layers>({
     alerts: true,
@@ -89,6 +100,8 @@ export default function App() {
     floods: true,
     water: true,
     rain: true,
+    dams: true,
+    weather: true,
   });
   // the time the map shows: null = now (the latest radar frame); otherwise a radar or forecast time
   const [selectedTime, setSelectedTime] = useState<number | null>(null);
@@ -369,6 +382,8 @@ export default function App() {
               floods={step.kind === 'forecast' ? [] : (floods?.reports ?? [])}
               water={step.kind === 'forecast' ? null : water}
               rain={step.kind === 'forecast' ? null : rain}
+              dams={step.kind === 'forecast' ? null : dams}
+              weather={step.kind === 'forecast' ? null : weather}
               layers={layers}
               pin={pin}
               pinLabel={pinTitle}
@@ -441,6 +456,16 @@ export default function App() {
             {rain && (
               <button aria-pressed={layers.rain} onClick={() => toggle('rain')}>
                 <Umbrella size={16} /> ฝนวัดจริง กทม.
+              </button>
+            )}
+            {dams && (
+              <button aria-pressed={layers.dams} onClick={() => toggle('dams')}>
+                <Dam size={16} /> เขื่อนใหญ่
+              </button>
+            )}
+            {weather && (
+              <button aria-pressed={layers.weather} onClick={() => toggle('weather')}>
+                <Thermometer size={16} /> สถานีกรมอุตุฯ
               </button>
             )}
             {layers.radar && (
@@ -534,6 +559,26 @@ export default function App() {
               <span>
                 <i className="legend-pin" style={{ background: RAIN_OLD_COLOR }} /> ไม่มีค่าล่าสุด
               </span>
+            </div>
+          )}
+          {layers.dams && dams && step.kind !== 'forecast' && (
+            <div className="legend-row rain-hour">
+              <span>เขื่อน (น้ำในอ่าง)</span>
+              {DAM_CLASSES.map((item) => (
+                <span key={item.pin}>
+                  <i className="legend-pin" style={{ background: item.color }} /> {item.label}
+                </span>
+              ))}
+            </div>
+          )}
+          {layers.weather && weather && step.kind !== 'forecast' && (
+            <div className="legend-row rain-hour">
+              <span>สถานีกรมอุตุฯ ฝนรอบเช้า (มม.)</span>
+              {DAY_RAIN_CLASSES.map((item) => (
+                <span key={item.pin}>
+                  <i className="legend-pin" style={{ background: item.color }} /> {item.label}
+                </span>
+              ))}
             </div>
           )}
           {layers.cameras && (
@@ -673,6 +718,21 @@ export default function App() {
               onRoadName={(name) => {
                 setRoadToShow(name);
                 void loadRoads();
+              }}
+              news={news}
+              dams={dams}
+              onDam={(location) => {
+                setFocus({
+                  key: `dam:${location.join(',')}:${Date.now()}`,
+                  bounds: [
+                    [location[0] - 0.05, location[1] - 0.05],
+                    [location[0] + 0.05, location[1] + 0.05],
+                  ],
+                  maxZoom: 11,
+                });
+                setLayers((current) => (current.dams ? current : { ...current, dams: true }));
+                if (typeof matchMedia === 'function' && matchMedia('(max-width: 899px)').matches)
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
             />
           </>

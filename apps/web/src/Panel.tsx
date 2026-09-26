@@ -11,8 +11,10 @@ import {
   CloudRain,
   CloudSun,
   ExternalLink,
+  Dam as DamIcon,
   Droplet,
   Info,
+  Megaphone,
   MapPin,
   Phone,
   Star,
@@ -70,8 +72,11 @@ import {
   BKK_STALE_MS,
   floodingText,
   isRecent,
+  amount,
+  CHAO_PHRAYA_DAMS,
   isTodaysReport,
   levelText,
+  oldNote,
   mmText,
   nearest,
   RAIN_RADIUS_M,
@@ -81,8 +86,10 @@ import {
   WATER_RADIUS_M,
   type CanalLevels,
   type RainGauges,
+  type DamReport,
   type RoadFloodingDaily,
   type RoadFloodingReport,
+  type SituationReport,
 } from './bkk';
 import { useRadarAt } from './radarAt';
 import type { RefState } from './useData';
@@ -404,8 +411,22 @@ function RoadFloodingToday({
       </button>
     </li>
   );
-  // another day's report is not the situation now
-  if (!isTodaysReport(flooding, now)) return null;
+  // another day's report is not the situation now: folded, with its date
+  if (!isTodaysReport(flooding, now))
+    return (
+      <section className="panel-section" data-testid="road-flooding-old">
+        <details className="history-details">
+          <summary>
+            <Route size={15} /> รายงานถนนท่วม กทม. ของวันที่{' '}
+            {flooding.report_date.split('-').reverse().join('/')} (ข้อมูลเก่า ไม่ใช่วันนี้)
+          </summary>
+          <p className="inline-warning">
+            <Info size={15} /> {oldNote(flooding.fetched_at, now)}
+          </p>
+          <ul className="flood-list">{flooding.reports.map(item)}</ul>
+        </details>
+      </section>
+    );
   return (
     <section
       className="panel-section"
@@ -438,8 +459,8 @@ function RoadFloodingToday({
       )}
       {old && (
         <p className="inline-warning">
-          <Info size={15} /> ข้อมูลนี้ดึงเมื่อ {reportTime(flooding.fetched_at, now)}{' '}
-          ไม่ได้อัปเดตอัตโนมัติ ถนนที่ขึ้นว่ายังท่วมอาจแห้งแล้ว หรือมีจุดท่วมเพิ่ม
+          <Info size={15} /> {oldNote(flooding.fetched_at, now)} · ถนนที่ขึ้นว่ายังท่วมอาจแห้งแล้ว
+          หรือมีจุดท่วมเพิ่ม
         </p>
       )}
       <small className="source-note">
@@ -450,6 +471,96 @@ function RoadFloodingToday({
         <a href={flooding.source_url} target="_blank" rel="noopener noreferrer">
           รายงานต้นทาง ↗
         </a>
+      </small>
+    </section>
+  );
+}
+
+function SituationCard({ news, now }: { news: SituationReport; now: number }) {
+  const note = oldNote(news.fetched_at, now);
+  const paragraphs = news.text_th.split('\n');
+  return (
+    <section className="panel-section" aria-labelledby="situation-heading" data-testid="situation">
+      <h2 id="situation-heading">
+        <Megaphone size={18} /> สรุปสถานการณ์จากสำนักการระบายน้ำ
+      </h2>
+      <strong className="situation-subject">{news.subject_th}</strong>
+      {paragraphs.slice(0, 3).map((text, index) => (
+        <p key={index} className="situation-text">
+          {text}
+        </p>
+      ))}
+      {paragraphs.length > 3 && (
+        <details className="history-details">
+          <summary>อ่านต่อ</summary>
+          {paragraphs.slice(3).map((text, index) => (
+            <p key={index} className="situation-text">
+              {text}
+            </p>
+          ))}
+        </details>
+      )}
+      {note && (
+        <p className="inline-warning">
+          <Info size={15} /> {note}
+        </p>
+      )}
+      <small className="source-note">
+        ข้อความของ{news.credit_th}
+        {news.updated_at ? ` · ปรับปรุง ${formatTime(news.updated_at)} น.` : ''} ·
+        ไม่ใช่ประกาศเตือนภัยของกรมอุตุฯ
+      </small>
+    </section>
+  );
+}
+
+function ChaoPhrayaDams({
+  dams,
+  now,
+  onDam,
+}: {
+  dams: DamReport;
+  now: number;
+  /** show the dam on the map; the side panel stays */
+  onDam: (location: number[]) => void;
+}) {
+  const main = CHAO_PHRAYA_DAMS.flatMap((id) => dams.dams.filter((dam) => dam.id === id));
+  if (!main.length) return null;
+  const note = oldNote(dams.fetched_at, now);
+  return (
+    <section className="panel-section" aria-labelledby="dams-heading" data-testid="dams">
+      <h2 id="dams-heading">
+        <DamIcon size={18} /> เขื่อนหลักเหนือกรุงเทพฯ (ลุ่มเจ้าพระยา)
+      </h2>
+      <ul className="flood-list">
+        {main.map((dam) => (
+          <li key={dam.id}>
+            <button
+              className="road-button"
+              disabled={!dam.location}
+              onClick={() => dam.location && onDam(dam.location)}
+            >
+              <span className="flood-line">
+                <strong>
+                  {dam.name_th} · น้ำ {amount(dam.percent)}%
+                </strong>
+                <small>
+                  ไหลเข้า {amount(dam.inflow_mcm)} · ระบาย {amount(dam.outflow_mcm)} ล้าน ลบ.ม./วัน
+                </small>
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      {note && (
+        <p className="inline-warning">
+          <Info size={15} /> {note}
+        </p>
+      )}
+      <small className="source-note">
+        ข้อมูลวันที่ {dams.report_date.split('-').reverse().join('/')} · {dams.credit_th} ·
+        ดูเขื่อนอื่นเป็นหมุดบนแผนที่ · น้ำเกินร้อยละ 80 แปลว่าเหลือที่รับน้ำน้อย
+        ไม่ใช่การพยากรณ์ว่าจะท่วม
       </small>
     </section>
   );
@@ -528,6 +639,9 @@ export function Overview({
   openFloodId,
   flooding,
   onRoadName,
+  news,
+  dams,
+  onDam,
   onSelectAlert,
   onFlood,
   onFavorite,
@@ -542,6 +656,9 @@ export function Overview({
   openFloodId: string | null;
   flooding: RoadFloodingDaily | null;
   onRoadName: (name: string) => void;
+  news: SituationReport | null;
+  dams: DamReport | null;
+  onDam: (location: number[]) => void;
   onSelectAlert: (id: string) => void;
   onFlood: (report: FloodReport) => void;
   onFavorite: () => void;
@@ -602,6 +719,8 @@ export function Overview({
         onFlood={onFlood}
       />
       {flooding && <RoadFloodingToday flooding={flooding} now={now} onRoad={onRoadName} />}
+      {news && <SituationCard news={news} now={now} />}
+      {dams && <ChaoPhrayaDams dams={dams} now={now} onDam={onDam} />}
       <RadarNow radar={snapshot?.radar} now={now} />
       <section className="panel-section pin-hint">
         <MapPin size={20} />
@@ -1028,8 +1147,7 @@ export function PinCard({
           )}
           {bkkOld && (
             <p className="inline-warning">
-              <Info size={15} /> ข้อมูลน้ำและฝนของ กทม. ไม่อัปเดตตั้งแต่{' '}
-              {formatTime((water ?? rain)!.fetched_at)} น.
+              <Info size={15} /> {oldNote((water ?? rain)!.fetched_at, now)}
             </p>
           )}
           <small className="source-note">

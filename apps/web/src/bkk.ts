@@ -1,6 +1,9 @@
 import type { CanalLevels, CanalStation } from '../../../contracts/v1/ts/bkk_water';
 import type { RainGauge, RainGauges } from '../../../contracts/v1/ts/bkk_rain';
 import type { RoadFloodingDaily, RoadFloodingReport } from '../../../contracts/v1/ts/bkk_flooding';
+import type { SituationReport } from '../../../contracts/v1/ts/bkk_news';
+import type { Dam, DamReport } from '../../../contracts/v1/ts/dams';
+import type { WeatherStation, WeatherToday } from '../../../contracts/v1/ts/weather_today';
 import { distanceM } from './roads';
 
 // Bangkok readings of the Drainage and Sewerage Department through DXS (contract sections 14 and 15)
@@ -125,3 +128,68 @@ export function reportsOnRoads(
   const wanted = new Set(roadNames.map(roadKey));
   return flooding.reports.filter((report) => wanted.has(roadKey(report.road_th)));
 }
+
+// ---------- how old a fetched file is (the DXS files are fetched now and then, not every round) ----------
+const DAY_TIME = new Intl.DateTimeFormat('th-TH', {
+  timeZone: 'Asia/Bangkok',
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+/** A file fetched more than this long ago is labelled "not real time" with its date (the owner's rule). */
+export const NOT_REAL_TIME_MS = 24 * 3_600_000;
+
+/** null while fresh; "not updated by itself" after 45 minutes; "not real time, data of <date>" after a day. */
+export function oldNote(fetchedAt: string, now: number): string | null {
+  const age = now - Date.parse(fetchedAt);
+  if (age > NOT_REAL_TIME_MS)
+    return `ข้อมูลนี้ไม่ใช่ข้อมูลเรียลไทม์ · ข้อมูล ณ วันที่ ${DAY_TIME.format(Date.parse(fetchedAt))} น.`;
+  if (age > BKK_STALE_MS) return `ดึงเมื่อ ${reportTime(fetchedAt, now)} ไม่ได้อัปเดตอัตโนมัติ`;
+  return null;
+}
+
+// ---------- large dams (contract section 18) and TMD stations (section 19) ----------
+export type { Dam, DamReport, SituationReport, WeatherStation, WeatherToday };
+
+export const DAM_CLASSES = [
+  { pin: 'pin-dam-low', label: 'ต่ำกว่า 30%', color: '#a1887f' },
+  { pin: 'pin-dam', label: '30–80%', color: '#1e88e5' },
+  { pin: 'pin-dam-high', label: '80–100%', color: '#fb8c00' },
+  { pin: 'pin-dam-full', label: 'เกิน 100%', color: '#e53935' },
+];
+export const DAM_UNKNOWN_COLOR = '#90a4ae';
+
+/** Pin picture of a dam by how full it is. */
+export function damPin(dam: Dam): string {
+  if (dam.percent === null) return 'pin-dam-unknown';
+  const index = dam.percent < 30 ? 0 : dam.percent < 80 ? 1 : dam.percent < 100 ? 2 : 3;
+  return DAM_CLASSES[index].pin;
+}
+
+/** TMD's daily rain classes (mm), for the station pins */
+export const DAY_RAIN_CLASSES = [
+  { pin: 'pin-wx-0', label: 'ไม่มีฝน', color: '#78909c' },
+  { pin: 'pin-wx-1', label: '0.1–10', color: '#29b6f6' },
+  { pin: 'pin-wx-2', label: '10.1–35', color: '#1e6fd9' },
+  { pin: 'pin-wx-3', label: '35.1–90', color: '#6a3fc1' },
+  { pin: 'pin-wx-4', label: 'เกิน 90', color: '#c2185b' },
+];
+
+/** Pin picture of a TMD station by the rain of its morning report. */
+export function weatherPin(station: WeatherStation): string {
+  const mm = station.rain_mm;
+  if (mm === null) return 'pin-wx-none';
+  const index = mm < 0.1 ? 0 : mm <= 10 ? 1 : mm <= 35 ? 2 : mm <= 90 ? 3 : 4;
+  return DAY_RAIN_CLASSES[index].pin;
+}
+
+const NUMBER = new Intl.NumberFormat('th-TH', { maximumFractionDigits: 2 });
+/** "8,437.68" or "–" */
+export function amount(value: number | null): string {
+  return value === null ? '–' : NUMBER.format(value);
+}
+
+/** The dams that feed the Chao Phraya, the river through Bangkok (for the overview card). */
+export const CHAO_PHRAYA_DAMS = ['200101', '200102', '100107', '100301'];

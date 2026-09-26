@@ -1,9 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
+  amount,
+  damPin,
   floodingText,
   isRecent,
   isTodaysReport,
+  oldNote,
   levelText,
   mmText,
   nearest,
@@ -13,9 +16,12 @@ import {
   roadKey,
   roadLabel,
   waterPin,
+  weatherPin,
   type CanalLevels,
   type RainGauges,
+  type DamReport,
   type RoadFloodingDaily,
+  type WeatherToday,
 } from './bkk';
 
 // the producer's examples from synthetic DXS answers (contracts/v1/examples/bkk), read at 17:20 on 26 Sep
@@ -26,6 +32,8 @@ const read = <T>(name: string) =>
 const water = read<CanalLevels>('water.json');
 const rain = read<RainGauges>('rain.json');
 const flooding = read<RoadFloodingDaily>('flooding.json');
+const dams = read<DamReport>('dams.json');
+const weather = read<WeatherToday>('weather-today.json');
 const AT = Date.parse('2026-09-26T17:20:00+07:00');
 
 describe('Bangkok canal levels and rain gauges', () => {
@@ -75,5 +83,32 @@ describe('Bangkok canal levels and rain gauges', () => {
     expect(isTodaysReport(flooding, AT)).toBe(true);
     expect(isTodaysReport(flooding, AT + 24 * 3_600_000)).toBe(false);
     expect(reportTime(flooding.reports[2].flood_start!, AT)).toMatch(/^25 ก\.ย\. 22:10 น\.$/);
+  });
+
+  it('says when fetched data is not updated by itself, and that it is not real time after a day', () => {
+    const fetched = flooding.fetched_at;
+    expect(oldNote(fetched, Date.parse(fetched) + 10 * 60_000)).toBeNull();
+    expect(oldNote(fetched, Date.parse(fetched) + 2 * 3_600_000)).toMatch(
+      /^ดึงเมื่อ .*ไม่ได้อัปเดตอัตโนมัติ$/,
+    );
+    expect(oldNote(fetched, Date.parse(fetched) + 26 * 3_600_000)).toMatch(
+      /^ข้อมูลนี้ไม่ใช่ข้อมูลเรียลไทม์ · ข้อมูล ณ วันที่ 26 ก\.ย\. 2569 17:20 น\.$/,
+    );
+  });
+
+  it('colours dams by how full they are and stations by their morning rain', () => {
+    const [bhumibol, unplaced, pasak] = dams.dams;
+    expect(damPin(bhumibol)).toBe('pin-dam'); // 62.68 %
+    expect(damPin(unplaced)).toBe('pin-dam-high'); // 95 %
+    expect(damPin(pasak)).toBe('pin-dam-high'); // 82.99 %
+    expect(damPin({ ...pasak, percent: 104 })).toBe('pin-dam-full');
+    expect(damPin({ ...pasak, percent: null })).toBe('pin-dam-unknown');
+    expect(unplaced.location).toBeNull();
+    const [bangkok, dry, broken] = weather.stations;
+    expect(weatherPin(bangkok)).toBe('pin-wx-3'); // 52.8 mm
+    expect(weatherPin(dry)).toBe('pin-wx-0');
+    expect(weatherPin(broken)).toBe('pin-wx-none');
+    expect(amount(8437.68)).toBe('8,437.68');
+    expect(amount(null)).toBe('–');
   });
 });

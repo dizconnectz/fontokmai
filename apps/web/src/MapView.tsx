@@ -15,15 +15,25 @@ import { LEVEL_FILL, LEVEL_LINE, levelOf } from './alerts';
 import type { ForecastAreas } from './forecast';
 import { agoText, isOngoing, REPORTER_TH, type FloodReport } from './floods';
 import {
+  amount,
+  damPin,
+  DAY_RAIN_CLASSES,
+  DAM_CLASSES,
   levelText,
   mmText,
+  oldNote,
   RAIN_HOUR_CLASSES,
   rainPin,
   waterPin,
+  weatherPin,
   type CanalLevels,
   type CanalStation,
+  type Dam,
+  type DamReport,
   type RainGauge,
   type RainGauges,
+  type WeatherStation,
+  type WeatherToday,
 } from './bkk';
 import { MAP_IMAGE_RATIO, mapImage } from './mapIcons';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -36,6 +46,8 @@ export interface Layers {
   floods: boolean;
   water: boolean;
   rain: boolean;
+  dams: boolean;
+  weather: boolean;
 }
 export type LngLat = [number, number];
 export interface Focus {
@@ -61,6 +73,9 @@ interface Props {
   /** Bangkok canal levels and rain gauges (DXS), or null while the timeline shows the forecast */
   water: CanalLevels | null;
   rain: RainGauges | null;
+  /** large dams and TMD's morning station reports (DXS), or null while the timeline shows the forecast */
+  dams: DamReport | null;
+  weather: WeatherToday | null;
   layers: Layers;
   pin: LngLat | null;
   /** short name shown on the pin, e.g. ต.คลองหนึ่ง */
@@ -183,6 +198,8 @@ function addOverlays(instance: LibreMap) {
   // zoom 14
   for (const [kind, source] of [
     ['camera', 'cameras'],
+    ['weather', 'weather'],
+    ['dam', 'dams'],
     ['water', 'water'],
     ['rain', 'rain'],
     ['flood', 'floods'],
@@ -244,6 +261,10 @@ const PIN_POPUP_OFFSET: Record<PositionAnchor, [number, number]> = {
 const POINT_LAYERS = [
   'camera-cluster',
   'camera-pin',
+  'weather-cluster',
+  'weather-pin',
+  'dam-cluster',
+  'dam-pin',
   'water-cluster',
   'water-pin',
   'rain-cluster',
@@ -251,7 +272,7 @@ const POINT_LAYERS = [
   'flood-cluster',
   'flood-pin',
 ];
-type PointKind = 'flood' | 'camera' | 'water' | 'rain';
+type PointKind = 'flood' | 'camera' | 'water' | 'rain' | 'dam' | 'weather';
 
 function floodPopup(report: FloodReport, now: number, onHere: () => void): HTMLElement {
   const root = document.createElement('div');
@@ -299,6 +320,59 @@ function measured(observedAt: string | null, now: number): string {
     : 'ไม่มีค่าล่าสุด';
 }
 
+/** "not updated by itself" or "not real time, data of <date>" for a file fetched a while ago */
+function note(fetchedAt: string, now: number): HTMLElement[] {
+  const text = oldNote(fetchedAt, now);
+  if (!text) return [];
+  const element = line(text, 'small');
+  element.className = 'popup-old';
+  return [element];
+}
+
+function damPopup(dam: Dam, file: DamReport, now: number): HTMLElement {
+  const root = document.createElement('div');
+  root.className = 'camera-popup';
+  root.append(
+    line(dam.name_th, 'strong'),
+    line([dam.region_th, dam.owner_th].filter(Boolean).join(' · ')),
+    line(dam.percent === null ? 'ไม่มีค่าร้อยละ' : `น้ำ ${amount(dam.percent)}% ของความจุ`),
+    line(`ปริมาณน้ำ ${amount(dam.volume_mcm)} / ${amount(dam.storage_mcm)} ล้าน ลบ.ม.`),
+    line(`ไหลเข้า ${amount(dam.inflow_mcm)} · ระบาย ${amount(dam.outflow_mcm)} ล้าน ลบ.ม./วัน`),
+    line(`ข้อมูลวันที่ ${file.report_date.split('-').reverse().join('/')}`),
+    ...note(file.fetched_at, now),
+    line(
+      `${dam.location_kind === 'reservoir' ? 'หมุดอยู่กลางอ่างเก็บน้ำ · ' : ''}${file.credit_th} · ${file.location_credit_th}`,
+      'small',
+    ),
+    linkOut(file.source_url, 'ข้อมูลน้ำของกรมชลประทาน ↗'),
+  );
+  return root;
+}
+
+function weatherPopup(station: WeatherStation, file: WeatherToday, now: number): HTMLElement {
+  const root = document.createElement('div');
+  root.className = 'camera-popup';
+  const temps = [
+    station.temperature_c !== null ? `อุณหภูมิ ${station.temperature_c} °C` : null,
+    station.max_c !== null ? `สูงสุด ${station.max_c}` : null,
+    station.min_c !== null ? `ต่ำสุด ${station.min_c}` : null,
+  ].filter(Boolean);
+  root.append(
+    line(`สถานีอุตุฯ ${station.name_th}`, 'strong'),
+    line(station.province_th ?? ''),
+    line(`ฝน ${mmText(station.rain_mm)} (รายงานรอบเช้า)`),
+  );
+  if (temps.length) root.append(line(temps.join(' · ')));
+  if (station.humidity_pct !== null) root.append(line(`ความชื้น ${station.humidity_pct}%`));
+  root.append(
+    line(station.observed_at ? `ตรวจเมื่อ ${formatTime(station.observed_at)} น.` : 'ไม่มีเวลาตรวจ'),
+    ...note(file.fetched_at, now),
+    line(file.credit_th, 'small'),
+    linkOut(file.source_url, 'เว็บกรมอุตุนิยมวิทยา ↗'),
+  );
+  return root;
+}
+
 function waterPopup(station: CanalStation, file: CanalLevels, now: number): HTMLElement {
   const root = document.createElement('div');
   root.className = 'camera-popup';
@@ -311,6 +385,7 @@ function waterPopup(station: CanalStation, file: CanalLevels, now: number): HTML
     root.append(line(`ระดับน้ำด้านนอก ${levelText(station.level_out_m)}`));
   root.append(
     line(measured(station.observed_at, now)),
+    ...note(file.fetched_at, now),
     line(`ม.รทก. = เทียบระดับทะเลปานกลาง ไม่ใช่ความลึกน้ำท่วมบนถนน · ${file.credit_th}`, 'small'),
     linkOut(file.source_url, 'ดูระดับน้ำทุกสถานีของ กทม. ↗'),
   );
@@ -326,6 +401,7 @@ function rainPopup(gauge: RainGauge, file: RainGauges, now: number): HTMLElement
     line(`ฝน 1 ชม. ${mmText(gauge.rain_1h_mm)} · 24 ชม. ${mmText(gauge.rain_24h_mm)}`),
     line(`15 นาที ${mmText(gauge.rain_15min_mm)} · 3 ชม. ${mmText(gauge.rain_3h_mm)}`),
     line(measured(gauge.observed_at, now)),
+    ...note(file.fetched_at, now),
     line(`วัดจริงที่สถานี ไม่ใช่ค่าจากเรดาร์ · ${file.credit_th}`, 'small'),
     linkOut(file.source_url, 'หน้าข้อมูลฝนของ กทม. ↗'),
   );
@@ -500,6 +576,22 @@ export default function MapView(props: Props) {
             if (layer === 'flood-pin') {
               const report = latest.current.floods.find((r) => r.id === hit?.properties.id);
               if (report) return showFlood.current(report);
+            }
+            if (layer === 'dam-pin' && latest.current.dams) {
+              const file = latest.current.dams;
+              const dam = file.dams.find((d) => d.id === hit?.properties.code);
+              if (dam?.location)
+                return open('dam', dam.location as LngLat, damPopup(dam, file, Date.now()));
+            }
+            if (layer === 'weather-pin' && latest.current.weather) {
+              const file = latest.current.weather;
+              const station = file.stations.find((s) => s.wmo === hit?.properties.code);
+              if (station?.location)
+                return open(
+                  'weather',
+                  station.location as LngLat,
+                  weatherPopup(station, file, Date.now()),
+                );
             }
             if (layer === 'water-pin' && latest.current.water) {
               const file = latest.current.water;
@@ -730,6 +822,54 @@ export default function MapView(props: Props) {
     (map.current.getSource('floods') as GeoJSONSource | undefined)?.setData(collection);
     if (!collection.features.length && popupKind.current === 'flood') popup.current?.remove();
   }, [props.floods, props.layers.floods, props.now, ready, styleVersion]);
+
+  // Large dams (DXS, placed from OpenStreetMap), coloured by how full they are
+  useEffect(() => {
+    if (!ready || !map.current) return;
+    const dams = props.layers.dams ? (props.dams?.dams ?? []) : [];
+    const collection: FeatureCollection<Point> = {
+      type: 'FeatureCollection',
+      features: dams.flatMap((dam) => {
+        if (!dam.location) return [];
+        const pin = damPin(dam);
+        return [
+          {
+            type: 'Feature' as const,
+            geometry: { type: 'Point' as const, coordinates: dam.location },
+            properties: { code: dam.id, pin, rank: DAM_CLASSES.findIndex((c) => c.pin === pin) },
+          },
+        ];
+      }),
+    };
+    (map.current.getSource('dams') as GeoJSONSource | undefined)?.setData(collection);
+    if (!collection.features.length && popupKind.current === 'dam') popup.current?.remove();
+  }, [props.dams, props.layers.dams, ready, styleVersion]);
+
+  // TMD stations (DXS), coloured by the rain of their morning report
+  useEffect(() => {
+    if (!ready || !map.current) return;
+    const stations = props.layers.weather ? (props.weather?.stations ?? []) : [];
+    const collection: FeatureCollection<Point> = {
+      type: 'FeatureCollection',
+      features: stations.flatMap((station) => {
+        if (!station.location) return [];
+        const pin = weatherPin(station);
+        return [
+          {
+            type: 'Feature' as const,
+            geometry: { type: 'Point' as const, coordinates: station.location },
+            properties: {
+              code: station.wmo,
+              pin,
+              rank: DAY_RAIN_CLASSES.findIndex((c) => c.pin === pin),
+            },
+          },
+        ];
+      }),
+    };
+    (map.current.getSource('weather') as GeoJSONSource | undefined)?.setData(collection);
+    if (!collection.features.length && popupKind.current === 'weather') popup.current?.remove();
+  }, [props.weather, props.layers.weather, ready, styleVersion]);
 
   // Bangkok canal levels (DXS): grey without a recent reading
   useEffect(() => {

@@ -1570,3 +1570,15 @@ details > ul {
   border-radius: 8px;
   background: var(--surface-2);
 }
+.situation-subject {
+  display: block;
+  margin-bottom: 4px;
+}
+.situation-text {
+  margin: 0 0 6px;
+  white-space: pre-line;
+}
+.map-surface .popup-old {
+  color: var(--warn-ink);
+  font-weight: 600;
+}
