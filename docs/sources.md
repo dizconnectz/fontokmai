@@ -40,7 +40,7 @@
 ## 2. พยากรณ์อากาศ
 | แหล่ง | ข้อมูล | เฟส | access | license | coverage | verified | หมายเหตุ |
 |---|---|---|---|---|---|---|---|
-| Open-Meteo (API ฟรี) | ECMWF IFS 0.25°, GFS, ICON, JMA ฯลฯ และ ensemble (ECMWF IFS 51 สมาชิก) | P0 | public | nc-ok (ต้องให้เครดิต) | global | 2026-09-25 api | ประมาณ 10,000 call/วัน (300,000/เดือน); ทดสอบ multi-model และ ensemble ที่ปทุมธานีได้แล้ว; ต้องวัดวิธีนับ call ใน P0 |
+| Open-Meteo (API ฟรี) | ECMWF IFS 0.25°, GFS, ICON, JMA ฯลฯ และ ensemble (ECMWF IFS 51 สมาชิก) | P0 | public | nc-ok (ต้องให้เครดิต) | global | 2026-09-25 api | ประมาณ 10,000 call/วัน (300,000/เดือน) และนับ 1 call ต่อจุด; ทดสอบ multi-model และ ensemble ที่ปทุมธานีได้แล้ว · **ใช้แล้ว (2026-09-26)**: `forecast/rain.json` (สัญญาข้อ 12) ตาข่าย 0.25° 924 จุด ฝนรายชั่วโมง 72 ชม. + รายวัน 7 วัน ทุก 6 ชม. ≈ 3,700 call/วัน จาก VPS · ไฟล์ใหม่แทนที่ไฟล์เดิม ไม่เก็บย้อนหลัง · เครดิต “Open-Meteo.com (CC BY 4.0)” |
 | ECMWF Open Data | IFS HRES/ENS และ AIFS ที่ 0.25° เป็น GRIB2 | P0 (สำรองและ archive) | public | ok (CC-BY-4.0 + ECMWF Terms of Use) | global | 2026-09-25 docs | server เก็บไว้แค่ประมาณ 12 runs (2–3 วัน) |
 | TMD NWP API (`data.tmd.go.th/nwpapi/v1`) | WRF 2 กม. รายชั่วโมง 48 ชม., 6 กม. 72 ชม., 18 กม. 10 วัน | P1 นำร่อง | key | nc-ok (ข้อ 8) | national | 2026-09-25 docs (ไม่มี token ได้ 401) | 60 request/นาที และ 100,000 datapoints/ชม. |
 | TMD Open API | WeatherForecast7Days (รายจังหวัด), WeatherForecastDaily, WeatherWarningNews | P1 | key | nc-ok (ข้อ 8) | national | 2026-09-25 api | “% พื้นที่ฝน” ต้องคงชื่อเดิม ไม่แปลงเป็นโอกาสฝน · ยังไม่มีรหัสของเราเอง จึงใช้ RSS รายภาคเป็นทางหลัก |

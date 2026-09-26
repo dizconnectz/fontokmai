@@ -1,0 +1,195 @@
+{
+  "$defs": {
+    "ForecastLattice": {
+      "additionalProperties": false,
+      "properties": {
+        "south": {
+          "description": "Latitude of row 0",
+          "title": "South",
+          "type": "number"
+        },
+        "step": {
+          "description": "Spacing in degrees: point [col, row] is at [west + col*step, south + row*step]",
+          "exclusiveMinimum": 0,
+          "title": "Step",
+          "type": "number"
+        },
+        "west": {
+          "description": "Longitude of column 0",
+          "title": "West",
+          "type": "number"
+        }
+      },
+      "required": [
+        "west",
+        "south",
+        "step"
+      ],
+      "title": "ForecastLattice",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "credit_th": {
+      "title": "Credit Th",
+      "type": "string"
+    },
+    "day_code": {
+      "description": "day_code[d][p]: WMO weather code of the day",
+      "items": {
+        "items": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "type": "array"
+      },
+      "title": "Day Code",
+      "type": "array"
+    },
+    "day_probability": {
+      "description": "day_probability[d][p]: highest hourly chance of rain during the day, in %",
+      "items": {
+        "items": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "type": "array"
+      },
+      "title": "Day Probability",
+      "type": "array"
+    },
+    "day_rain": {
+      "description": "day_rain[d][p]: forecast rain of the day in 0.1 mm",
+      "items": {
+        "items": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "type": "array"
+      },
+      "title": "Day Rain",
+      "type": "array"
+    },
+    "days": {
+      "description": "Thai calendar days, today first",
+      "items": {
+        "format": "date",
+        "type": "string"
+      },
+      "title": "Days",
+      "type": "array"
+    },
+    "fetched_at": {
+      "description": "When fontokmai fetched this forecast",
+      "format": "date-time",
+      "title": "Fetched At",
+      "type": "string"
+    },
+    "hours": {
+      "description": "End of each one-hour rain total (Thai time), oldest first",
+      "items": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "title": "Hours",
+      "type": "array"
+    },
+    "lattice": {
+      "$ref": "#/$defs/ForecastLattice"
+    },
+    "name_th": {
+      "title": "Name Th",
+      "type": "string"
+    },
+    "notes_th": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Notes Th",
+      "type": "array"
+    },
+    "points": {
+      "description": "[col, row] of every point with data, sorted by row then column",
+      "items": {
+        "items": {
+          "type": "integer"
+        },
+        "maxItems": 2,
+        "minItems": 2,
+        "type": "array"
+      },
+      "title": "Points",
+      "type": "array"
+    },
+    "product": {
+      "const": "open_meteo_best_match",
+      "default": "open_meteo_best_match",
+      "title": "Product",
+      "type": "string"
+    },
+    "rain": {
+      "description": "rain[h][p]: forecast rain in 0.1 mm during the hour that ends at hours[h], at points[p]",
+      "items": {
+        "items": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "type": "array"
+      },
+      "title": "Rain",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1",
+      "default": "1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_url": {
+      "title": "Source Url",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name_th",
+    "credit_th",
+    "source_url",
+    "fetched_at",
+    "lattice",
+    "points",
+    "hours",
+    "rain",
+    "days",
+    "day_rain",
+    "day_probability",
+    "day_code",
+    "notes_th"
+  ],
+  "title": "RainForecast",
+  "type": "object"
+}

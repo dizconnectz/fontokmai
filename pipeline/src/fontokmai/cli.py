@@ -1,4 +1,4 @@
-"""Command line: export-schemas, contract-examples, cap-snapshot, road-flood-history and schedule."""
+"""Command line: export-schemas, contract-examples, cap-snapshot, road-flood-history, rain-forecast and schedule."""
 
 from __future__ import annotations
 
@@ -11,7 +11,14 @@ from pathlib import Path
 from typing import Any
 
 from fontokmai.contracts.export import export_schemas
-from fontokmai.examples import write_examples, write_places_example, write_road_flood_example
+from fontokmai.examples import (
+    write_examples,
+    write_forecast_example,
+    write_places_example,
+    write_road_flood_example,
+)
+from fontokmai.forecast_build import build_rain_forecast
+from fontokmai.forecast_build import is_fresh as forecast_is_fresh
 from fontokmai.publish.git_pages import publish_snapshot
 from fontokmai.road_flood_build import build_road_flood_history, fixture_files, is_fresh
 from fontokmai.run import SnapshotResult, run_cap_snapshot
@@ -21,6 +28,7 @@ from fontokmai.sources.tmd_cap.fetch import LiveFetcher, fixture_fetcher
 from fontokmai.sources.tmd_radar import summary as radar_summary
 
 ROAD_FLOOD_RETRY = timedelta(hours=6)
+FORECAST_RETRY = timedelta(hours=1)
 
 
 def ssh_command(key: Path, known_hosts: Path) -> str:
@@ -51,6 +59,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     examples.add_argument("--real-fixtures", type=Path, required=True)
     examples.add_argument("--synthetic-fixtures", type=Path, required=True)
     examples.add_argument("--road-flood-fixtures", type=Path, help="also write the road-flood-history example")
+    examples.add_argument("--forecast-fixtures", type=Path, help="also write the rain forecast example")
     cap = sub.add_parser("cap-snapshot", help="collect TMD CAP alerts and write a /data/v1 snapshot")
     cap.add_argument("--db", type=Path, required=True, help="SQLite state file")
     cap.add_argument("--out", type=Path, required=True, help="snapshot directory")
@@ -65,6 +74,10 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     road.add_argument("--first-year", type=int, default=2012)
     road.add_argument("--fixtures", type=Path, help="read local fixture files instead of the network")
     road.add_argument("--now", help="build time, ISO 8601 with offset (default: current time)")
+    rain = sub.add_parser("rain-forecast", help="build forecast/rain.json from Open-Meteo (about 900 API calls)")
+    rain.add_argument("--out", type=Path, required=True, help="snapshot directory; the file goes to forecast/")
+    rain.add_argument("--fixtures", type=Path, help="read a recorded answer instead of the network (examples)")
+    rain.add_argument("--now", help="fetch time, ISO 8601 with offset (default: current time)")
     sched = sub.add_parser("schedule", help="run cap-snapshot on the 15-minute grid and optionally publish it")
     sched.add_argument("--db", type=Path, required=True)
     sched.add_argument("--out", type=Path, required=True)
@@ -77,6 +90,8 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     sched.add_argument("--known-hosts", type=Path, help="known_hosts file of the git host")
     sched.add_argument("--cache", type=Path,
                        help="iTIC cache directory; when set, rebuild ref/road_flood_history.json once a week")
+    sched.add_argument("--forecast", action="store_true",
+                       help="rebuild forecast/rain.json from Open-Meteo every 6 hours (network)")
     sched.add_argument("--max-rounds", type=int, help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
     if args.command == "schedule" and args.publish_remote and args.publish_work is None:
@@ -87,6 +102,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
 def _scheduled_job(args: argparse.Namespace) -> Callable[[datetime], dict[str, Any]]:
     ssh = ssh_command(args.ssh_key, args.known_hosts) if args.ssh_key and args.known_hosts else None
     last_road_attempt: list[datetime] = []
+    last_forecast_attempt: list[datetime] = []
 
     def refresh_road_flood(now: datetime) -> str | None:
         """Weekly rebuild of the road-flood history; failures never stop the alerts snapshot."""
@@ -101,8 +117,22 @@ def _scheduled_job(args: argparse.Namespace) -> Callable[[datetime], dict[str, A
             return f"error: {type(exc).__name__}: {exc}"[:300]
         return f"built {len(history.roads)} roads"
 
+    def refresh_forecast(now: datetime) -> str | None:
+        """Rain forecast every 6 hours (about 900 Open-Meteo calls); failures never stop the alerts snapshot."""
+        if not args.forecast or forecast_is_fresh(args.out, now):
+            return None
+        if last_forecast_attempt and now - last_forecast_attempt[-1] < FORECAST_RETRY:
+            return "waiting to retry"
+        last_forecast_attempt[:] = [now]
+        try:
+            forecast = build_rain_forecast(args.out, now)
+        except Exception as exc:  # noqa: BLE001 - reported in the round log, the job goes on
+            return f"error: {type(exc).__name__}: {exc}"[:300]
+        return f"built {len(forecast.points)} points x {len(forecast.hours)} hours"
+
     def job(now: datetime) -> dict[str, Any]:
         road_flood = refresh_road_flood(now)
+        forecast = refresh_forecast(now)
         fetch = LiveFetcher()
         try:
             result = run_cap_snapshot(db=args.db, out=args.out, fetch=fetch, now=now, writer=args.writer,
@@ -112,6 +142,8 @@ def _scheduled_job(args: argparse.Namespace) -> Callable[[datetime], dict[str, A
         summary = _summary(result)
         if road_flood:
             summary["road_flood_history"] = road_flood
+        if forecast:
+            summary["forecast"] = forecast
         if args.publish_remote:
             commit = publish_snapshot(args.out, args.publish_work, args.publish_remote,
                                       message=result.manifest.generation_id, ssh_command=ssh)
@@ -132,6 +164,8 @@ def main(argv: list[str] | None = None) -> int:
         written += write_places_example(args.out)
         if args.road_flood_fixtures:
             written += write_road_flood_example(args.out, args.road_flood_fixtures)
+        if args.forecast_fixtures:
+            written += write_forecast_example(args.out, args.forecast_fixtures)
         for path in written:
             print(path.as_posix())
         return 0
@@ -143,6 +177,16 @@ def main(argv: list[str] | None = None) -> int:
             {"source_id": s.source_id, "reports": s.reports, "without_place": s.reports_without_place,
              "rejected": s.rejected, "period": [str(s.period_from), str(s.period_to)]} for s in history.sources]},
             ensure_ascii=False))
+        return 0
+    if args.command == "rain-forecast":
+        now = datetime.fromisoformat(args.now) if args.now else datetime.now(UTC)
+        if args.fixtures:
+            from fontokmai.examples import forecast_fixture_run
+            forecast = forecast_fixture_run(args.out, args.fixtures, now)
+        else:
+            forecast = build_rain_forecast(args.out, now)
+        print(json.dumps({"points": len(forecast.points), "hours": len(forecast.hours), "days": len(forecast.days),
+                          "first_hour": forecast.hours[0].isoformat()}, ensure_ascii=False))
         return 0
     if args.command == "schedule":
         run_forever(_scheduled_job(args), max_rounds=args.max_rounds)

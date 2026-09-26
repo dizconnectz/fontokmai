@@ -1,18 +1,18 @@
-# สัญญาข้อมูล v1 — ประกาศทางการ (TMD CAP), เรดาร์ฝน, ประวัติน้ำท่วมถนน, กล้อง CCTV และชื่อพื้นที่
+# สัญญาข้อมูล v1 — ประกาศทางการ (TMD CAP), เรดาร์ฝน, พยากรณ์ฝน, ประวัติน้ำท่วมถนน, กล้อง CCTV และชื่อพื้นที่
 
 สิ่งที่ Claude ส่งให้ Codex เริ่มหน้าเว็บ (D24) ตามหัวข้อ 3 ของรีวิว v6 · ต้นทางของสัญญาคือ Pydantic ใน `pipeline/src/fontokmai/contracts/`
 
 | ส่วน | ที่อยู่ | หมายเหตุ |
 |---|---|---|
-| JSON Schema | `schema/alerts.schema.json`, `schema/cctv.schema.json`, `schema/manifest.schema.json`, `schema/places.schema.json`, `schema/radar.schema.json`, `schema/road_flood_history.schema.json` | generated ห้ามแก้ด้วยมือ |
-| TypeScript types | `ts/alerts.ts`, `ts/cctv.ts`, `ts/manifest.ts`, `ts/places.ts`, `ts/radar.ts`, `ts/road_flood_history.ts` | generated ด้วย `scripts/gen-ts-types.sh` (json-schema-to-typescript 16.0.0) ห้ามแก้ด้วยมือ |
+| JSON Schema | `schema/alerts.schema.json`, `schema/cctv.schema.json`, `schema/forecast.schema.json`, `schema/manifest.schema.json`, `schema/places.schema.json`, `schema/radar.schema.json`, `schema/road_flood_history.schema.json` | generated ห้ามแก้ด้วยมือ |
+| TypeScript types | `ts/alerts.ts`, `ts/cctv.ts`, `ts/forecast.ts`, `ts/manifest.ts`, `ts/places.ts`, `ts/radar.ts`, `ts/road_flood_history.ts` | generated ด้วย `scripts/gen-ts-types.sh` (json-schema-to-typescript 16.0.0) ห้ามแก้ด้วยมือ |
 | ตัวอย่าง | `examples/<กรณี>/manifest.json`, `alerts.json`, `expected.json` | สองไฟล์แรกคือสิ่งที่ producer เขียนจริงทุกไบต์ ส่วน `expected.json` คือผลที่ consumer ต้องได้ |
 
 สร้างใหม่ทั้งหมด (CI ตรวจว่าไฟล์ที่ commit ตรงกับที่สร้างได้):
 ```bash
 cd pipeline
 uv run fontokmai export-schemas --out ../contracts/v1/schema
-uv run fontokmai contract-examples --out ../contracts/v1/examples --real-fixtures tests/fixtures/tmd_cap --synthetic-fixtures tests/fixtures/tmd_cap_synthetic --road-flood-fixtures tests/fixtures/road_flood
+uv run fontokmai contract-examples --out ../contracts/v1/examples --real-fixtures tests/fixtures/tmd_cap --synthetic-fixtures tests/fixtures/tmd_cap_synthetic --road-flood-fixtures tests/fixtures/road_flood --forecast-fixtures tests/fixtures/open_meteo
 cd .. && bash scripts/gen-ts-types.sh
 ```
 
@@ -184,3 +184,13 @@ cd .. && bash scripts/gen-ts-types.sh
 5. หมุดที่ปักเองบนแผนที่ตั้งชื่อว่า “แถว …” จากจุดตำบลที่ใกล้ที่สุดไม่เกิน 8 กม. เพราะเป็นจุด ไม่ใช่ขอบเขต
 
 สถานที่อื่น (ห้าง โรงพยาบาล ฯลฯ) เว็บค้นจาก Photon (OpenStreetMap, © OpenStreetMap contributors) โดยเบราว์เซอร์ส่งเฉพาะคำที่พิมพ์ ไม่ได้อยู่ในไฟล์นี้
+
+## 12. พยากรณ์ฝน `forecast/rain.json`
+พยากรณ์ฝนจากแบบจำลอง (Open-Meteo, CC BY 4.0, ไม่ใช่ประกาศทางการ) บนตาข่ายจุด 0.25° ราว 900 จุดบนและรอบแผ่นดินไทย สร้างใหม่ทุก 6 ชั่วโมงแทนที่ไฟล์เดิม (ไม่เก็บย้อนหลัง) ตัวอย่าง 12 จุดรอบ กทม. อยู่ที่ `examples/forecast/rain.json`
+
+- อยู่ใน manifest เหมือนไฟล์ `ref/` (sha256/revision) ไม่ผูกกับ `generation_id` · โหลดใหม่เมื่อ sha256 เปลี่ยน
+- จุด `points[p] = [col, row]` อยู่ที่ `[lattice.west + col*step, lattice.south + row*step]`
+- `hours[h]` คือเวลา**สิ้นสุด**ของฝนรวม 1 ชั่วโมง (เวลาไทย) เริ่มจากชั่วโมงที่กำลังเป็นอยู่ตอนดึง 72 ชั่วโมง · `rain[h][p]` หน่วย 0.1 มม. (`null` = ไม่มีค่า)
+- `days[d]` วันตามปฏิทินไทย 7 วันเริ่มวันนี้ · `day_rain` (0.1 มม.), `day_probability` (โอกาสฝนสูงสุดของวัน %), `day_code` (WMO weather code)
+- ค่าระหว่างจุดใช้ bilinear จากจุดรอบข้างที่มีค่า และไม่มีค่าเมื่อจุดตาข่ายที่ใกล้ที่สุดไม่มีข้อมูล (นอกประเทศ) · ภาพบนแผนที่ต้องวาดเป็น Web Mercator เหมือนเรดาร์ (ข้อ 9) และใช้สีตาม `legend` ของเรดาร์ เพื่อให้สีเดียวกันหมายถึงฝน มม./ชม. เท่ากัน
+- ต้องติดป้าย “พยากรณ์” แยกจากเรดาร์ (สังเกตจริง) และประกาศทางการ แสดงเครดิต `credit_th` กับเวลา `fetched_at` และถ้าเก่ากว่า 12 ชั่วโมงให้ขึ้น “พยากรณ์ไม่อัปเดต”

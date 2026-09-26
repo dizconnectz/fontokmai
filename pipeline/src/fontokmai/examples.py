@@ -170,6 +170,8 @@ def write_road_flood_example(out: Path, fixtures: Path) -> list[Path]:
 
 
 PLACES_EXAMPLE_PROVINCES = ("10", "13")  # Bangkok and Pathum Thani
+# 12 lattice points around Bangkok and Pathum Thani (lon 100.25-100.75, lat 13.5-14.25), answer recorded
+FORECAST_FETCHED_AT = "2026-09-26T11:50:00+07:00"
 
 
 def write_places_example(out: Path) -> list[Path]:
@@ -188,3 +190,31 @@ def write_places_example(out: Path) -> list[Path]:
     path = target / "places.json"
     path.write_text(subset.model_dump_json(indent=2) + "\n", encoding="utf-8", newline="\n")
     return [path]
+
+
+def forecast_fixture_run(out: Path, fixtures: Path, now: datetime) -> Any:
+    """Build forecast/rain.json for the example lattice from a recorded Open-Meteo answer."""
+    from fontokmai.contracts.forecast import ForecastLattice
+    from fontokmai.forecast_build import build_rain_forecast
+    from fontokmai.sources.open_data.http import fixture_opener
+    from fontokmai.sources.open_meteo import STEP, batch_url, lonlat
+
+    lattice = ForecastLattice(west=100.25, south=13.5, step=STEP)
+    points = [[col, row] for row in range(4) for col in range(3)]
+    url = batch_url([lonlat(lattice, p) for p in points])
+    return build_rain_forecast(out, now, opener=fixture_opener({url: fixtures / "bangkok_12_points.json"}),
+                               lattice=(lattice, points), pause=0)
+
+
+def write_forecast_example(out: Path, fixtures: Path) -> list[Path]:
+    """contracts/v1/examples/forecast: forecast/rain.json for 12 points around Bangkok (recorded answer)."""
+    from fontokmai.forecast_build import FORECAST_PATH
+
+    target = out / "forecast"
+    if target.exists():
+        shutil.rmtree(target)
+    with tempfile.TemporaryDirectory() as tmp:
+        forecast_fixture_run(Path(tmp), fixtures, datetime.fromisoformat(FORECAST_FETCHED_AT))
+        target.mkdir(parents=True)
+        shutil.copyfile(Path(tmp) / FORECAST_PATH, target / "rain.json")
+    return [target / "rain.json"]
