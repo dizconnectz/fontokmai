@@ -64,3 +64,10 @@ def test_the_round_publishes_live_floods_with_their_status(tmp_path):
     status = next(s for s in manifest.source_status if s.source_id == "longdo_floods")
     assert (status.status, status.items_seen, status.items_rejected) == ("ok", 6, 1)
     assert len(LiveFloods.model_validate_json((out / FILE_PATH).read_bytes()).reports) == 3
+
+
+def test_leftover_bytes_after_the_closing_tag_are_ignored():
+    """The live feed once arrived with the tail of an older answer after </rss>."""
+    junk = FEED.read_bytes() + "าณ 330 เมตร เพื่อ</item></channel></rss>".encode()
+    assert [r.id for r in parse_feed(junk, AT_1530)[0]] == [r.id for r in parse_feed(FEED.read_bytes(), AT_1530)[0]]
+

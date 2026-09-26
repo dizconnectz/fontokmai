@@ -64,6 +64,11 @@ def _url(link: str | None, eid: str) -> str:
 
 def parse_feed(data: bytes, now: datetime) -> tuple[list[LiveFloodReport], int, int]:
     """(reports, flood items seen, flood items rejected), newest start first."""
+    # the feed has been served with leftover bytes after its closing tag (2026-09-26 22:03); they are not part
+    # of the document, so they are cut before reading
+    end = data.find(b"</rss>")
+    if end != -1:
+        data = data[:end + len(b"</rss>")]
     root = ElementTree.fromstring(data)
     reports: list[LiveFloodReport] = []
     seen = rejected = 0
