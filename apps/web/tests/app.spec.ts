@@ -566,6 +566,8 @@ test('one place can be saved as "my place" and opened again from the map or the 
 }) => {
   await prepare(page);
   await page.goto('/?pin=13.9,100.6');
+  // the saved name is the area name once the list of subdistricts has loaded
+  await expect(page.getByTestId('pin-card').locator('.place-name')).toHaveText('แถวแขวงสีกัน');
   const save = page.getByRole('button', { name: 'ตั้งเป็นที่ของฉัน' });
   await save.click();
   await expect(page.getByRole('button', { name: 'ที่ของฉัน', exact: true })).toHaveAttribute(
