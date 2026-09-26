@@ -1,7 +1,7 @@
 # AGENTS.md — fontokmai (ฝนตกไหม): ข้อตกลงทีม สถานะ และการตัดสินใจ
 
 > **สถานะ**: เว็บแบบแผนที่เป็นหลักออนไลน์ที่ `https://dizconnectz.github.io/fontokmai/` (D28, D29): ประกาศกรมอุตุฯ ระบายสีตามระดับ, เรดาร์ฝน, กล้อง CCTV, ปักหมุดดูข้อมูลจุด, ค้นหาสถานที่ (ตำบล/อำเภอ/จังหวัด/สถานที่/ถนน), แถบเลื่อนเวลา (เรดาร์ย้อนหลัง → พยากรณ์ฝน 72 ชม.), ฝน 7 วัน, สายด่วน, รายงานน้ำท่วมตอนนี้ (Longdo/iTIC), ที่ของฉัน, ตัวเฝ้าข้อมูลหยุด (data-watch) · ข้อมูลจาก VPS ทุก 15 นาที · ยังไม่มีระดับน้ำและเขื่อน · แบบระบบ v6.1
-> อัปเดตล่าสุด: 2026-09-26 16:43 ICT (Claude) · เวลาเป็น ICT (UTC+7) · วันที่แบบ ISO (ค.ศ.)
+> อัปเดตล่าสุด: 2026-09-26 17:04 ICT (Claude) · เวลาเป็น ICT (UTC+7) · วันที่แบบ ISO (ค.ศ.)
 > ไฟล์นี้เป็นช่องทางสื่อสารหลักระหว่าง Claude ↔ Codex ↔ ผู้ใช้ และ **ต้องมีขนาดไม่เกิน 32 KiB (UTF-8)** เพื่อให้ Codex โหลดได้ครบ
 > เอกสารอื่น: แบบระบบ `docs/design/fontokmai-design.md` · แหล่งข้อมูลและสิทธิ์ `docs/sources.md` · ประวัติเต็ม `private/handoffs/` (อยู่ใน private repo ไม่อยู่ใน repo สาธารณะ)
 
@@ -43,7 +43,7 @@
 ### A5. งานที่กำลังทำ (Active claims)
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
-| Claude | 2026-09-26 16:43 | `apps/web/`, `pipeline/`, `contracts/v1/README.md`, `scripts/check_live_data.py` + test, `docs/design/`, `deploy/vps/` (+ deploy VPS หลัง 18:05) | M8 พักเผยแพร่น้ำท่วมสด → ลิงก์ออก, M9–M12, ลบ `forecastFrame` | รีวิว Codex 16:38 |
+| Claude | 2026-09-26 16:43 | `apps/web/`, `pipeline/`, `contracts/v1/README.md`, `docs/sources.md`, `tests/consumer/`, `scripts/check_live_data.py` + test, `docs/design/`, `deploy/vps/` (+ deploy VPS หลัง 18:05) | หมุด/popup แบบ namnai (ผู้ใช้ขอ), M8 ตามผู้ใช้ตัดสิน (D30), M9–M12, ลบ `forecastFrame`, ตัวเก็บ DXS | รีวิว Codex 16:38 |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md`)
 
@@ -94,6 +94,7 @@
 | D27 | การขอข้อมูลจากหน่วยงาน | ขอข้อมูลเฉพาะผ่านช่องทางที่หน่วยงานเปิดรับจริง (ระบบสมัครหรือลงทะเบียน) ไม่ส่งจดหมายหรือข้อความขออนุญาตทั่วไป · แหล่งที่ไม่มีช่องทาง ใช้ได้เฉพาะข้อมูลเปิดที่มี license หรือแสดงเป็นลิงก์ออก | ผู้ใช้ตัดสิน (2026-09-25) |
 | D28 | host ของเว็บ | เว็บและข้อมูลอยู่บน GitHub Pages: เว็บ `https://dizconnectz.github.io/fontokmai/` (deploy ด้วย `.github/workflows/pages.yml` หลัง workflow `web` ผ่าน) และข้อมูล `dizconnectz.github.io/fontokmai-data` · เหตุผล: ง่ายและอยู่ที่เดียว · ข้อจำกัด: ตั้ง header เองไม่ได้ (`_headers` ไม่มีผล), cache 10 นาที, soft limit 100 GB/เดือน และไม่มี rewrite → ย้ายไป Cloudflare Pages ได้ภายหลังถ้าผู้ใช้มากจนชนข้อจำกัด · แทน design 4.4 ข้อ 9–10 และ URL `fontokmai.pages.dev` เดิม | ผู้ใช้ตัดสิน (2026-09-26) |
 | D29 | คนทำหน้าเว็บ | Claude ทำทั้งข้อมูลและหน้าเว็บ (`apps/web`) เพื่อเติมส่วนที่ยังไม่มีข้อมูลให้เร็วขึ้น เพราะ Codex หมด token บ่อย · Codex รีวิวงานเว็บและ consumer ภายหลังผ่าน A6 · แก้ D24 เรื่องการแบ่งงานเว็บ | ผู้ใช้ตัดสิน (2026-09-26) |
+| D30 | ฟีดน้ำท่วมสด Longdo | ใช้ต่อ: ถือว่า CC BY 4.0 ใน README ของ iTIC (“events data from Longdo Traffic service” + data dictionary ของฟีด) ครอบคลุมฟีดสด แม้ไม่ได้เขียนถึง RSS ตรงๆ · แสดงเฉพาะข้อเท็จจริง เครดิต และลิงก์กลับ · หยุดทันทีถ้าเจ้าของทักท้วง (`docs/sources.md` 10.8) | ผู้ใช้ตัดสิน (2026-09-26) แทนข้อเสนอพักของ Codex (M8) |
 
 ## C. คำถามและงานที่ยังรอ
 
