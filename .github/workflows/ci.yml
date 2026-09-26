@@ -45,3 +45,4 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - run: python3 scripts/check_repo_safety.py
+      - run: python3 -m unittest scripts/test_check_live_data.py

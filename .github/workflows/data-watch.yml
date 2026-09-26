@@ -1,0 +1,39 @@
+# Watch the published data from outside the VPS. When data stops updating (or an alert cannot be read), open one
+# issue labelled data-watch, which emails the owner; update it while the problem lasts and close it when all is
+# well again. Free on a public repository.
+name: data-watch
+on:
+  schedule:
+    - cron: "8,23,38,53 * * * *" # 5 minutes after each publish slot (:03, :18, :33, :48)
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+concurrency:
+  group: data-watch
+  cancel-in-progress: false
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check the live data
+        run: python3 scripts/check_live_data.py --report report.md --status status.txt --owner "${{ github.repository_owner }}"
+      - name: Open, update or close the alert issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          status=$(cat status.txt)
+          gh label create data-watch --color d93f0b --description "fontokmai data watch" --force > /dev/null
+          number=$(gh issue list --label data-watch --state open --json number --jq '.[0].number // empty')
+          if [ "$status" = problem ]; then
+            if [ -z "$number" ]; then
+              gh issue create --title "ข้อมูล fontokmai มีปัญหา" --label data-watch --body-file report.md
+            else
+              gh issue edit "$number" --body-file report.md
+            fi
+          elif [ -n "$number" ]; then
+            gh issue close "$number" --comment "กลับมาปกติแล้ว (ตรวจเมื่อ $(TZ=Asia/Bangkok date '+%d/%m %H:%M') น.)"
+          fi
