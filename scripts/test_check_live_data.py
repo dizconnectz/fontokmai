@@ -79,6 +79,24 @@ class Watch(unittest.TestCase):
         self.assertEqual([level for level, _ in problems], ["critical", "warning"])
         self.assertIn("alerts.json", problems[0][1])
 
+    def test_bangkok_water_and_rain_that_stop_updating_are_a_warning(self):
+        m = manifest()
+        m["source_status"].append({"source_id": "bma_dxs", "status": "failed", "message": "water: HTTP 500",
+                                   "last_success_at": (NOW - timedelta(minutes=70)).isoformat()})
+        m["files"] += [{"path": p} for p in ("bkk/water.json", "bkk/rain.json", "bkk/flooding.json")]
+        [(level, message)] = evaluate(m, FRESH_FORECAST, NOW, FRESH_RADAR)
+        self.assertEqual(level, "warning")
+        self.assertIn("DXS", message)
+
+    def test_bangkok_files_are_expected_only_while_the_round_includes_dxs(self):
+        m = manifest()
+        self.assertEqual(evaluate(m, FRESH_FORECAST, NOW, FRESH_RADAR), [])
+        m["source_status"].append({"source_id": "bma_dxs", "status": "ok", "message": None,
+                                   "last_success_at": (NOW - timedelta(minutes=5)).isoformat()})
+        missing = [msg for _, msg in evaluate(m, FRESH_FORECAST, NOW, FRESH_RADAR)]
+        self.assertEqual(len(missing), 3)
+        self.assertIn("bkk/flooding.json", missing[-1])
+
     def test_the_report_mentions_the_owner(self):
         text = report([("critical", "x")], NOW, "dizconnectz")
         self.assertIn("🔴 x", text)

@@ -689,6 +689,15 @@ test('Bangkok rain gauges and canal levels show as measured values near a pin', 
   );
 });
 
+test('the Bangkok layers have no switch until their files are published', async ({ page }) => {
+  await prepare(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'ชั้นข้อมูล' }).click();
+  await expect(page.getByRole('button', { name: 'กล้อง CCTV' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'ระดับน้ำคลอง กทม.' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'ฝนวัดจริง กทม.' })).toHaveCount(0);
+});
+
 test('one place can be saved as "my place" and opened again from the map or the overview', async ({
   page,
 }) => {

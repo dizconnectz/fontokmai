@@ -25,6 +25,7 @@ RADAR_DOWN = timedelta(minutes=60)
 RADAR_OLD = timedelta(minutes=60)
 FORECAST_OLD = timedelta(hours=13)
 FLOODS_DOWN = timedelta(minutes=60)
+DXS_DOWN = timedelta(minutes=60)
 # rejected documents are only worth an alert when they could not be read, not when a download failed once
 FETCH_WORDS = ("HTTP", "timed out", "Timeout", "connect", "Connection")
 # every published round carries these; a file that drops out of the manifest is a problem of its own
@@ -36,6 +37,11 @@ EXPECTED_FILES = {
     "ref/cctv.json": ("warning", "ทะเบียนกล้อง"),
     "ref/places.json": ("warning", "รายชื่อสถานที่สำหรับค้นหา"),
     "ref/road_flood_history.json": ("warning", "ประวัติน้ำท่วมถนน"),
+}
+# files a source must publish once it is part of the round (its status is in the manifest)
+SOURCE_FILES = {
+    "bma_dxs": {"bkk/water.json": "ระดับน้ำคลอง กทม.", "bkk/rain.json": "ฝนวัดจริง กทม.",
+                "bkk/flooding.json": "รายงานถนนท่วม กทม."},
 }
 
 
@@ -74,8 +80,9 @@ def evaluate(manifest: dict, forecast: dict | None, now: datetime,
                                          + f" · {cap.get('message') or 'ไม่มีรายละเอียด'}"))
         elif cap.get("status") == "degraded" and (bad := unreadable(cap.get("message"))):
             problems.append(("warning", f"มีประกาศที่ระบบอ่านไม่ได้และถูกตัดออก: {'; '.join(bad)}"))
-    for source_id, limit, name in (("tmd_radar", RADAR_DOWN, "ภาพเรดาร์"), ("longdo_floods", FLOODS_DOWN,
-                                                                              "รายงานน้ำท่วมสด")):
+    for source_id, limit, name in (("tmd_radar", RADAR_DOWN, "ภาพเรดาร์"),
+                                   ("longdo_floods", FLOODS_DOWN, "รายงานน้ำท่วมสด"),
+                                   ("bma_dxs", DXS_DOWN, "ข้อมูลน้ำและฝน กทม. (DXS)")):
         status = sources.get(source_id)
         if status is None:
             continue
@@ -85,7 +92,11 @@ def evaluate(manifest: dict, forecast: dict | None, now: datetime,
                                         + (f" ตั้งแต่ {_clock(last)} น." if last else "")
                                         + f" · {status.get('message') or ''}".rstrip(" ·")))
     listed = {f.get("path") for f in manifest.get("files", [])}
-    for path, (level, name) in EXPECTED_FILES.items():
+    expected = dict(EXPECTED_FILES)
+    for source_id, files in SOURCE_FILES.items():
+        if source_id in sources:
+            expected.update({path: ("warning", name) for path, name in files.items()})
+    for path, (level, name) in expected.items():
         if path not in listed:
             problems.append((level, f"ไม่มีไฟล์{name} ({path}) ในชุดข้อมูลล่าสุด"))
     # a radar download can succeed every round while the source keeps serving the same old images

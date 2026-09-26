@@ -432,12 +432,17 @@ export default function App() {
             <button aria-pressed={layers.floods} onClick={() => toggle('floods')}>
               <Waves size={16} /> รายงานน้ำท่วมตอนนี้
             </button>
-            <button aria-pressed={layers.water} onClick={() => toggle('water')}>
-              <Droplet size={16} /> ระดับน้ำคลอง กทม.
-            </button>
-            <button aria-pressed={layers.rain} onClick={() => toggle('rain')}>
-              <Umbrella size={16} /> ฝนวัดจริง กทม.
-            </button>
+            {/* the Bangkok layers appear once their files are published */}
+            {water && (
+              <button aria-pressed={layers.water} onClick={() => toggle('water')}>
+                <Droplet size={16} /> ระดับน้ำคลอง กทม.
+              </button>
+            )}
+            {rain && (
+              <button aria-pressed={layers.rain} onClick={() => toggle('rain')}>
+                <Umbrella size={16} /> ฝนวัดจริง กทม.
+              </button>
+            )}
             {layers.radar && (
               <label className="slider">
                 <span>ความทึบชั้นฝน {Math.round(radarOpacity * 100)}%</span>
