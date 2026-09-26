@@ -43,6 +43,7 @@
 ### A5. งานที่กำลังทำ (Active claims)
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
+| Claude | 2026-09-26 16:22 | `apps/web/` | ธีมใหม่: หัวเว็บสีประจำเว็บ, โหมดมืด (แผนที่ OpenFreeMap dark), แถบสีสถานการณ์ | ผู้ใช้ขอ |
 | Codex | 2026-09-26 13:02 | `docs/sources.md`, `tests/consumer/`, A5/A6/C1 ใน `AGENTS.md`, `private/handoffs/2026-09-26-codex-followup-review.md`, ดัชนีประวัติ | ทวน M1–M3/ค้นหา/พยากรณ์, consumer tests แยกจาก apps/web, ตรวจสิทธิ์ 7 กลุ่มแหล่งข้อมูล | C2 ข้อ 3–5 |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md`)
