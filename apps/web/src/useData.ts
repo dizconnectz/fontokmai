@@ -11,6 +11,7 @@ import {
   validPlaces,
   validRainGauges,
   validRoadFlood,
+  validRoadFlooding,
   type CanalLevels,
   type CctvRegistry,
   type LiveFloods,
@@ -19,13 +20,15 @@ import {
   type RainForecast,
   type RainGauges,
   type RoadFloodHistory,
+  type RoadFloodingDaily,
   type RuntimeConfig,
   type Snapshot,
 } from './data';
 import { RefSync, type RefSlot } from './refSync';
 
 export type { RefState } from './refSync';
-type RefName = 'cameras' | 'roads' | 'places' | 'forecast' | 'floods' | 'water' | 'rain';
+type RefName =
+  'cameras' | 'roads' | 'places' | 'forecast' | 'floods' | 'water' | 'rain' | 'flooding';
 // Files of the manifest outside the snapshot generation. Cameras and the forecast (timeline, ~50 KB gzip)
 // load at once; the others on first need.
 const REF_FILES: Record<RefName, { path: string; valid: (value: unknown) => boolean }> = {
@@ -37,6 +40,7 @@ const REF_FILES: Record<RefName, { path: string; valid: (value: unknown) => bool
   // Bangkok canal levels and rain gauges (DXS), drawn as map pins
   water: { path: 'bkk/water.json', valid: validCanalLevels },
   rain: { path: 'bkk/rain.json', valid: validRainGauges },
+  flooding: { path: 'bkk/flooding.json', valid: validRoadFlooding },
 };
 const IDLE: RefSlot<never> = { value: null, state: 'idle' };
 
@@ -53,10 +57,13 @@ export function useData() {
   const [floods, setFloods] = useState<RefSlot<LiveFloods>>(IDLE);
   const [water, setWater] = useState<RefSlot<CanalLevels>>(IDLE);
   const [rain, setRain] = useState<RefSlot<RainGauges>>(IDLE);
+  const [flooding, setFlooding] = useState<RefSlot<RoadFloodingDaily>>(IDLE);
   const current = useRef<Snapshot | null>(null);
   const settings = useRef<RuntimeConfig | null>(null);
   const flight = useRef<AbortController | null>(null);
-  const wanted = useRef(new Set<RefName>(['cameras', 'forecast', 'floods', 'water', 'rain']));
+  const wanted = useRef(
+    new Set<RefName>(['cameras', 'forecast', 'floods', 'water', 'rain', 'flooding']),
+  );
   const refreshRef = useRef<() => Promise<void>>(async () => undefined);
   const syncs = useRef<Record<RefName, Pick<RefSync<unknown>, 'sync'>> | null>(null);
   if (!syncs.current) {
@@ -88,6 +95,9 @@ export function useData() {
       ),
       rain: new RefSync(REF_FILES.rain.path, loader('rain'), (slot) =>
         setRain(slot as RefSlot<RainGauges>),
+      ),
+      flooding: new RefSync(REF_FILES.flooding.path, loader('flooding'), (slot) =>
+        setFlooding(slot as RefSlot<RoadFloodingDaily>),
       ),
     };
   }
@@ -188,5 +198,7 @@ export function useData() {
     waterState: water.state,
     rain: rain.value,
     rainState: rain.state,
+    flooding: flooding.value,
+    floodingState: flooding.state,
   };
 }

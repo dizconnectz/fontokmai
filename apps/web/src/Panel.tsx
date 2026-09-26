@@ -68,14 +68,20 @@ import type { TimeStep } from './Timeline';
 import { distanceM, roadsNear } from './roads';
 import {
   BKK_STALE_MS,
+  floodingText,
   isRecent,
   levelText,
   mmText,
   nearest,
   RAIN_RADIUS_M,
+  reportsOnRoads,
+  reportTime,
+  roadLabel,
   WATER_RADIUS_M,
   type CanalLevels,
   type RainGauges,
+  type RoadFloodingDaily,
+  type RoadFloodingReport,
 } from './bkk';
 import { useRadarAt } from './radarAt';
 import type { RefState } from './useData';
@@ -341,6 +347,98 @@ function FloodLine({
   );
 }
 
+function RoadFloodingLine({ report, now }: { report: RoadFloodingReport; now: number }) {
+  const start = report.flood_start ? reportTime(report.flood_start, now) : null;
+  return (
+    <span className={`flood-line ${report.dry_at ? 'ended' : ''}`}>
+      <strong>
+        {roadLabel(report.road_th)}
+        {report.area_th ? ` · ${report.area_th}` : ''}
+      </strong>
+      <small>
+        {[
+          report.district_th ? `เขต${report.district_th.replace(/^เขต/, '')}` : null,
+          floodingText(report),
+          report.dry_at
+            ? `ท่วม ${start ?? ''} แห้งแล้ว ${reportTime(report.dry_at, now)}`
+            : start
+              ? `ยังท่วม ตั้งแต่ ${start}`
+              : 'ยังท่วม',
+        ]
+          .filter(Boolean)
+          .join(' · ')}
+      </small>
+    </span>
+  );
+}
+
+const ROAD_LIST_LIMIT = 12;
+function RoadFloodingToday({
+  flooding,
+  now,
+  onRoad,
+}: {
+  flooding: RoadFloodingDaily;
+  now: number;
+  /** show a reported road on the map; the side panel stays */
+  onRoad: (name: string) => void;
+}) {
+  const wet = flooding.reports.filter((report) => report.dry_at === null);
+  const dry = flooding.reports.filter((report) => report.dry_at !== null);
+  const old = now - Date.parse(flooding.fetched_at) > BKK_STALE_MS;
+  const item = (report: RoadFloodingReport, index: number) => (
+    <li key={`${index}:${report.road_th}:${report.area_th ?? ''}`}>
+      <button className="road-button" onClick={() => onRoad(report.road_th)}>
+        <RoadFloodingLine report={report} now={now} />
+      </button>
+    </li>
+  );
+  return (
+    <section
+      className="panel-section"
+      aria-labelledby="road-flooding-heading"
+      data-testid="road-flooding"
+    >
+      <h2 id="road-flooding-heading" className={wet.length ? 'heading-rain' : undefined}>
+        <Route size={18} />{' '}
+        {wet.length
+          ? `ถนนสายหลัก กทม. ที่ยังท่วม ${wet.length} จุด`
+          : 'น้ำท่วมขังถนนสายหลัก กทม. วันนี้'}
+      </h2>
+      {flooding.reports.length === 0 && (
+        <p className="quiet">วันนี้ยังไม่มีรายงานน้ำท่วมขังบนถนนสายหลัก · ถนนอื่นยังท่วมได้</p>
+      )}
+      {wet.length > 0 && <ul className="flood-list">{wet.slice(0, ROAD_LIST_LIMIT).map(item)}</ul>}
+      {wet.length > ROAD_LIST_LIMIT && (
+        <details className="history-details">
+          <summary>ดูอีก {wet.length - ROAD_LIST_LIMIT} จุดที่ยังท่วม</summary>
+          <ul className="flood-list">{wet.slice(ROAD_LIST_LIMIT).map(item)}</ul>
+        </details>
+      )}
+      {dry.length > 0 && (
+        <details className="history-details">
+          <summary>แห้งแล้ววันนี้ {dry.length} จุด</summary>
+          <ul className="flood-list">{dry.map(item)}</ul>
+        </details>
+      )}
+      {old && (
+        <p className="inline-warning">
+          <Info size={15} /> รายงานถนนไม่อัปเดตตั้งแต่ {formatTime(flooding.fetched_at)} น.
+        </p>
+      )}
+      <small className="source-note">
+        รายงานของเจ้าหน้าที่{flooding.credit_th.replace(/ \(ผ่านระบบ DXS\)$/, '')}
+        {flooding.updated_at ? ` · อัปเดต ${reportTime(flooding.updated_at, now)}` : ''} ·
+        เฉพาะถนนสายหลักที่ติดตาม ถนนที่ไม่มีในรายการไม่ได้แปลว่าไม่ท่วม ·
+        แตะรายการเพื่อดูถนนบนแผนที่ ·{' '}
+        <a href={flooding.source_url} target="_blank" rel="noopener noreferrer">
+          รายงานต้นทาง ↗
+        </a>
+      </small>
+    </section>
+  );
+}
+
 function FloodsNow({
   floods,
   floodsState,
@@ -412,6 +510,8 @@ export function Overview({
   floodsState,
   favoriteLabel,
   openFloodId,
+  flooding,
+  onRoadName,
   onSelectAlert,
   onFlood,
   onFavorite,
@@ -424,6 +524,8 @@ export function Overview({
   floodsState: RefState;
   favoriteLabel: string | null;
   openFloodId: string | null;
+  flooding: RoadFloodingDaily | null;
+  onRoadName: (name: string) => void;
   onSelectAlert: (id: string) => void;
   onFlood: (report: FloodReport) => void;
   onFavorite: () => void;
@@ -483,6 +585,7 @@ export function Overview({
         openId={openFloodId}
         onFlood={onFlood}
       />
+      {flooding && <RoadFloodingToday flooding={flooding} now={now} onRoad={onRoadName} />}
       <RadarNow radar={snapshot?.radar} now={now} />
       <section className="panel-section pin-hint">
         <MapPin size={20} />
@@ -530,6 +633,7 @@ export function PinCard({
   waterState,
   rain,
   rainState,
+  flooding,
   onClose,
   onSelectAlert,
   onRoad,
@@ -559,6 +663,7 @@ export function PinCard({
   waterState: RefState;
   rain: RainGauges | null;
   rainState: RefState;
+  flooding: RoadFloodingDaily | null;
   onClose: () => void;
   onSelectAlert: (id: string) => void;
   onRoad: (road: Road) => void;
@@ -617,7 +722,19 @@ export function PinCard({
       pin[0] <= roads.bbox[2] &&
       pin[1] >= roads.bbox[1] &&
       pin[1] <= roads.bbox[3]);
-  const near = useMemo(() => (roads ? roadsNear(roads, pin).slice(0, 5) : []), [roads, pin]);
+  const nearAll = useMemo(() => (roads ? roadsNear(roads, pin) : []), [roads, pin]);
+  const near = nearAll.slice(0, 5);
+  // today's report of the department on the roads around the pin (matched by road name)
+  const reportedHere = useMemo(
+    () =>
+      flooding
+        ? reportsOnRoads(
+            flooding,
+            nearAll.map(({ road }) => road.name_th),
+          )
+        : [],
+    [flooding, nearAll],
+  );
   const nearCameras = useMemo(
     () =>
       cameras
@@ -939,6 +1056,21 @@ export function PinCard({
           <p className="inline-warning">
             <Info size={15} /> รายงานน้ำท่วมไม่อัปเดตตั้งแต่ {formatTime(floods!.fetched_at)} น.
           </p>
+        )}
+        {reportedHere.length > 0 && (
+          <div className="road-report-here" data-testid="road-report-here">
+            <strong>สำนักการระบายน้ำรายงานวันนี้ บนถนนแถวนี้</strong>
+            <ul className="flood-list">
+              {reportedHere.slice(0, 5).map((report, index) => (
+                <li key={`${index}:${report.road_th}:${report.area_th ?? ''}`}>
+                  <RoadFloodingLine report={report} now={now} />
+                </li>
+              ))}
+            </ul>
+            <small className="source-note">
+              จับคู่จากชื่อถนนที่อยู่ในรัศมี 2 กม. จุดที่ท่วมจริงอาจอยู่ไกลจากหมุด ดูบริเวณในรายการ
+            </small>
+          </div>
         )}
         {floods && (
           <small className="source-note">

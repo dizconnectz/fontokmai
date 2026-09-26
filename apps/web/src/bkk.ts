@@ -1,5 +1,6 @@
 import type { CanalLevels, CanalStation } from '../../../contracts/v1/ts/bkk_water';
 import type { RainGauge, RainGauges } from '../../../contracts/v1/ts/bkk_rain';
+import type { RoadFloodingDaily, RoadFloodingReport } from '../../../contracts/v1/ts/bkk_flooding';
 import { distanceM } from './roads';
 
 // Bangkok readings of the Drainage and Sewerage Department through DXS (contract sections 14 and 15)
@@ -66,4 +67,56 @@ export function nearest<T extends { location: number[] | null }>(
     .filter((near) => near.distance <= radiusM)
     .sort((a, b) => a.distance - b.distance)
     .slice(0, limit);
+}
+
+// ---------- today's report of flooded main roads (contract section 16) ----------
+export type { RoadFloodingDaily, RoadFloodingReport };
+
+/** "ถนนรามคำแหง", "ถ.รามคำแหง" and "รามคำแหง" name the same road. */
+export function roadKey(name: string): string {
+  return name.replace(/^(ถนน|ถ\.)\s*/, '').replace(/\s+/g, '');
+}
+
+/** "ถ.รามคำแหง" whether the report writes ถนน, ถ. or the bare name */
+export function roadLabel(name: string): string {
+  return `ถ.${name.replace(/^(ถนน|ถ\.)\s*/, '')}`;
+}
+
+/** "สูง 20 ซม. · 300 ม. · เต็มผิว" from what the report gives */
+export function floodingText(report: RoadFloodingReport): string {
+  return [
+    report.depth_cm !== null ? `สูง ${report.depth_cm} ซม.` : null,
+    report.length_m !== null ? `ยาว ${report.length_m} ม.` : null,
+    report.lanes_th,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
+
+const CLOCK = new Intl.DateTimeFormat('th-TH', {
+  timeZone: 'Asia/Bangkok',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+const DAY_CLOCK = new Intl.DateTimeFormat('th-TH', {
+  timeZone: 'Asia/Bangkok',
+  day: 'numeric',
+  month: 'short',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+const DAY = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' });
+/** "15:45 น." today, "25 ก.ย. 22:10 น." on another day */
+export function reportTime(iso: string, now: number): string {
+  const time = Date.parse(iso);
+  return `${(DAY.format(time) === DAY.format(now) ? CLOCK : DAY_CLOCK).format(time)} น.`;
+}
+
+/** Reports on the roads near a pin, matched by road name only (the report has no coordinates). */
+export function reportsOnRoads(
+  flooding: RoadFloodingDaily,
+  roadNames: string[],
+): RoadFloodingReport[] {
+  const wanted = new Set(roadNames.map(roadKey));
+  return flooding.reports.filter((report) => wanted.has(roadKey(report.road_th)));
 }

@@ -29,7 +29,7 @@ import Timeline, { type TimeStep } from './Timeline';
 import { FORECAST_LEVELS, forecastAreas, RAIN_LEGEND } from './forecast';
 import { feedTrust, LEVEL_FILL, LEVEL_LABEL, worstLevel, type Level } from './alerts';
 import { nearestSubdistrict, type FoundPlace } from './places';
-import { RAIN_HOUR_CLASSES } from './bkk';
+import { RAIN_HOUR_CLASSES, RAIN_OLD_COLOR, roadKey as roadNameKey } from './bkk';
 import type { Focus, Layers, LngLat } from './MapView';
 
 const MapView = lazy(() => import('./MapView'));
@@ -80,6 +80,7 @@ export default function App() {
     waterState,
     rain,
     rainState,
+    flooding,
   } = data;
   const [layers, setLayers] = useState<Layers>({
     alerts: true,
@@ -119,6 +120,8 @@ export default function App() {
   const [floodPopupId, setFloodPopupId] = useState<string | null>(null);
   // on a phone the map sits above the list: a chip on the map leads back to the chosen report
   const [backToList, setBackToList] = useState<string | null>(null);
+  // a road of the department's report to show on the map once the road history has loaded
+  const [roadToShow, setRoadToShow] = useState<string | null>(null);
   const [favorite, setFavoriteState] = useState<Favorite | null>(loadFavorite);
   const [theme, setTheme] = useState<Theme>(() => storedTheme() ?? systemTheme());
   useEffect(() => applyTheme(theme), [theme]);
@@ -264,6 +267,23 @@ export default function App() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
+  useEffect(() => {
+    if (!roadToShow || !roads) return;
+    const found = roads.roads.find((r) => roadNameKey(r.name_th) === roadNameKey(roadToShow));
+    setRoadToShow(null);
+    if (!found?.points.length) return;
+    const xs = found.points.map((p) => p[0]);
+    const ys = found.points.map((p) => p[1]);
+    setFocus({
+      key: `road:${found.key}:${Date.now()}`,
+      bounds: [
+        [Math.min(...xs), Math.min(...ys)],
+        [Math.max(...xs), Math.max(...ys)],
+      ],
+    });
+    if (typeof matchMedia === 'function' && matchMedia('(max-width: 899px)').matches)
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [roadToShow, roads]);
   const toggle = (name: keyof Layers) =>
     setLayers((current) => ({ ...current, [name]: !current[name] }));
 
@@ -506,6 +526,9 @@ export default function App() {
                   <i className="legend-pin" style={{ background: item.color }} /> {item.label}
                 </span>
               ))}
+              <span>
+                <i className="legend-pin" style={{ background: RAIN_OLD_COLOR }} /> ไม่มีค่าล่าสุด
+              </span>
             </div>
           )}
           {layers.cameras && (
@@ -596,6 +619,7 @@ export default function App() {
             waterState={waterState}
             rain={rain}
             rainState={rainState}
+            flooding={flooding}
             onClose={() => setPin(null)}
             onSelectAlert={selectAlert}
             onRoad={(r) => openRoad(r.key)}
@@ -640,6 +664,11 @@ export default function App() {
               onSelectAlert={selectAlert}
               openFloodId={floodPopupId}
               onFlood={(report) => openFloodReport(report.id)}
+              flooding={flooding}
+              onRoadName={(name) => {
+                setRoadToShow(name);
+                void loadRoads();
+              }}
             />
           </>
         )}

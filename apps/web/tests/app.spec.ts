@@ -580,6 +580,77 @@ test('a flood report opens on the map without leaving the list, and its popup le
   await expect(history.locator('summary')).toContainText('ข้อมูลย้อนหลัง ไม่ใช่ตอนนี้');
 });
 
+test("today's report of flooded main roads lists roads and matches those near a pin by name", async ({
+  page,
+}) => {
+  await prepare(page);
+  const manifest = read('active', 'manifest');
+  for (const [path, sha] of [
+    ['bkk/flooding.json', 'd'],
+    ['ref/road_flood_history.json', '0'],
+  ])
+    manifest.files.push({ path, sha256: sha.repeat(64), size: 1, revision: 1 });
+  await page.route('**/examples/active/manifest.json?*', (route) =>
+    route.fulfill({ json: manifest }),
+  );
+  await page.route('**/ref/road_flood_history.json?*', (route) =>
+    route.fulfill({
+      body: readFileSync(
+        new URL(
+          '../../../contracts/v1/examples/road-flood-history/road_flood_history.json',
+          import.meta.url,
+        ),
+      ),
+      contentType: 'application/json',
+    }),
+  );
+  const at = Date.parse(manifest.generated_at);
+  const iso = (ms: number) => new Date(ms).toISOString();
+  const report = (road: string, area: string) => ({
+    district_th: 'คลองเตย',
+    road_th: road,
+    area_th: area,
+    depth_cm: 15,
+    length_m: 200,
+    lanes_th: '1-2 เลน',
+    flood_start: iso(at - 90 * 60_000),
+    dry_at: null,
+    rain_mm: 0,
+  });
+  await page.route('**/bkk/flooding.json?*', (route) =>
+    route.fulfill({
+      json: {
+        schema_version: '1',
+        fetched_at: iso(at),
+        report_date: iso(at).slice(0, 10),
+        updated_at: iso(at - 10 * 60_000),
+        source_url: 'https://dds.bangkok.go.th/flood_report.php',
+        credit_th: 'สำนักการระบายน้ำ กรุงเทพมหานคร (ผ่านระบบ DXS)',
+        reports: [
+          report('สุขุมวิท', 'ซอยสุขุมวิท 26 ช่วงกลางซอย'),
+          report('พหลโยธิน', 'หน้าม.เกษตร'),
+        ],
+        notes_th: [],
+      },
+    }),
+  );
+  await page.goto('/');
+  const list = page.getByTestId('road-flooding');
+  await expect(list.getByRole('heading')).toHaveText('ถนนสายหลัก กทม. ที่ยังท่วม 2 จุด');
+  await expect(list).toContainText('ถ.สุขุมวิท · ซอยสุขุมวิท 26 ช่วงกลางซอย');
+  await expect(list).toContainText('ถนนที่ไม่มีในรายการไม่ได้แปลว่าไม่ท่วม');
+  // a road opens on the map only; the list stays
+  await list.getByRole('button', { name: /ถ\.สุขุมวิท/ }).click();
+  await expect(list).toBeVisible();
+  await expect(page.getByTestId('road-card')).toHaveCount(0);
+  // at a pin on Sukhumvit only the report on Sukhumvit is shown, and it says the match is by name
+  await page.goto('/?pin=13.701,100.601');
+  const here = page.getByTestId('road-report-here');
+  await expect(here).toContainText('ถ.สุขุมวิท · ซอยสุขุมวิท 26 ช่วงกลางซอย');
+  await expect(here).not.toContainText('พหลโยธิน');
+  await expect(here).toContainText('จับคู่จากชื่อถนน');
+});
+
 test('Bangkok rain gauges and canal levels show as measured values near a pin', async ({
   page,
 }) => {

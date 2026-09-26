@@ -1,14 +1,20 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
+  floodingText,
   isRecent,
   levelText,
   mmText,
   nearest,
   rainPin,
+  reportsOnRoads,
+  reportTime,
+  roadKey,
+  roadLabel,
   waterPin,
   type CanalLevels,
   type RainGauges,
+  type RoadFloodingDaily,
 } from './bkk';
 
 // the producer's examples from synthetic DXS answers (contracts/v1/examples/bkk), read at 17:20 on 26 Sep
@@ -18,6 +24,7 @@ const read = <T>(name: string) =>
   ) as T;
 const water = read<CanalLevels>('water.json');
 const rain = read<RainGauges>('rain.json');
+const flooding = read<RoadFloodingDaily>('flooding.json');
 const AT = Date.parse('2026-09-26T17:20:00+07:00');
 
 describe('Bangkok canal levels and rain gauges', () => {
@@ -54,5 +61,16 @@ describe('Bangkok canal levels and rain gauges', () => {
       'S001',
       'S002',
     ]);
+  });
+
+  it('describes a reported road and matches it to nearby roads by name only', () => {
+    const [wet, dry] = flooding.reports;
+    expect(wet.dry_at).toBeNull();
+    expect(floodingText(wet)).toBe('สูง 20 ซม. · ยาว 300 ม. · เต็มผิว');
+    expect(roadLabel(wet.road_th)).toBe('ถ.ทดสอบหนึ่ง');
+    expect(roadKey('ถนนรามคำแหง')).toBe(roadKey('ถ. รามคำแหง'));
+    expect(reportsOnRoads(flooding, ['ทดสอบสอง', 'ไม่มีในรายงาน'])).toEqual([dry]);
+    expect(reportTime(dry.dry_at!, AT)).toBe('17:15 น.');
+    expect(reportTime(flooding.reports[2].flood_start!, AT)).toMatch(/^25 ก\.ย\. 22:10 น\.$/);
   });
 });
