@@ -18,7 +18,8 @@ def _feed(**extra):
 
 def test_export_schemas_writes_one_file_per_contract(tmp_path):
     written = export_schemas(tmp_path)
-    assert sorted(p.name for p in written) == ["alerts.schema.json", "cctv.schema.json", "forecast.schema.json",
+    assert sorted(p.name for p in written) == ["alerts.schema.json", "bkk_rain.schema.json", "bkk_water.schema.json",
+                                               "cctv.schema.json", "forecast.schema.json",
                                                "live_floods.schema.json", "manifest.schema.json",
                                                "places.schema.json", "radar.schema.json",
                                                "road_flood_history.schema.json"]

@@ -1,0 +1,162 @@
+{
+  "$defs": {
+    "RainGauge": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "district_th": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "District Th"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "[lon, lat]; null when DXS gives none or it lies outside the Bangkok area",
+          "title": "Location"
+        },
+        "name_th": {
+          "title": "Name Th",
+          "type": "string"
+        },
+        "observed_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Time of the latest reading (Thai time)",
+          "title": "Observed At"
+        },
+        "rain_15min_mm": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Rain 15Min Mm"
+        },
+        "rain_1h_mm": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Rain 1H Mm"
+        },
+        "rain_24h_mm": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Rain 24H Mm"
+        },
+        "rain_3h_mm": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Rain 3H Mm"
+        }
+      },
+      "required": [
+        "code",
+        "name_th",
+        "district_th",
+        "location",
+        "observed_at",
+        "rain_15min_mm",
+        "rain_1h_mm",
+        "rain_3h_mm",
+        "rain_24h_mm"
+      ],
+      "title": "RainGauge",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "credit_th": {
+      "title": "Credit Th",
+      "type": "string"
+    },
+    "fetched_at": {
+      "format": "date-time",
+      "title": "Fetched At",
+      "type": "string"
+    },
+    "gauges": {
+      "description": "Every gauge DXS lists, sorted by code",
+      "items": {
+        "$ref": "#/$defs/RainGauge"
+      },
+      "title": "Gauges",
+      "type": "array"
+    },
+    "notes_th": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Notes Th",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1",
+      "default": "1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_url": {
+      "description": "Public page of the department to link out to (never a DXS page)",
+      "title": "Source Url",
+      "type": "string"
+    }
+  },
+  "required": [
+    "fetched_at",
+    "source_url",
+    "credit_th",
+    "gauges",
+    "notes_th"
+  ],
+  "title": "RainGauges",
+  "type": "object"
+}

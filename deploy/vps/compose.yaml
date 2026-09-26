@@ -21,6 +21,7 @@ services:
       - --known-hosts=/etc/fontokmai/github_known_hosts
       - --cache=/var/lib/fontokmai/state/cache
       - --forecast
+      - --dxs-account=/run/secrets/dxs_account
     volumes:
       - ${FONTOKMAI_VAR}:/var/lib/fontokmai
       - ${DEPLOY_KEY}:/run/secrets/deploy_key:ro

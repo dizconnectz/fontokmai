@@ -1,0 +1,166 @@
+{
+  "$defs": {
+    "CanalStation": {
+      "additionalProperties": false,
+      "properties": {
+        "canal_th": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Canal Th"
+        },
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "district_th": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "District Th"
+        },
+        "level_in_m": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Water level on the inner side (ระดับน้ำด้านใน), metres above mean sea level (ม.รทก.), not the depth of water on a road",
+          "title": "Level In M"
+        },
+        "level_out_m": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Water level on the outer side (ระดับน้ำด้านนอก), m above MSL",
+          "title": "Level Out M"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "[lon, lat]; null when DXS gives none or it lies outside the Bangkok area",
+          "title": "Location"
+        },
+        "name_th": {
+          "description": "Station name as DXS gives it, e.g. ส.คลองเตย (ส. = pumping station, ปตร. = water gate, ค. = canal gauge)",
+          "title": "Name Th",
+          "type": "string"
+        },
+        "observed_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Time of the latest reading (Thai time)",
+          "title": "Observed At"
+        },
+        "pumps": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Number of pumps, for a pumping station",
+          "title": "Pumps"
+        }
+      },
+      "required": [
+        "code",
+        "name_th",
+        "canal_th",
+        "district_th",
+        "location",
+        "observed_at",
+        "level_in_m",
+        "level_out_m",
+        "pumps"
+      ],
+      "title": "CanalStation",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "credit_th": {
+      "title": "Credit Th",
+      "type": "string"
+    },
+    "fetched_at": {
+      "format": "date-time",
+      "title": "Fetched At",
+      "type": "string"
+    },
+    "notes_th": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Notes Th",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1",
+      "default": "1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_url": {
+      "description": "Public page of the department to link out to (never a DXS page)",
+      "title": "Source Url",
+      "type": "string"
+    },
+    "stations": {
+      "description": "Every station DXS lists, sorted by code",
+      "items": {
+        "$ref": "#/$defs/CanalStation"
+      },
+      "title": "Stations",
+      "type": "array"
+    }
+  },
+  "required": [
+    "fetched_at",
+    "source_url",
+    "credit_th",
+    "stations",
+    "notes_th"
+  ],
+  "title": "CanalLevels",
+  "type": "object"
+}

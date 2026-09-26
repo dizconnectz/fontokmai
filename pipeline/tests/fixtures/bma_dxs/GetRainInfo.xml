@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <soap:Body>
+    <GetRainInfoResponse xmlns="http://tempuri.org/">
+      <RainInfo>
+        <Items>
+          <item><code>R01</code><name>สำนักงานเขตจตุจักร</name><district>จตุจักร</district><latitude>13.8283</latitude><longitude>100.5596</longitude></item>
+          <item><code>R02</code><name>สถานีสูบน้ำพระโขนง</name><district>คลองเตย</district><latitude>13.7089</latitude><longitude>100.5919</longitude></item>
+          <item><code>R03</code><name>สถานีทดสอบ ไม่มีค่า</name><district>บางบอน</district><latitude>13.66</latitude><longitude>100.37</longitude></item>
+        </Items>
+        <error />
+      </RainInfo>
+    </GetRainInfoResponse>
+  </soap:Body>
+</soap:Envelope>

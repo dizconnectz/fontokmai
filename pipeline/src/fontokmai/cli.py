@@ -12,6 +12,7 @@ from typing import Any
 
 from fontokmai.contracts.export import export_schemas
 from fontokmai.examples import (
+    write_bkk_examples,
     write_examples,
     write_forecast_example,
     write_live_floods_example,
@@ -62,6 +63,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     examples.add_argument("--road-flood-fixtures", type=Path, help="also write the road-flood-history example")
     examples.add_argument("--forecast-fixtures", type=Path, help="also write the rain forecast example")
     examples.add_argument("--live-floods-fixtures", type=Path, help="also write the live flood reports example")
+    examples.add_argument("--bkk-fixtures", type=Path, help="also write the Bangkok water and rain examples (DXS)")
     cap = sub.add_parser("cap-snapshot", help="collect TMD CAP alerts and write a /data/v1 snapshot")
     cap.add_argument("--db", type=Path, required=True, help="SQLite state file")
     cap.add_argument("--out", type=Path, required=True, help="snapshot directory")
@@ -99,6 +101,8 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     sched.add_argument("--known-hosts", type=Path, help="known_hosts file of the git host")
     sched.add_argument("--cache", type=Path,
                        help="iTIC cache directory; when set, rebuild ref/road_flood_history.json once a week")
+    sched.add_argument("--dxs-account", type=Path,
+                       help="BMA DXS account file (user name, password); empty or missing = no DXS data")
     sched.add_argument("--forecast", action="store_true",
                        help="rebuild forecast/rain.json from Open-Meteo every 6 hours (network)")
     sched.add_argument("--max-rounds", type=int, help=argparse.SUPPRESS)
@@ -106,6 +110,14 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     if args.command == "schedule" and args.publish_remote and args.publish_work is None:
         parser.error("--publish-remote needs --publish-work")
     return args
+
+
+def _dxs_account(path: Path | None) -> Any:
+    """The DXS account, or None when no file (or an empty one) is mounted: the round then skips DXS."""
+    if path is None or not path.is_file() or path.stat().st_size == 0:
+        return None
+    from fontokmai.sources.bma_dxs import load_account
+    return load_account(path)
 
 
 def _scheduled_job(args: argparse.Namespace) -> Callable[[datetime], dict[str, Any]]:
@@ -134,7 +146,8 @@ def _scheduled_job(args: argparse.Namespace) -> Callable[[datetime], dict[str, A
         fetch = LiveFetcher()
         try:
             result = run_cap_snapshot(db=args.db, out=args.out, fetch=fetch, now=now, writer=args.writer,
-                                      owner_epoch=args.owner_epoch, radar_fetch=fetch, floods_opener=open_url)
+                                      owner_epoch=args.owner_epoch, radar_fetch=fetch, floods_opener=open_url,
+                                      dxs_account=_dxs_account(args.dxs_account))
         finally:
             fetch.close()
         summary = _summary(result)
@@ -169,6 +182,8 @@ def main(argv: list[str] | None = None) -> int:
             written += write_forecast_example(args.out, args.forecast_fixtures)
         if args.live_floods_fixtures:
             written += write_live_floods_example(args.out, args.live_floods_fixtures)
+        if args.bkk_fixtures:
+            written += write_bkk_examples(args.out, args.bkk_fixtures)
         for path in written:
             print(path.as_posix())
         return 0

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <soap:Body>
+    <GetRainLastDataResponse xmlns="http://tempuri.org/">
+      <RainLastData>
+        <Items>
+          <item><code>R01</code><site_time>2026-09-26T17:15:00</site_time><rf5min>0.5</rf5min><rf15min>2.5</rf15min><rf30min>6</rf30min><rf1hr>12</rf1hr><rf3hr>20.5</rf3hr><rf6hr>21</rf6hr><rf12rh>21</rf12rh><rf24rh>35</rf24rh></item>
+          <item><code>R02</code><site_time>2026-09-26T17:15:00</site_time><rf5min>0</rf5min><rf15min>0</rf15min><rf30min>0</rf30min><rf1hr>0</rf1hr><rf3hr>0</rf3hr><rf6hr>0</rf6hr><rf12rh>0</rf12rh><rf24rh>1.5</rf24rh></item>
+        </Items>
+        <error />
+      </RainLastData>
+    </GetRainLastDataResponse>
+  </soap:Body>
+</soap:Envelope>

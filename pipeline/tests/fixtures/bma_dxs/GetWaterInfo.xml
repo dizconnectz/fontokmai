@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <soap:Body>
+    <GetWaterInfoResponse xmlns="http://tempuri.org/">
+      <WaterInfo>
+        <Items>
+          <item><code>S001</code><name>ส.คลองเตย</name><district>คลองเตย</district><river>คลองเตย</river><water_count>2</water_count><latitude>13.7065</latitude><longitude>100.5703</longitude></item>
+          <item><code>S002</code><name>ค.บางซื่อ ถ.พหลฯ</name><district>จตุจักร</district><river>คลองบางซื่อ</river><water_count>1</water_count><latitude>13.8046</latitude><longitude>100.5540</longitude></item>
+          <item><code>S003</code><name>ปตร.ทดสอบ พิกัดสลับ</name><district>บางเขน</district><river>คลองบางบัว</river><water_count>1</water_count><latitude>100.60</latitude><longitude>13.87</longitude></item>
+          <item><code>S004</code><name>ค.ทดสอบ ไม่มีค่าล่าสุด</name><district>หนองจอก</district><river>คลองแสนแสบ</river><water_count>1</water_count><latitude></latitude><longitude></longitude></item>
+        </Items>
+        <error />
+      </WaterInfo>
+    </GetWaterInfoResponse>
+  </soap:Body>
+</soap:Envelope>

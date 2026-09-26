@@ -1,0 +1,3 @@
+# BMA DXS answers for tests (synthetic)
+
+Made by hand from the element names and types of the public WSDL (`https://dxg-api.dds.bangkok.go.th/WSS_DDSDXS.asmx?WSDL`, read 2026-09-26). Station codes, names, places and readings are invented; they are not DXS data. They cover a missing value, a swapped coordinate, an empty coordinate, a Buddhist-era year, an offset-less time (Thai time) and an out-of-range level.

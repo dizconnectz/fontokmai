@@ -14,8 +14,11 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Any
 
+from fontokmai.contracts.bkk import CanalLevels, CanalStation, RainGauge, RainGauges
 from fontokmai.sources.tmd_cap.fetch import USER_AGENT, make_ssl_context
 
 ENDPOINT = "https://dxg-api.dds.bangkok.go.th/WSS_DDSDXS.asmx"
@@ -75,6 +78,19 @@ def https_post(url: str, body: bytes, headers: dict[str, str]) -> bytes:
     if len(data) > LIMIT:
         raise DxsError(f"answer larger than {LIMIT} bytes")
     return data
+
+
+def fixture_poster(directory: Path) -> Poster:
+    """Answers from recorded or synthetic files named after the service, e.g. GetWaterInfo.xml (tests)."""
+
+    def post(url: str, body: bytes, headers: dict[str, str]) -> bytes:
+        operation = headers["SOAPAction"].strip('"').rsplit("/", 1)[-1]
+        try:
+            return (directory / f"{operation}.xml").read_bytes()
+        except OSError:
+            raise DxsError(f"HTTP 500 (no fixture for {operation})") from None
+
+    return post
 
 
 def local(tag: str) -> str:
@@ -138,3 +154,137 @@ def outline(element: ET.Element, depth: int = 0, limit: int = 6) -> list[str]:
         else:
             lines.append(f"{'  ' * depth}{name}{count} = {(item.text or '').strip()[:80]!r}")
     return lines
+
+
+# ---------- canal water levels and rain gauges, every round ----------
+
+SOURCE_ID = "bma_dxs"
+WATER_PATH = "bkk/water.json"
+RAIN_PATH = "bkk/rain.json"
+WATER_PAGE = "https://weather.bangkok.go.th/water/summary"
+RAIN_PAGE = "https://weather.bangkok.go.th/"
+CREDIT_TH = "สำนักการระบายน้ำ กรุงเทพมหานคร (ผ่านระบบ DXS)"
+WATER_NOTES_TH = [
+    "ระดับน้ำเป็นเมตรเทียบระดับทะเลปานกลาง (ม.รทก.) ไม่ใช่ความลึกของน้ำท่วมบนถนน",
+    "ด้านใน/ด้านนอกคือสองฝั่งของสถานีสูบน้ำหรือประตูระบายน้ำ ตามที่สำนักการระบายน้ำรายงาน",
+]
+RAIN_NOTES_TH = ["ฝนที่วัดได้จริงที่สถานีของสำนักการระบายน้ำ (มม.) ไม่ใช่ค่าประมาณจากเรดาร์"]
+ICT = timezone(timedelta(hours=7))
+# generous box around Bangkok and its edges, to drop a swapped or empty coordinate
+AREA = (100.2, 13.4, 101.0, 14.2)
+
+
+def _number(value: str | None, low: float, high: float) -> float | None:
+    try:
+        number = float(value) if value is not None else None
+    except ValueError:
+        return None
+    return number if number is not None and low <= number <= high and number == number else None
+
+
+def _position(item: ET.Element) -> list[float] | None:
+    lon = _number(text(item, "longitude"), AREA[0], AREA[2])
+    lat = _number(text(item, "latitude"), AREA[1], AREA[3])
+    return [round(lon, 6), round(lat, 6)] if lon is not None and lat is not None else None
+
+
+def _when(value: str | None) -> datetime | None:
+    """A DXS time; one without an offset is Thai time, and a Buddhist-era year is turned into the common era."""
+    if not value:
+        return None
+    try:
+        moment = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if moment.year > 2400:
+        moment = moment.replace(year=moment.year - 543)
+    return (moment if moment.tzinfo else moment.replace(tzinfo=ICT)).astimezone(ICT)
+
+
+def _items(result: ET.Element) -> list[ET.Element]:
+    error = text(result, "error")
+    if error:
+        raise DxsError(f"{local(result.tag)}: {error[:200]}")
+    return children(child(result, "Items"), "item")
+
+
+def parse_water(info: ET.Element, last: ET.Element, now: datetime) -> CanalLevels:
+    readings = {text(item, "code"): item for item in _items(last)}
+    stations = []
+    for item in _items(info):
+        code = text(item, "code")
+        name = text(item, "name")
+        if not code or not name:
+            continue
+        reading = readings.get(code)
+        pumps = _number(text(reading, "pump_count"), 0, 100) if reading is not None else None
+        stations.append(CanalStation(
+            code=code, name_th=name, canal_th=text(item, "river"), district_th=text(item, "district"),
+            location=_position(item),
+            observed_at=_when(text(reading, "site_time")) if reading is not None else None,
+            level_in_m=_number(text(reading, "wl_in"), -10, 10) if reading is not None else None,
+            level_out_m=_number(text(reading, "wl_out01"), -10, 10) if reading is not None else None,
+            pumps=int(pumps) if pumps else None,
+        ))
+    stations.sort(key=lambda station: station.code)
+    return CanalLevels(fetched_at=now.astimezone(ICT), source_url=WATER_PAGE, credit_th=CREDIT_TH,
+                       stations=stations, notes_th=WATER_NOTES_TH)
+
+
+def parse_rain(info: ET.Element, last: ET.Element, now: datetime) -> RainGauges:
+    readings = {text(item, "code"): item for item in _items(last)}
+    gauges = []
+    for item in _items(info):
+        code = text(item, "code")
+        name = text(item, "name")
+        if not code or not name:
+            continue
+        reading = readings.get(code)
+
+        def rain(tag: str, reading: ET.Element | None = reading) -> float | None:
+            return _number(text(reading, tag), 0, 1000) if reading is not None else None
+
+        gauges.append(RainGauge(
+            code=code, name_th=name, district_th=text(item, "district"), location=_position(item),
+            observed_at=_when(text(reading, "site_time")) if reading is not None else None,
+            rain_15min_mm=rain("rf15min"), rain_1h_mm=rain("rf1hr"), rain_3h_mm=rain("rf3hr"),
+            rain_24h_mm=rain("rf24rh"),
+        ))
+    gauges.sort(key=lambda gauge: gauge.code)
+    return RainGauges(fetched_at=now.astimezone(ICT), source_url=RAIN_PAGE, credit_th=CREDIT_TH, gauges=gauges,
+                      notes_th=RAIN_NOTES_TH)
+
+
+@dataclass(frozen=True)
+class DxsRound:
+    water: CanalLevels | None
+    rain: RainGauges | None
+    ok: bool
+    seen: int
+    message: str | None
+
+
+def _previous(out: Path, rel: str, model: type[CanalLevels] | type[RainGauges]) -> Any:
+    try:
+        return model.model_validate_json((out / rel).read_bytes())
+    except (OSError, ValueError):
+        return None
+
+
+def collect_bkk(account: Account, out: Path, now: datetime, *, post: Poster = https_post) -> DxsRound:
+    """Water levels and rain of this round; a part that fails keeps its last good file (fetched_at shows its age)."""
+    water = rain = None
+    problems = []
+    try:
+        water = parse_water(call("GetWaterInfo", account, post=post), call("GetWaterLastData", account, post=post),
+                            now)
+    except (DxsError, ValueError) as exc:
+        problems.append(f"water: {exc}"[:200])
+    try:
+        rain = parse_rain(call("GetRainInfo", account, post=post), call("GetRainLastData", account, post=post), now)
+    except (DxsError, ValueError) as exc:
+        problems.append(f"rain: {exc}"[:200])
+    seen = (len(water.stations) if water else 0) + (len(rain.gauges) if rain else 0)
+    return DxsRound(water=water or _previous(out, WATER_PATH, CanalLevels),
+                    rain=rain or _previous(out, RAIN_PATH, RainGauges),
+                    ok=not problems, seen=seen, message="; ".join(problems) or None)

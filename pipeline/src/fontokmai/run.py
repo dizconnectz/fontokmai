@@ -19,6 +19,7 @@ from fontokmai.contracts.radar import RadarFeed
 from fontokmai.contracts.road_flood import RoadFloodHistory
 from fontokmai.feeds.alerts import LIVE_STATUSES, AlertCandidate, assemble_alerts_feed
 from fontokmai.publish.snapshot import atomic_write, write_snapshot
+from fontokmai.sources import bma_dxs
 from fontokmai.sources.open_data import longdo_live
 from fontokmai.sources.open_data.http import Opener
 from fontokmai.sources.tmd_cap.collect import collect, load_messages
@@ -38,6 +39,7 @@ STATIC_REFS = {"ref/cctv.json": "cctv.json", "ref/places.json": "places.json"}
 LAST_SUCCESS_KEY = "tmd_cap.last_success_at"
 RADAR_SUCCESS_KEY = "tmd_radar.last_success_at"
 FLOODS_SUCCESS_KEY = "longdo_floods.last_success_at"
+DXS_SUCCESS_KEY = "bma_dxs.last_success_at"
 RECOVERY_EPOCH_KEY = "recovery_epoch"
 
 
@@ -96,7 +98,8 @@ def _valid_candidates(candidates: list[AlertCandidate]) -> tuple[list[AlertCandi
 
 def run_cap_snapshot(*, db: Path, out: Path, fetch: Fetcher, now: datetime, writer: str,
                      owner_epoch: int, radar_fetch: Fetcher | None = None,
-                     floods_opener: Opener | None = None) -> SnapshotResult:
+                     floods_opener: Opener | None = None, dxs_account: bma_dxs.Account | None = None,
+                     dxs_post: bma_dxs.Poster = bma_dxs.https_post) -> SnapshotResult:
     if now.tzinfo is None:
         raise ValueError("now must carry a UTC offset")
     generation_id = generation_id_for(now, writer)
@@ -148,6 +151,22 @@ def run_cap_snapshot(*, db: Path, out: Path, fetch: Fetcher, now: datetime, writ
             ))
             if floods.feed is not None:
                 files[longdo_live.FILE_PATH] = floods.feed.model_dump_json().encode("utf-8")
+        if dxs_account is not None:
+            bkk = bma_dxs.collect_bkk(dxs_account, out, now, post=dxs_post)
+            if bkk.ok:
+                store.set_meta(DXS_SUCCESS_KEY, now.isoformat())
+            dxs_success = store.get_meta(DXS_SUCCESS_KEY)
+            statuses.append(SourceStatus(
+                source_id=bma_dxs.SOURCE_ID, status="ok" if bkk.ok else ("degraded" if bkk.seen else "failed"),
+                last_attempt_at=now,
+                last_success_at=datetime.fromisoformat(dxs_success) if dxs_success else None,
+                items_seen=bkk.seen, items_rejected=0, message=bkk.message,
+            ))
+            for rel, model in ((bma_dxs.WATER_PATH, bkk.water), (bma_dxs.RAIN_PATH, bkk.rain)):
+                if model is not None:
+                    content = model.model_dump_json().encode("utf-8")
+                    atomic_write(out / rel, content)
+                    files[rel] = content
         manifest = write_snapshot(out, files, store,
                                   generation_id=generation_id, now=now, writer=writer,
                                   owner_epoch=owner_epoch, recovery_epoch=recovery_epoch,
