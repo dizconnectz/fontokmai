@@ -225,7 +225,7 @@ BKK_AT = "2026-09-26T17:20:00+07:00"
 
 
 def write_bkk_examples(out: Path, fixtures: Path) -> list[Path]:
-    """contracts/v1/examples/bkk: bkk/water.json and bkk/rain.json from synthetic DXS answers at 17:20."""
+    """contracts/v1/examples/bkk: water, rain and the road flooding report from synthetic DXS answers."""
     from fontokmai.sources.bma_dxs import Account, collect_bkk, fixture_poster
 
     target = out / "bkk"
@@ -234,9 +234,10 @@ def write_bkk_examples(out: Path, fixtures: Path) -> list[Path]:
     target.mkdir(parents=True)
     round_ = collect_bkk(Account("example", "example"), target, datetime.fromisoformat(BKK_AT),
                          post=fixture_poster(fixtures))
-    assert round_.ok and round_.water is not None and round_.rain is not None
+    assert round_.ok and round_.water and round_.rain and round_.flooding
     written = []
-    for name, model in (("water.json", round_.water), ("rain.json", round_.rain)):
+    for name, model in (("water.json", round_.water), ("rain.json", round_.rain),
+                        ("flooding.json", round_.flooding)):
         path = target / name
         path.write_text(model.model_dump_json(indent=2) + "\n", encoding="utf-8", newline="\n")
         written.append(path)

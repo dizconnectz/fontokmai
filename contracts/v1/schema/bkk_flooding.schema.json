@@ -1,0 +1,188 @@
+{
+  "$defs": {
+    "RoadFloodingReport": {
+      "additionalProperties": false,
+      "properties": {
+        "area_th": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Where on the road, as the department writes it",
+          "title": "Area Th"
+        },
+        "depth_cm": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Water on the road at its deepest, centimetres",
+          "title": "Depth Cm"
+        },
+        "district_th": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "District Th"
+        },
+        "dry_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "When the road was dry again; null while it is still flooded",
+          "title": "Dry At"
+        },
+        "flood_start": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Flood Start"
+        },
+        "lanes_th": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Traffic lanes affected, e.g. 1-2 เลน or เต็มผิว",
+          "title": "Lanes Th"
+        },
+        "length_m": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Length M"
+        },
+        "rain_mm": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Rain Mm"
+        },
+        "road_th": {
+          "title": "Road Th",
+          "type": "string"
+        }
+      },
+      "required": [
+        "district_th",
+        "road_th",
+        "area_th",
+        "depth_cm",
+        "length_m",
+        "lanes_th",
+        "flood_start",
+        "dry_at",
+        "rain_mm"
+      ],
+      "title": "RoadFloodingReport",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "credit_th": {
+      "title": "Credit Th",
+      "type": "string"
+    },
+    "fetched_at": {
+      "format": "date-time",
+      "title": "Fetched At",
+      "type": "string"
+    },
+    "notes_th": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Notes Th",
+      "type": "array"
+    },
+    "report_date": {
+      "description": "Day of the department's report (it can list water still there from the evening before)",
+      "format": "date",
+      "title": "Report Date",
+      "type": "string"
+    },
+    "reports": {
+      "description": "Still flooded first, then the latest start first",
+      "items": {
+        "$ref": "#/$defs/RoadFloodingReport"
+      },
+      "title": "Reports",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1",
+      "default": "1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_url": {
+      "description": "Public page of the report to link out to (never a DXS page)",
+      "title": "Source Url",
+      "type": "string"
+    },
+    "updated_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When the department last updated the report",
+      "title": "Updated At"
+    }
+  },
+  "required": [
+    "fetched_at",
+    "report_date",
+    "updated_at",
+    "source_url",
+    "credit_th",
+    "reports",
+    "notes_th"
+  ],
+  "title": "RoadFloodingDaily",
+  "type": "object"
+}

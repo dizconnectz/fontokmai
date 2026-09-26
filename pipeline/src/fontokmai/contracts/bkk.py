@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date
 from typing import Literal
 
 from pydantic import AwareDatetime, Field
@@ -52,4 +53,28 @@ class RainGauges(ContractModel):
     source_url: str = Field(description="Public page of the department to link out to (never a DXS page)")
     credit_th: str
     gauges: list[RainGauge] = Field(description="Every gauge DXS lists, sorted by code")
+    notes_th: list[str]
+
+
+class RoadFloodingReport(ContractModel):
+    district_th: str | None
+    road_th: str
+    area_th: str | None = Field(description="Where on the road, as the department writes it")
+    depth_cm: float | None = Field(description="Water on the road at its deepest, centimetres")
+    length_m: float | None
+    lanes_th: str | None = Field(description="Traffic lanes affected, e.g. 1-2 เลน or เต็มผิว")
+    flood_start: AwareDatetime | None
+    dry_at: AwareDatetime | None = Field(description="When the road was dry again; null while it is still flooded")
+    rain_mm: float | None
+
+
+class RoadFloodingDaily(ContractModel):
+    schema_version: Literal["1"] = SCHEMA_VERSION
+    fetched_at: AwareDatetime
+    report_date: date = Field(description="Day of the department's report (it can list water still there "
+                                          "from the evening before)")
+    updated_at: AwareDatetime | None = Field(description="When the department last updated the report")
+    source_url: str = Field(description="Public page of the report to link out to (never a DXS page)")
+    credit_th: str
+    reports: list[RoadFloodingReport] = Field(description="Still flooded first, then the latest start first")
     notes_th: list[str]

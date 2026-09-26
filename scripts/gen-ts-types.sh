@@ -3,7 +3,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p contracts/v1/ts
-for name in alerts bkk_rain bkk_water cctv forecast live_floods manifest places radar road_flood_history; do
+for name in alerts bkk_flooding bkk_rain bkk_water cctv forecast live_floods manifest places radar road_flood_history; do
   npx --yes -p json-schema-to-typescript@16.0.0 json2ts \
     --input "contracts/v1/schema/${name}.schema.json" \
     --output "contracts/v1/ts/${name}.ts" \

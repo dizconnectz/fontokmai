@@ -14,11 +14,18 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-from fontokmai.contracts.bkk import CanalLevels, CanalStation, RainGauge, RainGauges
+from fontokmai.contracts.bkk import (
+    CanalLevels,
+    CanalStation,
+    RainGauge,
+    RainGauges,
+    RoadFloodingDaily,
+    RoadFloodingReport,
+)
 from fontokmai.sources.tmd_cap.fetch import USER_AGENT, make_ssl_context
 
 ENDPOINT = "https://dxg-api.dds.bangkok.go.th/WSS_DDSDXS.asmx"
@@ -259,12 +266,13 @@ def parse_rain(info: ET.Element, last: ET.Element, now: datetime) -> RainGauges:
 class DxsRound:
     water: CanalLevels | None
     rain: RainGauges | None
+    flooding: RoadFloodingDaily | None
     ok: bool
     seen: int
     message: str | None
 
 
-def _previous(out: Path, rel: str, model: type[CanalLevels] | type[RainGauges]) -> Any:
+def _previous(out: Path, rel: str, model: type[CanalLevels] | type[RainGauges] | type[RoadFloodingDaily]) -> Any:
     try:
         return model.model_validate_json((out / rel).read_bytes())
     except (OSError, ValueError):
@@ -284,7 +292,91 @@ def collect_bkk(account: Account, out: Path, now: datetime, *, post: Poster = ht
         rain = parse_rain(call("GetRainInfo", account, post=post), call("GetRainLastData", account, post=post), now)
     except (DxsError, ValueError) as exc:
         problems.append(f"rain: {exc}"[:200])
-    seen = (len(water.stations) if water else 0) + (len(rain.gauges) if rain else 0)
+    flooding = None
+    today = now.astimezone(ICT).date()
+    try:
+        answer = call("getFloodingDailyReport", account, {"DailyReport": report_param(today)}, post=post)
+        flooding = parse_flooding(answer, today, now)
+    except (DxsError, ValueError) as exc:
+        problems.append(f"flooding: {exc}"[:200])
+    seen = sum(len(items) for items in (water.stations if water else [], rain.gauges if rain else [],
+                                        flooding.reports if flooding else []))
     return DxsRound(water=water or _previous(out, WATER_PATH, CanalLevels),
                     rain=rain or _previous(out, RAIN_PATH, RainGauges),
+                    flooding=flooding or _previous(out, FLOODING_PATH, RoadFloodingDaily),
                     ok=not problems, seen=seen, message="; ".join(problems) or None)
+
+
+# ---------- daily report of flooded main roads ----------
+
+FLOODING_PATH = "bkk/flooding.json"
+FLOODING_PAGE = "https://dds.bangkok.go.th/flood_report.php"
+FLOODING_NOTES_TH = [
+    "รายงานของเจ้าหน้าที่สำนักการระบายน้ำ เฉพาะถนนสายหลักที่ดูแล ไม่ครบทุกถนนและซอย",
+    "ความสูงเป็นเซนติเมตรบนผิวถนน · ถนนที่ไม่มีในรายงานไม่ได้แปลว่าไม่ท่วม",
+]
+DAY_FORMATS = ("%Y-%m-%d", "%d/%m/%Y", "%Y%m%d", "%d-%m-%Y")
+# the report writes 00:00 as the dry time of a road that is still flooded
+NOT_DRY = {"00:00", "0:00", "00:00:00", "-"}
+
+
+def _day(value: str | None) -> date | None:
+    if not value:
+        return None
+    head = value.strip().split(" ")[0].split("T")[0]
+    for pattern in DAY_FORMATS:
+        try:
+            parsed = datetime.strptime(head, pattern).date()
+        except ValueError:
+            continue
+        return parsed.replace(year=parsed.year - 543) if parsed.year > 2400 else parsed
+    return None
+
+
+def _at(day: date | None, clock: str | None) -> datetime | None:
+    if day is None or not clock:
+        return None
+    parts = clock.strip().replace(".", ":").split(":")
+    try:
+        hour, minute = int(parts[0]), int(parts[1])
+    except (IndexError, ValueError):
+        return None
+    if not (0 <= hour < 24 and 0 <= minute < 60):
+        return None
+    return datetime(day.year, day.month, day.day, hour, minute, tzinfo=ICT)
+
+
+def report_param(day: date) -> str:
+    """The date as the service takes it (checked against the real service)."""
+    return day.isoformat()
+
+
+def parse_flooding(result: ET.Element, day: date, now: datetime) -> RoadFloodingDaily:
+    control = child(result, "Control")
+    reported = _day(text(control, "DailyReport"))
+    if reported is not None and reported != day:
+        raise DxsError(f"getFloodingDailyReport answered for {reported} instead of {day}")
+    reports = []
+    for item in children(child(result, "Detail"), "FloodingDailyReportDetail"):
+        road = text(item, "RoadName")
+        if not road:
+            continue
+        start_day = _day(text(item, "FloodStartDate")) or day
+        finish = text(item, "FloodFinishTime")
+        still = finish is None or finish.strip() in NOT_DRY and not text(item, "Durationtime_flood")
+        depths = [d for d in (_number(text(item, "FloodHighFrommm"), 0, 300),
+                              _number(text(item, "FloddHightomm"), 0, 300)) if d is not None]
+        reports.append(RoadFloodingReport(
+            district_th=text(item, "DistricName"), road_th=road,
+            area_th=text(item, "AreaDetail") or text(item, "MonitorPointName"),
+            depth_cm=max(depths) if depths else None,
+            length_m=_number(text(item, "FloodLength"), 0, 50_000),
+            lanes_th=text(item, "ImpactTrafficSurface"),
+            flood_start=_at(start_day, text(item, "FloodStartTime")),
+            dry_at=None if still else _at(_day(text(item, "FloodFinishDate")) or start_day, finish),
+            rain_mm=_number(text(item, "TotolRainmm"), 0, 1000),
+        ))
+    reports.sort(key=lambda r: (r.dry_at is not None, -(r.flood_start.timestamp() if r.flood_start else 0)))
+    return RoadFloodingDaily(fetched_at=now.astimezone(ICT), report_date=day,
+                             updated_at=_when(text(control, "LastUpdate")), source_url=FLOODING_PAGE,
+                             credit_th=CREDIT_TH, reports=reports, notes_th=FLOODING_NOTES_TH)

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <getFloodingDailyReportResponse xmlns="http://tempuri.org/">
+      <getFloodingDailyReportResult>
+        <Control><DailyReport>2026-09-26</DailyReport><TotalFloodingList>3</TotalFloodingList><LastUpdate>2026-09-26T17:10:00</LastUpdate></Control>
+        <Detail>
+          <FloodingDailyReportDetail><ReportNo>1</ReportNo><DistrictCode /><DistricName>จตุจักร</DistricName><RoadCode /><RoadName>ถนนทดสอบหนึ่ง</RoadName><AreaDetail>หน้าตลาดทดสอบ</AreaDetail><MonitorPointCode /><MonitorPointName /><RainStartDate /><RainStartTime /><RainFinishDate /><RainFinishTime /><TotolRainmm>42.5</TotolRainmm><RainSeveritymmhr /><PointReferenceName /><FloodStartDate>2026-09-26</FloodStartDate><FloodStartTime>15:45</FloodStartTime><FloodFinishDate /><FloodFinishTime>00:00</FloodFinishTime><FloodHighFrommm>15</FloodHighFrommm><FloddHightomm>20</FloddHightomm><FloodLength>300</FloodLength><ImpactTrafficSurface>เต็มผิว</ImpactTrafficSurface><Durationtime_rain /><Durationtime_flood /></FloodingDailyReportDetail>
+          <FloodingDailyReportDetail><ReportNo>2</ReportNo><DistrictCode /><DistricName>ดินแดง</DistricName><RoadCode /><RoadName>ถนนทดสอบสอง</RoadName><AreaDetail>ซ.ทดสอบ 34</AreaDetail><MonitorPointCode /><MonitorPointName /><RainStartDate /><RainStartTime /><RainFinishDate /><RainFinishTime /><TotolRainmm>0.0</TotolRainmm><RainSeveritymmhr /><PointReferenceName /><FloodStartDate>2026-09-26</FloodStartDate><FloodStartTime>14:40</FloodStartTime><FloodFinishDate>2026-09-26</FloodFinishDate><FloodFinishTime>17:15</FloodFinishTime><FloodHighFrommm>20</FloodHighFrommm><FloddHightomm>20</FloddHightomm><FloodLength>200</FloodLength><ImpactTrafficSurface>1-2 เลน</ImpactTrafficSurface><Durationtime_rain /><Durationtime_flood>02:35</Durationtime_flood></FloodingDailyReportDetail>
+          <FloodingDailyReportDetail><ReportNo>3</ReportNo><DistrictCode /><DistricName>บางขุนเทียน</DistricName><RoadCode /><RoadName>ถนนทดสอบสาม</RoadName><AreaDetail /><MonitorPointCode /><MonitorPointName>จุดวัดทดสอบ</MonitorPointName><RainStartDate /><RainStartTime /><RainFinishDate /><RainFinishTime /><TotolRainmm>0.0</TotolRainmm><RainSeveritymmhr /><PointReferenceName /><FloodStartDate>25/09/2569</FloodStartDate><FloodStartTime>22.10</FloodStartTime><FloodFinishDate>26/09/2569</FloodFinishDate><FloodFinishTime>08:05</FloodFinishTime><FloodHighFrommm>10</FloodHighFrommm><FloddHightomm /><FloodLength>200</FloodLength><ImpactTrafficSurface>1 เลน</ImpactTrafficSurface><Durationtime_rain /><Durationtime_flood>09:55</Durationtime_flood></FloodingDailyReportDetail>
+        </Detail>
+      </getFloodingDailyReportResult>
+    </getFloodingDailyReportResponse>
+  </soap:Body>
+</soap:Envelope>

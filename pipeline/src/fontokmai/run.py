@@ -162,7 +162,8 @@ def run_cap_snapshot(*, db: Path, out: Path, fetch: Fetcher, now: datetime, writ
                 last_success_at=datetime.fromisoformat(dxs_success) if dxs_success else None,
                 items_seen=bkk.seen, items_rejected=0, message=bkk.message,
             ))
-            for rel, model in ((bma_dxs.WATER_PATH, bkk.water), (bma_dxs.RAIN_PATH, bkk.rain)):
+            for rel, model in ((bma_dxs.WATER_PATH, bkk.water), (bma_dxs.RAIN_PATH, bkk.rain),
+                               (bma_dxs.FLOODING_PATH, bkk.flooding)):
                 if model is not None:
                     content = model.model_dump_json().encode("utf-8")
                     atomic_write(out / rel, content)

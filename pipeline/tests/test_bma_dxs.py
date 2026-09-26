@@ -10,6 +10,7 @@ import pytest
 from fontokmai.run import run_cap_snapshot
 from fontokmai.sources.bma_dxs import (
     ENDPOINT,
+    FLOODING_PATH,
     RAIN_PATH,
     SOAP,
     WATER_PATH,
@@ -121,12 +122,36 @@ def test_a_round_publishes_the_bangkok_files_with_their_own_source_status(tmp_pa
                               now=AT, writer="test", owner_epoch=1, dxs_account=ACCOUNT,
                               dxs_post=fixture_poster(DXS))
     listed = {f.path for f in result.manifest.files}
-    assert {WATER_PATH, RAIN_PATH} <= listed
+    assert {WATER_PATH, RAIN_PATH, FLOODING_PATH} <= listed
     [status] = [s for s in result.manifest.source_status if s.source_id == "bma_dxs"]
-    assert (status.status, status.items_seen) == ("ok", 7)
+    assert (status.status, status.items_seen) == ("ok", 10)  # 4 stations, 3 gauges, 3 road reports
     water = json.loads((tmp_path / "out" / WATER_PATH).read_text(encoding="utf-8"))
     assert water["credit_th"] == "สำนักการระบายน้ำ กรุงเทพมหานคร (ผ่านระบบ DXS)"
     # without an account the round neither calls DXS nor lists its files
     later = run_cap_snapshot(db=tmp_path / "s.db", out=tmp_path / "out", fetch=fixture_fetcher(FIXTURES),
                              now=AT.replace(minute=35), writer="test", owner_epoch=1)
     assert WATER_PATH not in {f.path for f in later.manifest.files}
+
+
+def test_the_road_report_puts_roads_still_flooded_first_and_reads_both_date_styles(tmp_path):
+    result = collect_bkk(ACCOUNT, tmp_path, AT, post=fixture_poster(DXS))
+    flooding = result.flooding
+    assert flooding.report_date.isoformat() == "2026-09-26"
+    assert flooding.updated_at.isoformat() == "2026-09-26T17:10:00+07:00"
+    first, dry, overnight = flooding.reports
+    assert (first.road_th, first.dry_at, first.depth_cm, first.lanes_th) == ("ถนนทดสอบหนึ่ง", None, 20, "เต็มผิว")
+    assert dry.dry_at.isoformat() == "2026-09-26T17:15:00+07:00"
+    assert overnight.flood_start.isoformat() == "2026-09-25T22:10:00+07:00"  # 25/09/2569 22.10
+    assert overnight.area_th == "จุดวัดทดสอบ" and overnight.depth_cm == 10
+
+
+def test_a_road_report_for_another_day_is_refused(tmp_path):
+    answers = tmp_path / "answers"
+    answers.mkdir()
+    for path in DXS.glob("*.xml"):
+        text_ = path.read_text(encoding="utf-8")
+        answers.joinpath(path.name).write_text(text_.replace("<DailyReport>2026-09-26", "<DailyReport>2026-09-20"),
+                                               encoding="utf-8")
+    result = collect_bkk(ACCOUNT, tmp_path, AT, post=fixture_poster(answers))
+    assert not result.ok and "instead of 2026-09-26" in result.message
+    assert result.flooding is None  # nothing older to keep in this empty folder
