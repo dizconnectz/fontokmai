@@ -112,6 +112,11 @@ export function reportTime(iso: string, now: number): string {
   return `${(DAY.format(time) === DAY.format(now) ? CLOCK : DAY_CLOCK).format(time)} น.`;
 }
 
+/** The report is of today (Thai date); another day's report is never shown as the situation now. */
+export function isTodaysReport(flooding: RoadFloodingDaily, now: number): boolean {
+  return flooding.report_date === DAY.format(now);
+}
+
 /** Reports on the roads near a pin, matched by road name only (the report has no coordinates). */
 export function reportsOnRoads(
   flooding: RoadFloodingDaily,

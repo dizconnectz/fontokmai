@@ -151,7 +151,10 @@ def run_cap_snapshot(*, db: Path, out: Path, fetch: Fetcher, now: datetime, writ
             ))
             if floods.feed is not None:
                 files[longdo_live.FILE_PATH] = floods.feed.model_dump_json().encode("utf-8")
-        if dxs_account is not None:
+        if dxs_account is None:
+            # no DXS in this round: publish what a manual run from a Thai computer delivered, while it is recent
+            files.update(bma_dxs.relay_files(out, now))
+        else:
             bkk = bma_dxs.collect_bkk(dxs_account, out, now, post=dxs_post)
             if bkk.ok:
                 store.set_meta(DXS_SUCCESS_KEY, now.isoformat())

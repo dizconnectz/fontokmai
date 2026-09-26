@@ -2,7 +2,7 @@
 
 import json
 import xml.etree.ElementTree as ET
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -127,10 +127,11 @@ def test_a_round_publishes_the_bangkok_files_with_their_own_source_status(tmp_pa
     assert (status.status, status.items_seen) == ("ok", 10)  # 4 stations, 3 gauges, 3 road reports
     water = json.loads((tmp_path / "out" / WATER_PATH).read_text(encoding="utf-8"))
     assert water["credit_th"] == "สำนักการระบายน้ำ กรุงเทพมหานคร (ผ่านระบบ DXS)"
-    # without an account the round neither calls DXS nor lists its files
+    # without an account the round does not call DXS: the recent files stay listed, with no source status
     later = run_cap_snapshot(db=tmp_path / "s.db", out=tmp_path / "out", fetch=fixture_fetcher(FIXTURES),
                              now=AT.replace(minute=35), writer="test", owner_epoch=1)
-    assert WATER_PATH not in {f.path for f in later.manifest.files}
+    assert WATER_PATH in {f.path for f in later.manifest.files}
+    assert "bma_dxs" not in {s.source_id for s in later.manifest.source_status}
 
 
 def test_the_road_report_puts_roads_still_flooded_first_and_reads_both_date_styles(tmp_path):
@@ -155,3 +156,24 @@ def test_a_road_report_for_another_day_is_refused(tmp_path):
     result = collect_bkk(ACCOUNT, tmp_path, AT, post=fixture_poster(answers))
     assert not result.ok and "instead of 2026-09-26" in result.message
     assert result.flooding is None  # nothing older to keep in this empty folder
+
+
+def test_without_dxs_a_round_lists_the_files_a_manual_run_delivered_for_one_day(tmp_path):
+    """DXS answers only Thai addresses: a computer in Thailand fetches once and copies the files to the VPS."""
+    out = tmp_path / "out"
+    delivered = collect_bkk(ACCOUNT, out, AT, post=fixture_poster(DXS))
+    for rel, model in ((WATER_PATH, delivered.water), (RAIN_PATH, delivered.rain),
+                       (FLOODING_PATH, delivered.flooding)):
+        (out / rel).parent.mkdir(parents=True, exist_ok=True)
+        (out / rel).write_text(model.model_dump_json(), encoding="utf-8")
+    (out / "bkk" / "notes.txt").write_text("not part of the contract", encoding="utf-8")
+    later = run_cap_snapshot(db=tmp_path / "s.db", out=out, fetch=fixture_fetcher(FIXTURES),
+                             now=AT + timedelta(hours=3), writer="test", owner_epoch=1)
+    listed = {f.path for f in later.manifest.files}
+    assert {WATER_PATH, RAIN_PATH, FLOODING_PATH} <= listed and "bkk/notes.txt" not in listed
+    # no source status: the round did not call DXS, the files say when they were fetched
+    assert "bma_dxs" not in {s.source_id for s in later.manifest.source_status}
+    next_day = run_cap_snapshot(db=tmp_path / "s.db", out=out, fetch=fixture_fetcher(FIXTURES),
+                                now=AT + timedelta(hours=25), writer="test", owner_epoch=1)
+    assert not ({WATER_PATH, RAIN_PATH, FLOODING_PATH} & {f.path for f in next_day.manifest.files})
+

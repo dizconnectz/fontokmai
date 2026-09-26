@@ -85,6 +85,9 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     rain.add_argument("--now", help="fetch time, ISO 8601 with offset (default: current time)")
     rain.add_argument("--db", type=Path,
                       help="state database of the scheduled job, so a manual run counts in its Open-Meteo budget")
+    fetch_bkk = sub.add_parser("bkk-fetch", help="fetch the Bangkok DXS files once (from a computer in Thailand)")
+    fetch_bkk.add_argument("--account", type=Path, required=True, help="file with the DXS user name and password")
+    fetch_bkk.add_argument("--out", type=Path, required=True, help="directory; the files go to bkk/ under it")
     probe = sub.add_parser("dxs-probe", help="call one BMA DXS service and print the shape of its answer")
     probe.add_argument("operation", help="service function, e.g. GetWaterLastData")
     probe.add_argument("--account", type=Path, required=True, help="file with the DXS user name and password")
@@ -211,6 +214,19 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"points": len(forecast.points), "hours": len(forecast.hours), "days": len(forecast.days),
                           "first_hour": forecast.hours[0].isoformat()}, ensure_ascii=False))
         return 0
+    if args.command == "bkk-fetch":
+        from fontokmai.publish.snapshot import atomic_write
+        from fontokmai.sources import bma_dxs
+        fetched = bma_dxs.collect_bkk(bma_dxs.load_account(args.account), args.out, datetime.now(UTC))
+        written = {}
+        for rel, model in ((bma_dxs.WATER_PATH, fetched.water), (bma_dxs.RAIN_PATH, fetched.rain),
+                           (bma_dxs.FLOODING_PATH, fetched.flooding)):
+            if model is not None:
+                atomic_write(args.out / rel, model.model_dump_json().encode("utf-8"))
+                written[rel] = model.fetched_at.isoformat()
+        print(json.dumps({"ok": fetched.ok, "seen": fetched.seen, "message": fetched.message, "written": written},
+                         ensure_ascii=False))
+        return 0 if fetched.ok else 1
     if args.command == "dxs-probe":
         from fontokmai.sources import bma_dxs
         params = dict(item.split("=", 1) for item in args.param)

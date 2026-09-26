@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   floodingText,
   isRecent,
+  isTodaysReport,
   levelText,
   mmText,
   nearest,
@@ -71,6 +72,8 @@ describe('Bangkok canal levels and rain gauges', () => {
     expect(roadKey('ถนนรามคำแหง')).toBe(roadKey('ถ. รามคำแหง'));
     expect(reportsOnRoads(flooding, ['ทดสอบสอง', 'ไม่มีในรายงาน'])).toEqual([dry]);
     expect(reportTime(dry.dry_at!, AT)).toBe('17:15 น.');
+    expect(isTodaysReport(flooding, AT)).toBe(true);
+    expect(isTodaysReport(flooding, AT + 24 * 3_600_000)).toBe(false);
     expect(reportTime(flooding.reports[2].flood_start!, AT)).toMatch(/^25 ก\.ย\. 22:10 น\.$/);
   });
 });

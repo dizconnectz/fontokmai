@@ -70,6 +70,7 @@ import {
   BKK_STALE_MS,
   floodingText,
   isRecent,
+  isTodaysReport,
   levelText,
   mmText,
   nearest,
@@ -347,8 +348,18 @@ function FloodLine({
   );
 }
 
-function RoadFloodingLine({ report, now }: { report: RoadFloodingReport; now: number }) {
+function RoadFloodingLine({
+  report,
+  now,
+  old = false,
+}: {
+  report: RoadFloodingReport;
+  now: number;
+  /** the report was fetched a while ago: "still flooded" only held at that time */
+  old?: boolean;
+}) {
   const start = report.flood_start ? reportTime(report.flood_start, now) : null;
+  const still = old ? 'ยังท่วมตอนรายงาน' : 'ยังท่วม';
   return (
     <span className={`flood-line ${report.dry_at ? 'ended' : ''}`}>
       <strong>
@@ -362,8 +373,8 @@ function RoadFloodingLine({ report, now }: { report: RoadFloodingReport; now: nu
           report.dry_at
             ? `ท่วม ${start ?? ''} แห้งแล้ว ${reportTime(report.dry_at, now)}`
             : start
-              ? `ยังท่วม ตั้งแต่ ${start}`
-              : 'ยังท่วม',
+              ? `${still} ตั้งแต่ ${start}`
+              : still,
         ]
           .filter(Boolean)
           .join(' · ')}
@@ -389,10 +400,12 @@ function RoadFloodingToday({
   const item = (report: RoadFloodingReport, index: number) => (
     <li key={`${index}:${report.road_th}:${report.area_th ?? ''}`}>
       <button className="road-button" onClick={() => onRoad(report.road_th)}>
-        <RoadFloodingLine report={report} now={now} />
+        <RoadFloodingLine report={report} now={now} old={old} />
       </button>
     </li>
   );
+  // another day's report is not the situation now
+  if (!isTodaysReport(flooding, now)) return null;
   return (
     <section
       className="panel-section"
@@ -401,9 +414,11 @@ function RoadFloodingToday({
     >
       <h2 id="road-flooding-heading" className={wet.length ? 'heading-rain' : undefined}>
         <Route size={18} />{' '}
-        {wet.length
-          ? `ถนนสายหลัก กทม. ที่ยังท่วม ${wet.length} จุด`
-          : 'น้ำท่วมขังถนนสายหลัก กทม. วันนี้'}
+        {old
+          ? `รายงานถนนท่วม กทม. เมื่อ ${reportTime(flooding.fetched_at, now)}`
+          : wet.length
+            ? `ถนนสายหลัก กทม. ที่ยังท่วม ${wet.length} จุด`
+            : 'น้ำท่วมขังถนนสายหลัก กทม. วันนี้'}
       </h2>
       {flooding.reports.length === 0 && (
         <p className="quiet">วันนี้ยังไม่มีรายงานน้ำท่วมขังบนถนนสายหลัก · ถนนอื่นยังท่วมได้</p>
@@ -423,7 +438,8 @@ function RoadFloodingToday({
       )}
       {old && (
         <p className="inline-warning">
-          <Info size={15} /> รายงานถนนไม่อัปเดตตั้งแต่ {formatTime(flooding.fetched_at)} น.
+          <Info size={15} /> ข้อมูลนี้ดึงเมื่อ {reportTime(flooding.fetched_at, now)}{' '}
+          ไม่ได้อัปเดตอัตโนมัติ ถนนที่ขึ้นว่ายังท่วมอาจแห้งแล้ว หรือมีจุดท่วมเพิ่ม
         </p>
       )}
       <small className="source-note">
@@ -727,14 +743,15 @@ export function PinCard({
   // today's report of the department on the roads around the pin (matched by road name)
   const reportedHere = useMemo(
     () =>
-      flooding
+      flooding && isTodaysReport(flooding, now)
         ? reportsOnRoads(
             flooding,
             nearAll.map(({ road }) => road.name_th),
           )
         : [],
-    [flooding, nearAll],
+    [flooding, nearAll, now],
   );
+  const reportOld = flooding ? now - Date.parse(flooding.fetched_at) > BKK_STALE_MS : false;
   const nearCameras = useMemo(
     () =>
       cameras
@@ -1059,11 +1076,15 @@ export function PinCard({
         )}
         {reportedHere.length > 0 && (
           <div className="road-report-here" data-testid="road-report-here">
-            <strong>สำนักการระบายน้ำรายงานวันนี้ บนถนนแถวนี้</strong>
+            <strong>
+              {reportOld
+                ? `สำนักการระบายน้ำรายงาน (ข้อมูลเมื่อ ${reportTime(flooding!.fetched_at, now)}) บนถนนแถวนี้`
+                : 'สำนักการระบายน้ำรายงานวันนี้ บนถนนแถวนี้'}
+            </strong>
             <ul className="flood-list">
               {reportedHere.slice(0, 5).map((report, index) => (
                 <li key={`${index}:${report.road_th}:${report.area_th ?? ''}`}>
-                  <RoadFloodingLine report={report} now={now} />
+                  <RoadFloodingLine report={report} now={now} old={reportOld} />
                 </li>
               ))}
             </ul>

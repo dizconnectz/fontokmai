@@ -279,6 +279,26 @@ def _previous(out: Path, rel: str, model: type[CanalLevels] | type[RainGauges] |
         return None
 
 
+# DXS answers only addresses in Thailand, so the VPS may get these files from a manual run on a computer in
+# Thailand (`bkk-fetch`) instead of calling DXS itself. A delivered file is listed for a day after its fetch time.
+RELAY_MAX_AGE = timedelta(hours=24)
+RELAY_MODELS: dict[str, Any] = {}  # filled below, once the paths exist
+
+
+def relay_files(out: Path, now: datetime) -> dict[str, bytes]:
+    """Bangkok files delivered by a manual run: those that pass their contract and are less than a day old."""
+    files = {}
+    for rel, model in RELAY_MODELS.items():
+        try:
+            content = (out / rel).read_bytes()
+            fetched = model.model_validate_json(content).fetched_at
+        except (OSError, ValueError):
+            continue
+        if now - fetched <= RELAY_MAX_AGE:
+            files[rel] = content
+    return files
+
+
 def collect_bkk(account: Account, out: Path, now: datetime, *, post: Poster = https_post) -> DxsRound:
     """Water levels and rain of this round; a part that fails keeps its last good file (fetched_at shows its age)."""
     water = rain = None
@@ -392,3 +412,6 @@ def parse_flooding(result: ET.Element, day: date, now: datetime) -> RoadFlooding
     return RoadFloodingDaily(fetched_at=now.astimezone(ICT), report_date=day,
                              updated_at=_utc(text(control, "LastUpdate")), source_url=FLOODING_PAGE,
                              credit_th=CREDIT_TH, reports=reports, notes_th=FLOODING_NOTES_TH)
+
+
+RELAY_MODELS.update({WATER_PATH: CanalLevels, RAIN_PATH: RainGauges, FLOODING_PATH: RoadFloodingDaily})

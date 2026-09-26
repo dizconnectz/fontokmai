@@ -12,7 +12,7 @@
 | `~/fontokmai/var/out/data/v1` | snapshot ล่าสุด |
 | `~/fontokmai/var/pages` | พื้นที่ชั่วคราวของ commit ที่จะเผยแพร่ |
 | `~/fontokmai/secrets/deploy_key` | deploy key ที่เขียนได้เฉพาะ repo ข้อมูล (สิทธิ์ 600 ไม่อยู่ใน repo) |
-| `~/fontokmai/secrets/dxs_account` | บัญชี DXS ของ กทม. สองบรรทัด ชื่อผู้ใช้ แล้วรหัสผ่าน (สิทธิ์ 600 ไม่อยู่ใน repo ห้ามเปิดอ่านหรือพิมพ์ออก) · ตั้ง `DXS_ACCOUNT` ใน `.env` · ดูรูปคำตอบของบริการด้วย `docker compose run --rm cap-collector dxs-probe GetWaterLastData --account /run/secrets/dxs_account` · ตอนนี้ DXS ไม่ตอบ IP ของ VPS นี้ จึงยังไม่ตั้ง `DXS_ACCOUNT` (ไฟล์บัญชีเก็บไว้แล้ว) |
+| `~/fontokmai/secrets/dxs_account` | บัญชี DXS ของ กทม. สองบรรทัด ชื่อผู้ใช้ แล้วรหัสผ่าน (สิทธิ์ 600 ไม่อยู่ใน repo ห้ามเปิดอ่านหรือพิมพ์ออก) · ตั้ง `DXS_ACCOUNT` ใน `.env` · ดูรูปคำตอบของบริการด้วย `docker compose run --rm cap-collector dxs-probe GetWaterLastData --account /run/secrets/dxs_account` · DXS ไม่ตอบ IP ของ VPS นี้ จึงไม่ตั้ง `DXS_ACCOUNT` และใช้การดึงเป็นครั้งๆ: บนเครื่องในไทยรัน `uv run fontokmai bkk-fetch --account <ไฟล์บัญชี> --out <โฟลเดอร์>` แล้วคัดลอก `bkk/*.json` ไปที่ `~/fontokmai/var/out/data/v1/bkk/` (คัดลอกเป็นชื่อชั่วคราวแล้ว `mv` ทับ) รอบถัดไปจะเผยแพร่ให้ภายใน 24 ชม. |
 | `app/deploy/vps/.env` | ค่าของเครื่องนี้ (ไม่อยู่ใน repo) |
 
 ## ติดตั้งครั้งแรก

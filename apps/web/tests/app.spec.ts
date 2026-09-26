@@ -617,12 +617,14 @@ test("today's report of flooded main roads lists roads and matches those near a 
     dry_at: null,
     rain_mm: 0,
   });
+  let fetchedAt = at;
+  let reportDate = iso(at).slice(0, 10);
   await page.route('**/bkk/flooding.json?*', (route) =>
     route.fulfill({
       json: {
         schema_version: '1',
-        fetched_at: iso(at),
-        report_date: iso(at).slice(0, 10),
+        fetched_at: iso(fetchedAt),
+        report_date: reportDate,
         updated_at: iso(at - 10 * 60_000),
         source_url: 'https://dds.bangkok.go.th/flood_report.php',
         credit_th: 'สำนักการระบายน้ำ กรุงเทพมหานคร (ผ่านระบบ DXS)',
@@ -649,6 +651,17 @@ test("today's report of flooded main roads lists roads and matches those near a 
   await expect(here).toContainText('ถ.สุขุมวิท · ซอยสุขุมวิท 26 ช่วงกลางซอย');
   await expect(here).not.toContainText('พหลโยธิน');
   await expect(here).toContainText('จับคู่จากชื่อถนน');
+  // a one-off fetch from two hours ago says when it was, and "still flooded" only held then
+  fetchedAt = at - 2 * 3_600_000;
+  await page.goto('/');
+  await expect(list.getByRole('heading')).toContainText('รายงานถนนท่วม กทม. เมื่อ');
+  await expect(list).toContainText('ไม่ได้อัปเดตอัตโนมัติ');
+  await expect(list).toContainText('ยังท่วมตอนรายงาน');
+  // another day's report is never shown as now
+  reportDate = '2026-09-24';
+  await page.goto('/');
+  await expect(page.getByTestId('alert-card').first()).toBeVisible();
+  await expect(page.getByTestId('road-flooding')).toHaveCount(0);
 });
 
 test('Bangkok rain gauges and canal levels show as measured values near a pin', async ({
