@@ -14,7 +14,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -316,8 +316,8 @@ FLOODING_NOTES_TH = [
     "ความสูงเป็นเซนติเมตรบนผิวถนน · ถนนที่ไม่มีในรายงานไม่ได้แปลว่าไม่ท่วม",
 ]
 DAY_FORMATS = ("%Y-%m-%d", "%d/%m/%Y", "%Y%m%d", "%d-%m-%Y")
-# the report writes 00:00 as the dry time of a road that is still flooded
-NOT_DRY = {"00:00", "0:00", "00:00:00", "-"}
+# the report writes 00:00 (the public page) or ":" (DXS) as the dry time of a road that is still flooded
+NOT_DRY = {"", ":", "00:00", "0:00", "00:00:00", "-"}
 
 
 def _day(value: str | None) -> date | None:
@@ -344,6 +344,18 @@ def _at(day: date | None, clock: str | None) -> datetime | None:
     if not (0 <= hour < 24 and 0 <= minute < 60):
         return None
     return datetime(day.year, day.month, day.day, hour, minute, tzinfo=ICT)
+
+
+def _utc(value: str | None) -> datetime | None:
+    """LastUpdate of the road report is UTC without an offset: on 2026-09-26 it read 11:35:17 while the same
+    report already held a road that dried at 18:25 Thai time."""
+    try:
+        moment = datetime.fromisoformat(value) if value else None
+    except ValueError:
+        return None
+    if moment is None:
+        return None
+    return (moment if moment.tzinfo else moment.replace(tzinfo=UTC)).astimezone(ICT)
 
 
 def report_param(day: date) -> str:
@@ -378,5 +390,5 @@ def parse_flooding(result: ET.Element, day: date, now: datetime) -> RoadFlooding
         ))
     reports.sort(key=lambda r: (r.dry_at is not None, -(r.flood_start.timestamp() if r.flood_start else 0)))
     return RoadFloodingDaily(fetched_at=now.astimezone(ICT), report_date=day,
-                             updated_at=_when(text(control, "LastUpdate")), source_url=FLOODING_PAGE,
+                             updated_at=_utc(text(control, "LastUpdate")), source_url=FLOODING_PAGE,
                              credit_th=CREDIT_TH, reports=reports, notes_th=FLOODING_NOTES_TH)
