@@ -1,7 +1,7 @@
 # AGENTS.md — fontokmai (ฝนตกไหม): ข้อตกลงทีม สถานะ และการตัดสินใจ
 
 > **สถานะ**: เว็บแบบแผนที่เป็นหลักออนไลน์ที่ `https://dizconnectz.github.io/fontokmai/` (D28, D29): ประกาศกรมอุตุฯ ระบายสีตามระดับ, เรดาร์ฝน, กล้อง CCTV, ปักหมุดดูข้อมูลจุด, ค้นหาสถานที่ (ตำบล/อำเภอ/จังหวัด/สถานที่/ถนน) · ข้อมูลจาก VPS ทุก 15 นาที · ยังไม่มีพยากรณ์ 7 วัน ระดับน้ำ และเขื่อน · แบบระบบ v6.1
-> อัปเดตล่าสุด: 2026-09-26 12:00 ICT (Claude) · เวลาเป็น ICT (UTC+7) · วันที่แบบ ISO (ค.ศ.)
+> อัปเดตล่าสุด: 2026-09-26 11:48 ICT (Claude) · เวลาเป็น ICT (UTC+7) · วันที่แบบ ISO (ค.ศ.)
 > ไฟล์นี้เป็นช่องทางสื่อสารหลักระหว่าง Claude ↔ Codex ↔ ผู้ใช้ และ **ต้องมีขนาดไม่เกิน 32 KiB (UTF-8)** เพื่อให้ Codex โหลดได้ครบ
 > เอกสารอื่น: แบบระบบ `docs/design/fontokmai-design.md` · แหล่งข้อมูลและสิทธิ์ `docs/sources.md` · ประวัติเต็ม `private/handoffs/` (อยู่ใน private repo ไม่อยู่ใน repo สาธารณะ)
 
@@ -43,11 +43,11 @@
 ### A5. งานที่กำลังทำ (Active claims)
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
-| Claude | 2026-09-26 12:00 | `apps/web/`, `pipeline/src/fontokmai/` (ส่วน forecast ใหม่ + run/cli/examples), `pipeline/tests/`, `contracts/v1/`, `deploy/vps/`, `docs/design/fontokmai-design.md` | แถบเลื่อนเวลาใต้แผนที่ + พยากรณ์ฝนรายชั่วโมง (Open-Meteo) | ผู้ใช้ขอ |
+| Claude | 2026-09-26 11:48 | `apps/web/`, `pipeline/src/fontokmai/` (ส่วน forecast ใหม่ + run/cli/examples), `pipeline/tests/`, `contracts/v1/`, `deploy/vps/`, `docs/design/fontokmai-design.md` | แถบเลื่อนเวลาใต้แผนที่ + พยากรณ์ฝนรายชั่วโมง (Open-Meteo) | ผู้ใช้ขอ |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md`)
 
-#### 2026-09-26 12:00 ICT — แก้ M1–M3 จากรีวิว Codex (Claude)
+#### 2026-09-26 11:47 ICT — แก้ M1–M3 จากรีวิว Codex (Claude)
 - **M1 เรดาร์**: ภาพของกรมอุตุฯ เป็น Web Mercator จริง (1800×2644 px ตรงกับความสูง Mercator ของกรอบ 2644.4 px; กริด lat/lon จะสูง 2561.5) และหน้าเรดาร์ของกรมอุตุฯ วางด้วย MapLibre image source มุมเดียวกัน → แผนที่ถูกอยู่แล้ว แก้ `radarPixel` ให้อ่านแถวตาม Mercator y · สัญญาข้อ 9 เพิ่ม `projection: EPSG:3857` และสูตร · producer ปฏิเสธภาพที่สัดส่วนต่างเกิน 1% · เว็บไม่อ่านค่าถ้าสัดส่วนไม่ตรง · test เทียบ `MercatorCoordinate` ของ MapLibre ≤ 1 px
 - **M2 หมุด**: สถานะ 5 แบบ (มีประกาศ / ตรวจไม่ได้ / ข้อมูลเก่าหรือไม่ครบ / มีประกาศไม่มีขอบเขต / ไม่มีประกาศ) เขียวได้เฉพาะข้อมูลสดและรอบ TMD ครบ · หัวรายการประกาศก็ไม่ขึ้นเขียวเมื่อข้อมูลเก่า/ไม่ครบ
 - **M3 ref**: `refSync.ts` (idle/loading/ready/outdated/missing/error) ล้างข้อมูลเมื่อ manifest ถอดไฟล์, ไม่ให้ request เก่าทับรุ่นใหม่, ชุดเก่าที่โหลดรุ่นใหม่ไม่ได้ติดป้าย · การ์ดกล้อง/ถนนแยก “โหลดไม่ได้/ไม่มีในชุด/ชุดก่อน” จาก “ไม่มีใกล้จุดนี้”
@@ -110,7 +110,7 @@
 ### C2. Codex (ตาม D29 Claude ทำเว็บต่อ Codex รีวิว)
 1. รีวิวเว็บใหม่ใน `apps/web` (แทนหน้าเดิมทั้งหน้า): `MapView.tsx`, `Panel.tsx`, `data.ts` (radar/ref loaders), `roads.ts` (เทียบกับ `expected.json`), e2e ชุดใหม่ใน `tests/app.spec.ts` ที่ยังคงการรับประกันเดิม (stale, partial, ปนรุ่น, WebGL/chunk ล้ม, WCAG, หน้า static)
 2. สัญญาใหม่ให้ตรวจ: `radar.json` (ข้อ 9), `ref/road_flood_history.json` (ข้อ 8), `ref/cctv.json` (ข้อ 10) · (เสร็จรอบแรก 11:28 → M1–M3)
-3. ทวน M1–M3 (บันทึก 12:00) และงานค้นหาสถานที่: `ref/places.json` + สัญญาข้อ 11, `PlaceSearch.tsx`, `places.ts`, `photon.ts` และตัวแก้ซูม (`MapView.tsx`) พร้อม consumer tests ตามกติกาค้นข้อ 11
+3. ทวน M1–M3 (บันทึก 11:47) และงานค้นหาสถานที่: `ref/places.json` + สัญญาข้อ 11, `PlaceSearch.tsx`, `places.ts`, `photon.ts` และตัวแก้ซูม (`MapView.tsx`) พร้อม consumer tests ตามกติกาค้นข้อ 11
 4. ตรวจสิทธิ์และช่องทางของเครื่องมือที่ผู้ใช้ส่งมา 2026-09-26 แล้วบันทึกใน `docs/sources.md` (จองก่อน): ThaiWater new4all (เขื่อน/การระบาย/สถานีหลัก) และข้อมูลเปิดของกรมชลประทานที่ใช้แทนได้, HDMS กรมทางหลวง (กล้อง/จุดน้ำท่วม), BMA traffic CCTV, GISTDA เช็คน้ำ (ภาพน้ำท่วมจากดาวเทียม), Google Flood Hub (API มีระบบสมัครไหม), Windy, `weather.bangkok.go.th` (rain/flood/KlongMap → ผ่าน DXS) · ไม่ส่งคำขอแทนผู้ใช้ (D27)
 
 ## D. ขั้นต่อไป
