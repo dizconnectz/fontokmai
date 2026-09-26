@@ -24,6 +24,8 @@ services:
     volumes:
       - ${FONTOKMAI_VAR}:/var/lib/fontokmai
       - ${DEPLOY_KEY}:/run/secrets/deploy_key:ro
+      # without DXS_ACCOUNT the file is empty and the DXS part of a round is skipped
+      - ${DXS_ACCOUNT:-/dev/null}:/run/secrets/dxs_account:ro
       - ./github_known_hosts:/etc/fontokmai/github_known_hosts:ro
     restart: unless-stopped
     cpus: 0.5

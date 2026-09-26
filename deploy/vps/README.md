@@ -12,6 +12,7 @@
 | `~/fontokmai/var/out/data/v1` | snapshot ล่าสุด |
 | `~/fontokmai/var/pages` | พื้นที่ชั่วคราวของ commit ที่จะเผยแพร่ |
 | `~/fontokmai/secrets/deploy_key` | deploy key ที่เขียนได้เฉพาะ repo ข้อมูล (สิทธิ์ 600 ไม่อยู่ใน repo) |
+| `~/fontokmai/secrets/dxs_account` | บัญชี DXS ของ กทม. สองบรรทัด ชื่อผู้ใช้ แล้วรหัสผ่าน (สิทธิ์ 600 ไม่อยู่ใน repo ห้ามเปิดอ่านหรือพิมพ์ออก) · ตั้ง `DXS_ACCOUNT` ใน `.env` · ดูรูปคำตอบของบริการด้วย `docker compose run --rm cap-collector dxs-probe GetWaterLastData --account /run/secrets/dxs_account` |
 | `app/deploy/vps/.env` | ค่าของเครื่องนี้ (ไม่อยู่ใน repo) |
 
 ## ติดตั้งครั้งแรก

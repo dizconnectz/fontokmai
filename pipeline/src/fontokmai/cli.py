@@ -83,6 +83,10 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     rain.add_argument("--now", help="fetch time, ISO 8601 with offset (default: current time)")
     rain.add_argument("--db", type=Path,
                       help="state database of the scheduled job, so a manual run counts in its Open-Meteo budget")
+    probe = sub.add_parser("dxs-probe", help="call one BMA DXS service and print the shape of its answer")
+    probe.add_argument("operation", help="service function, e.g. GetWaterLastData")
+    probe.add_argument("--account", type=Path, required=True, help="file with the DXS user name and password")
+    probe.add_argument("--param", action="append", default=[], help="NAME=VALUE for the service, repeatable")
     sched = sub.add_parser("schedule", help="run cap-snapshot on the 15-minute grid and optionally publish it")
     sched.add_argument("--db", type=Path, required=True)
     sched.add_argument("--out", type=Path, required=True)
@@ -191,6 +195,12 @@ def main(argv: list[str] | None = None) -> int:
             forecast = build_rain_forecast(args.out, now)
         print(json.dumps({"points": len(forecast.points), "hours": len(forecast.hours), "days": len(forecast.days),
                           "first_hour": forecast.hours[0].isoformat()}, ensure_ascii=False))
+        return 0
+    if args.command == "dxs-probe":
+        from fontokmai.sources import bma_dxs
+        params = dict(item.split("=", 1) for item in args.param)
+        answer = bma_dxs.call(args.operation, bma_dxs.load_account(args.account), params)
+        print("\n".join(bma_dxs.outline(answer)))
         return 0
     if args.command == "schedule":
         run_forever(_scheduled_job(args), max_rounds=args.max_rounds)
