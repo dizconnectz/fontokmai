@@ -28,6 +28,8 @@ const BASE = import.meta.env.BASE_URL;
 const disclaimer =
   'fontokmai ไม่ได้เกี่ยวข้องหรือได้รับการสนับสนุนจากกรมอุตุนิยมวิทยาหรือหน่วยงานเจ้าของข้อมูล';
 const LEGEND_LEVELS: Level[] = ['extreme', 'severe', 'moderate'];
+// a forecast is refreshed every 6 hours; older than 12 hours means two refreshes failed
+const FORECAST_STALE_MS = 12 * 3_600_000;
 
 function readPin(): LngLat | null {
   const raw = new URLSearchParams(location.search).get('pin');
@@ -235,7 +237,9 @@ export default function App() {
         </a>
       </header>
 
-      <main className={`stage ${steps.length > 1 ? 'has-timeline' : ''}`}>
+      <main
+        className={`stage ${steps.length > 1 ? 'has-timeline' : ''} ${step.kind === 'forecast' ? 'forecast-mode' : ''}`}
+      >
         <MapBoundary onList={() => panel.current?.focus()}>
           <Suspense fallback={<div className="map-loading">กำลังเตรียมแผนที่…</div>}>
             <MapView
@@ -264,6 +268,9 @@ export default function App() {
           nowIndex={nowIndex}
           now={now}
           playing={playing}
+          forecastStale={
+            forecast !== null && now - Date.parse(forecast.fetched_at) > FORECAST_STALE_MS
+          }
           onChange={(index) => setSelectedTime(index === nowIndex ? null : steps[index].time)}
           onPlay={setPlaying}
         />

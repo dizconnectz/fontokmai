@@ -43,7 +43,13 @@ export class RefSync<T> {
         this.set({ value: null, state: 'missing' });
       return;
     }
-    if (file.sha256 === this.loaded || file.sha256 === this.wanted) return;
+    if (file.sha256 === this.loaded) {
+      // back to the version already shown: a newer request still on its way must not replace it
+      this.wanted = this.loaded;
+      if (this.slot.state === 'outdated') this.set({ value: this.slot.value, state: 'ready' });
+      return;
+    }
+    if (file.sha256 === this.wanted) return;
     const sha = file.sha256;
     this.wanted = sha;
     if (!this.slot.value) this.set({ value: null, state: 'loading' });

@@ -90,11 +90,26 @@ def _time(value: str | None) -> datetime | None:
 
 
 def _polygon(text: str) -> tuple[tuple[float, float], ...]:
-    """CAP polygons are space-separated "lat,lon" pairs; GeoJSON positions are (lon, lat)."""
+    """CAP polygons are space-separated "lat,lon" pairs; GeoJSON positions are (lon, lat).
+
+    A writer may add a trailing comma, an altitude to every point ("lat,lon,0") or run two pairs together
+    without a space; the numbers are still read as lat, lon in order. A ring whose values do not pair up, or
+    whose latitude or longitude is out of range (for example lon,lat order), is refused.
+    """
+    tokens = [[part for part in token.split(",") if part] for token in text.split()]
+    if tokens and all(len(token) == 3 for token in tokens):
+        values = [value for token in tokens for value in token[:2]]  # lat,lon,altitude
+    else:
+        values = [value for token in tokens for value in token]
     try:
-        ring = [(float(lon), float(lat)) for lat, lon in (pair.split(",") for pair in text.split())]
+        numbers = [float(value) for value in values]
     except ValueError as exc:
         raise CapParseError(f"invalid polygon: {exc}") from exc
+    if len(numbers) % 2:
+        raise CapParseError(f"invalid polygon: {len(numbers)} values do not make lat,lon pairs")
+    ring = [(numbers[i + 1], numbers[i]) for i in range(0, len(numbers), 2)]
+    if any(not (-90 <= lat <= 90 and -180 <= lon <= 180) for lon, lat in ring):
+        raise CapParseError("invalid polygon: latitude or longitude out of range")
     if len(ring) < 3:
         raise CapParseError("polygon needs at least 3 points")
     if ring[0] != ring[-1]:

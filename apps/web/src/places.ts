@@ -109,7 +109,7 @@ export function searchPlaces(gazetteer: PlaceGazetteer, query: string, limit = 6
       (a, b) =>
         b.score - a.score ||
         KIND_RANK[a.place.kind] - KIND_RANK[b.place.kind] ||
-        a.place.label.length - b.place.label.length ||
+        a.place.name.length - b.place.name.length ||
         (a.place.code < b.place.code ? -1 : 1),
     )
     .slice(0, limit)

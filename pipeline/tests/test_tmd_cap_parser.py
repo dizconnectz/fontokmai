@@ -36,6 +36,31 @@ def test_real_polygons_are_lon_lat_and_closed():
         assert all(97.0 < lon < 106.0 and 5.0 < lat < 21.0 for lon, lat in ring)
 
 
+def _ring(polygon: str):
+    raw = _cap(MINIMAL + "<info><event>Heavy Rain</event><urgency>Expected</urgency><severity>Moderate</severity>"
+               f"<certainty>Likely</certainty><area><areaDesc>x</areaDesc><polygon>{polygon}</polygon></area></info>")
+    return parse_cap(raw).infos[0].areas[0].polygons[0]
+
+
+@pytest.mark.parametrize("polygon", [
+    "13.0,100.0, 13.0,101.0, 14.0,101.0,",  # trailing commas
+    "13.0,100.0,0 13.0,101.0,0 14.0,101.0,0",  # an altitude on every point
+    "13.0,100.0,13.0,101.0 14.0,101.0",  # two pairs without a space
+])
+def test_untidy_polygons_still_read_as_lat_lon(polygon):
+    assert _ring(polygon) == ((100.0, 13.0), (101.0, 13.0), (101.0, 14.0), (100.0, 13.0))
+
+
+@pytest.mark.parametrize(("polygon", "reason"), [
+    ("13.0,100.0 13.0,101.0 14.0", "do not make lat,lon pairs"),
+    ("100.0,13.0 101.0,13.0 101.0,14.0", "out of range"),  # lon,lat order
+    ("13.0,100.0 13.0,x 14.0,101.0", "invalid polygon"),
+])
+def test_polygons_that_cannot_be_read_are_refused(polygon, reason):
+    with pytest.raises(CapParseError, match=reason):
+        _ring(polygon)
+
+
 def test_lat_lon_pairs_become_lon_lat():
     raw = _cap(MINIMAL + "<info><event>Heavy Rain</event><urgency>Expected</urgency><severity>Moderate</severity>"
                "<certainty>Likely</certainty><area><areaDesc>x</areaDesc>"

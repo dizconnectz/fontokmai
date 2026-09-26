@@ -30,6 +30,7 @@ export default function Timeline({
   nowIndex,
   now,
   playing,
+  forecastStale,
   onChange,
   onPlay,
 }: {
@@ -38,6 +39,8 @@ export default function Timeline({
   nowIndex: number;
   now: number;
   playing: boolean;
+  /** the forecast file is older than it should be (shown on the bar in forecast mode) */
+  forecastStale: boolean;
   onChange: (index: number) => void;
   onPlay: (playing: boolean) => void;
 }) {
@@ -95,6 +98,12 @@ export default function Timeline({
             </button>
           )}
         </div>
+        {step.kind === 'forecast' && (
+          <p className="timeline-note">
+            {forecastStale && <b className="stale-mark">พยากรณ์ไม่อัปเดต</b>}
+            <span>ขอบเขตสีบนแผนที่: เฉพาะประกาศที่ออกแล้ว</span>
+          </p>
+        )}
         <div className="timeline-track" style={{ ['--now' as string]: `${at(nowIndex)}%` }}>
           <input
             id={`${id}-range`}

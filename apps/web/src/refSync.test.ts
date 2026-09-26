@@ -89,6 +89,25 @@ describe('reference files follow the manifest', () => {
     expect(sync.slot).toEqual({ value: null, state: 'missing' });
   });
 
+  it('goes back to the version it shows when the manifest does, dropping the newer request', async () => {
+    const { sync, requests } = setup();
+    let pending = sync.sync(manifest('a'));
+    requests.get('a')!.resolve('cameras A');
+    await pending;
+    const newer = sync.sync(manifest('b'));
+    await sync.sync(manifest('a'));
+    requests.get('b')!.resolve('cameras B');
+    await newer;
+    expect(sync.slot).toEqual({ value: 'cameras A', state: 'ready' });
+    // and a failed newer version stops being "outdated" once the manifest lists the shown one again
+    pending = sync.sync(manifest('c'));
+    requests.get('c')!.reject(new Error('503'));
+    await pending;
+    expect(sync.slot.state).toBe('outdated');
+    await sync.sync(manifest('a'));
+    expect(sync.slot).toEqual({ value: 'cameras A', state: 'ready' });
+  });
+
   it('asks only once per version', async () => {
     const { sync, requests } = setup();
     const first = sync.sync(manifest('a'));

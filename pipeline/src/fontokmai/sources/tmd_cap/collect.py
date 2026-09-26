@@ -46,9 +46,13 @@ def collect(store: StateStore, fetch: Fetcher, now: datetime) -> CollectResult:
         try:
             raw = fetch(item.link)
             msg = parse_cap(raw)
-        except (FetchError, CapParseError) as exc:
+        except FetchError as exc:
             result.rejected += 1
             result.errors.append(str(exc))
+            continue
+        except CapParseError as exc:  # name the document, so a rejected alert can be found and looked at
+            result.rejected += 1
+            result.errors.append(f"{item.link.rsplit('/', 1)[-1]}: {exc}")
             continue
         if store.add_cap_document(identifier=msg.identifier, sender=msg.sender, sent=msg.sent, raw=raw,
                                   source_url=item.link, seen_at=now):
