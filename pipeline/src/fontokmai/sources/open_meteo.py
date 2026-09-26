@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import math
 import time
+from collections.abc import Callable
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
 from urllib.parse import urlencode
@@ -68,11 +69,14 @@ def batch_url(coordinates: list[tuple[float, float]]) -> str:
     })
 
 
-def _fetch(opener: Opener, coordinates: list[tuple[float, float]], pause: float) -> list[dict[str, Any]]:
+def _fetch(opener: Opener, coordinates: list[tuple[float, float]], pause: float,
+           spend: Callable[[int], None] | None = None) -> list[dict[str, Any]]:
     answers: list[dict[str, Any]] = []
     batches = -(-len(coordinates) // BATCH)
     for start in range(0, len(coordinates), BATCH):
         chunk = coordinates[start:start + BATCH]
+        if spend:
+            spend(len(chunk))  # every location is one call, counted before asking (a failed request may count)
         url = batch_url(chunk)
         try:
             data = read_json(opener, url)
@@ -132,8 +136,8 @@ def build_forecast(answers: list[dict[str, Any]], lattice: ForecastLattice, poin
 
 
 def collect(now: datetime, lattice: ForecastLattice, points: list[list[int]], *, opener: Opener = open_url,
-            pause: float = PAUSE_S) -> RainForecast:
+            pause: float = PAUSE_S, spend: Callable[[int], None] | None = None) -> RainForecast:
     if now.tzinfo is None:
         raise ValueError("now must carry a UTC offset")
-    answers = _fetch(opener, [lonlat(lattice, p) for p in points], pause)
+    answers = _fetch(opener, [lonlat(lattice, p) for p in points], pause, spend)
     return build_forecast(answers, lattice, points, now)

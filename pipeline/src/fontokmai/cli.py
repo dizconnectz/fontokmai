@@ -18,8 +18,8 @@ from fontokmai.examples import (
     write_places_example,
     write_road_flood_example,
 )
-from fontokmai.forecast_build import build_rain_forecast
-from fontokmai.forecast_build import is_fresh as forecast_is_fresh
+from fontokmai.forecast_build import budget as forecast_budget
+from fontokmai.forecast_build import build_rain_forecast, refresh_rain_forecast
 from fontokmai.publish.git_pages import publish_snapshot
 from fontokmai.road_flood_build import build_road_flood_history, fixture_files, is_fresh
 from fontokmai.run import SnapshotResult, run_cap_snapshot
@@ -30,7 +30,6 @@ from fontokmai.sources.tmd_cap.fetch import LiveFetcher, fixture_fetcher
 from fontokmai.sources.tmd_radar import summary as radar_summary
 
 ROAD_FLOOD_RETRY = timedelta(hours=6)
-FORECAST_RETRY = timedelta(hours=2)  # a failed run may have used part of the daily call budget
 
 
 def ssh_command(key: Path, known_hosts: Path) -> str:
@@ -82,6 +81,8 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     rain.add_argument("--out", type=Path, required=True, help="snapshot directory; the file goes to forecast/")
     rain.add_argument("--fixtures", type=Path, help="read a recorded answer instead of the network (examples)")
     rain.add_argument("--now", help="fetch time, ISO 8601 with offset (default: current time)")
+    rain.add_argument("--db", type=Path,
+                      help="state database of the scheduled job, so a manual run counts in its Open-Meteo budget")
     sched = sub.add_parser("schedule", help="run cap-snapshot on the 15-minute grid and optionally publish it")
     sched.add_argument("--db", type=Path, required=True)
     sched.add_argument("--out", type=Path, required=True)
@@ -106,7 +107,6 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
 def _scheduled_job(args: argparse.Namespace) -> Callable[[datetime], dict[str, Any]]:
     ssh = ssh_command(args.ssh_key, args.known_hosts) if args.ssh_key and args.known_hosts else None
     last_road_attempt: list[datetime] = []
-    last_forecast_attempt: list[datetime] = []
 
     def refresh_road_flood(now: datetime) -> str | None:
         """Weekly rebuild of the road-flood history; failures never stop the alerts snapshot."""
@@ -122,17 +122,8 @@ def _scheduled_job(args: argparse.Namespace) -> Callable[[datetime], dict[str, A
         return f"built {len(history.roads)} roads"
 
     def refresh_forecast(now: datetime) -> str | None:
-        """Rain forecast every 6 hours (about 900 Open-Meteo calls); failures never stop the alerts snapshot."""
-        if not args.forecast or forecast_is_fresh(args.out, now):
-            return None
-        if last_forecast_attempt and now - last_forecast_attempt[-1] < FORECAST_RETRY:
-            return "waiting to retry"
-        last_forecast_attempt[:] = [now]
-        try:
-            forecast = build_rain_forecast(args.out, now)
-        except Exception as exc:  # noqa: BLE001 - reported in the round log, the job goes on
-            return f"error: {type(exc).__name__}: {exc}"[:300]
-        return f"built {len(forecast.points)} points x {len(forecast.hours)} hours"
+        """Rain forecast every 6 hours within a daily call budget; failures never stop the alerts snapshot."""
+        return refresh_rain_forecast(args.out, args.db, now) if args.forecast else None
 
     def job(now: datetime) -> dict[str, Any]:
         road_flood = refresh_road_flood(now)
@@ -191,6 +182,11 @@ def main(argv: list[str] | None = None) -> int:
         if args.fixtures:
             from fontokmai.examples import forecast_fixture_run
             forecast = forecast_fixture_run(args.out, args.fixtures, now)
+        elif args.db:
+            from fontokmai.state import StateStore
+            with StateStore(args.db) as store:
+                calls = forecast_budget(store)
+                forecast = build_rain_forecast(args.out, now, spend=lambda n: calls.spend(now, n))
         else:
             forecast = build_rain_forecast(args.out, now)
         print(json.dumps({"points": len(forecast.points), "hours": len(forecast.hours), "days": len(forecast.days),
