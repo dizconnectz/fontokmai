@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { RadarFeed } from './data';
-import { radarClass, radarPixel, type RadarLegendItem } from './geo';
+import { mercatorHeight, radarClass, radarPixel, type RadarLegendItem } from './geo';
 
 export interface RadarReading {
   state: 'none' | 'loading' | 'ready' | 'outside' | 'error';
@@ -43,6 +43,10 @@ export function useRadarAt(
     loadImage(new URL(frame.path, base).href)
       .then((image) => {
         if (cancelled) return;
+        // a frame of another shape is not the product this reader knows: better no value than a wrong one
+        const expected = mercatorHeight(radar.coordinates, image.naturalWidth);
+        if (Math.abs(image.naturalHeight - expected) > 0.01 * image.naturalHeight)
+          throw new Error('radar frame shape does not match its corners');
         const pixel = radarPixel(radar.coordinates, image.naturalWidth, image.naturalHeight, pin);
         if (!pixel) {
           setReading({ state: 'outside', item: null, time: frame.time });

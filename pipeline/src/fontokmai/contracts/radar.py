@@ -32,6 +32,10 @@ class RadarFeed(ContractModel):
     credit_th: str
     source_url: str
     coordinates: Corners
+    projection: Literal["EPSG:3857"] = Field(default="EPSG:3857", description=(
+        "The PNG is a Web Mercator image between the corners: columns are evenly spaced in longitude and rows"
+        " in Mercator y, not in latitude (exactly how a MapLibre image source draws it). Read the row of a"
+        " latitude with y = ln(tan(pi/4 + lat/2))"))
     frames: list[RadarFrame] = Field(description="Oldest first; the last frame is the latest; may be empty")
     legend: list[RadarLegendItem] = Field(description="Highest class first, as on the TMD page")
     legend_opacity: float = Field(gt=0, le=1, description=(

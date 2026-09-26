@@ -22,6 +22,18 @@ export function inMultiPolygon(point: number[], polygons: Ring[][]): boolean {
   );
 }
 
+// The radar frame is a Web Mercator image between its corners (contract README section 9), which is also
+// how MapLibre draws an image source: columns are even in longitude, rows are even in Mercator y.
+function mercatorY(lat: number): number {
+  return Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
+}
+/** Height a Web Mercator frame of this width must have between the corners (square pixels). */
+export function mercatorHeight(corners: number[][], width: number): number {
+  const [west, north] = corners[0];
+  const [east, south] = corners[2];
+  return (width * (mercatorY(north) - mercatorY(south))) / (((east - west) * Math.PI) / 180);
+}
+
 /** Pixel of [lon, lat] in a radar frame of width × height, or null outside the image. */
 export function radarPixel(
   corners: number[][],
@@ -32,9 +44,10 @@ export function radarPixel(
   const [west, north] = corners[0];
   const [east, south] = corners[2];
   if (point[0] < west || point[0] >= east || point[1] > north || point[1] <= south) return null;
+  const top = mercatorY(north);
   return {
     x: Math.floor(((point[0] - west) / (east - west)) * width),
-    y: Math.floor(((north - point[1]) / (north - south)) * height),
+    y: Math.floor(((top - mercatorY(point[1])) / (top - mercatorY(south))) * height),
   };
 }
 

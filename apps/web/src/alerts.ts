@@ -1,4 +1,4 @@
-import { displayStatus, type Alert } from './data';
+import { displayStatus, isStale, type Alert, type Snapshot } from './data';
 
 export type Level = 'extreme' | 'severe' | 'moderate' | 'minor' | 'unknown';
 export const LEVEL_LABEL: Record<Level, string> = {
@@ -29,6 +29,18 @@ export function levelOf(alert: Alert): Level {
   const severity = alert.severity.toLowerCase();
   return (ORDER as string[]).includes(severity) ? (severity as Level) : 'unknown';
 }
+/**
+ * How far "no alert here" can be believed: 'none' = no alert data at all, 'stale' = older than it should be,
+ * 'partial' = the last TMD round did not fully succeed, 'ok' = the latest complete TMD round.
+ */
+export type FeedTrust = 'none' | 'stale' | 'partial' | 'ok';
+export function feedTrust(snapshot: Snapshot | null, now: number): FeedTrust {
+  if (!snapshot?.feed) return 'none';
+  if (isStale(snapshot.manifest, now)) return 'stale';
+  const cap = snapshot.manifest.source_status.find((s) => s.source_id === 'tmd_cap');
+  return cap?.status === 'ok' ? 'ok' : 'partial';
+}
+
 export function worstLevel(alerts: Alert[]): Level | null {
   if (!alerts.length) return null;
   return ORDER[Math.min(...alerts.map((a) => ORDER.indexOf(levelOf(a))))];

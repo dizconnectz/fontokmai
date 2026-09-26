@@ -3,6 +3,7 @@ import {
   ArrowUpRight,
   Camera as CameraIcon,
   CheckCircle2,
+  CircleHelp,
   CloudRain,
   ExternalLink,
   Info,
@@ -17,6 +18,7 @@ import {
   formatTime,
   radarAgeMinutes,
   safeLink,
+  staleAfter,
   type Alert,
   type Camera,
   type RadarFeed,
@@ -25,6 +27,7 @@ import {
 } from './data';
 import {
   LEVEL_LABEL,
+  feedTrust,
   hazardTitle,
   levelOf,
   provincesOf,
@@ -220,16 +223,28 @@ export function Overview({
   onSelectAlert: (id: string) => void;
 }) {
   const worst = worstLevel(alerts);
+  const trusted = feedTrust(snapshot, now) === 'ok';
   return (
     <>
       <section className="panel-section" aria-labelledby="alerts-heading">
-        <h2 id="alerts-heading" className={worst ? `heading-level-${worst}` : 'heading-ok'}>
-          {worst ? <ShieldAlert size={19} /> : <ShieldCheck size={19} />}
+        <h2
+          id="alerts-heading"
+          className={worst ? `heading-level-${worst}` : trusted ? 'heading-ok' : 'heading-unknown'}
+        >
+          {worst ? (
+            <ShieldAlert size={19} />
+          ) : trusted ? (
+            <ShieldCheck size={19} />
+          ) : (
+            <CircleHelp size={19} />
+          )}
           {!snapshot?.feed
             ? 'ประกาศเตือนภัย'
             : alerts.length
               ? `ประกาศเตือนภัยที่มีผล ${alerts.length} ฉบับ`
-              : 'ไม่มีประกาศเตือนภัยที่มีผลตอนนี้'}
+              : trusted
+                ? 'ไม่มีประกาศเตือนภัยที่มีผลตอนนี้'
+                : 'ไม่พบประกาศที่มีผลในข้อมูลล่าสุดที่มี'}
         </h2>
         <div className="alert-list" aria-live="polite" aria-busy={loading && !snapshot}>
           {!snapshot && loading && <p className="missing-value">กำลังโหลดประกาศ…</p>}
@@ -284,6 +299,7 @@ export function PinCard({
   roads,
   roadsState,
   cameras,
+  camerasState,
   onClose,
   onSelectAlert,
   onRoad,
@@ -301,6 +317,7 @@ export function PinCard({
   roads: RoadFloodHistory | null;
   roadsState: RefState;
   cameras: Camera[];
+  camerasState: RefState;
   onClose: () => void;
   onSelectAlert: (id: string) => void;
   onRoad: (road: Road) => void;
@@ -318,6 +335,19 @@ export function PinCard({
     [alerts, pin, province],
   );
   const where = place?.source === 'dopa' ? ` ${place.title}` : 'จุดนี้';
+  // alerts without a boundary that no province name ties to this place: they may or may not cover it
+  const unplaced = alerts.filter((a) => !a.geometry && !here.includes(a));
+  const trust = feedTrust(snapshot, now);
+  const cap = snapshot?.manifest.source_status.find((s) => s.source_id === 'tmd_cap');
+  const status: 'covered' | 'unknown' | 'uncertain' | 'unplaced' | 'clear' = here.length
+    ? 'covered'
+    : trust === 'none'
+      ? 'unknown'
+      : trust !== 'ok'
+        ? 'uncertain'
+        : unplaced.length
+          ? 'unplaced'
+          : 'clear';
   const area = place !== null && place.scale !== 'subdistrict' && place.scale !== 'point';
   const reading = useRadarAt(snapshot?.radar, dataBase, pin, radarFrame);
   const radarAge = radarAgeMinutes(snapshot?.radar, now);
@@ -380,18 +410,67 @@ export function PinCard({
       </div>
 
       <section className="panel-section" aria-labelledby="pin-now">
-        <h2 id="pin-now" className={worst ? `heading-level-${worst}` : 'heading-ok'}>
-          {worst ? <ShieldAlert size={18} /> : <CheckCircle2 size={18} />}
-          {here.length
+        <h2
+          id="pin-now"
+          className={
+            status === 'covered'
+              ? `heading-level-${worst}`
+              : status === 'clear'
+                ? 'heading-ok'
+                : 'heading-unknown'
+          }
+        >
+          {status === 'covered' ? (
+            <ShieldAlert size={18} />
+          ) : status === 'clear' ? (
+            <CheckCircle2 size={18} />
+          ) : (
+            <CircleHelp size={18} />
+          )}
+          {status === 'covered'
             ? `มีประกาศครอบคลุม${where} ${here.length} ฉบับ`
-            : `ไม่มีประกาศเตือนภัยครอบคลุม${where}`}
+            : status === 'unknown'
+              ? `ยังตรวจประกาศของ${where}ไม่ได้`
+              : status === 'uncertain'
+                ? `ไม่พบประกาศครอบคลุม${where}ในข้อมูลล่าสุดที่มี`
+                : status === 'unplaced'
+                  ? `ไม่พบประกาศที่มีขอบเขตครอบคลุม${where}`
+                  : `ไม่มีประกาศเตือนภัยครอบคลุม${where}`}
         </h2>
+        {status === 'unknown' && (
+          <p className="inline-warning">
+            <Info size={15} /> ยังโหลดข้อมูลประกาศไม่สำเร็จ ไม่ได้แปลว่าไม่มีประกาศ
+            โปรดตรวจสอบกับกรมอุตุนิยมวิทยา
+          </p>
+        )}
+        {trust === 'stale' && snapshot && (
+          <p className="inline-warning">
+            <Info size={15} /> ข้อมูลไม่อัปเดตตั้งแต่ {formatTime(staleAfter(snapshot.manifest))} น.
+            สถานะประกาศอาจเปลี่ยนแล้ว โปรดตรวจสอบกับกรมอุตุนิยมวิทยา
+          </p>
+        )}
+        {trust === 'partial' && (
+          <p className="inline-warning">
+            <Info size={15} /> รอบล่าสุดดึงประกาศได้ไม่ครบ · ดึงสำเร็จล่าสุด{' '}
+            {formatTime(cap?.last_success_at)}
+            {cap?.last_success_at ? ' น.' : ''}
+          </p>
+        )}
         {here.map((alert) => (
           <AlertCard key={alert.event_id} alert={alert} now={now} onSelect={onSelectAlert} />
         ))}
-        {!here.length && snapshot?.feed && (
-          <p className="quiet">ตามประกาศกรมอุตุนิยมวิทยาที่มีผลตอนนี้</p>
+        {status === 'unplaced' && (
+          <>
+            <p className="quiet">
+              มีประกาศ {unplaced.length} ฉบับที่ไม่ระบุขอบเขตพิกัด
+              จึงตรวจไม่ได้ว่าครอบคลุมจุดนี้หรือไม่
+            </p>
+            {unplaced.map((alert) => (
+              <AlertCard key={alert.event_id} alert={alert} now={now} onSelect={onSelectAlert} />
+            ))}
+          </>
         )}
+        {status === 'clear' && <p className="quiet">ตามประกาศกรมอุตุนิยมวิทยาที่มีผลตอนนี้</p>}
       </section>
 
       <section className="panel-section" aria-labelledby="pin-rain">
@@ -455,6 +534,11 @@ export function PinCard({
             ))}
           </ul>
         )}
+        {roadsState === 'outdated' && (
+          <p className="inline-warning">
+            <Info size={15} /> ประวัติชุดก่อน เพราะโหลดรุ่นใหม่ไม่สำเร็จ
+          </p>
+        )}
         {roads && (
           <small className="source-note">
             ที่มา: {roads.sources.map((s) => s.credit_th).join(' · ')}
@@ -466,7 +550,23 @@ export function PinCard({
         <h2 id="pin-cameras">
           <CameraIcon size={18} /> กล้องใกล้ๆ (10 กม.)
         </h2>
-        {nearCameras.length === 0 ? (
+        {(camerasState === 'idle' || camerasState === 'loading') && (
+          <p className="quiet">กำลังโหลดทะเบียนกล้อง…</p>
+        )}
+        {camerasState === 'error' && (
+          <p className="missing-value">
+            โหลดทะเบียนกล้องไม่สำเร็จ · ยังบอกไม่ได้ว่ามีกล้องใกล้จุดนี้ไหม
+          </p>
+        )}
+        {camerasState === 'missing' && (
+          <p className="missing-value">ชุดข้อมูลนี้ยังไม่มีทะเบียนกล้อง</p>
+        )}
+        {camerasState === 'outdated' && (
+          <p className="inline-warning">
+            <Info size={15} /> ทะเบียนกล้องชุดก่อน เพราะโหลดรุ่นใหม่ไม่สำเร็จ
+          </p>
+        )}
+        {(camerasState === 'ready' || camerasState === 'outdated') && nearCameras.length === 0 ? (
           <p className="quiet">ยังไม่มีกล้องในทะเบียนของเราใกล้จุดนี้</p>
         ) : (
           <ul className="camera-list">

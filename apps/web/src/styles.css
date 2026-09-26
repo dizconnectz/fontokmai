@@ -569,7 +569,8 @@ svg {
 .heading-level-minor {
   color: var(--moderate-ink);
 }
-.heading-level-unknown {
+.heading-level-unknown,
+.heading-unknown {
   color: var(--unknown-ink);
 }
 .section-top {

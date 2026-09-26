@@ -8,27 +8,23 @@ import {
   validPlaces,
   validRoadFlood,
   type CctvRegistry,
+  type Manifest,
   type PlaceGazetteer,
   type RoadFloodHistory,
   type RuntimeConfig,
   type Snapshot,
 } from './data';
+import { RefSync, type RefSlot } from './refSync';
 
-export type RefState = 'idle' | 'loading' | 'ready' | 'missing' | 'error';
-interface Refs {
-  cameras: CctvRegistry | null;
-  roads: RoadFloodHistory | null;
-  places: PlaceGazetteer | null;
-}
-type RefName = keyof Refs;
+export type { RefState } from './refSync';
+type RefName = 'cameras' | 'roads' | 'places';
 // Reference files of the manifest. Cameras are small and always shown; the others load on first need.
-const REF_FILES: { [K in RefName]: { path: string; valid: (value: unknown) => boolean } } = {
+const REF_FILES: Record<RefName, { path: string; valid: (value: unknown) => boolean }> = {
   cameras: { path: 'ref/cctv.json', valid: validCctv },
   roads: { path: 'ref/road_flood_history.json', valid: validRoadFlood },
   places: { path: 'ref/places.json', valid: validPlaces },
 };
-const NONE: Refs = { cameras: null, roads: null, places: null };
-const IDLE: Record<RefName, RefState> = { cameras: 'idle', roads: 'idle', places: 'idle' };
+const IDLE: RefSlot<never> = { value: null, state: 'idle' };
 
 export function useData() {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
@@ -36,49 +32,40 @@ export function useData() {
   const [error, setError] = useState<DataError | null>(null);
   const [loading, setLoading] = useState(false);
   const [now, setNow] = useState(Date.now());
-  const [refs, setRefs] = useState<Refs>(NONE);
-  const [refStates, setRefStates] = useState(IDLE);
+  const [cameras, setCameras] = useState<RefSlot<CctvRegistry>>(IDLE);
+  const [roads, setRoads] = useState<RefSlot<RoadFloodHistory>>(IDLE);
+  const [places, setPlaces] = useState<RefSlot<PlaceGazetteer>>(IDLE);
   const current = useRef<Snapshot | null>(null);
   const settings = useRef<RuntimeConfig | null>(null);
   const flight = useRef<AbortController | null>(null);
-  // sha256 of the version loaded (or being loaded) per reference file
-  const loaded = useRef<Record<string, string>>({});
   const wanted = useRef(new Set<RefName>(['cameras']));
   const refreshRef = useRef<() => Promise<void>>(async () => undefined);
-
-  // Reference files change rarely: fetch one again only when its sha256 in the manifest changes.
-  const syncRef = useCallback(async (name: RefName) => {
-    const next = current.current;
-    const base = settings.current?.DATA_BASE_URL;
-    if (!next || !base) return;
-    const { path, valid } = REF_FILES[name];
-    const setState = (state: RefState) => setRefStates((all) => ({ ...all, [name]: state }));
-    const file = next.manifest.files.find((f) => f.path === path);
-    if (!file) {
-      setState('missing');
-      return;
-    }
-    if (loaded.current[path] === file.sha256) return;
-    const previous = loaded.current[path];
-    loaded.current[path] = file.sha256;
-    setRefStates((all) => ({ ...all, [name]: all[name] === 'ready' ? 'ready' : 'loading' }));
-    try {
-      const value = await loadRef(
-        base,
-        next.manifest,
+  const syncs = useRef<Record<RefName, Pick<RefSync<unknown>, 'sync'>> | null>(null);
+  if (!syncs.current) {
+    const loader = (name: RefName) => (manifest: Manifest, path: string) =>
+      loadRef(
+        settings.current!.DATA_BASE_URL,
+        manifest,
         path,
-        valid as (value: unknown) => value is { schema_version?: string },
+        REF_FILES[name].valid as (value: unknown) => value is { schema_version?: string },
       );
-      setRefs((all) => ({ ...all, [name]: value }));
-      setState('ready');
-    } catch {
-      // keep what was shown before and try again on the next refresh
-      if (previous) loaded.current[path] = previous;
-      else delete loaded.current[path];
-      setRefStates((all) => ({ ...all, [name]: all[name] === 'ready' ? 'ready' : 'error' }));
-    }
-  }, []);
+    syncs.current = {
+      cameras: new RefSync(REF_FILES.cameras.path, loader('cameras'), (slot) =>
+        setCameras(slot as RefSlot<CctvRegistry>),
+      ),
+      roads: new RefSync(REF_FILES.roads.path, loader('roads'), (slot) =>
+        setRoads(slot as RefSlot<RoadFloodHistory>),
+      ),
+      places: new RefSync(REF_FILES.places.path, loader('places'), (slot) =>
+        setPlaces(slot as RefSlot<PlaceGazetteer>),
+      ),
+    };
+  }
 
+  const syncRef = useCallback(async (name: RefName) => {
+    if (current.current && settings.current)
+      await syncs.current![name].sync(current.current.manifest);
+  }, []);
   const want = useCallback(
     async (name: RefName) => {
       wanted.current.add(name);
@@ -155,12 +142,13 @@ export function useData() {
     loading,
     now,
     refresh,
-    cameras: refs.cameras,
-    roads: refs.roads,
-    roadsState: refStates.roads,
+    cameras: cameras.value,
+    camerasState: cameras.state,
+    roads: roads.value,
+    roadsState: roads.state,
     loadRoads,
-    places: refs.places,
-    placesState: refStates.places,
+    places: places.value,
+    placesState: places.state,
     loadPlaces,
   };
 }

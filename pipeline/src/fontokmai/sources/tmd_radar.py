@@ -7,7 +7,9 @@ frame with the wrong time.
 
 from __future__ import annotations
 
+import math
 import re
+import struct
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -23,6 +25,10 @@ IMAGE_BASE = "https://weather.tmd.go.th/composite/images/"
 COORDINATES = [[95.0, 22.5], [108.0, 22.5], [108.0, 4.0], [95.0, 4.0]]
 FRAMES = 4  # one hour
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+# TMD draws the composite in Web Mercator between COORDINATES (1800 x 2644 px: the Mercator height of that
+# box is 2644.5 px, a lat/lon grid would be 2561.5 px), the same way its own MapLibre viewer places it.
+# A frame of another shape means the product changed and would be drawn or read in the wrong place.
+SHAPE_TOLERANCE = 0.01  # of the height
 LEGEND = [  # read from the colour bar of the TMD page on 2026-09-26 (mm/hr, Z = 200 R^1.6)
     (80.0, "#DD0000", "> 80"), (56.0, "#FE45A2", "56"), (48.0, "#FF86FF", "48"), (40.0, "#FF8000", "40"),
     (32.0, "#FFFF00", "32"), (24.0, "#7CCE02", "24"), (16.0, "#46FF09", "16"), (12.0, "#00E10C", "12"),
@@ -69,8 +75,27 @@ def frame_path(when: datetime) -> str:
     return f"radar/{when:%Y%m%dT%H%MZ}.png"
 
 
-def _is_png(data: bytes) -> bool:
-    return data.startswith(PNG_SIGNATURE) and data[12:16] == b"IHDR"
+def mercator_y(lat: float) -> float:
+    return math.log(math.tan(math.pi / 4 + math.radians(lat) / 2))
+
+
+def mercator_height(width: int, coordinates: list[list[float]] = COORDINATES) -> float:
+    """Height in pixels of a Web Mercator image of this width between the corners (square pixels)."""
+    (west, north), _, (east, south), _ = coordinates
+    return width * (mercator_y(north) - mercator_y(south)) / math.radians(east - west)
+
+
+def png_size(data: bytes) -> tuple[int, int] | None:
+    if not (data.startswith(PNG_SIGNATURE) and data[12:16] == b"IHDR" and len(data) >= 24):
+        return None
+    width, height = struct.unpack(">II", data[16:24])
+    return width, height
+
+
+def _is_frame(data: bytes) -> bool:
+    """A PNG with the Web Mercator shape of COORDINATES."""
+    size = png_size(data)
+    return size is not None and size[0] > 0 and abs(size[1] - mercator_height(size[0])) <= SHAPE_TOLERANCE * size[1]
 
 
 def _fetch_allowed(fetch: Fetcher, url: str) -> bytes:
@@ -112,7 +137,7 @@ def collect_radar(fetch: Fetcher, out: Path, generation_id: str) -> RadarRound:
                 path = frame_path(when)
                 existing = out / path
                 data = existing.read_bytes() if existing.is_file() else _fetch_allowed(fetch, IMAGE_BASE + overlay)
-                if not _is_png(data):
+                if not _is_frame(data):
                     rejected += 1
                     continue
                 files[path] = data
@@ -124,8 +149,9 @@ def collect_radar(fetch: Fetcher, out: Path, generation_id: str) -> RadarRound:
                 raise FetchError("frame list kept moving during the download")
         feed = _feed(frames, generation_id)
         files["radar.json"] = feed.model_dump_json().encode("utf-8")
+        message = f"{rejected} frame(s) rejected: not a PNG of the Web Mercator shape" if rejected else None
         return RadarRound(files=files, feed=feed, ok=bool(frames), frames_seen=len(listed), rejected=rejected,
-                          message=None if frames else "no valid frame")
+                          message=message if frames else f"no valid frame ({message or 'empty list'})")
     except (FetchError, OSError) as exc:
         frames = _previous_frames(out)
         feed = _feed(frames, generation_id)

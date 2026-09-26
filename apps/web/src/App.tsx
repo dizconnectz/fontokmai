@@ -50,6 +50,7 @@ export default function App() {
     now,
     refresh,
     cameras,
+    camerasState,
     roads,
     roadsState,
     loadRoads,
@@ -298,6 +299,7 @@ export default function App() {
             <div className="legend-row">
               <span>
                 <i className="legend-camera" /> กล้อง (แตะเพื่อเปิดดู)
+                {camerasState === 'error' && ' · โหลดทะเบียนกล้องไม่สำเร็จ'}
               </span>
             </div>
           )}
@@ -372,6 +374,7 @@ export default function App() {
             roads={roads}
             roadsState={roadsState}
             cameras={cameras?.cameras ?? []}
+            camerasState={camerasState}
             onClose={() => setPin(null)}
             onSelectAlert={selectAlert}
             onRoad={(r) => openRoad(r.key)}

@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest';
 import type { RoadFloodHistory } from '../../../contracts/v1/ts/road_flood_history';
 import type { AlertsFeed } from './data';
 import { cleanName, roadsNear, searchKey, searchRoads } from './roads';
-import { inMultiPolygon, radarClass, radarPixel, rainWords } from './geo';
+import { MercatorCoordinate } from 'maplibre-gl';
+import { inMultiPolygon, mercatorHeight, radarClass, radarPixel, rainWords } from './geo';
 import { hazardTitle, levelOf, shortTime, summaryLine, whereText, worstLevel } from './alerts';
 
 function example<T>(scenario: string, file: string): T {
@@ -68,10 +69,33 @@ describe('map helpers', () => {
     [108, 4],
     [95, 4],
   ];
-  it('maps a coordinate to a radar pixel', () => {
+  it('maps a coordinate to a radar pixel and rejects points outside the frame', () => {
     expect(radarPixel(corners, 1800, 2644, [95, 22.5])).toEqual({ x: 0, y: 0 });
-    expect(radarPixel(corners, 1800, 2644, [101.5, 13.25])).toEqual({ x: 900, y: 1322 });
     expect(radarPixel(corners, 1800, 2644, [120, 13])).toBeNull();
+    expect(radarPixel(corners, 1800, 2644, [100, 3.9])).toBeNull();
+    // TMD frames are 1800 x 2644: the Web Mercator shape of the box, not an even lat/lon grid (2561.5)
+    expect(mercatorHeight(corners, 1800)).toBeCloseTo(2644.4, 1);
+  });
+  // Where MapLibre draws a lon/lat of an image source: linear between the corners in Mercator space.
+  function drawnPixel(point: [number, number]) {
+    const topLeft = MercatorCoordinate.fromLngLat(corners[0] as [number, number]);
+    const bottomRight = MercatorCoordinate.fromLngLat(corners[2] as [number, number]);
+    const at = MercatorCoordinate.fromLngLat(point);
+    return {
+      x: ((at.x - topLeft.x) / (bottomRight.x - topLeft.x)) * 1800,
+      y: ((at.y - topLeft.y) / (bottomRight.y - topLeft.y)) * 2644,
+    };
+  }
+  it.each([
+    ['the north (Chiang Rai)', [99.83, 19.91]],
+    ['Rangsit', [100.62, 14.02]],
+    ['Bangkok', [100.5, 13.75]],
+    ['the south (Hat Yai)', [100.47, 7.0]],
+  ] as [string, [number, number]][])('reads the same pixel the map draws in %s', (_, point) => {
+    const read = radarPixel(corners, 1800, 2644, point)!;
+    const drawn = drawnPixel(point);
+    expect(Math.abs(read.x - drawn.x)).toBeLessThanOrEqual(1);
+    expect(Math.abs(read.y - drawn.y)).toBeLessThanOrEqual(1);
   });
   const legend = [
     { min_mm_per_hr: 8, color: '#00B347', label: '8' },

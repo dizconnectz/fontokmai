@@ -1,7 +1,7 @@
 # AGENTS.md — fontokmai (ฝนตกไหม): ข้อตกลงทีม สถานะ และการตัดสินใจ
 
 > **สถานะ**: เว็บแบบแผนที่เป็นหลักออนไลน์ที่ `https://dizconnectz.github.io/fontokmai/` (D28, D29): ประกาศกรมอุตุฯ ระบายสีตามระดับ, เรดาร์ฝน, กล้อง CCTV, ปักหมุดดูข้อมูลจุด, ค้นหาสถานที่ (ตำบล/อำเภอ/จังหวัด/สถานที่/ถนน) · ข้อมูลจาก VPS ทุก 15 นาที · ยังไม่มีพยากรณ์ 7 วัน ระดับน้ำ และเขื่อน · แบบระบบ v6.1
-> อัปเดตล่าสุด: 2026-09-26 11:45 ICT (Claude) · เวลาเป็น ICT (UTC+7) · วันที่แบบ ISO (ค.ศ.)
+> อัปเดตล่าสุด: 2026-09-26 12:00 ICT (Claude) · เวลาเป็น ICT (UTC+7) · วันที่แบบ ISO (ค.ศ.)
 > ไฟล์นี้เป็นช่องทางสื่อสารหลักระหว่าง Claude ↔ Codex ↔ ผู้ใช้ และ **ต้องมีขนาดไม่เกิน 32 KiB (UTF-8)** เพื่อให้ Codex โหลดได้ครบ
 > เอกสารอื่น: แบบระบบ `docs/design/fontokmai-design.md` · แหล่งข้อมูลและสิทธิ์ `docs/sources.md` · ประวัติเต็ม `private/handoffs/` (อยู่ใน private repo ไม่อยู่ใน repo สาธารณะ)
 
@@ -43,9 +43,16 @@
 ### A5. งานที่กำลังทำ (Active claims)
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
-| Claude | 2026-09-26 11:45 | `apps/web/`, `pipeline/src/fontokmai/sources/tmd_radar.py`, `contracts/v1/`, `docs/design/fontokmai-design.md` | แก้ M1–M3 จากรีวิว Codex (พิกัดเรดาร์, สถานะประกาศที่หมุด, สถานะ ref) | C2 |
+| Claude | 2026-09-26 12:00 | `apps/web/`, `pipeline/src/fontokmai/` (ส่วน forecast ใหม่ + run/cli/examples), `pipeline/tests/`, `contracts/v1/`, `deploy/vps/`, `docs/design/fontokmai-design.md` | แถบเลื่อนเวลาใต้แผนที่ + พยากรณ์ฝนรายชั่วโมง (Open-Meteo) | ผู้ใช้ขอ |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md`)
+
+#### 2026-09-26 12:00 ICT — แก้ M1–M3 จากรีวิว Codex (Claude)
+- **M1 เรดาร์**: ภาพของกรมอุตุฯ เป็น Web Mercator จริง (1800×2644 px ตรงกับความสูง Mercator ของกรอบ 2644.4 px; กริด lat/lon จะสูง 2561.5) และหน้าเรดาร์ของกรมอุตุฯ วางด้วย MapLibre image source มุมเดียวกัน → แผนที่ถูกอยู่แล้ว แก้ `radarPixel` ให้อ่านแถวตาม Mercator y · สัญญาข้อ 9 เพิ่ม `projection: EPSG:3857` และสูตร · producer ปฏิเสธภาพที่สัดส่วนต่างเกิน 1% · เว็บไม่อ่านค่าถ้าสัดส่วนไม่ตรง · test เทียบ `MercatorCoordinate` ของ MapLibre ≤ 1 px
+- **M2 หมุด**: สถานะ 5 แบบ (มีประกาศ / ตรวจไม่ได้ / ข้อมูลเก่าหรือไม่ครบ / มีประกาศไม่มีขอบเขต / ไม่มีประกาศ) เขียวได้เฉพาะข้อมูลสดและรอบ TMD ครบ · หัวรายการประกาศก็ไม่ขึ้นเขียวเมื่อข้อมูลเก่า/ไม่ครบ
+- **M3 ref**: `refSync.ts` (idle/loading/ready/outdated/missing/error) ล้างข้อมูลเมื่อ manifest ถอดไฟล์, ไม่ให้ request เก่าทับรุ่นใหม่, ชุดเก่าที่โหลดรุ่นใหม่ไม่ได้ติดป้าย · การ์ดกล้อง/ถนนแยก “โหลดไม่ได้/ไม่มีในชุด/ชุดก่อน” จาก “ไม่มีใกล้จุดนี้”
+- **ตรวจจริง**: pytest ผ่านทั้งหมด · ruff ผ่าน · สัญญาสร้างซ้ำได้ · vitest 63 ผ่าน (ใหม่ refSync 5 + radar 4) · Playwright Chromium desktop+mobile 44 ผ่าน (ใหม่ 5: feed 503/ปนรุ่น/เก่า/partial+ไม่มีขอบเขต/กล้อง 5 ขั้น) · WebKit ให้ CI
+- **ต่อไป**: Codex ทวน M1–M3 + ค้นหาสถานที่ (C2 ข้อ 3) · Claude ทำแถบเลื่อนเวลา + พยากรณ์ฝนรายชั่วโมง
 
 #### 2026-09-26 11:45 ICT — ค้นหาสถานที่ + แก้แผนที่ซูมออกเองในมือถือ (Claude)
 - **ผู้ใช้ขอ**: ช่องค้นหาบนสุดค้นสถานที่แล้วแผนที่ซูมไปพร้อมข้อมูล · แจ้งบั๊กมือถือ: ซูมหาบ้านแล้วแผนที่ซูมออกเอง
@@ -67,21 +74,6 @@
 - **เว็บ**: เขียน `App.tsx` ใหม่ทั้งหน้า + `MapView.tsx` (แทน `AlertMap.tsx`), `Panel.tsx`, `alerts.ts` (ระดับ/สรุป), `geo.ts`, `roads.ts`, `radarAt.ts` · ค่าตั้งต้นยังเป็น MapLibre + OpenFreeMap
 - **ตรวจจริง**: vitest 45 ผ่าน (รวม normalize/search/near ตาม expected.json) · Playwright ชุดใหม่ 28 ผ่านบน Chromium desktop/mobile (รวม axe WCAG) · WebKit ในเครื่องนี้เปิดเบราว์เซอร์ไม่ขึ้น ให้ CI ตัดสิน · prettier และ license check ผ่าน · ดูหน้าจริงกับข้อมูลสดแล้ว (โซนสี, เรดาร์, popup กล้อง, หมุด, ค้นถนน)
 - **ข้อจำกัด**: พยากรณ์ 7 วันยัง “ยังไม่มีข้อมูล” · ตำแหน่งกล้องบางตัวเป็นค่าประมาณ · ภาพเรดาร์ละเอียดราว 0.7 กม.
-
-#### 2026-09-26 01:04 ICT — ประวัติน้ำท่วมถนน + คำขอ UX ของผู้ใช้ (Claude)
-- **ใหม่**: `ref/road_flood_history.json` จากสถิติน้ำท่วมขังถนน กทม. (CC BY 2021–2025) + เหตุน้ำท่วม iTIC/Longdo (CC BY 4.0 2012–ปัจจุบัน ในกรอบ กทม.–ปริมณฑล) · ต่อถนน: วันที่มีรายงาน, รายปี, ล่าสุด, ลึกสุด, จุดพิกัด, รายงานล่าสุด 10 รายการ
-- **สัญญาให้ Codex**: schema/ts `road_flood_history`, ตัวอย่าง + `expected.json` (normalize, searches, near) และ README ข้อ 8 (กติกาค้นชื่อถนนและถนนใกล้หมุด)
-- **pipeline**: `sources/open_data/` (อ่านแบบ stream, cache ปีที่จบแล้ว), `feeds/road_names.py`, `feeds/road_flood.py`, คำสั่ง `road-flood-history`, ตัวตั้งเวลาสร้างใหม่รายสัปดาห์ (`--cache`) และ manifest รวมไฟล์ใน `ref/` ที่ผ่าน schema เท่านั้น
-- **ตรวจจริง**: `uv run pytest` ผ่านทั้งหมด · ruff ผ่าน · สร้าง schema/ตัวอย่าง/TS ซ้ำได้ · เว็บ `npm test` 25 ผ่านและ build ผ่านหลังแก้ vite plugin
-- **ผู้ใช้ขอ UX** (บันทึกใน design 12 และ C2 ข้อ 3): ปักหมุดแล้วเห็นการ์ดสรุป, สีตามความหมาย (เขียว→แดง), ชั้นฝนตกตอนนี้
-- **ขั้นต่อไป**: backfill ครั้งแรกบน VPS แล้วตรวจไฟล์บน GitHub Pages · Claude เริ่มข้อมูลฝน (D ข้อ 3)
-
-#### 2026-09-26 00:53 ICT — เว็บขึ้น GitHub Pages (D28) (Claude)
-- **ผู้ใช้เลือก GitHub Pages** แทน Cloudflare Pages (D28) · เว็บ: https://dizconnectz.github.io/fontokmai/ · README ราก repo มีลิงก์แล้ว
-- **แก้ `apps/web` เฉพาะ base path** (Codex โปรดรีวิว): `vite.config.ts` ใช้ `base: process.env.WEB_BASE ?? '/'` · ลิงก์ใน `App.tsx` และ `config.json` ใน `data.ts` อิง `import.meta.env.BASE_URL` · `index.html` ใช้ `%BASE_URL%` · หน้า `public/method|sources` และ `info.css` ใช้ลิงก์ relative · ในเครื่องและ tests ยังเป็น `/` เหมือนเดิม
-- **deploy**: `.github/workflows/pages.yml` build ด้วย `WEB_BASE=/fontokmai/` แล้ว deploy เมื่อ workflow `web` ผ่านบน `main` (หรือสั่งมือ) · `_headers` ไม่มีผลบน GitHub Pages · NOTICE และ D17/D25 ชี้ URL ใหม่
-- **ตรวจจริง**: `npm test` 25 ผ่าน · prettier ผ่าน · build ด้วย base `/fontokmai/` ได้ลิงก์ถูก · Playwright ในเครื่อง Chromium desktop/mobile 26 ผ่าน แต่ WebKit ล้มตั้งแต่เปิดเบราว์เซอร์ (`browserContext.newPage: ... has been closed` ก่อนโหลดหน้า) จึงเป็นปัญหาเครื่องนี้ ให้ CI ตัดสิน
-- **ขั้นต่อไป**: ดู CI ของ `web` และ `pages` แล้วเปิด URL จริง · Claude ทำ `ref/road_flood_history.json` ต่อ (ยังจองอยู่)
 
 ## B. การตัดสินใจ
 ข้อเสนอเดิม D1–D10 จากร่างแรกถูกแทนด้วยตารางนี้เพราะขัดกับ D12 (ดูเหตุผลเดิมได้ใน snapshot)
@@ -118,12 +110,12 @@
 ### C2. Codex (ตาม D29 Claude ทำเว็บต่อ Codex รีวิว)
 1. รีวิวเว็บใหม่ใน `apps/web` (แทนหน้าเดิมทั้งหน้า): `MapView.tsx`, `Panel.tsx`, `data.ts` (radar/ref loaders), `roads.ts` (เทียบกับ `expected.json`), e2e ชุดใหม่ใน `tests/app.spec.ts` ที่ยังคงการรับประกันเดิม (stale, partial, ปนรุ่น, WebGL/chunk ล้ม, WCAG, หน้า static)
 2. สัญญาใหม่ให้ตรวจ: `radar.json` (ข้อ 9), `ref/road_flood_history.json` (ข้อ 8), `ref/cctv.json` (ข้อ 10) · (เสร็จรอบแรก 11:28 → M1–M3)
-3. ทวนงานค้นหาสถานที่: `ref/places.json` + สัญญาข้อ 11, `PlaceSearch.tsx`, `places.ts`, `photon.ts` และตัวแก้ซูม (`MapView.tsx`) พร้อม consumer tests ตามกติกาค้นข้อ 11
+3. ทวน M1–M3 (บันทึก 12:00) และงานค้นหาสถานที่: `ref/places.json` + สัญญาข้อ 11, `PlaceSearch.tsx`, `places.ts`, `photon.ts` และตัวแก้ซูม (`MapView.tsx`) พร้อม consumer tests ตามกติกาค้นข้อ 11
 4. ตรวจสิทธิ์และช่องทางของเครื่องมือที่ผู้ใช้ส่งมา 2026-09-26 แล้วบันทึกใน `docs/sources.md` (จองก่อน): ThaiWater new4all (เขื่อน/การระบาย/สถานีหลัก) และข้อมูลเปิดของกรมชลประทานที่ใช้แทนได้, HDMS กรมทางหลวง (กล้อง/จุดน้ำท่วม), BMA traffic CCTV, GISTDA เช็คน้ำ (ภาพน้ำท่วมจากดาวเทียม), Google Flood Hub (API มีระบบสมัครไหม), Windy, `weather.bangkok.go.th` (rain/flood/KlongMap → ผ่าน DXS) · ไม่ส่งคำขอแทนผู้ใช้ (D27)
 
 ## D. ขั้นต่อไป
 1. (เสร็จ) เว็บแผนที่เป็นหลักพร้อมประกาศ เรดาร์ กล้อง หมุด ค้นถนน และค้นหาสถานที่ (D29)
-2. Claude: แก้ M1–M3 จากรีวิว Codex (พิกัดเรดาร์ต้องตรงกับค่าที่หมุด, หมุดห้ามขึ้นเขียวเมื่อตรวจประกาศไม่ได้, สถานะ ref ถึง UI)
+2. (เสร็จ รอ Codex ทวน) แก้ M1–M3 · ต่อไป Claude: แถบเลื่อนเวลาใต้แผนที่ (เรดาร์ย้อนหลัง 1 ชม. → พยากรณ์ฝนรายชั่วโมงล่วงหน้า) ตามที่ผู้ใช้ขอ
 3. Claude: พยากรณ์ 7 วันจาก Open-Meteo (ไฟล์ข้อมูล + การ์ดหมุด + ชั้นพยากรณ์)
 4. Claude: P0-B2 ตัวคุมดิสก์ + retention + สำรอง SQLite, รายงาน slot, ตัวตรวจนอกเครื่อง, ซ้อม takeover/restore
 5. ผู้ใช้สมัคร DXS (C1) → Claude ทำตัวเก็บ DXS (ระดับน้ำคลอง ฝน เขื่อน รายงานน้ำท่วมขังรายวันของ กทม.)

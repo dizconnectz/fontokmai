@@ -24,6 +24,15 @@ async function prepare(page: Page, scenario = 'active') {
       contentType: 'application/json',
     }),
   );
+  // The camera registry the producer ships
+  await page.route('**/ref/cctv.json?*', (route) =>
+    route.fulfill({
+      body: readFileSync(
+        new URL('../../../pipeline/src/fontokmai/ref_data/cctv.json', import.meta.url),
+      ),
+      contentType: 'application/json',
+    }),
+  );
   // No landmark search leaves the test browser unless a test answers for Photon itself.
   await page.route('https://photon.komoot.io/**', (route) =>
     route.fulfill({ json: { type: 'FeatureCollection', features: [] } }),
@@ -331,6 +340,128 @@ test('the keyboard picks a result and landmarks come from Photon', async ({ page
   expect(last.searchParams.get('q')).toBe('future park');
   expect(last.searchParams.get('bbox')).toBe('97.3,5.6,105.7,20.5');
   expect(last.searchParams.has('lat') || last.searchParams.has('lon')).toBe(false);
+});
+
+test('a pin never says "no alert" in green when the alert data could not be checked', async ({
+  page,
+}) => {
+  // the alert file fails from the first load: nothing to check against
+  await prepare(page);
+  await page.route('**/examples/active/alerts.json?*', (route) =>
+    route.fulfill({ status: 503, body: '' }),
+  );
+  await page.goto('/?pin=13.9,100.6');
+  const heading = page.getByTestId('pin-card').locator('#pin-now');
+  await expect(heading).toHaveText('ยังตรวจประกาศของจุดนี้ไม่ได้');
+  await expect(heading).toHaveClass(/heading-unknown/);
+  await expect(page.getByTestId('pin-card')).toContainText('ไม่ได้แปลว่าไม่มีประกาศ');
+});
+
+test('a first load of mixed files cannot clear a pin either', async ({ page }) => {
+  await prepare(page, 'mixed-generation');
+  await page.goto('/?pin=13.9,100.6');
+  await expect(page.getByTestId('pin-card').locator('#pin-now')).toHaveText(
+    'ยังตรวจประกาศของจุดนี้ไม่ได้',
+  );
+});
+
+test('only fresh and complete alert data can clear a pin', async ({ page }) => {
+  await prepare(page, 'out-of-order');
+  await page.goto('/?pin=13.9,100.6');
+  const heading = page.getByTestId('pin-card').locator('#pin-now');
+  await expect(heading).toHaveText('ไม่มีประกาศเตือนภัยครอบคลุมจุดนี้');
+  await expect(heading).toHaveClass(/heading-ok/);
+  // the publisher stops: the same data is no longer enough to say "no alert"
+  await page.clock.fastForward(31 * 60_000);
+  await expect(heading).toHaveText('ไม่พบประกาศครอบคลุมจุดนี้ในข้อมูลล่าสุดที่มี');
+  await expect(heading).toHaveClass(/heading-unknown/);
+  await expect(page.getByTestId('pin-card')).toContainText('ข้อมูลไม่อัปเดตตั้งแต่');
+});
+
+test('a partial round and an alert without a boundary keep a pin undecided', async ({ page }) => {
+  await prepare(page, 'source-failed');
+  await page.goto('/?pin=7.0,100.5');
+  const heading = page.getByTestId('pin-card').locator('#pin-now');
+  await expect(heading).toHaveText('ไม่พบประกาศครอบคลุมจุดนี้ในข้อมูลล่าสุดที่มี');
+  await expect(page.getByTestId('pin-card')).toContainText('รอบล่าสุดดึงประกาศได้ไม่ครบ');
+
+  const other = await page.context().newPage();
+  await prepare(other);
+  const feed = read('active', 'alerts');
+  for (const alert of feed.alerts) alert.geometry = null;
+  await other.route('**/examples/active/alerts.json?*', (route) => route.fulfill({ json: feed }));
+  await other.goto('/?pin=7.0,100.5');
+  const card = other.getByTestId('pin-card');
+  await expect(card.locator('#pin-now')).toHaveText('ไม่พบประกาศที่มีขอบเขตครอบคลุมจุดนี้');
+  await expect(card).toContainText('มีประกาศ 3 ฉบับที่ไม่ระบุขอบเขตพิกัด');
+  await expect(card.getByTestId('alert-card')).toHaveCount(3);
+});
+
+test('the camera list tells a failed, removed or older registry apart from "no camera here"', async ({
+  page,
+}) => {
+  await prepare(page);
+  const registry = {
+    schema_version: '1',
+    updated: '2026-09-26',
+    cameras: [
+      {
+        id: 'test-cam',
+        name_th: 'กล้องทดสอบคลองรังสิต',
+        owner_th: 'ผู้ทดสอบ',
+        kind: 'canal',
+        location: [100.61, 13.91],
+        position: 'source',
+        page_url: 'https://example.org/cam',
+        note_th: null,
+      },
+    ],
+    notes_th: [],
+  };
+  let cctv: 'fail' | 'ok' = 'fail';
+  await page.route('**/ref/cctv.json?*', (route) =>
+    cctv === 'ok' ? route.fulfill({ json: registry }) : route.fulfill({ status: 503, body: '' }),
+  );
+  const manifest = read('active', 'manifest');
+  const listed = (sha: string | null) => ({
+    ...manifest,
+    files: [
+      ...manifest.files.filter((f: { path: string }) => f.path !== 'ref/cctv.json'),
+      ...(sha ? [{ path: 'ref/cctv.json', sha256: sha.repeat(64), size: 1, revision: 1 }] : []),
+    ],
+  });
+  let current = listed('a');
+  await page.route('**/examples/active/manifest.json?*', (route) =>
+    route.fulfill({ json: current }),
+  );
+  const refresh = () => page.getByRole('button', { name: 'ตรวจข้อมูลอีกครั้ง' }).click();
+  await page.goto('/?pin=13.9,100.6');
+  const card = page.getByTestId('pin-card');
+  // 1. the first load fails
+  await expect(card).toContainText('โหลดทะเบียนกล้องไม่สำเร็จ');
+  await expect(card).not.toContainText('ยังไม่มีกล้องในทะเบียนของเราใกล้จุดนี้');
+  // 2. a new version loads
+  cctv = 'ok';
+  current = listed('b');
+  await refresh();
+  await expect(card.getByRole('link', { name: /กล้องทดสอบคลองรังสิต/ })).toBeVisible();
+  // 3. the next version fails: the older copy stays, labelled
+  cctv = 'fail';
+  current = listed('c');
+  await refresh();
+  await expect(card).toContainText('ทะเบียนกล้องชุดก่อน');
+  await expect(card.getByRole('link', { name: /กล้องทดสอบคลองรังสิต/ })).toBeVisible();
+  // 4. the manifest drops the file: nothing old is shown
+  current = listed(null);
+  await refresh();
+  await expect(card).toContainText('ชุดข้อมูลนี้ยังไม่มีทะเบียนกล้อง');
+  await expect(card.getByRole('link', { name: /กล้องทดสอบคลองรังสิต/ })).toHaveCount(0);
+  // 5. and lists it again
+  cctv = 'ok';
+  current = listed('d');
+  await refresh();
+  await expect(card.getByRole('link', { name: /กล้องทดสอบคลองรังสิต/ })).toBeVisible();
+  await expect(card).not.toContainText('ชุดก่อน');
 });
 
 test('a missing map chunk leaves the rest of the page usable', async ({ page }) => {

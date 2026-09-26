@@ -8,15 +8,24 @@ from fontokmai.contracts.manifest import Manifest
 from fontokmai.contracts.radar import RadarFeed
 from fontokmai.run import run_cap_snapshot
 from fontokmai.sources.tmd_cap.fetch import FetchError, fixture_fetcher
-from fontokmai.sources.tmd_radar import IMAGE_BASE, LIST_URL, collect_radar, parse_list, prune_frames
+from fontokmai.sources.tmd_radar import (
+    IMAGE_BASE,
+    LIST_URL,
+    collect_radar,
+    mercator_height,
+    parse_list,
+    png_size,
+    prune_frames,
+)
 from helpers import FIXTURES
 
 
-def _png(seed: int) -> bytes:
+def _png(seed: int, width: int = 68, height: int = 100) -> bytes:
+    """A small frame with the Web Mercator shape of the TMD corners (68 x 100 px; TMD's is 1800 x 2644)."""
     def chunk(kind, data):
         return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data))
-    raw = b"\x00" + bytes([seed % 256, 0, 0, 255])
-    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 8, 6, 0, 0, 0))
+    raw = (b"\x00" + bytes([seed % 256, 0, 0, 255]) * width) * height
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
             + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b""))
 
 
@@ -117,3 +126,24 @@ def test_snapshot_lists_radar_files_and_status(tmp_path, radar_up):
     assert manifest.completeness == ("complete" if radar_up else "partial")
     assert (len([p for p in paths if p.startswith("radar/")]) == 4) is radar_up
     assert result.radar is not None and result.radar.generation_id == manifest.generation_id
+
+
+def test_frames_are_web_mercator_images_of_the_corners():
+    # TMD's composite is 1800 x 2644 px: the Mercator height of 95-108 E x 4-22.5 N at that width is 2644.4 px,
+    # while an even lat/lon grid would be 2561.5 px, so rows must be read in Mercator y (contract section 9)
+    assert round(mercator_height(1800), 1) == 2644.4
+    assert png_size(_png(0, 1800, 2644)) == (1800, 2644)
+    assert png_size(b"not a png") is None
+
+
+def test_a_frame_of_another_shape_is_rejected(tmp_path):
+    tmd = FakeTmd(TIMES[:2])
+
+    def fetch(url: str) -> bytes:
+        return _png(1, 70, 72) if url.endswith("zr/0.png") else tmd(url)  # square-ish: not the TMD box
+
+    result = collect_radar(fetch, tmp_path, "g1")
+    assert [f.path for f in result.feed.frames] == ["radar/20260925T1800Z.png"]
+    assert result.rejected == 1 and result.ok
+    assert "Web Mercator" in result.message
+    assert result.feed.projection == "EPSG:3857"
