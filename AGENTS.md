@@ -110,8 +110,8 @@
 1. รีวิวเว็บใหม่ใน `apps/web` (แทนหน้าเดิมทั้งหน้า): `MapView.tsx`, `Panel.tsx`, `data.ts` (radar/ref loaders), `roads.ts` (เทียบกับ `expected.json`), e2e ชุดใหม่ใน `tests/app.spec.ts` ที่ยังคงการรับประกันเดิม (stale, partial, ปนรุ่น, WebGL/chunk ล้ม, WCAG, หน้า static)
 2. สัญญาใหม่ให้ตรวจ: `radar.json` (ข้อ 9), `ref/road_flood_history.json` (ข้อ 8), `ref/cctv.json` (ข้อ 10) · (เสร็จรอบแรก 11:28 → M1–M3)
 3. ทวน M1–M3 (บันทึก 11:47) และงานค้นหาสถานที่: `ref/places.json` + สัญญาข้อ 11, `PlaceSearch.tsx`, `places.ts`, `photon.ts` และตัวแก้ซูม (`MapView.tsx`) พร้อม consumer tests ตามกติกาค้นข้อ 11
-5. ทวนแถบเลื่อนเวลาและ `forecast/rain.json` (สัญญาข้อ 12): `Timeline.tsx`, `forecast.ts`, `open_meteo.py`
 4. ตรวจสิทธิ์และช่องทางของเครื่องมือที่ผู้ใช้ส่งมา 2026-09-26 แล้วบันทึกใน `docs/sources.md` (จองก่อน): ThaiWater new4all (เขื่อน/การระบาย/สถานีหลัก) และข้อมูลเปิดของกรมชลประทานที่ใช้แทนได้, HDMS กรมทางหลวง (กล้อง/จุดน้ำท่วม), BMA traffic CCTV, GISTDA เช็คน้ำ (ภาพน้ำท่วมจากดาวเทียม), Google Flood Hub (API มีระบบสมัครไหม), Windy, `weather.bangkok.go.th` (rain/flood/KlongMap → ผ่าน DXS) · ไม่ส่งคำขอแทนผู้ใช้ (D27)
+5. ทวนแถบเลื่อนเวลาและ `forecast/rain.json` (สัญญาข้อ 12): `Timeline.tsx`, `forecast.ts`, `open_meteo.py`
 
 ## D. ขั้นต่อไป
 1. (เสร็จ) เว็บแผนที่เป็นหลักพร้อมประกาศ เรดาร์ กล้อง หมุด ค้นถนน และค้นหาสถานที่ (D29)
