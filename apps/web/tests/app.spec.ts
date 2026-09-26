@@ -580,6 +580,44 @@ test('a flood report opens on the map without leaving the list, and its popup le
   await expect(history.locator('summary')).toContainText('ข้อมูลย้อนหลัง ไม่ใช่ตอนนี้');
 });
 
+test('Bangkok rain gauges and canal levels show as measured values near a pin', async ({
+  page,
+}) => {
+  await prepare(page);
+  const manifest = read('active', 'manifest');
+  manifest.files.push({ path: 'bkk/water.json', sha256: 'b'.repeat(64), size: 1, revision: 1 });
+  manifest.files.push({ path: 'bkk/rain.json', sha256: 'c'.repeat(64), size: 1, revision: 1 });
+  await page.route('**/examples/active/manifest.json?*', (route) =>
+    route.fulfill({ json: manifest }),
+  );
+  // the producer's examples, moved to five minutes before this snapshot
+  const at = Date.parse(manifest.generated_at);
+  const recent = (file: string) => {
+    const data = JSON.parse(
+      readFileSync(new URL(`../../../contracts/v1/examples/bkk/${file}`, import.meta.url), 'utf8'),
+    );
+    data.fetched_at = new Date(at).toISOString();
+    for (const item of data.stations ?? data.gauges)
+      if (item.observed_at) item.observed_at = new Date(at - 5 * 60_000).toISOString();
+    return data;
+  };
+  await page.route('**/bkk/water.json?*', (route) => route.fulfill({ json: recent('water.json') }));
+  await page.route('**/bkk/rain.json?*', (route) => route.fulfill({ json: recent('rain.json') }));
+  await page.goto('/?pin=13.7065,100.5703'); // at the example pumping station ส.คลองเตย
+  const here = page.getByTestId('measured-here');
+  // the nearest gauge is 2.3 km away; the one 13 km away is not "near"
+  await expect(here).toContainText('ฝน 1 ชม. 0 มม. · 24 ชม. 1.5 มม.');
+  await expect(here).toContainText('สถานีสถานีสูบน้ำพระโขนง ห่าง 2.3 กม.');
+  await expect(here.getByTestId('water-here')).toContainText('ส.คลองเตย · ด้านใน 1.78 ม.รทก.');
+  await expect(here.getByTestId('water-here').locator('li')).toHaveCount(1);
+  await expect(here).toContainText('ไม่ใช่ความลึกน้ำท่วมบนถนน');
+  await page.getByRole('button', { name: 'ชั้นข้อมูล' }).click();
+  await expect(page.getByRole('button', { name: 'ระดับน้ำคลอง กทม.' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+});
+
 test('one place can be saved as "my place" and opened again from the map or the overview', async ({
   page,
 }) => {

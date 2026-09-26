@@ -6,6 +6,7 @@ import {
   Moon,
   Sun,
   CloudRain,
+  Droplet,
   Droplets,
   Info,
   Layers as LayersIcon,
@@ -13,6 +14,7 @@ import {
   Waves,
   RefreshCw,
   ShieldAlert,
+  Umbrella,
   X,
 } from 'lucide-react';
 import { formatTime, isStale, radarAgeMinutes, staleAfter, visibleAlerts } from './data';
@@ -27,6 +29,7 @@ import Timeline, { type TimeStep } from './Timeline';
 import { FORECAST_LEVELS, forecastAreas, RAIN_LEGEND } from './forecast';
 import { feedTrust, LEVEL_FILL, LEVEL_LABEL, worstLevel, type Level } from './alerts';
 import { nearestSubdistrict, type FoundPlace } from './places';
+import { RAIN_HOUR_CLASSES } from './bkk';
 import type { Focus, Layers, LngLat } from './MapView';
 
 const MapView = lazy(() => import('./MapView'));
@@ -73,12 +76,18 @@ export default function App() {
     forecastState,
     floods,
     floodsState,
+    water,
+    waterState,
+    rain,
+    rainState,
   } = data;
   const [layers, setLayers] = useState<Layers>({
     alerts: true,
     radar: true,
     cameras: true,
     floods: true,
+    water: true,
+    rain: true,
   });
   // the time the map shows: null = now (the latest radar frame); otherwise a radar or forecast time
   const [selectedTime, setSelectedTime] = useState<number | null>(null);
@@ -338,6 +347,8 @@ export default function App() {
               radarOpacity={radarOpacity}
               cameras={cameras?.cameras ?? []}
               floods={step.kind === 'forecast' ? [] : (floods?.reports ?? [])}
+              water={step.kind === 'forecast' ? null : water}
+              rain={step.kind === 'forecast' ? null : rain}
               layers={layers}
               pin={pin}
               pinLabel={pinTitle}
@@ -400,6 +411,12 @@ export default function App() {
             </button>
             <button aria-pressed={layers.floods} onClick={() => toggle('floods')}>
               <Waves size={16} /> รายงานน้ำท่วมตอนนี้
+            </button>
+            <button aria-pressed={layers.water} onClick={() => toggle('water')}>
+              <Droplet size={16} /> ระดับน้ำคลอง กทม.
+            </button>
+            <button aria-pressed={layers.rain} onClick={() => toggle('rain')}>
+              <Umbrella size={16} /> ฝนวัดจริง กทม.
             </button>
             {layers.radar && (
               <label className="slider">
@@ -472,6 +489,23 @@ export default function App() {
               <span>
                 <i className="legend-bubble">3</i> จุดที่อยู่ใกล้กัน แตะเพื่อซูมเข้า
               </span>
+            </div>
+          )}
+          {layers.water && water && step.kind !== 'forecast' && (
+            <div className="legend-row">
+              <span>
+                <i className="legend-pin legend-water" /> ระดับน้ำคลอง กทม. (เทา = ไม่มีค่าล่าสุด)
+              </span>
+            </div>
+          )}
+          {layers.rain && rain && step.kind !== 'forecast' && (
+            <div className="legend-row rain-hour">
+              <span>ฝนวัดจริง 1 ชม. (มม.)</span>
+              {RAIN_HOUR_CLASSES.map((item) => (
+                <span key={item.pin}>
+                  <i className="legend-pin" style={{ background: item.color }} /> {item.label}
+                </span>
+              ))}
             </div>
           )}
           {layers.cameras && (
@@ -558,6 +592,10 @@ export default function App() {
             camerasState={camerasState}
             floods={floods}
             floodsState={floodsState}
+            water={water}
+            waterState={waterState}
+            rain={rain}
+            rainState={rainState}
             onClose={() => setPin(null)}
             onSelectAlert={selectAlert}
             onRoad={(r) => openRoad(r.key)}
@@ -622,7 +660,11 @@ export default function App() {
                     ? 'ประกาศกรมอุตุฯ'
                     : source.source_id === 'tmd_radar'
                       ? 'เรดาร์กรมอุตุฯ'
-                      : source.source_id}
+                      : source.source_id === 'longdo_floods'
+                        ? 'รายงานน้ำท่วม (Longdo)'
+                        : source.source_id === 'bma_dxs'
+                          ? 'น้ำและฝน กทม. (DXS)'
+                          : source.source_id}
                   :{' '}
                   {source.status === 'ok'
                     ? 'ดึงสำเร็จในรอบข้อมูลนี้'

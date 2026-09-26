@@ -11,6 +11,7 @@ import {
   CloudRain,
   CloudSun,
   ExternalLink,
+  Droplet,
   Info,
   MapPin,
   Phone,
@@ -65,6 +66,17 @@ import {
 } from './floods';
 import type { TimeStep } from './Timeline';
 import { distanceM, roadsNear } from './roads';
+import {
+  BKK_STALE_MS,
+  isRecent,
+  levelText,
+  mmText,
+  nearest,
+  RAIN_RADIUS_M,
+  WATER_RADIUS_M,
+  type CanalLevels,
+  type RainGauges,
+} from './bkk';
 import { useRadarAt } from './radarAt';
 import type { RefState } from './useData';
 
@@ -514,6 +526,10 @@ export function PinCard({
   camerasState,
   floods,
   floodsState,
+  water,
+  waterState,
+  rain,
+  rainState,
   onClose,
   onSelectAlert,
   onRoad,
@@ -539,6 +555,10 @@ export function PinCard({
   camerasState: RefState;
   floods: LiveFloods | null;
   floodsState: RefState;
+  water: CanalLevels | null;
+  waterState: RefState;
+  rain: RainGauges | null;
+  rainState: RefState;
   onClose: () => void;
   onSelectAlert: (id: string) => void;
   onRoad: (road: Road) => void;
@@ -613,6 +633,18 @@ export function PinCard({
     [floods, pin, now],
   );
   const floodsOld = floods ? now - Date.parse(floods.fetched_at) > FLOODS_STALE_MS : false;
+  const nearRain = useMemo(
+    () => (rain ? nearest(rain.gauges, pin, RAIN_RADIUS_M, 1) : []),
+    [rain, pin],
+  );
+  const nearWater = useMemo(
+    () => (water ? nearest(water.stations, pin, WATER_RADIUS_M, 3) : []),
+    [water, pin],
+  );
+  const bkkOld = [water, rain].some(
+    (file) => file && now - Date.parse(file.fetched_at) > BKK_STALE_MS,
+  );
+  const bkkFailed = [waterState, rainState].some((state) => state === 'error');
   const worst = worstLevel(here);
   return (
     <div className="pin-card" data-testid="pin-card">
@@ -817,6 +849,64 @@ export function PinCard({
           </small>
         )}
       </section>
+
+      {(nearRain.length > 0 || nearWater.length > 0) && (
+        <section
+          className="panel-section"
+          aria-labelledby="pin-measured"
+          data-testid="measured-here"
+        >
+          <h2 id="pin-measured">
+            <Droplet size={18} /> ฝนและระดับน้ำที่วัดได้ใกล้ๆ (กทม.)
+          </h2>
+          {nearRain.map(({ item: gauge, distance }) => (
+            <p key={gauge.code} className="measured-line">
+              <strong>
+                ฝน 1 ชม. {mmText(gauge.rain_1h_mm)} · 24 ชม. {mmText(gauge.rain_24h_mm)}
+              </strong>
+              <span>
+                สถานี{gauge.name_th} ห่าง {distanceText(distance)} ·{' '}
+                {gauge.observed_at
+                  ? `วัดเมื่อ ${agoText(gauge.observed_at, now).replace(/^เมื่อ /, '')}`
+                  : 'ไม่มีค่าล่าสุด'}
+                {gauge.observed_at && !isRecent(gauge.observed_at, now) && ' (ค่าเก่า)'}
+              </span>
+            </p>
+          ))}
+          {nearWater.length > 0 && (
+            <ul className="road-list" data-testid="water-here">
+              {nearWater.map(({ item: station, distance }) => (
+                <li key={station.code} className="road-line">
+                  <strong>
+                    {station.name_th} · ด้านใน {levelText(station.level_in_m)}
+                  </strong>
+                  <span>
+                    {station.canal_th ? `${station.canal_th} · ` : ''}ห่าง {distanceText(distance)}{' '}
+                    ·{' '}
+                    {station.observed_at
+                      ? `วัดเมื่อ ${agoText(station.observed_at, now).replace(/^เมื่อ /, '')}`
+                      : 'ไม่มีค่าล่าสุด'}
+                    {station.observed_at && !isRecent(station.observed_at, now) && ' (ค่าเก่า)'}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {bkkOld && (
+            <p className="inline-warning">
+              <Info size={15} /> ข้อมูลน้ำและฝนของ กทม. ไม่อัปเดตตั้งแต่{' '}
+              {formatTime((water ?? rain)!.fetched_at)} น.
+            </p>
+          )}
+          <small className="source-note">
+            วัดจริงโดย{(water ?? rain)!.credit_th.replace(/ \(ผ่านระบบ DXS\)$/, '')} ผ่านระบบ DXS ·
+            ระดับน้ำเป็น ม.รทก. (เทียบระดับทะเล) ไม่ใช่ความลึกน้ำท่วมบนถนน
+          </small>
+        </section>
+      )}
+      {bkkFailed && nearRain.length === 0 && nearWater.length === 0 && (
+        <p className="missing-value">โหลดข้อมูลน้ำและฝนของ กทม. ไม่สำเร็จ</p>
+      )}
 
       <section className="panel-section" aria-labelledby="pin-flood">
         <h2

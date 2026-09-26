@@ -10,10 +10,21 @@ import type {
   StyleSpecification,
 } from 'maplibre-gl';
 import type { FeatureCollection, MultiPolygon, Point } from 'geojson';
-import { displayStatus, type Alert, type Camera, type RadarFeed } from './data';
+import { displayStatus, formatTime, type Alert, type Camera, type RadarFeed } from './data';
 import { LEVEL_FILL, LEVEL_LINE, levelOf } from './alerts';
 import type { ForecastAreas } from './forecast';
 import { agoText, isOngoing, REPORTER_TH, type FloodReport } from './floods';
+import {
+  levelText,
+  mmText,
+  RAIN_HOUR_CLASSES,
+  rainPin,
+  waterPin,
+  type CanalLevels,
+  type CanalStation,
+  type RainGauge,
+  type RainGauges,
+} from './bkk';
 import { MAP_IMAGE_RATIO, mapImage } from './mapIcons';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
@@ -23,6 +34,8 @@ export interface Layers {
   radar: boolean;
   cameras: boolean;
   floods: boolean;
+  water: boolean;
+  rain: boolean;
 }
 export type LngLat = [number, number];
 export interface Focus {
@@ -45,6 +58,9 @@ interface Props {
   cameras: Camera[];
   /** flood reports to draw (empty while the timeline shows the forecast) */
   floods: FloodReport[];
+  /** Bangkok canal levels and rain gauges (DXS), or null while the timeline shows the forecast */
+  water: CanalLevels | null;
+  rain: RainGauges | null;
   layers: Layers;
   pin: LngLat | null;
   /** short name shown on the pin, e.g. ต.คลองหนึ่ง */
@@ -163,9 +179,12 @@ function addOverlays(instance: LibreMap) {
       ],
     },
   });
-  // cameras under flood reports; points close together merge into a numbered bubble until zoom 14
+  // cameras at the bottom, flood reports on top; points close together merge into a numbered bubble until
+  // zoom 14
   for (const [kind, source] of [
     ['camera', 'cameras'],
+    ['water', 'water'],
+    ['rain', 'rain'],
     ['flood', 'floods'],
   ] as const) {
     instance.addSource(source, {
@@ -195,13 +214,16 @@ function addOverlays(instance: LibreMap) {
         'icon-image':
           kind === 'camera'
             ? ['case', ['==', ['get', 'approximate'], true], 'pin-camera-approx', 'pin-camera']
-            : ['case', ['==', ['get', 'ongoing'], true], 'pin-flood', 'pin-flood-ended'],
+            : kind === 'flood'
+              ? ['case', ['==', ['get', 'ongoing'], true], 'pin-flood', 'pin-flood-ended']
+              : ['get', 'pin'],
         // the picture has 2 px under the tip
         'icon-offset': [0, 2],
         'icon-anchor': 'bottom',
         'icon-allow-overlap': true,
         'icon-ignore-placement': true,
-        'symbol-sort-key': ['case', ['==', ['get', 'ongoing'], true], 1, 0],
+        // the more important on top: an ongoing report, a fresh reading, heavier rain
+        'symbol-sort-key': ['coalesce', ['get', 'rank'], 0],
       },
     });
   }
@@ -219,7 +241,17 @@ const PIN_POPUP_OFFSET: Record<PositionAnchor, [number, number]> = {
   right: [-14, -18],
 };
 /** Layers that answer a tap with a popup (pins) or a zoom (bubbles), topmost last. */
-const POINT_LAYERS = ['camera-cluster', 'camera-pin', 'flood-cluster', 'flood-pin'];
+const POINT_LAYERS = [
+  'camera-cluster',
+  'camera-pin',
+  'water-cluster',
+  'water-pin',
+  'rain-cluster',
+  'rain-pin',
+  'flood-cluster',
+  'flood-pin',
+];
+type PointKind = 'flood' | 'camera' | 'water' | 'rain';
 
 function floodPopup(report: FloodReport, now: number, onHere: () => void): HTMLElement {
   const root = document.createElement('div');
@@ -243,6 +275,60 @@ function floodPopup(report: FloodReport, now: number, onHere: () => void): HTMLE
   here.textContent = 'ดูฝนและประกาศตรงนี้';
   here.addEventListener('click', onHere);
   root.append(title, when, note, link, here);
+  return root;
+}
+
+function line(text: string, tag: 'span' | 'small' | 'strong' = 'span'): HTMLElement {
+  const element = document.createElement(tag);
+  element.textContent = text;
+  return element;
+}
+function linkOut(href: string, text: string): HTMLElement {
+  const link = document.createElement('a');
+  link.href = href;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  link.textContent = text;
+  return link;
+}
+const district = (name: string | null) =>
+  !name ? '' : name.startsWith('เขต') ? name : `เขต${name}`;
+function measured(observedAt: string | null, now: number): string {
+  return observedAt
+    ? `วัดเมื่อ ${formatTime(observedAt)} น. (${agoText(observedAt, now)})`
+    : 'ไม่มีค่าล่าสุด';
+}
+
+function waterPopup(station: CanalStation, file: CanalLevels, now: number): HTMLElement {
+  const root = document.createElement('div');
+  root.className = 'camera-popup';
+  root.append(
+    line(station.name_th, 'strong'),
+    line([station.canal_th, district(station.district_th)].filter(Boolean).join(' · ')),
+    line(`ระดับน้ำด้านใน ${levelText(station.level_in_m)}`),
+  );
+  if (station.level_out_m !== null)
+    root.append(line(`ระดับน้ำด้านนอก ${levelText(station.level_out_m)}`));
+  root.append(
+    line(measured(station.observed_at, now)),
+    line(`ม.รทก. = เทียบระดับทะเลปานกลาง ไม่ใช่ความลึกน้ำท่วมบนถนน · ${file.credit_th}`, 'small'),
+    linkOut(file.source_url, 'ดูระดับน้ำทุกสถานีของ กทม. ↗'),
+  );
+  return root;
+}
+
+function rainPopup(gauge: RainGauge, file: RainGauges, now: number): HTMLElement {
+  const root = document.createElement('div');
+  root.className = 'camera-popup';
+  root.append(
+    line(gauge.name_th, 'strong'),
+    line(district(gauge.district_th)),
+    line(`ฝน 1 ชม. ${mmText(gauge.rain_1h_mm)} · 24 ชม. ${mmText(gauge.rain_24h_mm)}`),
+    line(`15 นาที ${mmText(gauge.rain_15min_mm)} · 3 ชม. ${mmText(gauge.rain_3h_mm)}`),
+    line(measured(gauge.observed_at, now)),
+    line(`วัดจริงที่สถานี ไม่ใช่ค่าจากเรดาร์ · ${file.credit_th}`, 'small'),
+    linkOut(file.source_url, 'หน้าข้อมูลฝนของ กทม. ↗'),
+  );
   return root;
 }
 
@@ -279,7 +365,7 @@ export default function MapView(props: Props) {
   const pinMarker = useRef<Marker | null>(null);
   const pinTag = useRef<HTMLSpanElement | null>(null);
   const popup = useRef<Popup | null>(null);
-  const popupKind = useRef<'flood' | 'camera' | null>(null);
+  const popupKind = useRef<PointKind | null>(null);
   const showFlood = useRef<(report: FloodReport) => void>(() => undefined);
   const latest = useRef(props);
   latest.current = props;
@@ -358,7 +444,7 @@ export default function MapView(props: Props) {
         });
         instance.on('load', () => {
           addOverlays(instance);
-          const open = (kind: 'flood' | 'camera', at: LngLat, content: HTMLElement) => {
+          const open = (kind: PointKind, at: LngLat, content: HTMLElement) => {
             popup.current?.remove();
             const next = new maplibre.Popup({
               closeButton: true,
@@ -414,6 +500,22 @@ export default function MapView(props: Props) {
             if (layer === 'flood-pin') {
               const report = latest.current.floods.find((r) => r.id === hit?.properties.id);
               if (report) return showFlood.current(report);
+            }
+            if (layer === 'water-pin' && latest.current.water) {
+              const file = latest.current.water;
+              const station = file.stations.find((s) => s.code === hit?.properties.code);
+              if (station?.location)
+                return open(
+                  'water',
+                  station.location as LngLat,
+                  waterPopup(station, file, Date.now()),
+                );
+            }
+            if (layer === 'rain-pin' && latest.current.rain) {
+              const file = latest.current.rain;
+              const gauge = file.gauges.find((g) => g.code === hit?.properties.code);
+              if (gauge?.location)
+                return open('rain', gauge.location as LngLat, rainPopup(gauge, file, Date.now()));
             }
             if (layer === 'camera-pin') {
               const camera = latest.current.cameras.find((c) => c.id === hit?.properties.id);
@@ -617,13 +719,65 @@ export default function MapView(props: Props) {
         ? props.floods.map((report) => ({
             type: 'Feature' as const,
             geometry: { type: 'Point' as const, coordinates: report.location },
-            properties: { id: report.id, ongoing: isOngoing(report, props.now) },
+            properties: {
+              id: report.id,
+              ongoing: isOngoing(report, props.now),
+              rank: isOngoing(report, props.now) ? 1 : 0,
+            },
           }))
         : [],
     };
     (map.current.getSource('floods') as GeoJSONSource | undefined)?.setData(collection);
     if (!collection.features.length && popupKind.current === 'flood') popup.current?.remove();
   }, [props.floods, props.layers.floods, props.now, ready, styleVersion]);
+
+  // Bangkok canal levels (DXS): grey without a recent reading
+  useEffect(() => {
+    if (!ready || !map.current) return;
+    const stations = props.layers.water ? (props.water?.stations ?? []) : [];
+    const collection: FeatureCollection<Point> = {
+      type: 'FeatureCollection',
+      features: stations.flatMap((station) => {
+        if (!station.location) return [];
+        const pin = waterPin(station, props.now);
+        return [
+          {
+            type: 'Feature' as const,
+            geometry: { type: 'Point' as const, coordinates: station.location },
+            properties: { code: station.code, pin, rank: pin === 'pin-water' ? 1 : 0 },
+          },
+        ];
+      }),
+    };
+    (map.current.getSource('water') as GeoJSONSource | undefined)?.setData(collection);
+    if (!collection.features.length && popupKind.current === 'water') popup.current?.remove();
+  }, [props.water, props.layers.water, props.now, ready, styleVersion]);
+
+  // Bangkok rain gauges (DXS), coloured by the rain of the last hour
+  useEffect(() => {
+    if (!ready || !map.current) return;
+    const gauges = props.layers.rain ? (props.rain?.gauges ?? []) : [];
+    const collection: FeatureCollection<Point> = {
+      type: 'FeatureCollection',
+      features: gauges.flatMap((gauge) => {
+        if (!gauge.location) return [];
+        const pin = rainPin(gauge, props.now);
+        return [
+          {
+            type: 'Feature' as const,
+            geometry: { type: 'Point' as const, coordinates: gauge.location },
+            properties: {
+              code: gauge.code,
+              pin,
+              rank: RAIN_HOUR_CLASSES.findIndex((item) => item.pin === pin),
+            },
+          },
+        ];
+      }),
+    };
+    (map.current.getSource('rain') as GeoJSONSource | undefined)?.setData(collection);
+    if (!collection.features.length && popupKind.current === 'rain') popup.current?.remove();
+  }, [props.rain, props.layers.rain, props.now, ready, styleVersion]);
 
   // A report chosen in the list: fly there and open its popup. Only a new choice moves the map,
   // never a refresh of the reports.

@@ -1544,3 +1544,21 @@ details > ul {
     display: none;
   }
 }
+
+/* ---------- Bangkok canal levels and rain gauges (DXS) ---------- */
+.legend-row i.legend-water {
+  background: #00838f;
+}
+.legend-row.rain-hour {
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+.measured-line {
+  display: grid;
+  gap: 2px;
+  margin: 0 0 8px;
+}
+.measured-line span {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
