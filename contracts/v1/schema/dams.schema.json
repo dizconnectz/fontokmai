@@ -1,0 +1,203 @@
+{
+  "$defs": {
+    "Dam": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "inflow_mcm": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Inflow of the day, million cubic metres",
+          "title": "Inflow Mcm"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "[lon, lat] from OpenStreetMap; null when not found",
+          "title": "Location"
+        },
+        "location_kind": {
+          "anyOf": [
+            {
+              "enum": [
+                "dam",
+                "reservoir"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "dam = on the dam wall, reservoir = the middle of its lake (used when the wall is not mapped)",
+          "title": "Location Kind"
+        },
+        "name_th": {
+          "title": "Name Th",
+          "type": "string"
+        },
+        "outflow_mcm": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Release of the day, million cubic metres",
+          "title": "Outflow Mcm"
+        },
+        "owner_th": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Owner Th"
+        },
+        "percent": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "volume as a percentage of storage",
+          "title": "Percent"
+        },
+        "region_th": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Region Th"
+        },
+        "storage_mcm": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Capacity at normal storage level, million cubic metres",
+          "title": "Storage Mcm"
+        },
+        "volume_mcm": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Water in the reservoir on the report day, million cubic metres",
+          "title": "Volume Mcm"
+        }
+      },
+      "required": [
+        "id",
+        "name_th",
+        "region_th",
+        "owner_th",
+        "location",
+        "location_kind",
+        "storage_mcm",
+        "volume_mcm",
+        "percent",
+        "inflow_mcm",
+        "outflow_mcm"
+      ],
+      "title": "Dam",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "credit_th": {
+      "title": "Credit Th",
+      "type": "string"
+    },
+    "dams": {
+      "items": {
+        "$ref": "#/$defs/Dam"
+      },
+      "title": "Dams",
+      "type": "array"
+    },
+    "fetched_at": {
+      "format": "date-time",
+      "title": "Fetched At",
+      "type": "string"
+    },
+    "location_credit_th": {
+      "title": "Location Credit Th",
+      "type": "string"
+    },
+    "notes_th": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Notes Th",
+      "type": "array"
+    },
+    "report_date": {
+      "format": "date",
+      "title": "Report Date",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1",
+      "default": "1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_url": {
+      "title": "Source Url",
+      "type": "string"
+    }
+  },
+  "required": [
+    "fetched_at",
+    "report_date",
+    "source_url",
+    "credit_th",
+    "location_credit_th",
+    "dams",
+    "notes_th"
+  ],
+  "title": "DamReport",
+  "type": "object"
+}

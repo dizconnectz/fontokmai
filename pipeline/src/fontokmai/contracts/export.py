@@ -8,7 +8,14 @@ from pathlib import Path
 from pydantic import BaseModel
 
 from fontokmai.contracts.alerts import AlertsFeed
-from fontokmai.contracts.bkk import CanalLevels, RainGauges, RoadFloodingDaily
+from fontokmai.contracts.bkk import (
+    CanalLevels,
+    DamReport,
+    RainGauges,
+    RoadFloodingDaily,
+    SituationReport,
+    WeatherToday,
+)
 from fontokmai.contracts.cctv import CctvRegistry
 from fontokmai.contracts.forecast import RainForecast
 from fontokmai.contracts.live_floods import LiveFloods
@@ -20,15 +27,18 @@ from fontokmai.contracts.road_flood import RoadFloodHistory
 SCHEMAS: dict[str, type[BaseModel]] = {
     "alerts.schema.json": AlertsFeed,
     "bkk_flooding.schema.json": RoadFloodingDaily,
+    "bkk_news.schema.json": SituationReport,
     "bkk_rain.schema.json": RainGauges,
     "bkk_water.schema.json": CanalLevels,
     "cctv.schema.json": CctvRegistry,
+    "dams.schema.json": DamReport,
     "forecast.schema.json": RainForecast,
     "live_floods.schema.json": LiveFloods,
     "manifest.schema.json": Manifest,
     "places.schema.json": PlaceGazetteer,
     "radar.schema.json": RadarFeed,
     "road_flood_history.schema.json": RoadFloodHistory,
+    "weather_today.schema.json": WeatherToday,
 }
 
 

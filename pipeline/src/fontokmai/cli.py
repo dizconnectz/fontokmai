@@ -219,14 +219,16 @@ def main(argv: list[str] | None = None) -> int:
         from fontokmai.sources import bma_dxs
         fetched = bma_dxs.collect_bkk(bma_dxs.load_account(args.account), args.out, datetime.now(UTC))
         written = {}
+        extras, problems = bma_dxs.collect_extras(bma_dxs.load_account(args.account), datetime.now(UTC))
         for rel, model in ((bma_dxs.WATER_PATH, fetched.water), (bma_dxs.RAIN_PATH, fetched.rain),
-                           (bma_dxs.FLOODING_PATH, fetched.flooding)):
+                           (bma_dxs.FLOODING_PATH, fetched.flooding), *extras.items()):
             if model is not None:
                 atomic_write(args.out / rel, model.model_dump_json().encode("utf-8"))
                 written[rel] = model.fetched_at.isoformat()
-        print(json.dumps({"ok": fetched.ok, "seen": fetched.seen, "message": fetched.message, "written": written},
-                         ensure_ascii=False))
-        return 0 if fetched.ok else 1
+        message = "; ".join(filter(None, [fetched.message, *problems])) or None
+        print(json.dumps({"ok": fetched.ok and not problems, "seen": fetched.seen, "message": message,
+                          "written": written}, ensure_ascii=False))
+        return 0 if fetched.ok and not problems else 1
     if args.command == "dxs-probe":
         from fontokmai.sources import bma_dxs
         params = dict(item.split("=", 1) for item in args.param)

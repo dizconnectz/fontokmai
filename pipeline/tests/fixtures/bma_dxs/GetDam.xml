@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <GetDamResponse xmlns="http://tempuri.org/"><GetDamResult><date>2026-09-26</date><data><Datum><region>ภาคเหนือ</region><reservoir /><dam><item><id>200101</id><name>เขื่อนภูมิพล</name><owner>การไฟฟ้า</owner><capacity>13462</capacity><storage>13462</storage><active_storage>13462</active_storage><dead_storage>1</dead_storage><volume>8437.68</volume><percent_storage>62.68</percent_storage><inflow>31.38</inflow><outflow>3</outflow></item><item><id>999999</id><name>เขื่อนทดสอบไม่มีพิกัด</name><owner>กรมชลประทาน</owner><capacity>100</capacity><storage>100</storage><active_storage>100</active_storage><dead_storage>1</dead_storage><volume>95</volume><percent_storage>95</percent_storage><inflow>1</inflow><outflow></outflow></item></dam></Datum><Datum><region>ภาคกลาง</region><reservoir /><dam><item><id>100301</id><name>เขื่อนป่าสักชลสิทธิ์</name><owner>กรมชลประทาน</owner><capacity>871.5</capacity><storage>871.5</storage><active_storage>871.5</active_storage><dead_storage>1</dead_storage><volume>723.26</volume><percent_storage>82.99</percent_storage><inflow>49.01</inflow><outflow>2.16</outflow></item></dam></Datum></data></GetDamResult></GetDamResponse>
+  </soap:Body>
+</soap:Envelope>

@@ -1,0 +1,171 @@
+{
+  "$defs": {
+    "WeatherStation": {
+      "additionalProperties": false,
+      "properties": {
+        "humidity_pct": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Humidity Pct"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Location"
+        },
+        "max_c": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Max C"
+        },
+        "min_c": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Min C"
+        },
+        "name_th": {
+          "title": "Name Th",
+          "type": "string"
+        },
+        "observed_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Observed At"
+        },
+        "province_th": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Province Th"
+        },
+        "rain_mm": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rain reported with the morning observation (the 24 hours to it)",
+          "title": "Rain Mm"
+        },
+        "temperature_c": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Temperature C"
+        },
+        "wmo": {
+          "title": "Wmo",
+          "type": "string"
+        }
+      },
+      "required": [
+        "wmo",
+        "name_th",
+        "province_th",
+        "location",
+        "observed_at",
+        "temperature_c",
+        "max_c",
+        "min_c",
+        "humidity_pct",
+        "rain_mm"
+      ],
+      "title": "WeatherStation",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "credit_th": {
+      "title": "Credit Th",
+      "type": "string"
+    },
+    "fetched_at": {
+      "format": "date-time",
+      "title": "Fetched At",
+      "type": "string"
+    },
+    "notes_th": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Notes Th",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1",
+      "default": "1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_url": {
+      "title": "Source Url",
+      "type": "string"
+    },
+    "stations": {
+      "items": {
+        "$ref": "#/$defs/WeatherStation"
+      },
+      "title": "Stations",
+      "type": "array"
+    }
+  },
+  "required": [
+    "fetched_at",
+    "source_url",
+    "credit_th",
+    "stations",
+    "notes_th"
+  ],
+  "title": "WeatherToday",
+  "type": "object"
+}

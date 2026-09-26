@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <getNewsResponse xmlns="http://tempuri.org/"><getNewsResult><CreateDate>2026-09-25 23:53:11</CreateDate><Subject>รายงานสถานการณ์ทดสอบประจำวัน</Subject><Message>&lt;p&gt;วันที่ 26 กันยายน 2569 เวลา 17.00 น.&lt;br /&gt;ฝนเล็กน้อย &amp;amp; ลมแรง&lt;/p&gt;&lt;p&gt;&lt;b&gt;ระดับน้ำ&lt;/b&gt; ปกติ&lt;/p&gt;</Message><Publisher>Show</Publisher><LastUpdate>2026-09-26 17:05:00</LastUpdate></getNewsResult></getNewsResponse>
+  </soap:Body>
+</soap:Envelope>

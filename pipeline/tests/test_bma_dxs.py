@@ -19,6 +19,7 @@ from fontokmai.sources.bma_dxs import (
     call,
     children,
     collect_bkk,
+    collect_extras,
     envelope,
     fixture_poster,
     load_account,
@@ -158,7 +159,7 @@ def test_a_road_report_for_another_day_is_refused(tmp_path):
     assert result.flooding is None  # nothing older to keep in this empty folder
 
 
-def test_without_dxs_a_round_lists_the_files_a_manual_run_delivered_for_one_day(tmp_path):
+def test_without_dxs_a_round_lists_the_files_a_manual_run_delivered_for_a_month(tmp_path):
     """DXS answers only Thai addresses: a computer in Thailand fetches once and copies the files to the VPS."""
     out = tmp_path / "out"
     delivered = collect_bkk(ACCOUNT, out, AT, post=fixture_poster(DXS))
@@ -173,7 +174,28 @@ def test_without_dxs_a_round_lists_the_files_a_manual_run_delivered_for_one_day(
     assert {WATER_PATH, RAIN_PATH, FLOODING_PATH} <= listed and "bkk/notes.txt" not in listed
     # no source status: the round did not call DXS, the files say when they were fetched
     assert "bma_dxs" not in {s.source_id for s in later.manifest.source_status}
+    # listed for a month (the web says how old it is), then dropped
     next_day = run_cap_snapshot(db=tmp_path / "s.db", out=out, fetch=fixture_fetcher(FIXTURES),
                                 now=AT + timedelta(hours=25), writer="test", owner_epoch=1)
-    assert not ({WATER_PATH, RAIN_PATH, FLOODING_PATH} & {f.path for f in next_day.manifest.files})
+    assert WATER_PATH in {f.path for f in next_day.manifest.files}
+    next_month = run_cap_snapshot(db=tmp_path / "s.db", out=out, fetch=fixture_fetcher(FIXTURES),
+                                  now=AT + timedelta(days=31), writer="test", owner_epoch=1)
+    assert not ({WATER_PATH, RAIN_PATH, FLOODING_PATH} & {f.path for f in next_month.manifest.files})
+
+
+def test_the_situation_text_dams_and_weather_stations(tmp_path):
+    extras, problems = collect_extras(ACCOUNT, AT, post=fixture_poster(DXS))
+    assert problems == []
+    news = extras["bkk/news.json"]
+    # the HTML message becomes plain text; nothing of the markup is kept
+    assert news.text_th.split("\n") == ["วันที่ 26 กันยายน 2569 เวลา 17.00 น.", "ฝนเล็กน้อย & ลมแรง", "ระดับน้ำ ปกติ"]
+    assert news.updated_at.isoformat() == "2026-09-26T17:05:00+07:00"
+    dams = {d.id: d for d in extras["water/dams.json"].dams}
+    assert dams["200101"].location == [98.97217, 17.24191] and dams["200101"].location_kind == "dam"
+    assert (dams["200101"].percent, dams["200101"].volume_mcm, dams["200101"].outflow_mcm) == (62.68, 8437.68, 3)
+    assert dams["999999"].location is None and dams["999999"].outflow_mcm is None
+    stations = {s.wmo: s for s in extras["weather/today.json"].stations}
+    assert stations["48455"].rain_mm == 52.8 and stations["48455"].location == [100.56034, 13.72627]
+    assert stations["48455"].observed_at.isoformat() == "2026-09-26T07:00:00+07:00"
+    assert stations["48000"].location is None and stations["48000"].temperature_c is None
 

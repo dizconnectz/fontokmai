@@ -78,3 +78,65 @@ class RoadFloodingDaily(ContractModel):
     credit_th: str
     reports: list[RoadFloodingReport] = Field(description="Still flooded first, then the latest start first")
     notes_th: list[str]
+
+
+# ---------- also from DXS: the department's daily situation text, large dams and TMD stations ----------
+
+class SituationReport(ContractModel):
+    schema_version: Literal["1"] = SCHEMA_VERSION
+    fetched_at: AwareDatetime
+    subject_th: str
+    text_th: str = Field(description="The department's message as plain text (paragraphs separated by newlines)")
+    created_at: AwareDatetime | None
+    updated_at: AwareDatetime | None
+    source_url: str = Field(description="Public page of the department to link out to (never a DXS page)")
+    credit_th: str
+    notes_th: list[str]
+
+
+class Dam(ContractModel):
+    id: str
+    name_th: str
+    region_th: str | None
+    owner_th: str | None
+    location: Position | None = Field(description="[lon, lat] from OpenStreetMap; null when not found")
+    location_kind: Literal["dam", "reservoir"] | None = Field(
+        description="dam = on the dam wall, reservoir = the middle of its lake (used when the wall is not mapped)")
+    storage_mcm: float | None = Field(description="Capacity at normal storage level, million cubic metres")
+    volume_mcm: float | None = Field(description="Water in the reservoir on the report day, million cubic metres")
+    percent: float | None = Field(description="volume as a percentage of storage")
+    inflow_mcm: float | None = Field(description="Inflow of the day, million cubic metres")
+    outflow_mcm: float | None = Field(description="Release of the day, million cubic metres")
+
+
+class DamReport(ContractModel):
+    schema_version: Literal["1"] = SCHEMA_VERSION
+    fetched_at: AwareDatetime
+    report_date: date
+    source_url: str
+    credit_th: str
+    location_credit_th: str
+    dams: list[Dam]
+    notes_th: list[str]
+
+
+class WeatherStation(ContractModel):
+    wmo: str
+    name_th: str
+    province_th: str | None
+    location: Position | None
+    observed_at: AwareDatetime | None
+    temperature_c: float | None
+    max_c: float | None
+    min_c: float | None
+    humidity_pct: float | None
+    rain_mm: float | None = Field(description="Rain reported with the morning observation (the 24 hours to it)")
+
+
+class WeatherToday(ContractModel):
+    schema_version: Literal["1"] = SCHEMA_VERSION
+    fetched_at: AwareDatetime
+    source_url: str
+    credit_th: str
+    stations: list[WeatherStation]
+    notes_th: list[str]

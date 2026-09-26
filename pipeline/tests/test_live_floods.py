@@ -15,7 +15,7 @@ AT_1530 = datetime.fromisoformat("2026-09-26T15:30:00+07:00")
 
 def test_keeps_current_floods_only_and_publishes_no_names():
     reports, seen, rejected = parse_feed(FEED.read_bytes(), AT_1530)
-    assert (seen, rejected) == (5, 1)  # five flood items, one with an impossible position
+    assert (seen, rejected) == (6, 1)  # six flood items, one with an impossible position
     assert [r.id for r in reports] == ["longdo:900001", "longdo:900003", "longdo:900002"]  # newest first
     assert [r.reporter for r in reports] == ["public", "itic_staff", "highway_department"]
     assert reports[0].start == datetime.fromisoformat("2026-09-26T15:20:00+07:00")
@@ -25,6 +25,14 @@ def test_keeps_current_floods_only_and_publishes_no_names():
     text = LiveFloods(fetched_at=AT_1530, source_url="x", credit_th="x", reports=reports,
                       notes_th=[]).model_dump_json()
     assert "itic.staff1" not in text and "DOH Admin" not in text and "someone" not in text and "image" not in text
+
+
+def test_a_report_made_more_than_12_hours_ago_is_left_out_even_if_still_open():
+    # 900005 is a highway report from six days before, still open; 900002 started at 07:00 the same day
+    ids = [r.id for r in parse_feed(FEED.read_bytes(), AT_1530)[0]]
+    assert "longdo:900005" not in ids and "longdo:900002" in ids
+    at_1901 = datetime.fromisoformat("2026-09-26T19:01:00+07:00")
+    assert "longdo:900002" not in [r.id for r in parse_feed(FEED.read_bytes(), at_1901)[0]]
 
 
 def test_a_report_that_ended_long_ago_or_starts_later_is_left_out():
@@ -54,5 +62,5 @@ def test_the_round_publishes_live_floods_with_their_status(tmp_path):
     manifest = Manifest.model_validate_json((out / "manifest.json").read_bytes())
     assert FILE_PATH in [f.path for f in manifest.files]
     status = next(s for s in manifest.source_status if s.source_id == "longdo_floods")
-    assert (status.status, status.items_seen, status.items_rejected) == ("ok", 5, 1)
+    assert (status.status, status.items_seen, status.items_rejected) == ("ok", 6, 1)
     assert len(LiveFloods.model_validate_json((out / FILE_PATH).read_bytes()).reports) == 3

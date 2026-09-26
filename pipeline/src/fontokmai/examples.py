@@ -226,7 +226,7 @@ BKK_AT = "2026-09-26T17:20:00+07:00"
 
 def write_bkk_examples(out: Path, fixtures: Path) -> list[Path]:
     """contracts/v1/examples/bkk: water, rain and the road flooding report from synthetic DXS answers."""
-    from fontokmai.sources.bma_dxs import Account, collect_bkk, fixture_poster
+    from fontokmai.sources.bma_dxs import Account, collect_bkk, collect_extras, fixture_poster
 
     target = out / "bkk"
     if target.exists():
@@ -236,8 +236,13 @@ def write_bkk_examples(out: Path, fixtures: Path) -> list[Path]:
                          post=fixture_poster(fixtures))
     assert round_.ok and round_.water and round_.rain and round_.flooding
     written = []
+    extras, problems = collect_extras(Account("example", "example"), datetime.fromisoformat(BKK_AT),
+                                      post=fixture_poster(fixtures))
+    assert not problems, problems
     for name, model in (("water.json", round_.water), ("rain.json", round_.rain),
-                        ("flooding.json", round_.flooding)):
+                        ("flooding.json", round_.flooding), ("news.json", extras["bkk/news.json"]),
+                        ("dams.json", extras["water/dams.json"]),
+                        ("weather-today.json", extras["weather/today.json"])):
         path = target / name
         path.write_text(model.model_dump_json(indent=2) + "\n", encoding="utf-8", newline="\n")
         written.append(path)

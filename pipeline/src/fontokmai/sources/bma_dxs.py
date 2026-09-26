@@ -9,22 +9,31 @@ without the department's logo, no links into DXS pages.
 
 from __future__ import annotations
 
+import html
+import json
+import re
 import urllib.error
 import urllib.request
 import xml.etree.ElementTree as ET
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta, timezone
+from importlib import resources
 from pathlib import Path
 from typing import Any
 
 from fontokmai.contracts.bkk import (
     CanalLevels,
     CanalStation,
+    Dam,
+    DamReport,
     RainGauge,
     RainGauges,
     RoadFloodingDaily,
     RoadFloodingReport,
+    SituationReport,
+    WeatherStation,
+    WeatherToday,
 )
 from fontokmai.sources.tmd_cap.fetch import USER_AGENT, make_ssl_context
 
@@ -280,8 +289,9 @@ def _previous(out: Path, rel: str, model: type[CanalLevels] | type[RainGauges] |
 
 
 # DXS answers only addresses in Thailand, so the VPS may get these files from a manual run on a computer in
-# Thailand (`bkk-fetch`) instead of calling DXS itself. A delivered file is listed for a day after its fetch time.
-RELAY_MAX_AGE = timedelta(hours=24)
+# Thailand (`bkk-fetch`) instead of calling DXS itself. A delivered file is listed for 30 days after its fetch
+# time; the web says how old it is (not real time after a day).
+RELAY_MAX_AGE = timedelta(days=30)
 RELAY_MODELS: dict[str, Any] = {}  # filled below, once the paths exist
 
 
@@ -415,3 +425,117 @@ def parse_flooding(result: ET.Element, day: date, now: datetime) -> RoadFlooding
 
 
 RELAY_MODELS.update({WATER_PATH: CanalLevels, RAIN_PATH: RainGauges, FLOODING_PATH: RoadFloodingDaily})
+
+
+# ---------- the department's situation text, large dams (RID/EGAT) and TMD's weather today ----------
+
+NEWS_PATH = "bkk/news.json"
+DAMS_PATH = "water/dams.json"
+WEATHER_PATH = "weather/today.json"
+NEWS_PAGE = "https://dds.bangkok.go.th/"
+DAMS_PAGE = "https://water.rid.go.th/"
+WEATHER_PAGE = "https://www.tmd.go.th/"
+DAMS_CREDIT_TH = "กรมชลประทานและ กฟผ. (ผ่านระบบ DXS ของสำนักการระบายน้ำ กรุงเทพมหานคร)"
+WEATHER_CREDIT_TH = "กรมอุตุนิยมวิทยา (ผ่านระบบ DXS ของสำนักการระบายน้ำ กรุงเทพมหานคร)"
+DAMS_NOTES_TH = [
+    "ปริมาณน้ำเป็นล้าน ลบ.ม. และร้อยละของความจุที่ระดับเก็บกัก · น้ำไหลเข้าและระบายเป็นของวันที่รายงาน",
+    "น้ำเกินร้อยละ 80 แปลว่าเหลือที่รับน้ำน้อย ไม่ได้แปลว่าท้ายเขื่อนจะท่วม",
+]
+WEATHER_NOTES_TH = ["ข้อมูลตรวจอากาศรอบเช้าของสถานีกรมอุตุฯ ทั่วประเทศ · ฝนเป็นปริมาณที่รายงานพร้อมรอบตรวจนั้น"]
+TAG = re.compile(r"<[^>]+>")
+BREAK = re.compile(r"<\s*(br\s*/?|/p|/div|/li)\s*>", re.IGNORECASE)
+
+
+def _plain(value: str | None) -> str:
+    """HTML of the department's message as plain text; nothing of the markup is kept."""
+    text_ = BREAK.sub("\n", value or "")
+    text_ = html.unescape(TAG.sub("", text_))
+    lines = [" ".join(line.split()) for line in text_.splitlines()]
+    return "\n".join(line for line in lines if line)
+
+
+def parse_news(result: ET.Element, now: datetime) -> SituationReport:
+    subject = text(result, "Subject")
+    body = _plain(text(result, "Message"))
+    if not subject or not body:
+        raise DxsError("getNews: no subject or message")
+    return SituationReport(fetched_at=now.astimezone(ICT), subject_th=subject, text_th=body,
+                           created_at=_when(text(result, "CreateDate")), updated_at=_when(text(result, "LastUpdate")),
+                           source_url=NEWS_PAGE, credit_th=CREDIT_TH,
+                           notes_th=["ข้อความของสำนักการระบายน้ำ ไม่ได้แก้ไขเนื้อหา"])
+
+
+def dam_locations() -> dict[str, dict[str, Any]]:
+    raw = resources.files("fontokmai.ref_data").joinpath("dam_locations.json").read_text(encoding="utf-8")
+    return json.loads(raw)["dams"]
+
+
+def parse_dams(result: ET.Element, now: datetime) -> DamReport:
+    day = _day(text(result, "date"))
+    if day is None:
+        raise DxsError("GetDam: no report date")
+    places = dam_locations()
+    dams = []
+    for datum in children(child(result, "data"), "Datum"):
+        region = text(datum, "region")
+        for item in children(child(datum, "dam"), "item"):
+            dam_id = text(item, "id")
+            name = text(item, "name")
+            if not dam_id or not name:
+                continue
+            place = places.get(dam_id)
+            dams.append(Dam(
+                id=dam_id, name_th=name, region_th=region, owner_th=text(item, "owner"),
+                location=place["location"] if place else None, location_kind=place["kind"] if place else None,
+                storage_mcm=_number(text(item, "storage"), 0, 100_000),
+                volume_mcm=_number(text(item, "volume"), 0, 100_000),
+                percent=_number(text(item, "percent_storage"), 0, 200),
+                inflow_mcm=_number(text(item, "inflow"), 0, 10_000),
+                outflow_mcm=_number(text(item, "outflow"), 0, 10_000),
+            ))
+    if not dams:
+        raise DxsError("GetDam: no dam in the answer")
+    return DamReport(fetched_at=now.astimezone(ICT), report_date=day, source_url=DAMS_PAGE, credit_th=DAMS_CREDIT_TH,
+                     location_credit_th="ตำแหน่งจาก OpenStreetMap (ODbL)", dams=dams, notes_th=DAMS_NOTES_TH)
+
+
+def parse_weather(result: ET.Element, now: datetime) -> WeatherToday:
+    stations = []
+    for item in children(child(result, "Stations"), "Station"):
+        wmo = text(item, "WmoStationNumber")
+        name = text(item, "StationNameThai")
+        if not wmo or not name:
+            continue
+        observation = child(item, "Observation")
+        lon = _number(text(item, "Longitude"), 97, 106)
+        lat = _number(text(item, "Latitude"), 5, 21)
+        stations.append(WeatherStation(
+            wmo=wmo, name_th=name, province_th=text(item, "Province"),
+            location=[round(lon, 5), round(lat, 5)] if lon is not None and lat is not None else None,
+            observed_at=_when(text(observation, "DateTime")),
+            temperature_c=_number(text(observation, "Temperature"), -10, 50),
+            max_c=_number(text(observation, "MaxTemperature"), -10, 50),
+            min_c=_number(text(observation, "MinTemperature"), -10, 50),
+            humidity_pct=_number(text(observation, "RelativeHumidity"), 0, 100),
+            rain_mm=_number(text(observation, "Rainfall"), 0, 1000),
+        ))
+    if not stations:
+        raise DxsError("GetWeatherToday: no station in the answer")
+    return WeatherToday(fetched_at=now.astimezone(ICT), source_url=WEATHER_PAGE, credit_th=WEATHER_CREDIT_TH,
+                        stations=stations, notes_th=WEATHER_NOTES_TH)
+
+
+def collect_extras(account: Account, now: datetime, *, post: Poster = https_post) -> tuple[dict[str, Any], list[str]]:
+    """The situation text, the large dams and TMD's weather today: {path: model} of the parts that worked."""
+    parts: dict[str, Any] = {}
+    problems = []
+    for rel, operation, parse in ((NEWS_PATH, "getNews", parse_news), (DAMS_PATH, "GetDam", parse_dams),
+                                  (WEATHER_PATH, "GetWeatherToday", parse_weather)):
+        try:
+            parts[rel] = parse(call(operation, account, post=post), now)
+        except (DxsError, ValueError) as exc:
+            problems.append(f"{operation}: {exc}"[:200])
+    return parts, problems
+
+
+RELAY_MODELS.update({NEWS_PATH: SituationReport, DAMS_PATH: DamReport, WEATHER_PATH: WeatherToday})

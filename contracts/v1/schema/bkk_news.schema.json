@@ -1,0 +1,77 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "created_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Created At"
+    },
+    "credit_th": {
+      "title": "Credit Th",
+      "type": "string"
+    },
+    "fetched_at": {
+      "format": "date-time",
+      "title": "Fetched At",
+      "type": "string"
+    },
+    "notes_th": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Notes Th",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1",
+      "default": "1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_url": {
+      "description": "Public page of the department to link out to (never a DXS page)",
+      "title": "Source Url",
+      "type": "string"
+    },
+    "subject_th": {
+      "title": "Subject Th",
+      "type": "string"
+    },
+    "text_th": {
+      "description": "The department's message as plain text (paragraphs separated by newlines)",
+      "title": "Text Th",
+      "type": "string"
+    },
+    "updated_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Updated At"
+    }
+  },
+  "required": [
+    "fetched_at",
+    "subject_th",
+    "text_th",
+    "created_at",
+    "updated_at",
+    "source_url",
+    "credit_th",
+    "notes_th"
+  ],
+  "title": "SituationReport",
+  "type": "object"
+}

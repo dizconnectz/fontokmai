@@ -24,12 +24,14 @@ PAGE_URL = "https://traffic.longdo.com/"
 FILE_PATH = "live/floods.json"
 FLOOD_TYPE = "6"
 RECENT = timedelta(hours=2)
+# a report made longer ago than this is left out, even one its reporter has not closed (the owner's rule)
+MAX_AGE = timedelta(hours=12)
 FEED_LIMIT = 8_000_000
 ICT = timezone(timedelta(hours=7))
 CREDIT_TH = "iTIC และ Longdo Traffic (CC BY 4.0)"
 NOTES_TH = [
     "เป็นรายงานจากผู้ใช้ เจ้าหน้าที่ iTIC และกรมทางหลวง ไม่ใช่การตรวจวัด และไม่ครบทุกจุดที่ท่วม",
-    "รายงานของผู้ใช้มีอายุ 1 ชั่วโมง น้ำอาจยังท่วมอยู่หรือลดลงแล้ว",
+    "รายงานของผู้ใช้มีอายุ 1 ชั่วโมง น้ำอาจยังท่วมอยู่หรือลดลงแล้ว · รายงานที่แจ้งเกิน 12 ชั่วโมงไม่แสดง",
     "ไม่มีรายงานใกล้จุดหนึ่งไม่ได้แปลว่าที่นั่นไม่ท่วม",
 ]
 
@@ -82,6 +84,8 @@ def parse_feed(data: bytes, now: datetime) -> tuple[list[LiveFloodReport], int, 
         if (item.findtext("status") or "1").strip() != "1" or start > now + timedelta(minutes=10):
             continue
         if stop is not None and stop < now - RECENT:
+            continue
+        if start < now - MAX_AGE:
             continue
         try:
             reports.append(LiveFloodReport(

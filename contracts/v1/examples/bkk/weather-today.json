@@ -1,0 +1,53 @@
+{
+  "schema_version": "1",
+  "fetched_at": "2026-09-26T17:20:00+07:00",
+  "source_url": "https://www.tmd.go.th/",
+  "credit_th": "กรมอุตุนิยมวิทยา (ผ่านระบบ DXS ของสำนักการระบายน้ำ กรุงเทพมหานคร)",
+  "stations": [
+    {
+      "wmo": "48455",
+      "name_th": "กรุงเทพมหานคร",
+      "province_th": "กรุงเทพมหานคร",
+      "location": [
+        100.56034,
+        13.72627
+      ],
+      "observed_at": "2026-09-26T07:00:00+07:00",
+      "temperature_c": 26.1,
+      "max_c": 33.2,
+      "min_c": 25.4,
+      "humidity_pct": 90.0,
+      "rain_mm": 52.8
+    },
+    {
+      "wmo": "48400",
+      "name_th": "นครสวรรค์",
+      "province_th": "นครสวรรค์",
+      "location": [
+        100.16654,
+        15.80005
+      ],
+      "observed_at": "2026-09-26T07:00:00+07:00",
+      "temperature_c": 25.0,
+      "max_c": 34.0,
+      "min_c": 24.0,
+      "humidity_pct": 95.0,
+      "rain_mm": 0.0
+    },
+    {
+      "wmo": "48000",
+      "name_th": "สถานีทดสอบพิกัดผิด",
+      "province_th": "ทดสอบ",
+      "location": null,
+      "observed_at": "2026-09-26T07:00:00+07:00",
+      "temperature_c": null,
+      "max_c": null,
+      "min_c": null,
+      "humidity_pct": null,
+      "rain_mm": null
+    }
+  ],
+  "notes_th": [
+    "ข้อมูลตรวจอากาศรอบเช้าของสถานีกรมอุตุฯ ทั่วประเทศ · ฝนเป็นปริมาณที่รายงานพร้อมรอบตรวจนั้น"
+  ]
+}

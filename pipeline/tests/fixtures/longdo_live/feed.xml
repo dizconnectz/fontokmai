@@ -28,6 +28,21 @@
       <latitude>14.51</latitude>
       <longitude>100.51</longitude>
       <type>6</type>
+      <starttime>2026-09-26 07:00:00</starttime>
+      <starttimestamp>1790380800</starttimestamp>
+      <stoptime>2026-09-30 00:00:00</stoptime>
+      <stoptimestamp>1790701200</stoptimestamp>
+      <status>1</status>
+      <contributor>DOH Admin</contributor>
+      <road></road>
+    </item>
+    <item>
+      <title>น้ำท่วมทางหลวง 9 ช่วงทดสอบ (แจ้งไว้หลายวัน)</title>
+      <link>https://traffic.longdo.com/e/A00900005</link>
+      <eid>900005</eid>
+      <latitude>14.51</latitude>
+      <longitude>100.51</longitude>
+      <type>6</type>
       <starttime>2026-09-20 01:00:00</starttime>
       <starttimestamp>1789840800</starttimestamp>
       <stoptime>2026-09-30 00:00:00</stoptime>
