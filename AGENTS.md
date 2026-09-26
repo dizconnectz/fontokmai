@@ -43,6 +43,7 @@
 ### A5. งานที่กำลังทำ (Active claims)
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
+| Claude | 2026-09-26 15:37 | `.github/workflows/data-watch.yml`, `scripts/check_live_data.py`, `pipeline/src/fontokmai/` (longdo live + run/cli), `pipeline/tests/`, `contracts/v1/`, `apps/web/`, `docs/sources.md` (แถว Longdo/Open-Meteo เท่านั้น), `docs/design/fontokmai-design.md` | ตัวเฝ้าข้อมูลหยุด (ข้อ 1), รายงานน้ำท่วมสด Longdo, พยากรณ์คมชัด, ที่ของฉัน, รัศมีกล้อง | ผู้ใช้ขอ |
 | Codex | 2026-09-26 13:02 | `docs/sources.md`, `tests/consumer/`, A5/A6/C1 ใน `AGENTS.md`, `private/handoffs/2026-09-26-codex-followup-review.md`, ดัชนีประวัติ | ทวน M1–M3/ค้นหา/พยากรณ์, consumer tests แยกจาก apps/web, ตรวจสิทธิ์ 7 กลุ่มแหล่งข้อมูล | C2 ข้อ 3–5 |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md`)
