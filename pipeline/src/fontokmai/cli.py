@@ -28,7 +28,7 @@ from fontokmai.sources.tmd_cap.fetch import LiveFetcher, fixture_fetcher
 from fontokmai.sources.tmd_radar import summary as radar_summary
 
 ROAD_FLOOD_RETRY = timedelta(hours=6)
-FORECAST_RETRY = timedelta(hours=1)
+FORECAST_RETRY = timedelta(hours=2)  # a failed run may have used part of the daily call budget
 
 
 def ssh_command(key: Path, known_hosts: Path) -> str:
@@ -132,7 +132,6 @@ def _scheduled_job(args: argparse.Namespace) -> Callable[[datetime], dict[str, A
 
     def job(now: datetime) -> dict[str, Any]:
         road_flood = refresh_road_flood(now)
-        forecast = refresh_forecast(now)
         fetch = LiveFetcher()
         try:
             result = run_cap_snapshot(db=args.db, out=args.out, fetch=fetch, now=now, writer=args.writer,
@@ -142,12 +141,15 @@ def _scheduled_job(args: argparse.Namespace) -> Callable[[datetime], dict[str, A
         summary = _summary(result)
         if road_flood:
             summary["road_flood_history"] = road_flood
-        if forecast:
-            summary["forecast"] = forecast
         if args.publish_remote:
             commit = publish_snapshot(args.out, args.publish_work, args.publish_remote,
                                       message=result.manifest.generation_id, ssh_command=ssh)
             summary["published"] = commit[:12]
+        # after publishing: the paced requests (about 2.5 minutes) never delay the alerts; the next round
+        # lists the new forecast
+        forecast = refresh_forecast(now)
+        if forecast:
+            summary["forecast"] = forecast
         return summary
 
     return job

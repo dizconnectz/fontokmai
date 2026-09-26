@@ -26,7 +26,7 @@ def default_lattice() -> tuple[ForecastLattice, list[list[int]]]:
 
 def build_rain_forecast(out_dir: Path, now: datetime, *, opener: Opener = open_url,
                         lattice: tuple[ForecastLattice, list[list[int]]] | None = None,
-                        pause: float = 1.0) -> RainForecast:
+                        pause: float = open_meteo.PAUSE_S) -> RainForecast:
     """Fetch the whole lattice, then replace out_dir/forecast/rain.json atomically (nothing older is kept)."""
     grid, points = lattice or default_lattice()
     forecast = open_meteo.collect(now, grid, points, opener=opener, pause=pause)

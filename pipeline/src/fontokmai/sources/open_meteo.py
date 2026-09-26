@@ -1,8 +1,9 @@
 """Open-Meteo forecast API (free for non-commercial use, data CC BY 4.0): rain on a lattice over Thailand.
 
-Every location in a request counts as one API call and the free service allows about 10,000 calls a day, so the
-lattice is 0.25° (about 900 points on and around Thai land) and the forecast is refreshed every 6 hours
-(about 3,700 calls a day). Nothing is kept from earlier runs: each run replaces forecast/rain.json.
+Every location in a request counts as one API call. The free service allows 600 calls a minute, 5,000 an hour
+and 10,000 a day, so the lattice is 0.25° (about 900 points on and around Thai land), batches are paced to
+400 calls a minute (a run takes about 2.5 minutes) and the forecast is refreshed every 6 hours (about 3,700 calls
+a day). Nothing is kept from earlier runs: each run replaces forecast/rain.json.
 """
 
 from __future__ import annotations
@@ -22,6 +23,8 @@ PAGE_URL = "https://open-meteo.com/"
 STEP = 0.25
 REACH = 0.25  # keep lattice points this close (on both axes) to a subdistrict point
 BATCH = 100
+CALLS_PER_MINUTE = 400  # below the 600 a minute of the free service
+PAUSE_S = BATCH * 60 / CALLS_PER_MINUTE
 HOURS = 72
 DAYS = 7
 ICT = timezone(timedelta(hours=7))
@@ -67,15 +70,21 @@ def batch_url(coordinates: list[tuple[float, float]]) -> str:
 
 def _fetch(opener: Opener, coordinates: list[tuple[float, float]], pause: float) -> list[dict[str, Any]]:
     answers: list[dict[str, Any]] = []
+    batches = -(-len(coordinates) // BATCH)
     for start in range(0, len(coordinates), BATCH):
         chunk = coordinates[start:start + BATCH]
-        data = read_json(opener, batch_url(chunk))
+        url = batch_url(chunk)
+        try:
+            data = read_json(opener, url)
+        except OpenDataError as exc:  # the URL lists 100 points: keep the reason, not the URL
+            reason = str(exc).replace(url, "").lstrip(": ")
+            raise OpenDataError(f"Open-Meteo batch {start // BATCH + 1}/{batches}: {reason}") from exc
         data = [data] if isinstance(data, dict) else data
         if not isinstance(data, list) or len(data) != len(chunk) or not all(isinstance(d, dict) for d in data):
             raise OpenDataError(f"Open-Meteo answered {type(data).__name__} for {len(chunk)} points")
         answers.extend(data)
         if pause and start + BATCH < len(coordinates):
-            time.sleep(pause)  # the free service asks for fair use
+            time.sleep(pause)  # stay under the per-minute limit of the free service
     return answers
 
 
@@ -123,7 +132,7 @@ def build_forecast(answers: list[dict[str, Any]], lattice: ForecastLattice, poin
 
 
 def collect(now: datetime, lattice: ForecastLattice, points: list[list[int]], *, opener: Opener = open_url,
-            pause: float = 1.0) -> RainForecast:
+            pause: float = PAUSE_S) -> RainForecast:
     if now.tzinfo is None:
         raise ValueError("now must carry a UTC offset")
     answers = _fetch(opener, [lonlat(lattice, p) for p in points], pause)

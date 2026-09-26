@@ -10,7 +10,15 @@ from fontokmai.examples import FORECAST_FETCHED_AT, forecast_fixture_run, write_
 from fontokmai.forecast_build import FORECAST_PATH, default_lattice, is_fresh
 from fontokmai.run import run_cap_snapshot
 from fontokmai.sources.open_data.http import OpenDataError
-from fontokmai.sources.open_meteo import BATCH, batch_url, build_forecast, collect, lonlat
+from fontokmai.sources.open_meteo import (
+    BATCH,
+    CALLS_PER_MINUTE,
+    PAUSE_S,
+    batch_url,
+    build_forecast,
+    collect,
+    lonlat,
+)
 from fontokmai.sources.tmd_cap.fetch import fixture_fetcher
 from helpers import FIXTURES
 
@@ -51,9 +59,10 @@ def test_requests_come_in_batches_and_odd_answers_are_refused():
         asked.append(url)
         raise OpenDataError("offline")
 
-    with pytest.raises(OpenDataError):
+    with pytest.raises(OpenDataError, match=r"^Open-Meteo batch 1/10: offline$"):
         collect(FETCHED, lattice, points, opener=opener, pause=0)
     assert asked == [batch_url([lonlat(lattice, p) for p in points[:BATCH]])]
+    assert PAUSE_S * CALLS_PER_MINUTE / 60 == BATCH and CALLS_PER_MINUTE < 600  # the free per-minute limit
     assert asked[0].startswith("https://api.open-meteo.com/v1/forecast?")
     one = {"hourly": {"time": ["2026-09-26T12:00"], "precipitation": [-1]},
            "daily": {"time": ["2026-09-26"], "precipitation_sum": [None], "precipitation_probability_max": [101],
