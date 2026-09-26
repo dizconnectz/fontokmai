@@ -193,3 +193,14 @@ export function amount(value: number | null): string {
 
 /** The dams that feed the Chao Phraya, the river through Bangkok (for the overview card). */
 export const CHAO_PHRAYA_DAMS = ['200101', '200102', '100107', '100301'];
+
+const THAI_DAY = new Intl.DateTimeFormat('th-TH', {
+  timeZone: 'Asia/Bangkok',
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+});
+/** "26 ก.ย. 2569" for a report date written 2026-09-26 */
+export function thaiDay(isoDate: string): string {
+  return THAI_DAY.format(Date.parse(`${isoDate}T12:00:00+07:00`));
+}

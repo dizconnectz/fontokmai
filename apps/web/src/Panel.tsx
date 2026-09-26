@@ -83,6 +83,7 @@ import {
   reportsOnRoads,
   reportTime,
   roadLabel,
+  thaiDay,
   WATER_RADIUS_M,
   type CanalLevels,
   type RainGauges,
@@ -417,8 +418,8 @@ function RoadFloodingToday({
       <section className="panel-section" data-testid="road-flooding-old">
         <details className="history-details">
           <summary>
-            <Route size={15} /> รายงานถนนท่วม กทม. ของวันที่{' '}
-            {flooding.report_date.split('-').reverse().join('/')} (ข้อมูลเก่า ไม่ใช่วันนี้)
+            <Route size={15} /> รายงานถนนท่วม กทม. ของวันที่ {thaiDay(flooding.report_date)}{' '}
+            (ข้อมูลเก่า ไม่ใช่วันนี้)
           </summary>
           <p className="inline-warning">
             <Info size={15} /> {oldNote(flooding.fetched_at, now)}
@@ -558,9 +559,8 @@ function ChaoPhrayaDams({
         </p>
       )}
       <small className="source-note">
-        ข้อมูลวันที่ {dams.report_date.split('-').reverse().join('/')} · {dams.credit_th} ·
-        ดูเขื่อนอื่นเป็นหมุดบนแผนที่ · น้ำเกินร้อยละ 80 แปลว่าเหลือที่รับน้ำน้อย
-        ไม่ใช่การพยากรณ์ว่าจะท่วม
+        ข้อมูลวันที่ {thaiDay(dams.report_date)} · {dams.credit_th} · ดูเขื่อนอื่นเป็นหมุดบนแผนที่ ·
+        น้ำเกินร้อยละ 80 แปลว่าเหลือที่รับน้ำน้อย ไม่ใช่การพยากรณ์ว่าจะท่วม
       </small>
     </section>
   );

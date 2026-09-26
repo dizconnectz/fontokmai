@@ -24,6 +24,7 @@ import {
   oldNote,
   RAIN_HOUR_CLASSES,
   rainPin,
+  thaiDay,
   waterPin,
   weatherPin,
   type CanalLevels,
@@ -338,7 +339,7 @@ function damPopup(dam: Dam, file: DamReport, now: number): HTMLElement {
     line(dam.percent === null ? 'ไม่มีค่าร้อยละ' : `น้ำ ${amount(dam.percent)}% ของความจุ`),
     line(`ปริมาณน้ำ ${amount(dam.volume_mcm)} / ${amount(dam.storage_mcm)} ล้าน ลบ.ม.`),
     line(`ไหลเข้า ${amount(dam.inflow_mcm)} · ระบาย ${amount(dam.outflow_mcm)} ล้าน ลบ.ม./วัน`),
-    line(`ข้อมูลวันที่ ${file.report_date.split('-').reverse().join('/')}`),
+    line(`ข้อมูลวันที่ ${thaiDay(file.report_date)}`),
     ...note(file.fetched_at, now),
     line(
       `${dam.location_kind === 'reservoir' ? 'หมุดอยู่กลางอ่างเก็บน้ำ · ' : ''}${file.credit_th} · ${file.location_credit_th}`,
