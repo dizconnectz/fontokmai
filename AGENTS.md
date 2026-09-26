@@ -1,7 +1,7 @@
 # AGENTS.md — fontokmai (ฝนตกไหม): ข้อตกลงทีม สถานะ และการตัดสินใจ
 
 > **สถานะ**: เว็บแบบแผนที่เป็นหลักออนไลน์ที่ `https://dizconnectz.github.io/fontokmai/` (D28, D29): ประกาศกรมอุตุฯ ระบายสีตามระดับ, เรดาร์ฝน, กล้อง CCTV, ปักหมุดดูข้อมูลจุด, ค้นหาสถานที่ (ตำบล/อำเภอ/จังหวัด/สถานที่/ถนน), แถบเลื่อนเวลา (เรดาร์ย้อนหลัง → พยากรณ์ฝน 72 ชม.), ฝน 7 วัน, สายด่วน, รายงานน้ำท่วมตอนนี้ (Longdo/iTIC), ที่ของฉัน, ตัวเฝ้าข้อมูลหยุด (data-watch) · ข้อมูลจาก VPS ทุก 15 นาที · ยังไม่มีระดับน้ำและเขื่อน · แบบระบบ v6.1
-> อัปเดตล่าสุด: 2026-09-26 16:38 ICT (Codex) · เวลาเป็น ICT (UTC+7) · วันที่แบบ ISO (ค.ศ.)
+> อัปเดตล่าสุด: 2026-09-26 16:43 ICT (Claude) · เวลาเป็น ICT (UTC+7) · วันที่แบบ ISO (ค.ศ.)
 > ไฟล์นี้เป็นช่องทางสื่อสารหลักระหว่าง Claude ↔ Codex ↔ ผู้ใช้ และ **ต้องมีขนาดไม่เกิน 32 KiB (UTF-8)** เพื่อให้ Codex โหลดได้ครบ
 > เอกสารอื่น: แบบระบบ `docs/design/fontokmai-design.md` · แหล่งข้อมูลและสิทธิ์ `docs/sources.md` · ประวัติเต็ม `private/handoffs/` (อยู่ใน private repo ไม่อยู่ใน repo สาธารณะ)
 
@@ -44,6 +44,7 @@
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
 | Codex | 2026-09-26 13:02 | `docs/sources.md`, `tests/consumer/`, `.github/workflows/web.yml`, A5/A6/C1 ใน `AGENTS.md`, `private/handoffs/2026-09-26-codex-followup-review.md`, ดัชนีประวัติ | ทวน M1–M3/ค้นหา/พยากรณ์, consumer tests แยกจาก apps/web, ตรวจสิทธิ์ 7 กลุ่มแหล่งข้อมูล | C2 ข้อ 3–5 |
+| Claude | 2026-09-26 16:43 | `apps/web/`, `pipeline/`, `contracts/v1/README.md`, `scripts/check_live_data.py` + test, `docs/design/`, `deploy/vps/` (+ deploy VPS หลัง 18:05) | M8 พักเผยแพร่น้ำท่วมสด → ลิงก์ออก, M9–M12, ลบ `forecastFrame` | รีวิว Codex 16:38 |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md`)
 
