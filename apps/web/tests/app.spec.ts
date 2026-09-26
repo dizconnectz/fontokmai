@@ -606,8 +606,8 @@ test("today's report of flooded main roads lists roads and matches those near a 
   );
   const at = Date.parse(manifest.generated_at);
   const iso = (ms: number) => new Date(ms).toISOString();
-  const report = (road: string, area: string) => ({
-    district_th: 'คลองเตย',
+  const report = (road: string, area: string, district = 'คลองเตย') => ({
+    district_th: district,
     road_th: road,
     area_th: area,
     depth_cm: 15,
@@ -631,6 +631,8 @@ test("today's report of flooded main roads lists roads and matches those near a 
         reports: [
           report('สุขุมวิท', 'ซอยสุขุมวิท 26 ช่วงกลางซอย'),
           report('พหลโยธิน', 'หน้าม.เกษตร'),
+          // the same road name in another district is another place
+          report('สุขุมวิท', 'แยกอโศก', 'วัฒนา'),
         ],
         notes_th: [],
       },
@@ -638,11 +640,11 @@ test("today's report of flooded main roads lists roads and matches those near a 
   );
   await page.goto('/');
   const list = page.getByTestId('road-flooding');
-  await expect(list.getByRole('heading')).toHaveText('ถนนสายหลัก กทม. ที่ยังท่วม 2 จุด');
+  await expect(list.getByRole('heading')).toHaveText('ถนนสายหลัก กทม. ที่ยังท่วม 3 จุด');
   await expect(list).toContainText('ถ.สุขุมวิท · ซอยสุขุมวิท 26 ช่วงกลางซอย');
   await expect(list).toContainText('ถนนที่ไม่มีในรายการไม่ได้แปลว่าไม่ท่วม');
   // a road opens on the map only; the list stays
-  await list.getByRole('button', { name: /ถ\.สุขุมวิท/ }).click();
+  await list.getByRole('button', { name: /ถ\.สุขุมวิท · ซอยสุขุมวิท 26/ }).click();
   await expect(list).toBeVisible();
   await expect(page.getByTestId('road-card')).toHaveCount(0);
   // at a pin on Sukhumvit only the report on Sukhumvit is shown, and it says the match is by name
@@ -650,7 +652,8 @@ test("today's report of flooded main roads lists roads and matches those near a 
   const here = page.getByTestId('road-report-here');
   await expect(here).toContainText('ถ.สุขุมวิท · ซอยสุขุมวิท 26 ช่วงกลางซอย');
   await expect(here).not.toContainText('พหลโยธิน');
-  await expect(here).toContainText('จับคู่จากชื่อถนน');
+  await expect(here).not.toContainText('แยกอโศก');
+  await expect(here).toContainText('จับคู่จากชื่อถนนในรัศมี 2 กม. ในเขตเดียวกับหมุด');
   // a one-off fetch from two hours ago says when it was, and "still flooded" only held then
   fetchedAt = at - 2 * 3_600_000;
   await page.goto('/');

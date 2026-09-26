@@ -120,13 +120,30 @@ export function isTodaysReport(flooding: RoadFloodingDaily, now: number): boolea
   return flooding.report_date === DAY.format(now);
 }
 
-/** Reports on the roads near a pin, matched by road name only (the report has no coordinates). */
+/** "ดอนเมือง" from "แขวงสีกัน เขตดอนเมือง กรุงเทพมหานคร"; null for a place outside Bangkok. */
+export function bangkokDistrict(label: string | null | undefined): string | null {
+  if (!label?.includes('กรุงเทพ')) return null;
+  const token = label.split(/\s+/).find((part) => part.startsWith('เขต'));
+  return token ? token.replace(/^เขต/, '') : null;
+}
+
+/**
+ * Reports on the roads near a pin in the pin's own Bangkok district. The report has no coordinates, and a long
+ * road such as พหลโยธิน crosses many districts and provinces, so the road name alone would pull in a report
+ * from far away; the department reports Bangkok roads only, so a pin outside Bangkok gets none.
+ */
 export function reportsOnRoads(
   flooding: RoadFloodingDaily,
   roadNames: string[],
+  district: string | null,
 ): RoadFloodingReport[] {
+  if (!district) return [];
   const wanted = new Set(roadNames.map(roadKey));
-  return flooding.reports.filter((report) => wanted.has(roadKey(report.road_th)));
+  return flooding.reports.filter(
+    (report) =>
+      wanted.has(roadKey(report.road_th)) &&
+      (report.district_th ?? '').replace(/^เขต/, '') === district,
+  );
 }
 
 // ---------- how old a fetched file is (the DXS files are fetched now and then, not every round) ----------

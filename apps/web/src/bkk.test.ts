@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   amount,
+  bangkokDistrict,
   damPin,
   floodingText,
   isRecent,
@@ -78,7 +79,12 @@ describe('Bangkok canal levels and rain gauges', () => {
     expect(floodingText(wet)).toBe('สูง 20 ซม. · ยาว 300 ม. · เต็มผิว');
     expect(roadLabel(wet.road_th)).toBe('ถ.ทดสอบหนึ่ง');
     expect(roadKey('ถนนรามคำแหง')).toBe(roadKey('ถ. รามคำแหง'));
-    expect(reportsOnRoads(flooding, ['ทดสอบสอง', 'ไม่มีในรายงาน'])).toEqual([dry]);
+    // same road name and same Bangkok district only (the example report is in เขตดินแดง)
+    expect(reportsOnRoads(flooding, ['ทดสอบสอง', 'ไม่มีในรายงาน'], 'ดินแดง')).toEqual([dry]);
+    expect(reportsOnRoads(flooding, ['ทดสอบสอง'], 'พญาไท')).toEqual([]);
+    expect(reportsOnRoads(flooding, ['ทดสอบสอง'], null)).toEqual([]);
+    expect(bangkokDistrict('แขวงสีกัน เขตดอนเมือง กรุงเทพมหานคร')).toBe('ดอนเมือง');
+    expect(bangkokDistrict('ต.ประชาธิปัตย์ อ.ธัญบุรี จ.ปทุมธานี')).toBeNull();
     expect(reportTime(dry.dry_at!, AT)).toBe('17:15 น.');
     expect(isTodaysReport(flooding, AT)).toBe(true);
     expect(isTodaysReport(flooding, AT + 24 * 3_600_000)).toBe(false);

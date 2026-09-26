@@ -69,6 +69,7 @@ import {
 import type { TimeStep } from './Timeline';
 import { distanceM, roadsNear } from './roads';
 import {
+  bangkokDistrict,
   BKK_STALE_MS,
   floodingText,
   isRecent,
@@ -866,9 +867,12 @@ export function PinCard({
         ? reportsOnRoads(
             flooding,
             nearAll.map(({ road }) => road.name_th),
+            bangkokDistrict(
+              nearby?.place.label ?? (place ? `${place.title} ${place.detail}` : null),
+            ),
           )
         : [],
-    [flooding, nearAll, now],
+    [flooding, nearAll, now, nearby, place],
   );
   const reportOld = flooding ? now - Date.parse(flooding.fetched_at) > BKK_STALE_MS : false;
   const nearCameras = useMemo(
@@ -1207,7 +1211,8 @@ export function PinCard({
               ))}
             </ul>
             <small className="source-note">
-              จับคู่จากชื่อถนนที่อยู่ในรัศมี 2 กม. จุดที่ท่วมจริงอาจอยู่ไกลจากหมุด ดูบริเวณในรายการ
+              จับคู่จากชื่อถนนในรัศมี 2 กม. ในเขตเดียวกับหมุด จุดที่ท่วมจริงอาจอยู่ไกลจากหมุด
+              ดูบริเวณในรายการ
             </small>
           </div>
         )}
