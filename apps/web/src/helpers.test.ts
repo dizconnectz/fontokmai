@@ -112,6 +112,14 @@ describe('map helpers', () => {
 });
 
 describe('alert summaries', () => {
+  it('counts provinces without the region names TMD sometimes adds', () => {
+    const alert = {
+      area_desc_th: 'ภาคตะวันออก กรุงเทพมหานคร สมุทรปราการ นนทบุรี ปทุมธานี',
+    } as Parameters<typeof whereText>[0];
+    expect(whereText(alert)).toBe('4 จังหวัด รวม กทม. และภาคตะวันออก');
+    expect(whereText({ area_desc_th: 'ภาคใต้' } as Parameters<typeof whereText>[0])).toBe('ภาคใต้');
+  });
+
   const feed = example<AlertsFeed>('active', 'alerts.json');
   const now = Date.parse('2026-09-25T18:20:00+07:00');
   it('reads the severity, hazard and area in plain Thai', () => {

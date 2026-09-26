@@ -40,6 +40,7 @@ import {
   hourRange,
   levelOf,
   provincesOf,
+  regionsOf,
   shortTime,
   summaryLine,
   whenText,
@@ -199,7 +200,10 @@ export function AlertDetails({
         </p>
       )}
       <details>
-        <summary>พื้นที่ตามประกาศ ({provinces.length || 'ไม่ระบุ'} จังหวัด)</summary>
+        <summary>
+          พื้นที่ตามประกาศ ({provinces.length || 'ไม่ระบุ'} จังหวัด
+          {regionsOf(alert).length ? ` และ${regionsOf(alert).join(' ')}` : ''})
+        </summary>
         <p>{alert.area_desc_th ?? 'ต้นฉบับไม่ได้ระบุชื่อพื้นที่'}</p>
       </details>
       {!alert.geometry && (

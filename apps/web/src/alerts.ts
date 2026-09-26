@@ -55,15 +55,23 @@ export function hazardTitle(alert: Alert): string {
     .trim();
   return text || alert.event;
 }
+// TMD lists provinces by name, and sometimes a whole region such as ภาคตะวันออก among them
+const REGION = /^ภาค/;
+const areaWords = (alert: Alert) => (alert.area_desc_th ?? '').split(/\s+/).filter(Boolean);
 export function provincesOf(alert: Alert): string[] {
-  return (alert.area_desc_th ?? '').split(/\s+/).filter(Boolean);
+  return areaWords(alert).filter((word) => !REGION.test(word));
+}
+export function regionsOf(alert: Alert): string[] {
+  return areaWords(alert).filter((word) => REGION.test(word));
 }
 export function whereText(alert: Alert): string {
   const provinces = provincesOf(alert);
-  if (!provinces.length) return 'ไม่ระบุพื้นที่';
-  if (provinces.length <= 3) return provinces.join(' ');
+  const regions = regionsOf(alert);
   const bangkok = provinces.includes('กรุงเทพมหานคร') ? ' รวม กทม.' : '';
-  return `${provinces.length} จังหวัด${bangkok}`;
+  const named =
+    provinces.length <= 3 ? provinces.join(' ') : `${provinces.length} จังหวัด${bangkok}`;
+  if (!regions.length) return named || 'ไม่ระบุพื้นที่';
+  return named ? `${named} และ${regions.join(' ')}` : regions.join(' ');
 }
 
 const DAY = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' });
