@@ -3,7 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0c7066" />
+    <meta name="theme-color" content="#075e57" />
+    <script>
+      // same rule as src/theme.ts, before the first paint: a saved choice, else the device setting
+      try {
+        var t = localStorage.getItem('fontokmai.theme');
+        if (t !== 'light' && t !== 'dark')
+          t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      } catch (e) {
+        document.documentElement.dataset.theme = 'light';
+      }
+    </script>
     <meta
       name="description"
       content="ฝนตกไหม — ติดตามประกาศอากาศของกรมอุตุนิยมวิทยาบนแผนที่ประเทศไทย พร้อมแหล่งที่มาและเวลาข้อมูล"

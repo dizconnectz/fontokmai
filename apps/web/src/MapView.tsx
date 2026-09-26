@@ -49,17 +49,14 @@ interface Props {
   pinLabel: string | null;
   focus: Focus | null;
   onPin: (point: LngLat) => void;
+  /** light or dark basemap */
+  theme: 'light' | 'dark';
   /** name of the saved place, or null when none is saved */
   favoriteLabel: string | null;
   onFavorite: () => void;
   onList: () => void;
 }
 const THAILAND: { center: LngLat; zoom: number } = { center: [101, 13.2], zoom: 5 };
-const blankStyle: StyleSpecification = {
-  version: 8,
-  sources: {},
-  layers: [{ id: 'background', type: 'background', paint: { 'background-color': '#e7ede8' } }],
-};
 // strong at country scale, light when zoomed in so streets stay readable
 const ALERT_FILL_OPACITY = [
   'interpolate',
@@ -84,6 +81,114 @@ const levelMatch = (colors: Record<string, string>) =>
     ...Object.entries(colors).flatMap(([level, color]) => [level, color]),
     colors.unknown,
   ] as unknown as string;
+
+const BASEMAP = {
+  light: 'https://tiles.openfreemap.org/styles/positron',
+  dark: 'https://tiles.openfreemap.org/styles/dark',
+};
+function blankStyle(theme: 'light' | 'dark'): StyleSpecification {
+  return {
+    version: 8,
+    sources: {},
+    layers: [
+      {
+        id: 'background',
+        type: 'background',
+        paint: { 'background-color': theme === 'dark' ? '#18222b' : '#e7ede8' },
+      },
+    ],
+  };
+}
+/** OpenFreeMap style with Thai place names first, or null when it cannot be loaded. */
+async function loadBasemap(
+  theme: 'light' | 'dark',
+  signal: AbortSignal,
+): Promise<StyleSpecification | null> {
+  try {
+    const response = await fetch(BASEMAP[theme], {
+      signal: AbortSignal.any([signal, AbortSignal.timeout(8_000)]),
+    });
+    if (!response.ok) return null;
+    const style = (await response.json()) as StyleSpecification;
+    for (const layer of style.layers) {
+      if (
+        layer.type === 'symbol' &&
+        layer.layout?.['text-field'] &&
+        JSON.stringify(layer.layout['text-field']).includes('name')
+      )
+        layer.layout['text-field'] = [
+          'coalesce',
+          ['get', 'name:th'],
+          ['get', 'name'],
+          ['get', 'name:en'],
+        ];
+    }
+    return style;
+  } catch {
+    return null;
+  }
+}
+/** Our sources and layers; added on load and again after the basemap changes with the theme. */
+function addOverlays(instance: LibreMap, theme: 'light' | 'dark') {
+  const empty: FeatureCollection = { type: 'FeatureCollection', features: [] };
+  const dark = theme === 'dark';
+  instance.addSource('alerts', { type: 'geojson', data: empty });
+  instance.addLayer({
+    id: 'alert-fill',
+    type: 'fill',
+    source: 'alerts',
+    paint: {
+      'fill-color': levelMatch(LEVEL_FILL),
+      'fill-opacity': ALERT_FILL_OPACITY as unknown as number,
+    },
+  });
+  instance.addLayer({
+    id: 'alert-line',
+    type: 'line',
+    source: 'alerts',
+    paint: {
+      'line-color': levelMatch(LEVEL_LINE),
+      'line-opacity': 0.8,
+      'line-width': ['case', ['==', ['get', 'selected'], true], 2.4, 0.8],
+      'line-dasharray': [
+        'case',
+        ['==', ['get', 'status'], 'pending'],
+        ['literal', [2, 2]],
+        ['literal', [1, 0]],
+      ],
+    },
+  });
+  instance.addSource('cameras', { type: 'geojson', data: empty });
+  instance.addLayer({
+    id: 'camera-dot',
+    type: 'circle',
+    source: 'cameras',
+    paint: {
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 4, 12, 8],
+      'circle-color': [
+        'case',
+        ['==', ['get', 'approximate'], true],
+        dark ? '#90a4ae' : '#78909c',
+        dark ? '#eceff1' : '#263238',
+      ],
+      'circle-stroke-color': dark ? '#263238' : '#ffffff',
+      'circle-stroke-width': 2,
+    },
+  });
+  instance.addSource('floods', { type: 'geojson', data: empty });
+  instance.addLayer({
+    id: 'flood-dot',
+    type: 'circle',
+    source: 'floods',
+    paint: {
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 3.5, 12, 8],
+      'circle-color': dark ? '#42a5f5' : '#1565c0',
+      'circle-opacity': ['case', ['==', ['get', 'ongoing'], true], 1, 0.45],
+      'circle-stroke-color': '#ffffff',
+      'circle-stroke-width': 2,
+    },
+  });
+}
 
 function floodPopup(report: FloodReport, now: number): HTMLElement {
   const root = document.createElement('div');
@@ -142,6 +247,9 @@ export default function MapView(props: Props) {
   latest.current = props;
   const [ready, setReady] = useState(false);
   const [zoom, setZoom] = useState(THAILAND.zoom);
+  // bumps after the basemap changes with the theme, so every overlay effect puts its data back
+  const [styleVersion, setStyleVersion] = useState(0);
+  const shownTheme = useRef<'light' | 'dark'>(props.theme);
   const [rendering, setRendering] = useState(true);
   const [notice, setNotice] = useState('');
   const [unavailable, setUnavailable] = useState(false);
@@ -153,29 +261,11 @@ export default function MapView(props: Props) {
       try {
         const maplibre = await import('maplibre-gl');
         maplibre.setWorkerUrl(workerUrl);
-        let style: StyleSpecification = blankStyle;
-        try {
-          const response = await fetch('https://tiles.openfreemap.org/styles/positron', {
-            signal: AbortSignal.any([controller.signal, AbortSignal.timeout(8_000)]),
-          });
-          if (!response.ok) throw new Error('Basemap unavailable');
-          style = (await response.json()) as StyleSpecification;
-          for (const layer of style.layers) {
-            if (
-              layer.type === 'symbol' &&
-              layer.layout?.['text-field'] &&
-              JSON.stringify(layer.layout['text-field']).includes('name')
-            )
-              layer.layout['text-field'] = [
-                'coalesce',
-                ['get', 'name:th'],
-                ['get', 'name'],
-                ['get', 'name:en'],
-              ];
-          }
-        } catch {
-          if (!disposed) setNotice('แผนที่ฐานไม่พร้อม · ข้อมูลของเรายังแสดงได้');
-        }
+        const theme = latest.current.theme;
+        const loaded = await loadBasemap(theme, controller.signal);
+        if (!loaded && !disposed) setNotice('แผนที่ฐานไม่พร้อม · ข้อมูลของเรายังแสดงได้');
+        const style = loaded ?? blankStyle(theme);
+        shownTheme.current = theme;
         if (disposed || !element.current) return;
         const instance = new maplibre.Map({
           container: element.current,
@@ -197,10 +287,9 @@ export default function MapView(props: Props) {
         instance.addControl(
           new maplibre.AttributionControl({
             compact: true,
-            customAttribution:
-              style === blankStyle
-                ? '<a href="https://openfreemap.org/">OpenFreeMap</a> · © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                : undefined,
+            customAttribution: !loaded
+              ? '<a href="https://openfreemap.org/">OpenFreeMap</a> · © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              : undefined,
           }),
           'bottom-right',
         );
@@ -225,61 +314,11 @@ export default function MapView(props: Props) {
           if (!disposed) setUnavailable(true);
         });
         instance.on('load', () => {
-          const empty: FeatureCollection = { type: 'FeatureCollection', features: [] };
-          instance.addSource('alerts', { type: 'geojson', data: empty });
-          instance.addLayer({
-            id: 'alert-fill',
-            type: 'fill',
-            source: 'alerts',
-            paint: {
-              'fill-color': levelMatch(LEVEL_FILL),
-              // strong at country scale, light when zoomed in so streets stay readable
-              'fill-opacity': ALERT_FILL_OPACITY as unknown as number,
-            },
-          });
-          instance.addLayer({
-            id: 'alert-line',
-            type: 'line',
-            source: 'alerts',
-            paint: {
-              'line-color': levelMatch(LEVEL_LINE),
-              'line-opacity': 0.8,
-              'line-width': ['case', ['==', ['get', 'selected'], true], 2.4, 0.8],
-              'line-dasharray': [
-                'case',
-                ['==', ['get', 'status'], 'pending'],
-                ['literal', [2, 2]],
-                ['literal', [1, 0]],
-              ],
-            },
-          });
-          instance.addSource('cameras', { type: 'geojson', data: empty });
-          instance.addLayer({
-            id: 'camera-dot',
-            type: 'circle',
-            source: 'cameras',
-            paint: {
-              'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 4, 12, 8],
-              'circle-color': ['case', ['==', ['get', 'approximate'], true], '#78909c', '#263238'],
-              'circle-stroke-color': '#ffffff',
-              'circle-stroke-width': 2,
-            },
-          });
-          instance.addSource('floods', { type: 'geojson', data: empty });
-          instance.addLayer({
-            id: 'flood-dot',
-            type: 'circle',
-            source: 'floods',
-            paint: {
-              'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 3.5, 12, 8],
-              'circle-color': '#1565c0',
-              'circle-opacity': ['case', ['==', ['get', 'ongoing'], true], 1, 0.45],
-              'circle-stroke-color': '#ffffff',
-              'circle-stroke-width': 2,
-            },
-          });
+          addOverlays(instance, theme);
           instance.on('click', (event) => {
-            const flood = instance.queryRenderedFeatures(event.point, { layers: ['flood-dot'] })[0];
+            const flood = instance.getLayer('flood-dot')
+              ? instance.queryRenderedFeatures(event.point, { layers: ['flood-dot'] })[0]
+              : undefined;
             const report = latest.current.floods.find((r) => r.id === flood?.properties?.id);
             if (report) {
               popup.current?.remove();
@@ -289,7 +328,9 @@ export default function MapView(props: Props) {
                 .addTo(instance);
               return;
             }
-            const hit = instance.queryRenderedFeatures(event.point, { layers: ['camera-dot'] })[0];
+            const hit = instance.getLayer('camera-dot')
+              ? instance.queryRenderedFeatures(event.point, { layers: ['camera-dot'] })[0]
+              : undefined;
             const id = hit?.properties?.id;
             const camera = latest.current.cameras.find((c) => c.id === id);
             if (camera?.location) {
@@ -336,6 +377,24 @@ export default function MapView(props: Props) {
     };
   }, []);
 
+  // Switch the basemap with the theme; our layers are added again on top of the new style
+  useEffect(() => {
+    const instance = map.current;
+    if (!ready || !instance || shownTheme.current === props.theme) return;
+    const theme = props.theme;
+    shownTheme.current = theme;
+    const controller = new AbortController();
+    void loadBasemap(theme, controller.signal).then((style) => {
+      if (controller.signal.aborted || map.current !== instance) return;
+      instance.once('style.load', () => {
+        addOverlays(instance, theme);
+        setStyleVersion((version) => version + 1);
+      });
+      instance.setStyle(style ?? blankStyle(theme), { diff: false });
+    });
+    return () => controller.abort();
+  }, [props.theme, ready]);
+
   // Official alert zones coloured by CAP severity
   useEffect(() => {
     if (!ready || !map.current) return;
@@ -364,8 +423,8 @@ export default function MapView(props: Props) {
           )
         : [],
     };
-    (map.current.getSource('alerts') as GeoJSONSource).setData(collection);
-  }, [props.alerts, props.selectedAlertId, props.now, props.layers.alerts, ready]);
+    (map.current.getSource('alerts') as GeoJSONSource | undefined)?.setData(collection);
+  }, [props.alerts, props.selectedAlertId, props.now, props.layers.alerts, ready, styleVersion]);
 
   // Radar frame as an image overlay under the camera dots
   useEffect(() => {
@@ -403,6 +462,7 @@ export default function MapView(props: Props) {
     props.layers.radar,
     props.dataBase,
     ready,
+    styleVersion,
   ]);
 
   // Forecast rain of the chosen hour: vector areas under the basemap roads and labels, so the edges stay
@@ -444,7 +504,7 @@ export default function MapView(props: Props) {
         'fill-opacity',
         shapes ? 0.06 : (ALERT_FILL_OPACITY as unknown as number),
       );
-  }, [props.forecastAreas, props.radarOpacity, props.layers.radar, ready]);
+  }, [props.forecastAreas, props.radarOpacity, props.layers.radar, ready, styleVersion]);
 
   // Camera dots
   useEffect(() => {
@@ -465,9 +525,9 @@ export default function MapView(props: Props) {
           )
         : [],
     };
-    (map.current.getSource('cameras') as GeoJSONSource).setData(collection);
+    (map.current.getSource('cameras') as GeoJSONSource | undefined)?.setData(collection);
     if (!props.layers.cameras) popup.current?.remove();
-  }, [props.cameras, props.layers.cameras, ready]);
+  }, [props.cameras, props.layers.cameras, ready, styleVersion]);
 
   // Flood reports (live), faded once their own report window has passed
   useEffect(() => {
@@ -482,8 +542,8 @@ export default function MapView(props: Props) {
           }))
         : [],
     };
-    (map.current.getSource('floods') as GeoJSONSource).setData(collection);
-  }, [props.floods, props.layers.floods, props.now, ready]);
+    (map.current.getSource('floods') as GeoJSONSource | undefined)?.setData(collection);
+  }, [props.floods, props.layers.floods, props.now, ready, styleVersion]);
 
   // Pin marker
   useEffect(() => {

@@ -2,6 +2,8 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Camera as CameraIcon,
   CircleHelp,
+  Moon,
+  Sun,
   CloudRain,
   Droplets,
   Info,
@@ -17,11 +19,12 @@ import { useData } from './useData';
 import MapBoundary from './MapBoundary';
 import { AlertDetails, Hotlines, Overview, PinCard, RoadCard } from './Panel';
 import PlaceSearch from './PlaceSearch';
+import { applyTheme, storedTheme, storeTheme, systemTheme, type Theme } from './theme';
 import { loadFavorite, saveFavorite, type Favorite } from './favorite';
 import { distanceM } from './roads';
 import Timeline, { type TimeStep } from './Timeline';
 import { FORECAST_LEVELS, forecastAreas, RAIN_LEGEND } from './forecast';
-import { LEVEL_FILL, LEVEL_LABEL, type Level } from './alerts';
+import { feedTrust, LEVEL_FILL, LEVEL_LABEL, worstLevel, type Level } from './alerts';
 import { nearestSubdistrict, type FoundPlace } from './places';
 import type { Focus, Layers, LngLat } from './MapView';
 
@@ -102,11 +105,33 @@ export default function App() {
   });
   const [layersOpen, setLayersOpen] = useState(false);
   const [favorite, setFavoriteState] = useState<Favorite | null>(loadFavorite);
+  const [theme, setTheme] = useState<Theme>(() => storedTheme() ?? systemTheme());
+  useEffect(() => applyTheme(theme), [theme]);
+  // without a choice of their own, follow the device when it switches between light and dark
+  useEffect(() => {
+    if (storedTheme() || typeof matchMedia !== 'function') return;
+    const query = matchMedia('(prefers-color-scheme: dark)');
+    const follow = () => {
+      if (!storedTheme()) setTheme(query.matches ? 'dark' : 'light');
+    };
+    query.addEventListener('change', follow);
+    return () => query.removeEventListener('change', follow);
+  }, []);
   // on a phone the colour key folds into a chip so it does not cover the pin; always open on wider screens
   const [legendOpen, setLegendOpen] = useState(false);
   const panel = useRef<HTMLElement>(null);
 
   const alerts = useMemo(() => visibleAlerts(snapshot?.feed, now), [snapshot, now]);
+  // the coloured strip under the header: the most severe official alert in effect now
+  const worstNow = worstLevel(alerts);
+  const situation: Level | 'ok' | 'unknown' =
+    worstNow ?? (feedTrust(snapshot, now) === 'ok' ? 'ok' : 'unknown');
+  const situationText =
+    situation === 'ok'
+      ? 'ตอนนี้ไม่มีประกาศเตือนภัยที่มีผล'
+      : situation === 'unknown'
+        ? 'ยังตรวจประกาศตอนนี้ไม่ได้'
+        : `ประกาศที่รุนแรงที่สุดตอนนี้: ${LEVEL_LABEL[situation]}`;
   // the flood history and area names are only needed once a pin exists (also one from a link)
   useEffect(() => {
     if (pin && snapshot) {
@@ -260,10 +285,24 @@ export default function App() {
             <RefreshCw size={15} />
           </button>
         </div>
+        <button
+          className="theme-toggle"
+          aria-label={theme === 'dark' ? 'เปลี่ยนเป็นโหมดสว่าง' : 'เปลี่ยนเป็นโหมดมืด'}
+          onClick={() => {
+            const next = theme === 'dark' ? 'light' : 'dark';
+            storeTheme(next);
+            setTheme(next);
+          }}
+        >
+          {theme === 'dark' ? <Sun size={19} /> : <Moon size={19} />}
+        </button>
         <a className="help-link" href={`${BASE}method/`} aria-label="อ่านแผนที่อย่างไร">
           <CircleHelp size={20} />
         </a>
       </header>
+      <div className={`situation-strip situation-${situation}`} role="note" title={situationText}>
+        <span className="sr-only">{situationText}</span>
+      </div>
 
       <main
         className={`stage ${steps.length > 1 ? 'has-timeline' : ''} ${step.kind === 'forecast' ? 'forecast-mode' : ''}`}
@@ -288,6 +327,7 @@ export default function App() {
               onPin={(point) => setPin(point)}
               favoriteLabel={favorite?.label ?? null}
               onFavorite={openFavorite}
+              theme={theme}
               onList={() => panel.current?.focus()}
             />
           </Suspense>

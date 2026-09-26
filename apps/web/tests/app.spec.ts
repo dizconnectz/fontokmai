@@ -590,6 +590,30 @@ test('one place can be saved as "my place" and opened again from the map or the 
   await expect(page.getByRole('button', { name: /^ไปที่ของฉัน/ })).toHaveCount(0);
 });
 
+test('dark mode follows the device, can be switched, and stays readable (WCAG A/AA)', async ({
+  page,
+}) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await prepare(page);
+  await page.goto('/');
+  await expect(page.getByTestId('alert-card')).toHaveCount(3);
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  // the strip under the header shows the most severe alert in effect
+  await expect(page.locator('.situation-strip')).toHaveClass(/situation-extreme/);
+  await page.evaluate(() => document.fonts.ready);
+  const result = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
+    .analyze();
+  expect(result.violations.map((v) => ({ id: v.id, nodes: v.nodes.map((n) => n.target) }))).toEqual(
+    [],
+  );
+  // a choice made with the button wins over the device and is remembered
+  await page.getByRole('button', { name: 'เปลี่ยนเป็นโหมดสว่าง' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+});
+
 test('a missing map chunk leaves the rest of the page usable', async ({ page }) => {
   await prepare(page);
   await page.route('**/assets/MapView-*.js', (route) => route.abort());
