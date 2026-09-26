@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from fontokmai.contracts.export import export_schemas
-from fontokmai.examples import write_examples, write_road_flood_example
+from fontokmai.examples import write_examples, write_places_example, write_road_flood_example
 from fontokmai.publish.git_pages import publish_snapshot
 from fontokmai.road_flood_build import build_road_flood_history, fixture_files, is_fresh
 from fontokmai.run import SnapshotResult, run_cap_snapshot
@@ -129,6 +129,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "contract-examples":
         written = write_examples(args.out, real=args.real_fixtures, synthetic=args.synthetic_fixtures)
+        written += write_places_example(args.out)
         if args.road_flood_fixtures:
             written += write_road_flood_example(args.out, args.road_flood_fixtures)
         for path in written:

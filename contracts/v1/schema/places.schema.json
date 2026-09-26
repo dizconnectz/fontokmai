@@ -1,0 +1,104 @@
+{
+  "$defs": {
+    "Place": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "description": "DOPA code: 2 digits = province, 4 = district, 6 = subdistrict; parents are prefixes",
+          "title": "Code",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "province",
+            "district",
+            "subdistrict"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "label": {
+          "description": "Full Thai label, e.g. ต.คลองหนึ่ง อ.คลองหลวง จ.ปทุมธานี or แขวง…/เขต… กรุงเทพมหานคร",
+          "title": "Label",
+          "type": "string"
+        },
+        "location": {
+          "description": "[lon, lat]; subdistrict = DOPA reference point (mean when DOPA lists several), district and province = mean of their subdistrict points. A point to zoom to, not a boundary",
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "title": "Location",
+          "type": "array"
+        },
+        "name": {
+          "description": "Bare name without ต./อ./จ./แขวง/เขต, e.g. คลองหนึ่ง",
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "code",
+        "name",
+        "label",
+        "location"
+      ],
+      "title": "Place",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "credit_th": {
+      "title": "Credit Th",
+      "type": "string"
+    },
+    "license": {
+      "title": "License",
+      "type": "string"
+    },
+    "notes_th": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Notes Th",
+      "type": "array"
+    },
+    "places": {
+      "description": "Provinces, then districts, then subdistricts, each sorted by code",
+      "items": {
+        "$ref": "#/$defs/Place"
+      },
+      "title": "Places",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1",
+      "default": "1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_url": {
+      "title": "Source Url",
+      "type": "string"
+    },
+    "updated": {
+      "description": "Date of the source dataset",
+      "format": "date",
+      "title": "Updated",
+      "type": "string"
+    }
+  },
+  "required": [
+    "updated",
+    "credit_th",
+    "license",
+    "source_url",
+    "places",
+    "notes_th"
+  ],
+  "title": "PlaceGazetteer",
+  "type": "object"
+}

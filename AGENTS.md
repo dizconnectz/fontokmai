@@ -1,7 +1,7 @@
 # AGENTS.md — fontokmai (ฝนตกไหม): ข้อตกลงทีม สถานะ และการตัดสินใจ
 
-> **สถานะ**: เว็บแบบแผนที่เป็นหลักออนไลน์ที่ `https://dizconnectz.github.io/fontokmai/` (D28, D29): ประกาศกรมอุตุฯ ระบายสีตามระดับ, เรดาร์ฝน, กล้อง CCTV, ปักหมุดดูข้อมูลจุด, ค้นถนนที่เคยท่วม · ข้อมูลจาก VPS ทุก 15 นาที · ยังไม่มีพยากรณ์ 7 วัน ระดับน้ำ และเขื่อน · แบบระบบ v6.1
-> อัปเดตล่าสุด: 2026-09-26 11:28 ICT (Codex) · เวลาเป็น ICT (UTC+7) · วันที่แบบ ISO (ค.ศ.)
+> **สถานะ**: เว็บแบบแผนที่เป็นหลักออนไลน์ที่ `https://dizconnectz.github.io/fontokmai/` (D28, D29): ประกาศกรมอุตุฯ ระบายสีตามระดับ, เรดาร์ฝน, กล้อง CCTV, ปักหมุดดูข้อมูลจุด, ค้นหาสถานที่ (ตำบล/อำเภอ/จังหวัด/สถานที่/ถนน) · ข้อมูลจาก VPS ทุก 15 นาที · ยังไม่มีพยากรณ์ 7 วัน ระดับน้ำ และเขื่อน · แบบระบบ v6.1
+> อัปเดตล่าสุด: 2026-09-26 11:45 ICT (Claude) · เวลาเป็น ICT (UTC+7) · วันที่แบบ ISO (ค.ศ.)
 > ไฟล์นี้เป็นช่องทางสื่อสารหลักระหว่าง Claude ↔ Codex ↔ ผู้ใช้ และ **ต้องมีขนาดไม่เกิน 32 KiB (UTF-8)** เพื่อให้ Codex โหลดได้ครบ
 > เอกสารอื่น: แบบระบบ `docs/design/fontokmai-design.md` · แหล่งข้อมูลและสิทธิ์ `docs/sources.md` · ประวัติเต็ม `private/handoffs/` (อยู่ใน private repo ไม่อยู่ใน repo สาธารณะ)
 
@@ -43,8 +43,16 @@
 ### A5. งานที่กำลังทำ (Active claims)
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
+| Claude | 2026-09-26 11:45 | `apps/web/`, `pipeline/src/fontokmai/sources/tmd_radar.py`, `contracts/v1/`, `docs/design/fontokmai-design.md` | แก้ M1–M3 จากรีวิว Codex (พิกัดเรดาร์, สถานะประกาศที่หมุด, สถานะ ref) | C2 |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md`)
+
+#### 2026-09-26 11:45 ICT — ค้นหาสถานที่ + แก้แผนที่ซูมออกเองในมือถือ (Claude)
+- **ผู้ใช้ขอ**: ช่องค้นหาบนสุดค้นสถานที่แล้วแผนที่ซูมไปพร้อมข้อมูล · แจ้งบั๊กมือถือ: ซูมหาบ้านแล้วแผนที่ซูมออกเอง
+- **ข้อมูลใหม่**: `ref/places.json` (สัญญาข้อ 11) จากจุดที่ตั้งตำบล กรมการปกครอง (CC BY): จังหวัด 77 อำเภอ 928 ตำบล 7,364 · static ref ในแพ็กเกจ (`ref_data/places.json`, สร้างซ้ำด้วย `build_places`) · ตัวอย่างย่อ `examples/places/`
+- **เว็บ**: `PlaceSearch.tsx` (combobox: พื้นที่ในเครื่อง + ถนนที่เคยท่วม + สถานที่จาก Photon/OSM ที่ส่งเฉพาะคำที่พิมพ์) → ปักหมุด ซูมตามขนาดพื้นที่ ป้ายชื่อบนหมุด การ์ดขึ้นชื่อพื้นที่ และพื้นที่ DOPA จับคู่ประกาศจากชื่อจังหวัดด้วย · `useData` เป็น loader กลางของ ref · บั๊กซูม: effect ของประกาศที่เลือก fitBounds ใหม่ทุกครั้งที่รายการประกาศถูกสร้างใหม่ (ทุก 15 วินาที) → fit ครั้งเดียวต่อการเลือก
+- **ตรวจจริง**: pytest ผ่านทั้งหมด (ใหม่ `test_places.py`) · ruff ผ่าน · schema/examples/TS สร้างซ้ำได้ · vitest 54 ผ่าน · Playwright Chromium desktop+mobile 34 ผ่าน (ใหม่: ค้นพื้นที่ + axe ตอนรายการเปิด, คีย์บอร์ด + Photon mock, ซูมไม่เด้ง ซึ่งตกจริง 9.8→6.8 เมื่อถอดตัวแก้) · WebKit ให้ CI ตัดสิน
+- **ข้อจำกัด**: จุดตำบลไม่ใช่ขอบเขต ชื่อ “แถว…” ของหมุดจึงเป็นค่าประมาณ · Photon ฟรีแต่ไม่มี SLA · M1–M3 ของ Codex ยังไม่แก้ (Claude ทำต่อทันที)
 
 #### 2026-09-26 11:28 ICT — รีวิวเว็บ minimal และสัญญาใหม่ (Codex)
 - **C2/D29**: ตรวจ commit `7552bea` ใน worktree แยกและเว็บจริง; อ่าน WIP ค้นหาสถานที่ประกอบ ไม่แก้ทับงาน Claude · รายละเอียด: [รีวิวฉบับเต็ม](private/handoffs/2026-09-26-codex-map-review.md)
@@ -74,16 +82,6 @@
 - **deploy**: `.github/workflows/pages.yml` build ด้วย `WEB_BASE=/fontokmai/` แล้ว deploy เมื่อ workflow `web` ผ่านบน `main` (หรือสั่งมือ) · `_headers` ไม่มีผลบน GitHub Pages · NOTICE และ D17/D25 ชี้ URL ใหม่
 - **ตรวจจริง**: `npm test` 25 ผ่าน · prettier ผ่าน · build ด้วย base `/fontokmai/` ได้ลิงก์ถูก · Playwright ในเครื่อง Chromium desktop/mobile 26 ผ่าน แต่ WebKit ล้มตั้งแต่เปิดเบราว์เซอร์ (`browserContext.newPage: ... has been closed` ก่อนโหลดหน้า) จึงเป็นปัญหาเครื่องนี้ ให้ CI ตัดสิน
 - **ขั้นต่อไป**: ดู CI ของ `web` และ `pages` แล้วเปิด URL จริง · Claude ทำ `ref/road_flood_history.json` ต่อ (ยังจองอยู่)
-
-#### 2026-09-25 23:07 ICT — เว็บ P0 ประกาศทางการและแผนที่พร้อมรีวิว (Codex)
-- **ทำ C2**: `apps/web/` (Vite/React/TypeScript/MapLibre) ใช้ types/schema/fixtures v1 ตรงจากต้นทาง ไม่แก้ generated · ค่าเริ่มต้นเชื่อมข้อมูลจริง GitHub Pages ผ่าน `public/config.json` เปลี่ยน host ได้โดยไม่ rebuild
-- **UX**: แผนที่ขอบเขต CAP + รายการ, ค้นข้อความ/จังหวัด, รายละเอียดและลิงก์ต้นฉบับ, บันทึกประกาศในเครื่อง, เวลา/เครดิต/สถานะข้อมูล, `/sources/` และ `/method/` อ่านได้แม้ปิด JavaScript · ยังไม่มีการค้นตำบล ฝน พยากรณ์ น้ำท่วม เขื่อน กล้องหรือข่าว แสดง “ยังไม่มีข้อมูล” และไม่ดึง ThaiWater/กทม. โดยตรงตาม D27
-- **ความทนทาน**: ถาม manifest เฉพาะแท็บเปิด (60 วินาที, `?t=`), ตรวจรุ่น/epoch/schema, ไฟล์ปนรุ่นลองใหม่หนึ่งครั้งแล้วเก็บชุดเดิม, ไม่ย้อน cursor, ตรวจ stale/หมดอายุด้วยนาฬิกาเว็บ, tombstone ชนะฉบับเก่า, แยก pending/เวลาสิ้นสุดประมาณ · แผนที่/worker/WebGL เสียยังอ่านรายการได้
-- **ตรวจจริง**: `npm test` 25 ผ่าน · `npm run build` ผ่าน · `npx playwright test --reporter=list` 39 ผ่าน (Chromium desktop/mobile + WebKit mobile, รวม axe WCAG A/AA และกด polygon บน production build) · `npm run format:check`, `check:licenses`, `git diff --cached --check`, `python scripts/check_repo_safety.py` ผ่าน · เพิ่ม `.github/workflows/web.yml` ตรวจชุดเดียวกันบน GitHub
-- **Live smoke/ภาพ**: `npm run smoke:live` อ่าน generation `20260925T160300Z-vps` ประกาศ 3 รายการ บน desktop/mobile จำลอง; แก้ worker URL ของ MapLibre 6 และ CSS ความสูงแผนที่แล้ว ตรวจภาพขอบเขต/อักษรไทยจริง; Thai glyph HTTP 200, ไม่มี request ล้ม/JS error · ภาพอยู่ `apps/web/test-results/live/` (ไม่ commit)
-- **สิทธิ์**: runtime เป็น MIT/BSD/ISC/Apache; ฟอนต์ OFL เดิมพร้อมใบอนุญาต; MPL เฉพาะเครื่องมือ dev/test ที่ไม่รวมในเว็บ · build ใส่ LICENSE/NOTICE/third-party notices ครบ ดู `apps/web/README.md`
-- **แยกผล**: โค้ด slice นี้ทำงานตาม tests / ยังไม่มีการวัดความแม่นพยากรณ์ / เว็บยังไม่ได้ deploy สาธารณะ (มี local preview; data host เป็นงาน P0-B1 ของ Claude) · ยังต้องตรวจอักษรไทยบน Android/iOS เครื่องจริงและ headers บน host จริง
-- **ส่งต่อ**: Claude รีวิว consumer/UX และสัญญา v1; ขั้นต่อไป deploy เว็บบน Cloudflare Pages และตรวจ URL จริง แล้วเพิ่มข้อมูลตามสัญญาใหม่ทีละชุด · ย้ายบันทึก 21:02 ไป private/handoffs/README.md โดยคงประวัติครบ
 
 ## B. การตัดสินใจ
 ข้อเสนอเดิม D1–D10 จากร่างแรกถูกแทนด้วยตารางนี้เพราะขัดกับ D12 (ดูเหตุผลเดิมได้ใน snapshot)
@@ -119,11 +117,14 @@
 
 ### C2. Codex (ตาม D29 Claude ทำเว็บต่อ Codex รีวิว)
 1. รีวิวเว็บใหม่ใน `apps/web` (แทนหน้าเดิมทั้งหน้า): `MapView.tsx`, `Panel.tsx`, `data.ts` (radar/ref loaders), `roads.ts` (เทียบกับ `expected.json`), e2e ชุดใหม่ใน `tests/app.spec.ts` ที่ยังคงการรับประกันเดิม (stale, partial, ปนรุ่น, WebGL/chunk ล้ม, WCAG, หน้า static)
-2. สัญญาใหม่ให้ตรวจ: `radar.json` (ข้อ 9), `ref/road_flood_history.json` (ข้อ 8), `ref/cctv.json` (ข้อ 10)
+2. สัญญาใหม่ให้ตรวจ: `radar.json` (ข้อ 9), `ref/road_flood_history.json` (ข้อ 8), `ref/cctv.json` (ข้อ 10) · (เสร็จรอบแรก 11:28 → M1–M3)
+3. ทวนงานค้นหาสถานที่: `ref/places.json` + สัญญาข้อ 11, `PlaceSearch.tsx`, `places.ts`, `photon.ts` และตัวแก้ซูม (`MapView.tsx`) พร้อม consumer tests ตามกติกาค้นข้อ 11
+4. ตรวจสิทธิ์และช่องทางของเครื่องมือที่ผู้ใช้ส่งมา 2026-09-26 แล้วบันทึกใน `docs/sources.md` (จองก่อน): ThaiWater new4all (เขื่อน/การระบาย/สถานีหลัก) และข้อมูลเปิดของกรมชลประทานที่ใช้แทนได้, HDMS กรมทางหลวง (กล้อง/จุดน้ำท่วม), BMA traffic CCTV, GISTDA เช็คน้ำ (ภาพน้ำท่วมจากดาวเทียม), Google Flood Hub (API มีระบบสมัครไหม), Windy, `weather.bangkok.go.th` (rain/flood/KlongMap → ผ่าน DXS) · ไม่ส่งคำขอแทนผู้ใช้ (D27)
 
 ## D. ขั้นต่อไป
-1. (เสร็จ) เว็บแผนที่เป็นหลักพร้อมประกาศ เรดาร์ กล้อง หมุด และค้นถนน (D29)
-2. Claude: พยากรณ์ 7 วันจาก Open-Meteo (ไฟล์ข้อมูล + การ์ดหมุด + ชั้นพยากรณ์)
-3. Claude: P0-B2 ตัวคุมดิสก์ + retention + สำรอง SQLite, รายงาน slot, ตัวตรวจนอกเครื่อง, ซ้อม takeover/restore
-4. ผู้ใช้สมัคร DXS (C1) → Claude ทำตัวเก็บ DXS (ระดับน้ำคลอง ฝน เขื่อน รายงานน้ำท่วมขังรายวันของ กทม.)
-5. Codex รีวิวเว็บและสัญญาใหม่ตาม C2
+1. (เสร็จ) เว็บแผนที่เป็นหลักพร้อมประกาศ เรดาร์ กล้อง หมุด ค้นถนน และค้นหาสถานที่ (D29)
+2. Claude: แก้ M1–M3 จากรีวิว Codex (พิกัดเรดาร์ต้องตรงกับค่าที่หมุด, หมุดห้ามขึ้นเขียวเมื่อตรวจประกาศไม่ได้, สถานะ ref ถึง UI)
+3. Claude: พยากรณ์ 7 วันจาก Open-Meteo (ไฟล์ข้อมูล + การ์ดหมุด + ชั้นพยากรณ์)
+4. Claude: P0-B2 ตัวคุมดิสก์ + retention + สำรอง SQLite, รายงาน slot, ตัวตรวจนอกเครื่อง, ซ้อม takeover/restore
+5. ผู้ใช้สมัคร DXS (C1) → Claude ทำตัวเก็บ DXS (ระดับน้ำคลอง ฝน เขื่อน รายงานน้ำท่วมขังรายวันของ กทม.)
+6. Codex รีวิวเว็บและสัญญาใหม่ตาม C2

@@ -167,3 +167,24 @@ def write_road_flood_example(out: Path, fixtures: Path) -> list[Path]:
     (target / "expected.json").write_text(json.dumps(expected, ensure_ascii=False, indent=2) + "\n",
                                           encoding="utf-8", newline="\n")
     return [target / "road_flood_history.json", target / "expected.json"]
+
+
+PLACES_EXAMPLE_PROVINCES = ("10", "13")  # Bangkok and Pathum Thani
+
+
+def write_places_example(out: Path) -> list[Path]:
+    """contracts/v1/examples/places: the shipped gazetteer cut to two provinces, small enough to read and test."""
+    from importlib import resources
+
+    from fontokmai.contracts.places import PlaceGazetteer
+
+    shipped = resources.files("fontokmai.ref_data").joinpath("places.json").read_bytes()
+    gazetteer = PlaceGazetteer.model_validate_json(shipped)
+    subset = PlaceGazetteer.model_validate({
+        **gazetteer.model_dump(), "places": [p.model_dump() for p in gazetteer.places
+                                             if p.code[:2] in PLACES_EXAMPLE_PROVINCES]})
+    target = out / "places"
+    target.mkdir(parents=True, exist_ok=True)
+    path = target / "places.json"
+    path.write_text(subset.model_dump_json(indent=2) + "\n", encoding="utf-8", newline="\n")
+    return [path]

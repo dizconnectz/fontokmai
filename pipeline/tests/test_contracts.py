@@ -19,7 +19,8 @@ def _feed(**extra):
 def test_export_schemas_writes_one_file_per_contract(tmp_path):
     written = export_schemas(tmp_path)
     assert sorted(p.name for p in written) == ["alerts.schema.json", "cctv.schema.json", "manifest.schema.json",
-                                               "radar.schema.json", "road_flood_history.schema.json"]
+                                               "places.schema.json", "radar.schema.json",
+                                               "road_flood_history.schema.json"]
     schema = json.loads((tmp_path / "alerts.schema.json").read_text(encoding="utf-8"))
     assert schema["title"] == "AlertsFeed"
     assert "Alert" in schema["$defs"]
@@ -29,8 +30,8 @@ def test_export_schemas_writes_one_file_per_contract(tmp_path):
 def test_export_is_deterministic(tmp_path):
     export_schemas(tmp_path / "a")
     export_schemas(tmp_path / "b")
-    for name in ("alerts.schema.json", "cctv.schema.json", "manifest.schema.json", "radar.schema.json",
-                 "road_flood_history.schema.json"):
+    for name in ("alerts.schema.json", "cctv.schema.json", "manifest.schema.json", "places.schema.json",
+                 "radar.schema.json", "road_flood_history.schema.json"):
         assert (tmp_path / "a" / name).read_bytes() == (tmp_path / "b" / name).read_bytes()
 
 

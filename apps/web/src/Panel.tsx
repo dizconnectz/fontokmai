@@ -35,6 +35,7 @@ import {
   worstLevel,
 } from './alerts';
 import { inMultiPolygon, rainWords } from './geo';
+import type { FoundPlace, Place } from './places';
 import { distanceM, roadsNear } from './roads';
 import { useRadarAt } from './radarAt';
 import type { RefState } from './useData';
@@ -43,6 +44,8 @@ type Road = RoadFloodHistory['roads'][number];
 const RADAR_STALE_MIN = 45;
 const be = (year: string | number) => Number(year) + 543;
 const dayText = (date: string) => formatTime(`${date}T12:00:00+07:00`).replace(/ \d\d:\d\d$/, '');
+const distanceText = (metres: number) =>
+  metres < 1000 ? `${Math.round(metres / 10) * 10} ม.` : `${(metres / 1000).toFixed(1)} กม.`;
 
 export function LevelBadge({ alert }: { alert: Alert }) {
   const level = levelOf(alert);
@@ -248,7 +251,8 @@ export function Overview({
         <MapPin size={20} />
         <p>
           <strong>แตะที่ใดก็ได้บนแผนที่เพื่อปักหมุด</strong>
-          ดูประกาศ ฝน น้ำท่วมแถวนั้น และกล้องใกล้ๆ ของจุดนั้น
+          หรือพิมพ์ชื่อตำบล อำเภอ หรือสถานที่ในช่องค้นหาด้านบน แล้วดูประกาศ ฝน น้ำท่วมแถวนั้น
+          และกล้องใกล้ๆ ของจุดนั้น
         </p>
       </section>
     </>
@@ -262,8 +266,7 @@ function RoadLine({ road, distance }: { road: Road; distance?: number }) {
       <span>
         เคยมีรายงานน้ำท่วม {road.flood_days} วัน ({be(road.first_date.slice(0, 4))}–
         {be(road.last_date.slice(0, 4))}) · ล่าสุด {dayText(road.last_date)}
-        {distance !== undefined &&
-          ` · ห่าง ${distance < 1000 ? `${Math.round(distance / 10) * 10} ม.` : `${(distance / 1000).toFixed(1)} กม.`}`}
+        {distance !== undefined && ` · ห่าง ${distanceText(distance)}`}
       </span>
     </li>
   );
@@ -271,6 +274,8 @@ function RoadLine({ road, distance }: { road: Road; distance?: number }) {
 
 export function PinCard({
   pin,
+  place,
+  nearby,
   snapshot,
   alerts,
   now,
@@ -284,6 +289,10 @@ export function PinCard({
   onRoad,
 }: {
   pin: number[];
+  /** chosen in the search box */
+  place: FoundPlace | null;
+  /** nearest subdistrict point, for a pin dropped on the map */
+  nearby: { place: Place; distance: number } | null;
   snapshot: Snapshot | null;
   alerts: Alert[];
   now: number;
@@ -296,10 +305,20 @@ export function PinCard({
   onSelectAlert: (id: string) => void;
   onRoad: (road: Road) => void;
 }) {
+  // A DOPA area is also covered when an alert lists its province (TMD warns province by province),
+  // which still works for an alert without a boundary.
+  const province = place?.province ?? null;
   const here = useMemo(
-    () => alerts.filter((a) => a.geometry && inMultiPolygon(pin, a.geometry.coordinates)),
-    [alerts, pin],
+    () =>
+      alerts.filter(
+        (a) =>
+          (a.geometry && inMultiPolygon(pin, a.geometry.coordinates)) ||
+          (province !== null && provincesOf(a).includes(province)),
+      ),
+    [alerts, pin, province],
   );
+  const where = place?.source === 'dopa' ? ` ${place.title}` : 'จุดนี้';
+  const area = place !== null && place.scale !== 'subdistrict' && place.scale !== 'point';
   const reading = useRadarAt(snapshot?.radar, dataBase, pin, radarFrame);
   const radarAge = radarAgeMinutes(snapshot?.radar, now);
   const inRoadArea =
@@ -323,9 +342,38 @@ export function PinCard({
   return (
     <div className="pin-card" data-testid="pin-card">
       <div className="section-top pin-head">
-        <span className="eyebrow">
-          <MapPin size={15} /> จุดที่ปักหมุด · {pin[1].toFixed(4)}, {pin[0].toFixed(4)}
-        </span>
+        <div className="pin-title">
+          <span className="eyebrow">
+            <MapPin size={15} />{' '}
+            {place
+              ? place.source === 'dopa'
+                ? 'พื้นที่ที่ค้นหา'
+                : 'สถานที่ที่ค้นหา'
+              : 'จุดที่ปักหมุด'}
+          </span>
+          <h2 className="place-name">
+            {place
+              ? place.title
+              : nearby
+                ? `แถว${nearby.place.label.split(' ')[0]}`
+                : 'จุดบนแผนที่'}
+          </h2>
+          <small>
+            {place
+              ? [
+                  place.detail,
+                  place.source === 'dopa' ? 'จุดอ้างอิงกรมการปกครอง' : 'ตำแหน่งจาก OpenStreetMap',
+                ]
+                  .filter(Boolean)
+                  .join(' · ')
+              : nearby
+                ? `${nearby.place.label.split(' ').slice(1).join(' ')} · ห่างจุดอ้างอิงตำบล ${distanceText(nearby.distance)}`
+                : 'ไม่พบชื่อตำบลใกล้จุดนี้'}
+          </small>
+          <small className="coordinates">
+            {pin[1].toFixed(4)}, {pin[0].toFixed(4)}
+          </small>
+        </div>
         <button className="icon-button" aria-label="ปิดหมุด" onClick={onClose}>
           <X size={19} />
         </button>
@@ -335,8 +383,8 @@ export function PinCard({
         <h2 id="pin-now" className={worst ? `heading-level-${worst}` : 'heading-ok'}>
           {worst ? <ShieldAlert size={18} /> : <CheckCircle2 size={18} />}
           {here.length
-            ? `มีประกาศครอบคลุมจุดนี้ ${here.length} ฉบับ`
-            : 'ไม่มีประกาศเตือนภัยครอบคลุมจุดนี้'}
+            ? `มีประกาศครอบคลุม${where} ${here.length} ฉบับ`
+            : `ไม่มีประกาศเตือนภัยครอบคลุม${where}`}
         </h2>
         {here.map((alert) => (
           <AlertCard key={alert.event_id} alert={alert} now={now} onSelect={onSelectAlert} />
@@ -348,8 +396,9 @@ export function PinCard({
 
       <section className="panel-section" aria-labelledby="pin-rain">
         <h2 id="pin-rain">
-          <CloudRain size={18} /> ฝนตอนนี้ตรงจุดนี้
+          <CloudRain size={18} /> {area ? 'ฝนตอนนี้ที่จุดกลางพื้นที่' : 'ฝนตอนนี้ตรงจุดนี้'}
         </h2>
+        {area && <p className="quiet">ดูฝนทั้งพื้นที่ได้จากสีบนแผนที่</p>}
         {reading.state === 'none' && <p className="missing-value">ยังไม่มีข้อมูลเรดาร์</p>}
         {reading.state === 'loading' && <p className="quiet">กำลังอ่านภาพเรดาร์…</p>}
         {reading.state === 'error' && <p className="missing-value">อ่านภาพเรดาร์ไม่สำเร็จ</p>}

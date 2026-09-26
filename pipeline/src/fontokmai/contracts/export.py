@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from fontokmai.contracts.alerts import AlertsFeed
 from fontokmai.contracts.cctv import CctvRegistry
 from fontokmai.contracts.manifest import Manifest
+from fontokmai.contracts.places import PlaceGazetteer
 from fontokmai.contracts.radar import RadarFeed
 from fontokmai.contracts.road_flood import RoadFloodHistory
 
@@ -17,6 +18,7 @@ SCHEMAS: dict[str, type[BaseModel]] = {
     "alerts.schema.json": AlertsFeed,
     "cctv.schema.json": CctvRegistry,
     "manifest.schema.json": Manifest,
+    "places.schema.json": PlaceGazetteer,
     "radar.schema.json": RadarFeed,
     "road_flood_history.schema.json": RoadFloodHistory,
 }

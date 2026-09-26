@@ -23,6 +23,8 @@ export type LngLat = [number, number];
 export interface Focus {
   key: string;
   bounds: [LngLat, LngLat];
+  /** closest zoom for this focus (default 14): a building may go closer than an area */
+  maxZoom?: number;
 }
 interface Props {
   alerts: Alert[];
@@ -35,6 +37,8 @@ interface Props {
   cameras: Camera[];
   layers: Layers;
   pin: LngLat | null;
+  /** short name shown on the pin, e.g. ต.คลองหนึ่ง */
+  pinLabel: string | null;
   focus: Focus | null;
   onPin: (point: LngLat) => void;
   onList: () => void;
@@ -84,10 +88,12 @@ export default function MapView(props: Props) {
   const element = useRef<HTMLDivElement>(null);
   const map = useRef<LibreMap | null>(null);
   const pinMarker = useRef<Marker | null>(null);
+  const pinTag = useRef<HTMLSpanElement | null>(null);
   const popup = useRef<Popup | null>(null);
   const latest = useRef(props);
   latest.current = props;
   const [ready, setReady] = useState(false);
+  const [zoom, setZoom] = useState(THAILAND.zoom);
   const [rendering, setRendering] = useState(true);
   const [notice, setNotice] = useState('');
   const [unavailable, setUnavailable] = useState(false);
@@ -163,6 +169,9 @@ export default function MapView(props: Props) {
         });
         instance.on('idle', () => {
           if (!disposed) setRendering(false);
+        });
+        instance.on('zoomend', () => {
+          if (!disposed) setZoom(Math.round(instance.getZoom() * 10) / 10);
         });
         instance.getCanvas().addEventListener('webglcontextlost', () => {
           if (!disposed) setUnavailable(true);
@@ -251,8 +260,14 @@ export default function MapView(props: Props) {
             instance.getCanvas().style.cursor = '';
           });
           const marker = document.createElement('div');
-          marker.className = 'pin-marker';
+          marker.className = 'pin';
           marker.setAttribute('aria-hidden', 'true');
+          const tag = document.createElement('span');
+          tag.className = 'pin-tag';
+          const head = document.createElement('span');
+          head.className = 'pin-marker';
+          marker.append(tag, head);
+          pinTag.current = tag;
           pinMarker.current = new maplibre.Marker({ element: marker, anchor: 'bottom' });
           if (!disposed) setReady(true);
         });
@@ -368,29 +383,45 @@ export default function MapView(props: Props) {
     if (!ready || !instance || !pinMarker.current) return;
     if (props.pin) pinMarker.current.setLngLat(props.pin).addTo(instance);
     else pinMarker.current.remove();
-  }, [props.pin, ready]);
+    if (pinTag.current) {
+      pinTag.current.textContent = props.pinLabel ?? '';
+      pinTag.current.hidden = !props.pinLabel;
+    }
+  }, [props.pin, props.pinLabel, ready]);
 
-  // Fit to the selected alert or to another focus (a road, a found place)
+  // Fit to the selected alert once per selection. The alert list is rebuilt every clock tick and
+  // every refresh, and must never pull the map back while someone is zoomed in looking around.
+  const fittedAlert = useRef<string | null>(null);
   useEffect(() => {
     const instance = map.current;
     if (!ready || !instance) return;
-    const selected = props.alerts.find((a) => a.event_id === props.selectedAlertId);
-    if (selected?.geometry) {
-      const points = selected.geometry.coordinates.flat(2);
-      const xs = points.map((p) => p[0]);
-      const ys = points.map((p) => p[1]);
-      instance.fitBounds(
-        [
-          [Math.min(...xs), Math.min(...ys)],
-          [Math.max(...xs), Math.max(...ys)],
-        ],
-        { padding: 50, maxZoom: 8, duration: 0 },
-      );
+    if (!props.selectedAlertId) {
+      fittedAlert.current = null;
+      return;
     }
+    if (fittedAlert.current === props.selectedAlertId) return;
+    const selected = props.alerts.find((a) => a.event_id === props.selectedAlertId);
+    // an alert from a shared link may arrive with a later refresh; fit when it does
+    if (!selected?.geometry) return;
+    fittedAlert.current = props.selectedAlertId;
+    const points = selected.geometry.coordinates.flat(2);
+    const xs = points.map((p) => p[0]);
+    const ys = points.map((p) => p[1]);
+    instance.fitBounds(
+      [
+        [Math.min(...xs), Math.min(...ys)],
+        [Math.max(...xs), Math.max(...ys)],
+      ],
+      { padding: 50, maxZoom: 8, duration: 0 },
+    );
   }, [props.selectedAlertId, props.alerts, ready]);
   useEffect(() => {
     if (!ready || !map.current || !props.focus) return;
-    map.current.fitBounds(props.focus.bounds, { padding: 60, maxZoom: 14, duration: 400 });
+    map.current.fitBounds(props.focus.bounds, {
+      padding: 60,
+      maxZoom: props.focus.maxZoom ?? 14,
+      duration: 600,
+    });
   }, [props.focus, ready]);
 
   const pinCenter = () => {
@@ -414,7 +445,12 @@ export default function MapView(props: Props) {
   };
 
   return (
-    <div className="map-surface" data-testid="map-surface" aria-busy={!ready || rendering}>
+    <div
+      className="map-surface"
+      data-testid="map-surface"
+      data-zoom={zoom}
+      aria-busy={!ready || rendering}
+    >
       <div ref={element} className="map-canvas" />
       {!ready && !unavailable && (
         <div className="map-loading">

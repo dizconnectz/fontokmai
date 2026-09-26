@@ -7,7 +7,6 @@ import {
   Info,
   Layers as LayersIcon,
   RefreshCw,
-  Search,
   ShieldAlert,
   X,
 } from 'lucide-react';
@@ -15,8 +14,9 @@ import { formatTime, isStale, radarAgeMinutes, staleAfter, visibleAlerts } from 
 import { useData } from './useData';
 import MapBoundary from './MapBoundary';
 import { AlertDetails, Overview, PinCard, RoadCard } from './Panel';
+import PlaceSearch from './PlaceSearch';
 import { LEVEL_FILL, LEVEL_LABEL, type Level } from './alerts';
-import { searchRoads } from './roads';
+import { nearestSubdistrict, type FoundPlace } from './places';
 import type { Focus, Layers, LngLat } from './MapView';
 
 const MapView = lazy(() => import('./MapView'));
@@ -42,17 +42,31 @@ function setParam(name: string, value: string | null) {
 
 export default function App() {
   const data = useData();
-  const { snapshot, config, error, loading, now, refresh, cameras, roads, roadsState, loadRoads } =
-    data;
+  const {
+    snapshot,
+    config,
+    error,
+    loading,
+    now,
+    refresh,
+    cameras,
+    roads,
+    roadsState,
+    loadRoads,
+    places,
+    placesState,
+    loadPlaces,
+  } = data;
   const [layers, setLayers] = useState<Layers>({ alerts: true, radar: true, cameras: true });
   const [radarFrame, setRadarFrame] = useState<number | null>(null);
   const [radarOpacity, setRadarOpacity] = useState(0.75);
   const [pin, setPinState] = useState<LngLat | null>(readPin);
+  // the place chosen in the search box, while the pin stays where the search put it
+  const [pinPlace, setPinPlace] = useState<FoundPlace | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(() =>
     new URLSearchParams(location.search).get('alert'),
   );
   const [roadKey, setRoadKey] = useState<string | null>(null);
-  const [query, setQuery] = useState('');
   // a shared link with ?pin= opens zoomed in on that pin
   const [focus, setFocus] = useState<Focus | null>(() => {
     const start = readPin();
@@ -70,10 +84,13 @@ export default function App() {
   const panel = useRef<HTMLElement>(null);
 
   const alerts = useMemo(() => visibleAlerts(snapshot?.feed, now), [snapshot, now]);
-  // the flood history is only needed once a pin exists (also for a pin that came with the link)
+  // the flood history and area names are only needed once a pin exists (also one from a link)
   useEffect(() => {
-    if (pin && snapshot) void loadRoads();
-  }, [pin, snapshot, loadRoads]);
+    if (pin && snapshot) {
+      void loadRoads();
+      void loadPlaces();
+    }
+  }, [pin, snapshot, loadRoads, loadPlaces]);
   const selected = alerts.find((a) => a.event_id === selectedId);
   const road = roads?.roads.find((r) => r.key === roadKey) ?? null;
   const frames = snapshot?.radar?.frames ?? [];
@@ -85,13 +102,16 @@ export default function App() {
     snapshot?.manifest.source_status.some((s) => s.status !== 'ok');
   const isExample = config?.DATA_MODE === 'example' || snapshot?.manifest.writer === 'example';
   const radarAge = radarAgeMinutes(snapshot?.radar, now);
-  const results = useMemo(
-    () => (roads && query ? searchRoads(roads, query).slice(0, 8) : []),
-    [roads, query],
+  // a pin dropped on the map is named after the nearest subdistrict point
+  const nearby = useMemo(
+    () => (pin && places && !pinPlace ? nearestSubdistrict(places, pin) : null),
+    [pin, places, pinPlace],
   );
+  const pinTitle = pinPlace?.title ?? (nearby ? nearby.place.label.split(' ')[0] : null);
 
-  const setPin = (point: LngLat | null) => {
+  const setPin = (point: LngLat | null, place: FoundPlace | null = null) => {
     setPinState(point);
+    setPinPlace(place);
     setSelectedId(null);
     setRoadKey(null);
     setParam('alert', null);
@@ -104,10 +124,14 @@ export default function App() {
     setParam('alert', id);
     panel.current?.scrollTo({ top: 0 });
   };
+  const openPlace = (place: FoundPlace) => {
+    setPin(place.location, place);
+    setFocus({ key: `${place.id}:${Date.now()}`, bounds: place.bounds, maxZoom: place.maxZoom });
+    panel.current?.scrollTo({ top: 0 });
+  };
   const openRoad = (key: string) => {
     const found = roads?.roads.find((r) => r.key === key);
     setRoadKey(key);
-    setQuery('');
     if (found?.points.length) {
       const xs = found.points.map((p) => p[0]);
       const ys = found.points.map((p) => p[1]);
@@ -139,39 +163,18 @@ export default function App() {
             <small>fontokmai</small>
           </span>
         </a>
-        <div className="road-search">
-          <label className="search-box">
-            <Search size={17} />
-            <span className="sr-only">ค้นหาถนนที่เคยน้ำท่วม</span>
-            <input
-              type="search"
-              value={query}
-              placeholder="ถนนนี้เคยท่วมไหม เช่น สุขุมวิท"
-              onFocus={() => void loadRoads()}
-              onChange={(event) => setQuery(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Escape') setQuery('');
-              }}
-            />
-          </label>
-          {query && (
-            <div className="search-results" role="region" aria-label="ผลค้นหาถนน">
-              {roadsState === 'loading' && <p>กำลังโหลดประวัติน้ำท่วมถนน…</p>}
-              {roadsState === 'missing' && <p>ยังไม่มีข้อมูลประวัติน้ำท่วมถนน</p>}
-              {roads && results.length === 0 && (
-                <p>ไม่พบรายงานของถนนนี้ใน กทม.–ปริมณฑล · ไม่ได้แปลว่าไม่เคยท่วม</p>
-              )}
-              {results.map((result) => (
-                <button key={result.key} onClick={() => openRoad(result.key)}>
-                  <strong>{result.kind === 'road' ? `ถ.${result.name_th}` : result.name_th}</strong>
-                  <span>
-                    {result.flood_days} วัน · ล่าสุด {Number(result.last_date.slice(0, 4)) + 543}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <PlaceSearch
+          places={places}
+          placesState={placesState}
+          roads={roads}
+          roadsState={roadsState}
+          onOpen={() => {
+            void loadPlaces();
+            void loadRoads();
+          }}
+          onPlace={openPlace}
+          onRoad={openRoad}
+        />
         <div className={`data-chip ${stale || partial || error ? 'attention' : ''}`} role="status">
           <span className="status-dot" />
           {!snapshot
@@ -209,8 +212,9 @@ export default function App() {
               cameras={cameras?.cameras ?? []}
               layers={layers}
               pin={pin}
+              pinLabel={pinTitle}
               focus={focus}
-              onPin={setPin}
+              onPin={(point) => setPin(point)}
               onList={() => panel.current?.focus()}
             />
           </Suspense>
@@ -358,6 +362,8 @@ export default function App() {
         ) : pin ? (
           <PinCard
             pin={pin}
+            place={pinPlace}
+            nearby={nearby}
             snapshot={snapshot}
             alerts={alerts}
             now={now}

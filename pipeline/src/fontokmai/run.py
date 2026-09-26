@@ -13,6 +13,7 @@ from fontokmai.contracts.alerts import AlertsFeed
 from fontokmai.contracts.cctv import CctvRegistry
 from fontokmai.contracts.common import SourceStatus
 from fontokmai.contracts.manifest import Manifest
+from fontokmai.contracts.places import PlaceGazetteer
 from fontokmai.contracts.radar import RadarFeed
 from fontokmai.contracts.road_flood import RoadFloodHistory
 from fontokmai.feeds.alerts import assemble_alerts_feed
@@ -26,9 +27,10 @@ from fontokmai.state import StateStore
 
 SNAPSHOT_INTERVAL = timedelta(minutes=15)
 REF_MODELS: dict[str, type[BaseModel]] = {"ref/road_flood_history.json": RoadFloodHistory,
-                                          "ref/cctv.json": CctvRegistry}
+                                          "ref/cctv.json": CctvRegistry,
+                                          "ref/places.json": PlaceGazetteer}
 # curated files shipped with the package and copied into every snapshot
-STATIC_REFS = {"ref/cctv.json": "cctv.json"}
+STATIC_REFS = {"ref/cctv.json": "cctv.json", "ref/places.json": "places.json"}
 LAST_SUCCESS_KEY = "tmd_cap.last_success_at"
 RADAR_SUCCESS_KEY = "tmd_radar.last_success_at"
 RECOVERY_EPOCH_KEY = "recovery_epoch"

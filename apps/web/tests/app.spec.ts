@@ -15,6 +15,19 @@ async function prepare(page: Page, scenario = 'active') {
   await page.route('**/config.json', (route) =>
     route.fulfill({ json: { DATA_BASE_URL: `/examples/${scenario}/`, DATA_MODE: 'example' } }),
   );
+  // Area names: the Bangkok + Pathum Thani cut of the shipped gazetteer.
+  await page.route('**/ref/places.json?*', (route) =>
+    route.fulfill({
+      body: readFileSync(
+        new URL('../../../contracts/v1/examples/places/places.json', import.meta.url),
+      ),
+      contentType: 'application/json',
+    }),
+  );
+  // No landmark search leaves the test browser unless a test answers for Photon itself.
+  await page.route('https://photon.komoot.io/**', (route) =>
+    route.fulfill({ json: { type: 'FeatureCollection', features: [] } }),
+  );
   // The contract tests stay independent of the external basemap service.
   await page.route('https://tiles.openfreemap.org/**', (route) =>
     route.fulfill({
@@ -176,6 +189,37 @@ test('a click on the map drops a pin and summarises that place', async ({ page }
   await expect(page.getByTestId('pin-card')).toHaveCount(0);
 });
 
+test('the map keeps the zoom someone chose while the data refreshes', async ({ page }) => {
+  await prepare(page);
+  await page.goto('/');
+  const surface = page.getByTestId('map-surface');
+  await expect(surface).toHaveAttribute('aria-busy', 'false', { timeout: 15_000 });
+  // selecting an alert fits the map to its area once
+  await page
+    .getByTestId('alert-card')
+    .filter({ hasText: 'ฝนตกหนักมาก' })
+    .getByRole('button', { name: /ดูพื้นที่และรายละเอียด/ })
+    .click();
+  await expect(page.getByTestId('alert-detail')).toBeVisible();
+  await expect(surface).not.toHaveAttribute('data-zoom', '5');
+  const fitted = Number(await surface.getAttribute('data-zoom'));
+  // then the person zooms in to look for their street
+  const zoomIn = page.getByRole('button', { name: 'ขยายแผนที่' });
+  for (let step = 1; step <= 3; step++) {
+    await zoomIn.click();
+    // one step at a time: a click during the zoom animation starts from a half-way zoom
+    await expect
+      .poll(async () => Number(await surface.getAttribute('data-zoom')))
+      .toBeGreaterThanOrEqual(fitted + step - 0.05);
+  }
+  const chosen = await surface.getAttribute('data-zoom');
+  // the 15-second clock tick and the 1-minute refresh rebuild the alert list
+  await page.clock.fastForward(61_000);
+  await expect(page.getByTestId('alert-detail')).toBeVisible();
+  await page.waitForTimeout(700);
+  await expect(surface).toHaveAttribute('data-zoom', chosen!);
+});
+
 test('road search answers "has this road flooded" from the producer example', async ({ page }) => {
   await prepare(page);
   const manifest = read('active', 'manifest');
@@ -201,14 +245,92 @@ test('road search answers "has this road flooded" from the producer example', as
   );
   await page.goto('/');
   await expect(page.getByTestId('alert-card')).toHaveCount(3);
-  const search = page.getByRole('searchbox', { name: 'ค้นหาถนนที่เคยน้ำท่วม' });
+  const search = page.getByRole('combobox', { name: 'ค้นหาสถานที่' });
   await search.fill('ถนนสุขุมวิท');
-  await page.getByRole('button', { name: /^ถ\.สุขุมวิท 7 วัน/ }).click();
+  await page.getByRole('option', { name: /^ถ\.สุขุมวิท เคยมีรายงานน้ำท่วม 7 วัน/ }).click();
   const card = page.getByTestId('road-card');
   await expect(card).toContainText('เคยมีรายงานน้ำท่วม 7 วัน');
   await expect(card).toContainText('ไม่ได้แปลว่าไม่เคยท่วม');
   await search.fill('ถนนที่ไม่มีในข้อมูล');
   await expect(page.getByText(/ไม่พบรายงานของถนนนี้/)).toBeVisible();
+});
+
+test('searching an area flies there, names the pin and summarises that area', async ({ page }) => {
+  await prepare(page);
+  await page.goto('/');
+  await expect(page.getByTestId('map-surface')).toHaveAttribute('aria-busy', 'false', {
+    timeout: 15_000,
+  });
+  const search = page.getByRole('combobox', { name: 'ค้นหาสถานที่' });
+  await search.fill('คลองหนึ่ง');
+  const option = page.getByRole('option', { name: /^ต\.คลองหนึ่ง อ\.คลองหลวง จ\.ปทุมธานี/ });
+  await expect(option).toBeVisible();
+  // the open list is part of the accessibility check
+  const result = await new AxeBuilder({ page })
+    .include('.place-search')
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
+    .analyze();
+  expect(result.violations.map((v) => v.id)).toEqual([]);
+  await option.click();
+  const card = page.getByTestId('pin-card');
+  await expect(card.getByRole('heading', { name: 'ต.คลองหนึ่ง', exact: true })).toBeVisible();
+  await expect(card).toContainText('อ.คลองหลวง จ.ปทุมธานี · จุดอ้างอิงกรมการปกครอง');
+  // the very heavy rain alert of the example lists ปทุมธานี
+  await expect(card).toContainText('มีประกาศครอบคลุม ต.คลองหนึ่ง');
+  await expect(page.locator('.pin-tag')).toHaveText('ต.คลองหนึ่ง');
+  await expect(page).toHaveURL(/pin=14\.06600(?:,|%2C)100\.60700/);
+  await expect(search).toHaveValue('ต.คลองหนึ่ง');
+});
+
+test('the keyboard picks a result and landmarks come from Photon', async ({ page }) => {
+  await prepare(page);
+  const asked: URL[] = [];
+  await page.route('https://photon.komoot.io/**', (route) => {
+    asked.push(new URL(route.request().url()));
+    return route.fulfill({
+      json: {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [100.6184, 13.989] },
+            properties: {
+              name: 'Future Park Rangsit',
+              osm_type: 'W',
+              osm_id: 1,
+              type: 'house',
+              county: 'อำเภอธัญบุรี',
+              state: 'จังหวัดปทุมธานี',
+            },
+          },
+        ],
+      },
+    });
+  });
+  await page.goto('/');
+  await expect(page.getByTestId('alert-card')).toHaveCount(3);
+  const search = page.getByRole('combobox', { name: 'ค้นหาสถานที่' });
+  await search.fill('บางนา');
+  await expect(page.getByRole('option').first()).toContainText('เขตบางนา');
+  await search.press('Enter');
+  await expect(
+    page.getByTestId('pin-card').getByRole('heading', { name: 'เขตบางนา', exact: true }),
+  ).toBeVisible();
+
+  await search.fill('future park');
+  await page.getByRole('option', { name: /^Future Park Rangsit/ }).click();
+  const card = page.getByTestId('pin-card');
+  await expect(
+    card.getByRole('heading', { name: 'Future Park Rangsit', exact: true }),
+  ).toBeVisible();
+  await expect(card).toContainText('อ.ธัญบุรี จ.ปทุมธานี · ตำแหน่งจาก OpenStreetMap');
+  await expect(card).toContainText('สถานที่ที่ค้นหา');
+  // only the typed words and the Thailand box leave the browser: no position
+  expect(asked.length).toBeGreaterThan(0);
+  const last = asked.at(-1)!;
+  expect(last.searchParams.get('q')).toBe('future park');
+  expect(last.searchParams.get('bbox')).toBe('97.3,5.6,105.7,20.5');
+  expect(last.searchParams.has('lat') || last.searchParams.has('lon')).toBe(false);
 });
 
 test('a missing map chunk leaves the rest of the page usable', async ({ page }) => {
