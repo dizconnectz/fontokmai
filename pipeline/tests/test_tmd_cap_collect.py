@@ -41,3 +41,20 @@ def test_missing_document_makes_the_round_degraded(tmp_path):
     with StateStore(tmp_path / "s.db") as store:
         result = collect(store, flaky, NOW)
         assert (result.status, result.fetched, result.rejected) == ("degraded", 12, 1)
+
+
+def test_an_unreadable_document_is_listed_before_failed_downloads(tmp_path):
+    """M12: the status message keeps three items, and an alert that could not be read must be among them."""
+    base = fixture_fetcher(FIXTURES)
+    names = ["CAPTMD20260925163420_2.xml"]
+
+    def mixed(url):
+        if url != INDEX_URL and not url.endswith(names[0]):
+            raise FetchError(f"{url}: HTTP 502")
+        return base(url) if url == INDEX_URL else b"<alert>not CAP</alert>"
+
+    with StateStore(tmp_path / "s.db") as store:
+        result = collect(store, mixed, NOW)
+        assert result.status == "degraded"
+        assert len(result.failed_downloads) == 12 and len(result.unreadable) == 1
+        assert result.errors[0].startswith(names[0] + ": ")

@@ -21,10 +21,22 @@ ICT = timezone(timedelta(hours=7))
 STALE = timedelta(minutes=40)
 CAP_DOWN = timedelta(minutes=45)
 RADAR_DOWN = timedelta(minutes=60)
+# TMD posts a frame every 15 minutes about 20 minutes late; an hour means the source stopped making images
+RADAR_OLD = timedelta(minutes=60)
 FORECAST_OLD = timedelta(hours=13)
 FLOODS_DOWN = timedelta(minutes=60)
 # rejected documents are only worth an alert when they could not be read, not when a download failed once
 FETCH_WORDS = ("HTTP", "timed out", "Timeout", "connect", "Connection")
+# every published round carries these; a file that drops out of the manifest is a problem of its own
+EXPECTED_FILES = {
+    "alerts.json": ("critical", "ประกาศกรมอุตุฯ"),
+    "radar.json": ("warning", "เรดาร์"),
+    "forecast/rain.json": ("warning", "พยากรณ์ฝน"),
+    "live/floods.json": ("warning", "รายงานน้ำท่วมสด"),
+    "ref/cctv.json": ("warning", "ทะเบียนกล้อง"),
+    "ref/places.json": ("warning", "รายชื่อสถานที่สำหรับค้นหา"),
+    "ref/road_flood_history.json": ("warning", "ประวัติน้ำท่วมถนน"),
+}
 
 
 def _time(value: str | None) -> datetime | None:
@@ -35,7 +47,13 @@ def _clock(value: datetime) -> str:
     return value.astimezone(ICT).strftime("%d/%m %H:%M")
 
 
-def evaluate(manifest: dict, forecast: dict | None, now: datetime) -> list[tuple[str, str]]:
+def unreadable(message: str | None) -> list[str]:
+    """Items of a status message ("; "-separated) that are not failed downloads."""
+    return [item for item in (message or "").split("; ") if item and not any(w in item for w in FETCH_WORDS)]
+
+
+def evaluate(manifest: dict, forecast: dict | None, now: datetime,
+             radar: dict | None = None) -> list[tuple[str, str]]:
     """(level, Thai message) for every problem; empty when all is well."""
     problems: list[tuple[str, str]] = []
     generated = _time(manifest.get("generated_at"))
@@ -54,8 +72,8 @@ def evaluate(manifest: dict, forecast: dict | None, now: datetime) -> list[tuple
             problems.append(("critical", "ดึงประกาศกรมอุตุฯ ไม่สำเร็จ"
                                          + (f" ตั้งแต่ {_clock(last)} น." if last else "")
                                          + f" · {cap.get('message') or 'ไม่มีรายละเอียด'}"))
-        elif cap.get("status") == "degraded" and not any(w in (cap.get("message") or "") for w in FETCH_WORDS):
-            problems.append(("warning", f"มีประกาศที่ระบบอ่านไม่ได้และถูกตัดออก: {cap.get('message')}"))
+        elif cap.get("status") == "degraded" and (bad := unreadable(cap.get("message"))):
+            problems.append(("warning", f"มีประกาศที่ระบบอ่านไม่ได้และถูกตัดออก: {'; '.join(bad)}"))
     for source_id, limit, name in (("tmd_radar", RADAR_DOWN, "ภาพเรดาร์"), ("longdo_floods", FLOODS_DOWN,
                                                                               "รายงานน้ำท่วมสด")):
         status = sources.get(source_id)
@@ -66,7 +84,23 @@ def evaluate(manifest: dict, forecast: dict | None, now: datetime) -> list[tuple
             problems.append(("warning", f"{name}ไม่อัปเดต"
                                         + (f" ตั้งแต่ {_clock(last)} น." if last else "")
                                         + f" · {status.get('message') or ''}".rstrip(" ·")))
-    if any(f.get("path") == "forecast/rain.json" for f in manifest.get("files", [])):
+    listed = {f.get("path") for f in manifest.get("files", [])}
+    for path, (level, name) in EXPECTED_FILES.items():
+        if path not in listed:
+            problems.append((level, f"ไม่มีไฟล์{name} ({path}) ในชุดข้อมูลล่าสุด"))
+    # a radar download can succeed every round while the source keeps serving the same old images
+    if "radar.json" in listed:
+        frames = (radar or {}).get("frames") or []
+        latest = _time(frames[-1].get("time")) if frames else None
+        if radar is None:
+            problems.append(("warning", "เปิดไฟล์เรดาร์ไม่ได้"))
+        elif latest is None:
+            problems.append(("warning", "ไฟล์เรดาร์ไม่มีภาพเลย"))
+        elif now - latest > RADAR_OLD:
+            problems.append(("warning", f"ภาพเรดาร์ล่าสุดเป็นของ {_clock(latest)} น."
+                                        f" (เก่า {int((now - latest).total_seconds() // 60)} นาที)"
+                                        " · ต้นทางอาจหยุดทำภาพใหม่"))
+    if "forecast/rain.json" in listed:
         fetched = _time((forecast or {}).get("fetched_at"))
         if fetched is None or now - fetched > FORECAST_OLD:
             problems.append(("warning", "พยากรณ์ฝนไม่อัปเดต"
@@ -102,13 +136,19 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, ValueError) as exc:
         problems = [("critical", f"เปิดข้อมูลไม่ได้เลย: {exc}")]
     else:
-        forecast = None
-        if any(f.get("path") == "forecast/rain.json" for f in manifest.get("files", [])):
+        listed = {f.get("path") for f in manifest.get("files", [])}
+        forecast = radar = None
+        if "forecast/rain.json" in listed:
             try:
                 forecast = _get_json(DATA_BASE + "forecast/rain.json")
             except (OSError, ValueError):
                 forecast = None
-        problems = evaluate(manifest, forecast, now)
+        if "radar.json" in listed:
+            try:
+                radar = _get_json(DATA_BASE + "radar.json")
+            except (OSError, ValueError):
+                radar = None
+        problems = evaluate(manifest, forecast, now, radar)
     with open(args.report, "w", encoding="utf-8") as fh:
         fh.write(report(problems, now, args.owner))
     with open(args.status, "w", encoding="utf-8") as fh:

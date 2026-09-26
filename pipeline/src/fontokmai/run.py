@@ -109,7 +109,7 @@ def run_cap_snapshot(*, db: Path, out: Path, fetch: Fetcher, now: datetime, writ
         candidates, broken = _valid_candidates(candidates)
         if broken:
             result.rejected += len(broken)
-            result.errors.extend(broken)
+            result.unreadable.extend(broken)
         if result.index_ok:
             store.set_meta(LAST_SUCCESS_KEY, now.isoformat())
         last_success = store.get_meta(LAST_SUCCESS_KEY)

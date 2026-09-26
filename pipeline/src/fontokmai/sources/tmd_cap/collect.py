@@ -17,7 +17,15 @@ class CollectResult:
     items_seen: int = 0
     fetched: int = 0
     rejected: int = 0
-    errors: list[str] = field(default_factory=list)
+    # documents that arrived but could not be used (link, parse, contract): worth telling the owner about
+    unreadable: list[str] = field(default_factory=list)
+    # downloads that failed this round; they are tried again next round
+    failed_downloads: list[str] = field(default_factory=list)
+
+    @property
+    def errors(self) -> list[str]:
+        """Unreadable documents first, so a short status message never loses them behind download errors."""
+        return self.unreadable + self.failed_downloads
 
     @property
     def status(self) -> str:
@@ -32,14 +40,14 @@ def collect(store: StateStore, fetch: Fetcher, now: datetime) -> CollectResult:
     try:
         items = parse_index(fetch(INDEX_URL))
     except (FetchError, ValueError) as exc:
-        result.errors.append(f"index: {exc}")
+        result.failed_downloads.append(f"index: {exc}")
         return result
     result.index_ok = True
     result.items_seen = len(items)
     for item in items:
         if not is_allowed_cap_url(item.link):
             result.rejected += 1
-            result.errors.append(f"link not allowed: {item.link}")
+            result.unreadable.append(f"link not allowed: {item.link}")
             continue
         if item.guid and store.has_cap_document(item.guid):
             continue
@@ -48,11 +56,11 @@ def collect(store: StateStore, fetch: Fetcher, now: datetime) -> CollectResult:
             msg = parse_cap(raw)
         except FetchError as exc:
             result.rejected += 1
-            result.errors.append(str(exc))
+            result.failed_downloads.append(str(exc))
             continue
         except CapParseError as exc:  # name the document, so a rejected alert can be found and looked at
             result.rejected += 1
-            result.errors.append(f"{item.link.rsplit('/', 1)[-1]}: {exc}")
+            result.unreadable.append(f"{item.link.rsplit('/', 1)[-1]}: {exc}")
             continue
         if store.add_cap_document(identifier=msg.identifier, sender=msg.sender, sent=msg.sent, raw=raw,
                                   source_url=item.link, seen_at=now):
