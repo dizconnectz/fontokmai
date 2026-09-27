@@ -113,7 +113,7 @@ test("M15: a dam without coordinates remains available in the list", async ({
   await page.goto("/");
   await expect(page.getByText(/เขื่อนภูมิพล · น้ำ/)).toBeVisible();
   // contract 18: a dam without a place is listed (folded), never pinned at a guessed place
-  await page.getByTestId("dams-unplaced").locator("summary").click();
+  await page.getByTestId("dams-others").locator("summary").click();
   await expect(page.getByText(/เขื่อนทดสอบไม่มีพิกัด/)).toBeVisible();
 });
 

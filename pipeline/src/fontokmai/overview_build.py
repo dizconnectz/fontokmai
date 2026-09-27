@@ -365,7 +365,7 @@ def build_overview(files: dict[str, bytes], now: datetime, gazetteer: Gazetteer 
                 sub = g.nearest(dam.location)
                 nexts.append(_Spot("next", dam.name_th, sub.code[:2] if sub else None, list(dam.location), 10, [
                     (2, OverviewReason(kind="dam_full",
-                                       text_th=f"น้ำเกินความจุเก็บกัก {dam.percent:.0f}% ติดตามการระบายน้ำ",
+                                       text_th=f"น้ำเกินความจุเก็บกัก {dam.percent:.1f}% ติดตามการระบายน้ำ",
                                        day=None, source_th="กรมชลประทาน", at=dams.fetched_at))]))
 
     now_items = sorted((s.item() for s in spots.values()), key=lambda i: (-i.score, i.place_th))[:MAX_NOW]

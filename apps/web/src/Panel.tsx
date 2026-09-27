@@ -92,6 +92,7 @@ import {
   WATER_RADIUS_M,
   type CanalLevels,
   type RainGauges,
+  type Dam,
   type DamReport,
   type RoadFloodingDaily,
   type RoadFloodingReport,
@@ -532,6 +533,32 @@ function SituationCard({ news, now }: { news: SituationReport; now: number }) {
   );
 }
 
+function DamLine({ dam, onDam }: { dam: Dam; onDam: (location: number[]) => void }) {
+  const text = (
+    <span className="flood-line">
+      <strong>
+        {dam.name_th} · {damWords(dam.percent) ?? 'น้ำ'} {amount(dam.percent)}%
+      </strong>
+      <small>
+        {dam.region_th ? `${dam.region_th} · ` : ''}ไหลเข้า {amount(dam.inflow_mcm)} · ระบาย{' '}
+        {amount(dam.outflow_mcm)} ล้าน ลบ.ม./วัน{!dam.location && ' · ไม่มีหมุดบนแผนที่'}
+      </small>
+    </span>
+  );
+  // a dam without a place has no pin: it is listed, never put at a guessed place (contract section 18)
+  return (
+    <li>
+      {dam.location ? (
+        <button className="road-button" onClick={() => onDam(dam.location!)}>
+          {text}
+        </button>
+      ) : (
+        text
+      )}
+    </li>
+  );
+}
+
 function ChaoPhrayaDams({
   dams,
   now,
@@ -543,49 +570,45 @@ function ChaoPhrayaDams({
   onDam: (location: number[]) => void;
 }) {
   const main = CHAO_PHRAYA_DAMS.flatMap((id) => dams.dams.filter((dam) => dam.id === id));
-  // a dam without a place has no pin; list it here rather than guess where it is (contract section 18)
-  const unplaced = dams.dams.filter((dam) => !dam.location && !CHAO_PHRAYA_DAMS.includes(dam.id));
-  if (!main.length && !unplaced.length) return null;
+  const rest = dams.dams
+    .filter((dam) => !CHAO_PHRAYA_DAMS.includes(dam.id))
+    .sort((a, b) => (b.percent ?? -1) - (a.percent ?? -1));
+  // over storage capacity is worth seeing without opening the list, wherever the dam is
+  const full = rest.filter((dam) => dam.percent !== null && dam.percent > 100);
+  const others = rest.filter((dam) => !full.includes(dam));
+  if (!dams.dams.length) return null;
   const note = oldNote(dams.fetched_at, now);
   return (
     <section className="panel-section" aria-labelledby="dams-heading" data-testid="dams">
       <h2 id="dams-heading">
-        <DamIcon size={18} /> เขื่อนหลักเหนือกรุงเทพฯ (ลุ่มเจ้าพระยา)
+        <DamIcon size={18} /> เขื่อนใหญ่ {dams.dams.length} แห่ง
       </h2>
-      <ul className="flood-list">
-        {main.map((dam) => (
-          <li key={dam.id}>
-            <button
-              className="road-button"
-              disabled={!dam.location}
-              onClick={() => dam.location && onDam(dam.location)}
-            >
-              <span className="flood-line">
-                <strong>
-                  {dam.name_th} · {damWords(dam.percent) ?? 'น้ำ'} {amount(dam.percent)}%
-                </strong>
-                <small>
-                  ไหลเข้า {amount(dam.inflow_mcm)} · ระบาย {amount(dam.outflow_mcm)} ล้าน ลบ.ม./วัน
-                </small>
-              </span>
-            </button>
-          </li>
-        ))}
-      </ul>
-      {unplaced.length > 0 && (
-        <details className="flood-history" data-testid="dams-unplaced">
-          <summary>เขื่อนที่ไม่มีหมุดบนแผนที่ {unplaced.length} แห่ง</summary>
+      {main.length > 0 && (
+        <>
+          <h3 className="dams-group">เขื่อนหลักเหนือกรุงเทพฯ (ลุ่มเจ้าพระยา)</h3>
           <ul className="flood-list">
-            {unplaced.map((dam) => (
-              <li key={dam.id} className="flood-line">
-                <strong>
-                  {dam.name_th} · {damWords(dam.percent) ?? 'น้ำ'} {amount(dam.percent)}%
-                </strong>
-                <small>
-                  น้ำ {amount(dam.volume_mcm)} / {amount(dam.storage_mcm)} ล้าน ลบ.ม. · ไหลเข้า{' '}
-                  {amount(dam.inflow_mcm)} · ระบาย {amount(dam.outflow_mcm)} ล้าน ลบ.ม./วัน
-                </small>
-              </li>
+            {main.map((dam) => (
+              <DamLine key={dam.id} dam={dam} onDam={onDam} />
+            ))}
+          </ul>
+        </>
+      )}
+      {full.length > 0 && (
+        <>
+          <h3 className="dams-group">น้ำเกินความจุเก็บกัก</h3>
+          <ul className="flood-list">
+            {full.map((dam) => (
+              <DamLine key={dam.id} dam={dam} onDam={onDam} />
+            ))}
+          </ul>
+        </>
+      )}
+      {others.length > 0 && (
+        <details className="flood-history" data-testid="dams-others">
+          <summary>เขื่อนใหญ่อื่นๆ {others.length} แห่ง (น้ำมากก่อน)</summary>
+          <ul className="flood-list">
+            {others.map((dam) => (
+              <DamLine key={dam.id} dam={dam} onDam={onDam} />
             ))}
           </ul>
         </details>
@@ -597,8 +620,7 @@ function ChaoPhrayaDams({
       )}
       <small className="source-note">
         ข้อมูลวันที่ {thaiDay(dams.report_date)} · ที่มา: {shortCredit(dams.credit_th)} ·
-        เขื่อนอื่นดูเป็นหมุดบนแผนที่ · น้ำเกิน 80% แปลว่าเหลือที่รับน้ำน้อย
-        ไม่ใช่การพยากรณ์ว่าจะท่วม
+        แตะชื่อเพื่อดูบนแผนที่ · น้ำเกิน 80% แปลว่าเหลือที่รับน้ำน้อย ไม่ใช่การพยากรณ์ว่าจะท่วม
       </small>
     </section>
   );

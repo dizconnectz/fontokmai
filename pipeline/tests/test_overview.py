@@ -165,7 +165,7 @@ def test_rivers_rising_a_lot_and_dams_over_capacity_are_to_prepare_for():
     assert bang_pakong.reasons[0].text_th == "น้ำเพิ่มขึ้นมาก สูงสุดราว +118% (ค่าแบบจำลอง)"
     assert bang_pakong.province_code == "24"
     dam = places[full.name_th]
-    assert dam.reasons[0].text_th == "น้ำเกินความจุเก็บกัก 104% ติดตามการระบายน้ำ"
+    assert dam.reasons[0].text_th == "น้ำเกินความจุเก็บกัก 104.2% ติดตามการระบายน้ำ"
     assert all(i.when == "next" for i in overview.items)
 
 

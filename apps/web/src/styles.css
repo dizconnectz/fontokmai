@@ -1611,6 +1611,10 @@ details > ul {
   color: var(--ink);
   font-weight: 600;
 }
+.dams-group {
+  margin: 10px 0 6px;
+  font-size: 0.95rem;
+}
 .summary-group h3 {
   margin: 10px 0 6px;
   font-size: 0.95rem;
