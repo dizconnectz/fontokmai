@@ -1,6 +1,6 @@
 {
  "schema_version": "1",
- "updated": "2026-09-26",
+ "updated": "2026-09-27",
  "cameras": [
   {
    "id": "bma-dds-2",
@@ -989,6 +989,45 @@
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
    "note_th": null
+  },
+  {
+   "id": "dwr-ta100219",
+   "name_th": "สะพานปทุมธานี 1",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.53879,
+    14.02606
+   ],
+   "position": "approximate",
+   "page_url": "https://telemetry.dwr.go.th/reportCctv",
+   "note_th": "สถานี TA100219 ต.บางปรอก อ.เมืองปทุมธานี · หมุดอยู่ที่สะพาน (ตำแหน่งจาก OpenStreetMap) · เปิดดูในหน้ากล้องของกรมทรัพยากรน้ำ"
+  },
+  {
+   "id": "dwr-ta100220",
+   "name_th": "สะพานพระพุทธยอดฟ้า",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.49758,
+    13.73928
+   ],
+   "position": "approximate",
+   "page_url": "https://telemetry.dwr.go.th/reportCctv",
+   "note_th": "สถานี TA100220 แขวงวัดกัลยาณ์ เขตธนบุรี · หมุดอยู่ที่สะพาน (ตำแหน่งจาก OpenStreetMap) · เปิดดูในหน้ากล้องของกรมทรัพยากรน้ำ"
+  },
+  {
+   "id": "dwr-tc100224",
+   "name_th": "สะพานปทุมธานี 2",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.53425,
+    13.96584
+   ],
+   "position": "approximate",
+   "page_url": "https://telemetry.dwr.go.th/reportCctv",
+   "note_th": "สถานี TC100224 ต.บ้านใหม่ อ.เมืองปทุมธานี · หมุดอยู่ที่สะพาน (ตำแหน่งจาก OpenStreetMap) · เปิดดูในหน้ากล้องของกรมทรัพยากรน้ำ"
   },
   {
    "id": "egat-105",

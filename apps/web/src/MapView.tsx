@@ -484,12 +484,13 @@ function riverPopup(point: RiverPoint, file: RiverForecast, now: number): HTMLEl
         opacity: 0.6,
       }),
     );
-    for (const [x, text, anchor] of [
-      [0, '7 วันก่อน', 'start'],
-      [chart.todayX, 'วันนี้', 'middle'],
-      [width, '+30 วัน', 'end'],
+    // "today" sits at the top of its line, clear of the day labels under the chart
+    for (const [x, y, text, anchor] of [
+      [0, height + 12, '−7 วัน', 'start'],
+      [chart.todayX + 3, 9, 'วันนี้', 'start'],
+      [width, height + 12, '+30 วัน', 'end'],
     ] as const) {
-      const label = svg('text', { x, y: height + 12, 'text-anchor': anchor, 'font-size': 10 });
+      const label = svg('text', { x, y, 'text-anchor': anchor, 'font-size': 10 });
       label.textContent = text;
       figure.append(label);
     }
