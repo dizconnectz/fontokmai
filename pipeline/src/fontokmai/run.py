@@ -12,7 +12,7 @@ from pydantic import BaseModel, ValidationError
 from fontokmai.contracts.alerts import Alert, AlertsFeed
 from fontokmai.contracts.cctv import CctvRegistry
 from fontokmai.contracts.common import SourceStatus
-from fontokmai.contracts.forecast import RainForecast
+from fontokmai.contracts.forecast import RainForecast, RiverForecast
 from fontokmai.contracts.manifest import Manifest
 from fontokmai.contracts.places import PlaceGazetteer
 from fontokmai.contracts.radar import RadarFeed
@@ -33,7 +33,8 @@ SNAPSHOT_INTERVAL = timedelta(minutes=15)
 REF_MODELS: dict[str, type[BaseModel]] = {"ref/road_flood_history.json": RoadFloodHistory,
                                           "ref/cctv.json": CctvRegistry,
                                           "ref/places.json": PlaceGazetteer,
-                                          "forecast/rain.json": RainForecast}
+                                          "forecast/rain.json": RainForecast,
+                                          "forecast/rivers.json": RiverForecast}
 # curated files shipped with the package and copied into every snapshot
 STATIC_REFS = {"ref/cctv.json": "cctv.json", "ref/places.json": "places.json"}
 LAST_SUCCESS_KEY = "tmd_cap.last_success_at"

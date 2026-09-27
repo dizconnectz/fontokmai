@@ -1,4 +1,5 @@
-"""Command line: export-schemas, contract-examples, cap-snapshot, road-flood-history, rain-forecast and schedule."""
+"""Command line: export-schemas, contract-examples, cap-snapshot, road-flood-history, rain-forecast, river-forecast
+and schedule (and the manual DXS commands)."""
 
 from __future__ import annotations
 
@@ -20,7 +21,12 @@ from fontokmai.examples import (
     write_road_flood_example,
 )
 from fontokmai.forecast_build import budget as forecast_budget
-from fontokmai.forecast_build import build_rain_forecast, refresh_rain_forecast
+from fontokmai.forecast_build import (
+    build_rain_forecast,
+    build_river_forecast,
+    refresh_rain_forecast,
+    refresh_river_forecast,
+)
 from fontokmai.publish.git_pages import publish_snapshot
 from fontokmai.road_flood_build import build_road_flood_history, fixture_files, is_fresh
 from fontokmai.run import SnapshotResult, run_cap_snapshot
@@ -85,6 +91,12 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     rain.add_argument("--now", help="fetch time, ISO 8601 with offset (default: current time)")
     rain.add_argument("--db", type=Path,
                       help="state database of the scheduled job, so a manual run counts in its Open-Meteo budget")
+    river = sub.add_parser("river-forecast", help="build forecast/rivers.json from the GloFAS flood API (one request)")
+    river.add_argument("--out", type=Path, required=True, help="snapshot directory; the file goes to forecast/")
+    river.add_argument("--fixtures", type=Path, help="read a recorded answer instead of the network (examples)")
+    river.add_argument("--now", help="fetch time, ISO 8601 with offset (default: current time)")
+    river.add_argument("--db", type=Path,
+                       help="state database of the scheduled job, so a manual run counts in its Open-Meteo budget")
     fetch_bkk = sub.add_parser("bkk-fetch", help="fetch the Bangkok DXS files once (from a computer in Thailand)")
     fetch_bkk.add_argument("--account", type=Path, required=True, help="file with the DXS user name and password")
     fetch_bkk.add_argument("--out", type=Path, required=True, help="directory; the files go to bkk/ under it")
@@ -144,6 +156,10 @@ def _scheduled_job(args: argparse.Namespace) -> Callable[[datetime], dict[str, A
         """Rain forecast every 6 hours within a daily call budget; failures never stop the alerts snapshot."""
         return refresh_rain_forecast(args.out, args.db, now) if args.forecast else None
 
+    def refresh_rivers(now: datetime) -> str | None:
+        """The GloFAS river trend once a day, from the same Open-Meteo budget."""
+        return refresh_river_forecast(args.out, args.db, now) if args.forecast else None
+
     def job(now: datetime) -> dict[str, Any]:
         road_flood = refresh_road_flood(now)
         fetch = LiveFetcher()
@@ -165,6 +181,9 @@ def _scheduled_job(args: argparse.Namespace) -> Callable[[datetime], dict[str, A
         forecast = refresh_forecast(now)
         if forecast:
             summary["forecast"] = forecast
+        rivers = refresh_rivers(now)
+        if rivers:
+            summary["rivers"] = rivers
         return summary
 
     return job
@@ -213,6 +232,21 @@ def main(argv: list[str] | None = None) -> int:
             forecast = build_rain_forecast(args.out, now)
         print(json.dumps({"points": len(forecast.points), "hours": len(forecast.hours), "days": len(forecast.days),
                           "first_hour": forecast.hours[0].isoformat()}, ensure_ascii=False))
+        return 0
+    if args.command == "river-forecast":
+        now = datetime.fromisoformat(args.now) if args.now else datetime.now(UTC)
+        if args.fixtures:
+            from fontokmai.examples import river_fixture_run
+            rivers = river_fixture_run(args.out, args.fixtures, now)
+        elif args.db:
+            from fontokmai.state import StateStore
+            with StateStore(args.db) as store:
+                calls = forecast_budget(store)
+                rivers = build_river_forecast(args.out, now, spend=lambda n: calls.spend(now, n))
+        else:
+            rivers = build_river_forecast(args.out, now)
+        print(json.dumps({"points": len(rivers.points), "days": len(rivers.days),
+                          "first_day": rivers.days[0].isoformat()}, ensure_ascii=False))
         return 0
     if args.command == "bkk-fetch":
         from fontokmai.publish.snapshot import atomic_write

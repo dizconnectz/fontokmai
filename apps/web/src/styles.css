@@ -1594,6 +1594,12 @@ details > ul {
   margin: 0 0 6px;
   white-space: pre-line;
 }
+.map-surface .river-chart {
+  display: block;
+  margin: 4px 0 2px;
+  color: var(--muted);
+  fill: var(--muted);
+}
 .map-surface .popup-old {
   color: var(--warn-ink);
   font-weight: 600;

@@ -15,6 +15,7 @@ import {
   validRoadFlooding,
   validSituation,
   validWeatherToday,
+  validRivers,
   type CanalLevels,
   type CctvRegistry,
   type DamReport,
@@ -27,6 +28,7 @@ import {
   type RoadFloodingDaily,
   type SituationReport,
   type WeatherToday,
+  type RiverForecast,
   type RuntimeConfig,
   type Snapshot,
 } from './data';
@@ -44,7 +46,8 @@ type RefName =
   | 'flooding'
   | 'news'
   | 'dams'
-  | 'weather';
+  | 'weather'
+  | 'rivers';
 // Files of the manifest outside the snapshot generation. Cameras and the forecast (timeline, ~50 KB gzip)
 // load at once; the others on first need.
 const REF_FILES: Record<RefName, { path: string; valid: (value: unknown) => boolean }> = {
@@ -60,6 +63,8 @@ const REF_FILES: Record<RefName, { path: string; valid: (value: unknown) => bool
   news: { path: 'bkk/news.json', valid: validSituation },
   dams: { path: 'water/dams.json', valid: validDams },
   weather: { path: 'weather/today.json', valid: validWeatherToday },
+  // the GloFAS river trend (model values, rebuilt once a day)
+  rivers: { path: 'forecast/rivers.json', valid: validRivers },
 };
 const IDLE: RefSlot<never> = { value: null, state: 'idle' };
 
@@ -80,6 +85,7 @@ export function useData() {
   const [news, setNews] = useState<RefSlot<SituationReport>>(IDLE);
   const [dams, setDams] = useState<RefSlot<DamReport>>(IDLE);
   const [weather, setWeather] = useState<RefSlot<WeatherToday>>(IDLE);
+  const [rivers, setRivers] = useState<RefSlot<RiverForecast>>(IDLE);
   const current = useRef<Snapshot | null>(null);
   const settings = useRef<RuntimeConfig | null>(null);
   const flight = useRef<AbortController | null>(null);
@@ -94,6 +100,7 @@ export function useData() {
       'news',
       'dams',
       'weather',
+      'rivers',
     ]),
   );
   const refreshRef = useRef<() => Promise<void>>(async () => undefined);
@@ -139,6 +146,9 @@ export function useData() {
       ),
       weather: new RefSync(REF_FILES.weather.path, loader('weather'), (slot) =>
         setWeather(slot as RefSlot<WeatherToday>),
+      ),
+      rivers: new RefSync(REF_FILES.rivers.path, loader('rivers'), (slot) =>
+        setRivers(slot as RefSlot<RiverForecast>),
       ),
     };
   }
@@ -244,5 +254,6 @@ export function useData() {
     news: news.value,
     dams: dams.value,
     weather: weather.value,
+    rivers: rivers.value,
   };
 }

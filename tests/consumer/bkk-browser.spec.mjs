@@ -149,9 +149,17 @@ test("M13: tapping a new water cluster expands it without creating an unrelated 
   const canvas = page.locator(".maplibregl-canvas");
   await expect(canvas).toBeVisible();
   const box = await canvas.boundingBox();
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await expect(canvas).toHaveCSS("cursor", "pointer");
-  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  // the bubble may be drawn after the mouse stops: move away and back until the map sees it
+  await expect
+    .poll(async () => {
+      await page.mouse.move(x + 50, y);
+      await page.mouse.move(x, y);
+      return canvas.evaluate((el) => getComputedStyle(el).cursor);
+    })
+    .toBe("pointer");
+  await page.mouse.click(x, y);
   await page.waitForTimeout(800);
   await expect(page.getByTestId("pin-card")).not.toBeVisible();
   await expect(page).not.toHaveURL(/pin=/);

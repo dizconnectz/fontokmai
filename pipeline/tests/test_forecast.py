@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from fontokmai.contracts.forecast import RainForecast
+from fontokmai.contracts.forecast import RainForecast, RiverForecast
 from fontokmai.contracts.manifest import Manifest
 from fontokmai.examples import FORECAST_FETCHED_AT, forecast_fixture_run, write_forecast_example
 from fontokmai.forecast_build import FORECAST_PATH, default_lattice, is_fresh
@@ -90,7 +90,10 @@ def test_the_forecast_is_rebuilt_every_six_hours_and_published_with_the_snapshot
 
 
 def test_forecast_example_is_reproducible(tmp_path):
-    [first] = write_forecast_example(tmp_path / "a", OPEN_METEO)
-    [second] = write_forecast_example(tmp_path / "b", OPEN_METEO)
-    assert first.read_bytes() == second.read_bytes()
-    assert RainForecast.model_validate_json(first.read_bytes()).fetched_at == FETCHED
+    first = write_forecast_example(tmp_path / "a", OPEN_METEO)
+    second = write_forecast_example(tmp_path / "b", OPEN_METEO)
+    assert [p.name for p in first] == ["rain.json", "rivers.json"]
+    assert [p.read_bytes() for p in first] == [p.read_bytes() for p in second]
+    assert RainForecast.model_validate_json(first[0].read_bytes()).fetched_at == FETCHED
+    rivers = RiverForecast.model_validate_json(first[1].read_bytes())
+    assert len(rivers.points) == 14 and len(rivers.days) == 37

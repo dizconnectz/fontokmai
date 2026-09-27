@@ -1,4 +1,4 @@
-"""Contract of /data/v1/forecast/rain.json: hourly and daily rain forecast on a lattice over Thailand (Open-Meteo)."""
+"""Contracts of /data/v1/forecast/: rain.json (rain on a lattice, Open-Meteo) and rivers.json (GloFAS discharge)."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from typing import Annotated, Literal
 
 from pydantic import AwareDatetime, Field, model_validator
 
-from fontokmai.contracts.common import SCHEMA_VERSION, ContractModel
+from fontokmai.contracts.common import SCHEMA_VERSION, ContractModel, Position
 
 LatticeIndex = Annotated[list[int], Field(min_length=2, max_length=2)]
 
@@ -47,4 +47,41 @@ class RainForecast(ContractModel):
             table = getattr(self, name)
             if len(table) != len(self.days) or any(len(row) != width for row in table):
                 raise ValueError(f"{name} must be days x points")
+        return self
+
+
+Flow = float | None
+
+
+class RiverPoint(ContractModel):
+    id: str = Field(description="Stable id of the point, e.g. cp-bangkok")
+    name_th: str = Field(description="Where on which river, e.g. เจ้าพระยา ที่กรุงเทพฯ")
+    river_th: str
+    location: Position = Field(description=(
+        "[lon, lat] asked of the model, chosen once so that its 0.05° GloFAS cell lies on the main stream"))
+    discharge: list[Flow] = Field(description=(
+        "discharge[d]: river discharge of the model's control run in m³/s on days[d] (model value, not measured)"))
+    median: list[Flow] = Field(description="Median of the ensemble forecast in m³/s")
+    p25: list[Flow] = Field(description="25th percentile of the ensemble in m³/s")
+    p75: list[Flow] = Field(description="75th percentile of the ensemble in m³/s")
+
+
+class RiverForecast(ContractModel):
+    schema_version: Literal["1"] = SCHEMA_VERSION
+    product: Literal["glofas_open_meteo"] = "glofas_open_meteo"
+    name_th: str
+    credit_th: str
+    source_url: str
+    fetched_at: AwareDatetime = Field(description="When fontokmai fetched this forecast")
+    days: list[dt.date] = Field(description=(
+        "Thai calendar days, oldest first: 7 days before the day of the fetch, that day, then 30 forecast days"))
+    points: list[RiverPoint]
+    notes_th: list[str]
+
+    @model_validator(mode="after")
+    def _shapes(self) -> RiverForecast:
+        width = len(self.days)
+        for point in self.points:
+            if any(len(getattr(point, name)) != width for name in ("discharge", "median", "p25", "p75")):
+                raise ValueError(f"every series of {point.id} must have one value per day")
         return self

@@ -72,7 +72,7 @@
 | Copernicus GFM | พื้นที่น้ำท่วมจาก Sentinel-1 | P2 | key | ok (CEMS เปิดฟรี) | global | 2026-09-25 docs | |
 | NASA GIBS | Himawari-9 (Band13, Air Mass, Visible), IMERG, MODIS/VIIRS Combined Flood | P1b/P2 | public | ok (ให้เครดิต NASA) | global | 2026-09-25 api | IMERG Early หน่วงประมาณ 4 ชม. |
 | JAXA GSMaP | ฝนจากดาวเทียม | P2 | key | ok (ภายใต้ ToU) | global | 2026-09-25 docs | |
-| GloFAS (ผ่าน Open-Meteo Flood API) | อัตราการไหลของแม่น้ำ | P2 | public | ok (ให้เครดิต) | global | 2026-09-25 docs | |
+| GloFAS (ผ่าน Open-Meteo Flood API) | อัตราการไหลของแม่น้ำ | P2 | public | ok (ให้เครดิต) | global | 2026-09-25 docs | **ใช้แล้ว 2026-09-27**: `forecast/rivers.json` (สัญญาข้อ 20) 14 จุดบนแม่น้ำสายหลัก วันละครั้ง 1 request = 42 call (37 วัน/จุดนับ 3) ใช้งบ Open-Meteo ก้อนเดียวกับฝน · เป็นค่าแบบจำลอง ค่าอาจต่างจากที่วัดได้มาก เว็บแสดงเฉพาะแนวโน้ม · เครดิต “GloFAS · Copernicus Emergency Management Service ผ่าน Open-Meteo.com (CC BY 4.0)” |
 | Google Flood Forecasting API | พยากรณ์น้ำท่วมแม่น้ำ | P3 | waitlist | ok (CC BY 4.0) | unknown | 2026-09-25 docs | ยังไม่รู้ว่าครอบคลุมไทยไหม |
 | RainViewer | radar tiles | ไม่ใช้ | public | restricted (API ฟรีเฉพาะใช้ส่วนตัวหรือการศึกษา ตรวจ 2026-09-25) | global | 2026-09-25 docs | ไม่ใช้กับเว็บสาธารณะ ใช้เรดาร์กรมอุตุฯ แทน |
 

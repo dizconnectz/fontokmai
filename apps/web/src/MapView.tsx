@@ -42,6 +42,17 @@ import {
   type WeatherStation,
   type WeatherToday,
 } from './bkk';
+import {
+  RIVER_CLASSES,
+  RIVER_UNKNOWN_COLOR,
+  RIVERS_STALE_MS,
+  riverChart,
+  riverOutlook,
+  riverPin,
+  riverWords,
+  type RiverForecast,
+  type RiverPoint,
+} from './rivers';
 import { MAP_IMAGE_RATIO, mapImage } from './mapIcons';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
@@ -55,6 +66,7 @@ export interface Layers {
   rain: boolean;
   dams: boolean;
   weather: boolean;
+  rivers: boolean;
 }
 export type LngLat = [number, number];
 export interface Focus {
@@ -83,6 +95,8 @@ interface Props {
   /** large dams and TMD's morning station reports (DXS), or null while the timeline shows the forecast */
   dams: DamReport | null;
   weather: WeatherToday | null;
+  /** the GloFAS river trend, or null while the timeline shows the forecast */
+  rivers: RiverForecast | null;
   layers: Layers;
   pin: LngLat | null;
   /** short name shown on the pin, e.g. ต.คลองหนึ่ง */
@@ -207,6 +221,7 @@ function addOverlays(instance: LibreMap) {
     ['camera', 'cameras'],
     ['weather', 'weather'],
     ['dam', 'dams'],
+    ['river', 'rivers'],
     ['water', 'water'],
     ['rain', 'rain'],
     ['flood', 'floods'],
@@ -272,6 +287,8 @@ const POINT_LAYERS = [
   'weather-pin',
   'dam-cluster',
   'dam-pin',
+  'river-cluster',
+  'river-pin',
   'water-cluster',
   'water-pin',
   'rain-cluster',
@@ -279,7 +296,7 @@ const POINT_LAYERS = [
   'flood-cluster',
   'flood-pin',
 ];
-type PointKind = 'flood' | 'camera' | 'water' | 'rain' | 'dam' | 'weather';
+type PointKind = 'flood' | 'camera' | 'water' | 'rain' | 'dam' | 'weather' | 'river';
 
 function floodPopup(report: FloodReport, now: number, onHere: () => void): HTMLElement {
   const root = document.createElement('div');
@@ -414,6 +431,83 @@ function rainPopup(gauge: RainGauge, file: RainGauges, now: number): HTMLElement
     ...note(file.fetched_at, now),
     sourceLink(file.source_url, file.credit_th),
   );
+  return root;
+}
+
+const SVG = 'http://www.w3.org/2000/svg';
+function svg(tag: string, attributes: Record<string, string | number>): SVGElement {
+  const element = document.createElementNS(SVG, tag);
+  for (const [name, value] of Object.entries(attributes)) element.setAttribute(name, String(value));
+  return element;
+}
+
+/** The trend in words over a small chart of the flow's shape (no scale: the model's m³/s is not shown). */
+function riverPopup(point: RiverPoint, file: RiverForecast, now: number): HTMLElement {
+  const root = document.createElement('div');
+  root.className = 'camera-popup';
+  const outlook = riverOutlook(file, point, now);
+  const color =
+    RIVER_CLASSES.find((item) => item.trend === outlook?.trend)?.color ?? RIVER_UNKNOWN_COLOR;
+  root.append(
+    line(`แม่น้ำ${point.name_th}`, 'strong'),
+    line(`7 วันข้างหน้า: ${riverWords(outlook)}`, 'b'),
+  );
+  if (outlook) {
+    const width = 230;
+    const height = 54;
+    const chart = riverChart(file, point, outlook.today, width, height);
+    const figure = svg('svg', {
+      viewBox: `0 0 ${width} ${height + 14}`,
+      width,
+      height: height + 14,
+      class: 'river-chart',
+      role: 'img',
+      'aria-label': `กราฟแนวโน้ม 7 วันย้อนหลังถึง 30 วันข้างหน้า: ${riverWords(outlook)}`,
+    });
+    if (chart.band) figure.append(svg('path', { d: chart.band, fill: color, opacity: 0.18 }));
+    figure.append(
+      svg('path', {
+        d: chart.past,
+        fill: 'none',
+        stroke: 'currentColor',
+        'stroke-width': 1.5,
+        opacity: 0.5,
+      }),
+      svg('path', { d: chart.ahead, fill: 'none', stroke: color, 'stroke-width': 2 }),
+      svg('line', {
+        x1: chart.todayX,
+        x2: chart.todayX,
+        y1: 0,
+        y2: height,
+        stroke: 'currentColor',
+        'stroke-dasharray': '3 3',
+        opacity: 0.6,
+      }),
+    );
+    for (const [x, text, anchor] of [
+      [0, '7 วันก่อน', 'start'],
+      [chart.todayX, 'วันนี้', 'middle'],
+      [width, '+30 วัน', 'end'],
+    ] as const) {
+      const label = svg('text', { x, y: height + 12, 'text-anchor': anchor, 'font-size': 10 });
+      label.textContent = text;
+      figure.append(label);
+    }
+    root.append(figure);
+  }
+  root.append(
+    line('ค่าจากแบบจำลอง ใช้ดูแนวโน้ม ไม่ใช่ระดับน้ำที่วัดจริง', 'small'),
+    line(`พยากรณ์เมื่อ ${reportTime(file.fetched_at, now)}`),
+  );
+  if (now - Date.parse(file.fetched_at) > RIVERS_STALE_MS) {
+    const stale = line(
+      `พยากรณ์ไม่อัปเดต · ข้อมูล ณ วันที่ ${thaiDay(file.days[7] ?? file.days[0])}`,
+      'small',
+    );
+    stale.className = 'popup-old';
+    root.append(stale);
+  }
+  root.append(sourceLink(file.source_url, file.credit_th));
   return root;
 }
 
@@ -593,6 +687,12 @@ export default function MapView(props: Props) {
               const dam = file.dams.find((d) => d.id === hit?.properties.code);
               if (dam?.location)
                 return open('dam', dam.location as LngLat, damPopup(dam, file, Date.now()));
+            }
+            if (layer === 'river-pin' && latest.current.rivers) {
+              const file = latest.current.rivers;
+              const point = file.points.find((p) => p.id === hit?.properties.code);
+              if (point)
+                return open('river', point.location as LngLat, riverPopup(point, file, Date.now()));
             }
             if (layer === 'weather-pin' && latest.current.weather) {
               const file = latest.current.weather;
@@ -857,6 +957,29 @@ export default function MapView(props: Props) {
     (map.current.getSource('dams') as GeoJSONSource | undefined)?.setData(collection);
     if (!collection.features.length && popupKind.current === 'dam') popup.current?.remove();
   }, [props.dams, props.layers.dams, ready, styleVersion]);
+
+  // The GloFAS river trend, coloured by the next 7 days against today (model values)
+  useEffect(() => {
+    if (!ready || !map.current) return;
+    const file = props.layers.rivers ? props.rivers : null;
+    const collection: FeatureCollection<Point> = {
+      type: 'FeatureCollection',
+      features: (file?.points ?? []).map((point) => {
+        const pin = riverPin(file!, point, props.now);
+        return {
+          type: 'Feature' as const,
+          geometry: { type: 'Point' as const, coordinates: point.location },
+          properties: {
+            code: point.id,
+            pin,
+            rank: RIVER_CLASSES.length - RIVER_CLASSES.findIndex((c) => c.pin === pin),
+          },
+        };
+      }),
+    };
+    (map.current.getSource('rivers') as GeoJSONSource | undefined)?.setData(collection);
+    if (!collection.features.length && popupKind.current === 'river') popup.current?.remove();
+  }, [props.rivers, props.layers.rivers, props.now, ready, styleVersion]);
 
   // TMD stations (DXS), coloured by the rain of their morning report
   useEffect(() => {

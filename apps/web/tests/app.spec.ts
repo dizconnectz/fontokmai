@@ -751,6 +751,64 @@ test('the department situation text and the Chao Phraya dams show, with a note o
   await expect(page.getByTestId('dams')).toContainText('ข้อมูลนี้ไม่ใช่ข้อมูลเรียลไทม์');
 });
 
+test('the river trend is a pin with a plain-word popup and never the model number', async ({
+  page,
+}) => {
+  await prepare(page);
+  const manifest = read('active', 'manifest');
+  manifest.files.push({
+    path: 'forecast/rivers.json',
+    sha256: 'd'.repeat(64),
+    size: 1,
+    revision: 1,
+  });
+  await page.route('**/examples/active/manifest.json?*', (route) =>
+    route.fulfill({ json: manifest }),
+  );
+  // the producer's example moved two days back, so that its day of fetch is the day of this snapshot,
+  // with the Bangkok point alone at the centre of the map
+  const rivers = read('forecast', 'rivers');
+  const back = (day: string) =>
+    new Date(Date.parse(`${day}T00:00:00Z`) - 2 * 86_400_000).toISOString().slice(0, 10);
+  rivers.days = rivers.days.map(back);
+  rivers.fetched_at = '2026-09-25T11:42:00+07:00';
+  rivers.points = rivers.points
+    .filter((p: { id: string }) => p.id === 'cp-bangkok')
+    .map((p: object) => ({ ...p, location: [101, 13.2] }));
+  await page.route('**/forecast/rivers.json?*', (route) => route.fulfill({ json: rivers }));
+  await page.goto('/');
+  await page.getByRole('button', { name: 'ชั้นข้อมูล' }).click();
+  await expect(page.getByRole('button', { name: 'แนวโน้มน้ำแม่น้ำ' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await page.getByRole('button', { name: 'ชั้นข้อมูล' }).click();
+  const canvas = page.locator('.maplibregl-canvas');
+  const box = (await canvas.boundingBox())!;
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2 - 12;
+  await expect
+    .poll(async () => {
+      await page.mouse.move(x + 50, y);
+      await page.mouse.move(x, y);
+      return canvas.evaluate((el) => getComputedStyle(el).cursor);
+    })
+    .toBe('pointer');
+  await page.mouse.click(x, y);
+  const popup = page.locator('.maplibregl-popup');
+  await expect(popup).toContainText('แม่น้ำเจ้าพระยา ที่กรุงเทพฯ');
+  await expect(popup).toContainText('7 วันข้างหน้า: น้ำเพิ่มขึ้น สูงสุดราว +19% วันที่ 29 ก.ย.');
+  await expect(popup).toContainText('ค่าจากแบบจำลอง ใช้ดูแนวโน้ม ไม่ใช่ระดับน้ำที่วัดจริง');
+  await expect(popup.getByRole('img')).toBeVisible();
+  await expect(popup).not.toContainText('m³');
+  await expect(
+    popup.getByRole('link', {
+      name: 'ที่มา: GloFAS · Copernicus Emergency Management Service ผ่าน Open-Meteo.com ↗',
+    }),
+  ).toBeVisible();
+  await expect(page.getByTestId('pin-card')).not.toBeVisible();
+});
+
 test('the Bangkok layers have no switch until their files are published', async ({ page }) => {
   await prepare(page);
   await page.goto('/');

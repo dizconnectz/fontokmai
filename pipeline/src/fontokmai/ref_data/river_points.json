@@ -1,0 +1,19 @@
+{
+  "source": "ช่องตาข่าย GloFAS (0.05°) ของ Open-Meteo Flood API ที่เลือกครั้งเดียว 2026-09-27: ในช่อง 3 × 3 รอบจุดที่ตั้งใจ เลือกช่องที่น้ำไหลมากที่สุด (ลำน้ำหลัก) · ป่าสักเลือกช่องเหนือจุดบรรจบเจ้าพระยา",
+  "points": [
+    { "id": "ping-tak", "name_th": "ปิง ที่ตาก", "river_th": "แม่น้ำปิง", "location": [99.075, 16.825] },
+    { "id": "yom-sukhothai", "name_th": "ยม ที่สุโขทัย", "river_th": "แม่น้ำยม", "location": [99.776, 17.056] },
+    { "id": "nan-phitsanulok", "name_th": "น่าน ที่พิษณุโลก", "river_th": "แม่น้ำน่าน", "location": [100.31, 16.775] },
+    { "id": "cp-nakhonsawan", "name_th": "เจ้าพระยา ที่นครสวรรค์", "river_th": "แม่น้ำเจ้าพระยา", "location": [100.087, 15.653] },
+    { "id": "cp-chainat", "name_th": "เจ้าพระยา ที่ชัยนาท", "river_th": "แม่น้ำเจ้าพระยา", "location": [100.133, 15.157] },
+    { "id": "pasak-thaluea", "name_th": "ป่าสัก ก่อนบรรจบเจ้าพระยา", "river_th": "แม่น้ำป่าสัก", "location": [100.675, 14.525] },
+    { "id": "cp-bangsai", "name_th": "เจ้าพระยา ที่บางไทร (อยุธยา)", "river_th": "แม่น้ำเจ้าพระยา", "location": [100.466, 14.195] },
+    { "id": "cp-pathumthani", "name_th": "เจ้าพระยา ที่ปทุมธานี", "river_th": "แม่น้ำเจ้าพระยา", "location": [100.483, 14.016] },
+    { "id": "cp-bangkok", "name_th": "เจ้าพระยา ที่กรุงเทพฯ", "river_th": "แม่น้ำเจ้าพระยา", "location": [100.449, 13.789] },
+    { "id": "thachin-suphanburi", "name_th": "ท่าจีน ที่สุพรรณบุรี", "river_th": "แม่น้ำท่าจีน", "location": [100.07, 14.42] },
+    { "id": "bangpakong-chachoengsao", "name_th": "บางปะกง ที่ฉะเชิงเทรา", "river_th": "แม่น้ำบางปะกง", "location": [101.125, 13.74] },
+    { "id": "mun-ubon", "name_th": "มูล ที่อุบลราชธานี", "river_th": "แม่น้ำมูล", "location": [104.81, 15.227] },
+    { "id": "chi-yasothon", "name_th": "ชี ที่ยโสธร", "river_th": "แม่น้ำชี", "location": [104.095, 15.74] },
+    { "id": "mekong-nongkhai", "name_th": "โขง ที่หนองคาย", "river_th": "แม่น้ำโขง", "location": [102.745, 17.93] }
+  ]
+}

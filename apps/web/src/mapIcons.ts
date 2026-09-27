@@ -11,6 +11,7 @@ import {
   RAIN_HOUR_CLASSES,
   RAIN_OLD_COLOR,
 } from './bkk';
+import { RIVER_CLASSES, RIVER_UNKNOWN_COLOR } from './rivers';
 
 // lucide "waves", "video", "droplet", "cloud-rain", "dam" and "thermometer", in their 24 × 24 box
 const GLYPHS = {
@@ -42,6 +43,10 @@ const GLYPHS = {
     'm16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5',
     'M4 6h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z',
   ],
+  // the river trend: lucide "trending-up", "arrow-right" and "trending-down"
+  river: ['M22 7 13.5 15.5 8.5 10.5 2 17', 'M16 7h6v6'],
+  'river-flat': ['M5 12h14', 'm12 5 7 7-7 7'],
+  'river-down': ['M22 17 13.5 8.5 8.5 13.5 2 7', 'M16 17h6v-6'],
 };
 type Kind = keyof typeof GLYPHS;
 
@@ -56,6 +61,10 @@ const PINS: Record<string, { kind: Kind; color: string }> = {
   'pin-rain-old': { kind: 'rain', color: RAIN_OLD_COLOR },
   'pin-dam-unknown': { kind: 'dam', color: DAM_UNKNOWN_COLOR },
   'pin-wx-none': { kind: 'weather', color: RAIN_OLD_COLOR },
+  'pin-river-unknown': { kind: 'river-flat', color: RIVER_UNKNOWN_COLOR },
+  ...Object.fromEntries(
+    RIVER_CLASSES.map((item) => [item.pin, { kind: item.glyph, color: item.color }]),
+  ),
   ...Object.fromEntries(
     DAM_CLASSES.map((item) => [item.pin, { kind: 'dam' as const, color: item.color }]),
   ),
@@ -73,6 +82,9 @@ export const CLUSTER_COLOR: Record<Kind, string> = {
   rain: '#1e6fd9',
   dam: '#1e88e5',
   weather: '#546e7a',
+  river: '#1565c0',
+  'river-flat': '#1565c0',
+  'river-down': '#1565c0',
 };
 
 export interface MapImage {
@@ -162,7 +174,7 @@ function cluster(kind: Kind, label: string): MapImage | null {
 export function mapImage(name: string): MapImage | null {
   const found = PINS[name];
   if (found) return pin(found.kind, found.color);
-  const match = /^cluster-(flood|camera|water|rain|dam|weather)-(.+)$/.exec(name);
+  const match = /^cluster-(flood|camera|water|rain|dam|weather|river)-(.+)$/.exec(name);
   return match ? cluster(match[1] as Kind, match[2]) : null;
 }
 export const MAP_IMAGE_RATIO = RATIO;

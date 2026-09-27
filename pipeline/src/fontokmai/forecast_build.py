@@ -1,4 +1,4 @@
-"""Build forecast/rain.json for the map timeline and the 7-day pin card (Open-Meteo, contract section 12)."""
+"""Build forecast/rain.json (Open-Meteo, contract section 12) and forecast/rivers.json (GloFAS, section 20)."""
 
 from __future__ import annotations
 
@@ -9,10 +9,10 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
-from fontokmai.contracts.forecast import ForecastLattice, RainForecast
+from fontokmai.contracts.forecast import ForecastLattice, RainForecast, RiverForecast
 from fontokmai.contracts.places import PlaceGazetteer
 from fontokmai.publish.snapshot import atomic_write
-from fontokmai.sources import open_meteo
+from fontokmai.sources import glofas, open_meteo
 from fontokmai.sources.call_budget import CallBudget
 from fontokmai.sources.open_data.http import Opener, open_url
 from fontokmai.state import StateStore
@@ -24,6 +24,9 @@ RETRY = timedelta(hours=2)
 DAILY_CALLS = 8_000
 CALLS_KEY = "open_meteo_calls"
 ATTEMPT_KEY = "open_meteo_last_attempt"
+RIVERS_PATH = "forecast/rivers.json"
+RIVERS_MAX_AGE = timedelta(hours=20)  # GloFAS runs once a day
+RIVERS_ATTEMPT_KEY = "glofas_last_attempt"
 
 
 def default_lattice() -> tuple[ForecastLattice, list[list[int]]]:
@@ -80,3 +83,42 @@ def refresh_rain_forecast(out_dir: Path, db: Path, now: datetime, *, opener: Ope
         except Exception as exc:  # noqa: BLE001 - reported in the round log, the job goes on
             return f"error: {type(exc).__name__}: {exc}"[:300]
     return f"built {len(forecast.points)} points x {len(forecast.hours)} hours"
+
+
+def build_river_forecast(out_dir: Path, now: datetime, *, opener: Opener = open_url,
+                         points: list[dict] | None = None,
+                         spend: Callable[[int], None] | None = None) -> RiverForecast:
+    """Fetch every river point in one request, then replace out_dir/forecast/rivers.json atomically."""
+    forecast = glofas.collect(now, opener=opener, points=points, spend=spend)
+    atomic_write(out_dir / RIVERS_PATH, forecast.model_dump_json().encode("utf-8"))
+    return forecast
+
+
+def rivers_fresh(out_dir: Path, now: datetime, max_age: timedelta = RIVERS_MAX_AGE) -> bool:
+    try:
+        fetched = RiverForecast.model_validate_json((out_dir / RIVERS_PATH).read_bytes()).fetched_at
+    except (OSError, ValidationError):
+        return False
+    return now - fetched < max_age
+
+
+def refresh_river_forecast(out_dir: Path, db: Path, now: datetime, *, opener: Opener = open_url,
+                           points: list[dict] | None = None, limit: int = DAILY_CALLS) -> str | None:
+    """The scheduled daily refresh of the river trend; it spends from the same Open-Meteo budget as the rain."""
+    if rivers_fresh(out_dir, now):
+        return None
+    points = points if points is not None else glofas.load_points()
+    with StateStore(db) as store:
+        last = store.get_meta(RIVERS_ATTEMPT_KEY)
+        if last and now - datetime.fromisoformat(last) < RETRY:
+            return "waiting to retry"
+        calls = budget(store, limit)
+        if not calls.allows(now, glofas.calls(len(points))):
+            return f"waiting for the Open-Meteo budget: {calls.used(now)} of {limit} calls used in 24 hours"
+        store.set_meta(RIVERS_ATTEMPT_KEY, now.isoformat())
+        try:
+            forecast = build_river_forecast(out_dir, now, opener=opener, points=points,
+                                            spend=lambda n: calls.spend(now, n))
+        except Exception as exc:  # noqa: BLE001 - reported in the round log, the job goes on
+            return f"error: {type(exc).__name__}: {exc}"[:300]
+    return f"built {len(forecast.points)} rivers x {len(forecast.days)} days"

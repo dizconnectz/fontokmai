@@ -17,6 +17,7 @@ import {
   Umbrella,
   Dam,
   Thermometer,
+  TrendingUp,
   X,
 } from 'lucide-react';
 import { formatTime, isStale, radarAgeMinutes, staleAfter, visibleAlerts } from './data';
@@ -29,6 +30,7 @@ import { loadFavorite, saveFavorite, type Favorite } from './favorite';
 import { distanceM } from './roads';
 import Timeline, { type TimeStep } from './Timeline';
 import { FORECAST_LEVELS, forecastAreas, RAIN_LEGEND } from './forecast';
+import { RIVER_CLASSES } from './rivers';
 import { feedTrust, LEVEL_FILL, LEVEL_LABEL, worstLevel, type Level } from './alerts';
 import { nearestSubdistrict, type FoundPlace } from './places';
 import {
@@ -92,6 +94,7 @@ export default function App() {
     news,
     dams,
     weather,
+    rivers,
   } = data;
   const [layers, setLayers] = useState<Layers>({
     alerts: true,
@@ -102,6 +105,7 @@ export default function App() {
     rain: true,
     dams: true,
     weather: true,
+    rivers: true,
   });
   // the time the map shows: null = now (the latest radar frame); otherwise a radar or forecast time
   const [selectedTime, setSelectedTime] = useState<number | null>(null);
@@ -199,6 +203,7 @@ export default function App() {
         (layers.water && !!water) ||
         (layers.rain && !!rain) ||
         (layers.dams && !!dams) ||
+        (layers.rivers && !!rivers) ||
         (layers.weather && !!weather)));
   const forecastLayer = useMemo(
     () => (step.kind === 'forecast' && forecast ? forecastAreas(forecast, step.hour) : null),
@@ -393,6 +398,7 @@ export default function App() {
               rain={step.kind === 'forecast' ? null : rain}
               dams={step.kind === 'forecast' ? null : dams}
               weather={step.kind === 'forecast' ? null : weather}
+              rivers={step.kind === 'forecast' ? null : rivers}
               layers={layers}
               pin={pin}
               pinLabel={pinTitle}
@@ -475,6 +481,11 @@ export default function App() {
             {weather && (
               <button aria-pressed={layers.weather} onClick={() => toggle('weather')}>
                 <Thermometer size={16} /> สถานีกรมอุตุฯ
+              </button>
+            )}
+            {rivers && (
+              <button aria-pressed={layers.rivers} onClick={() => toggle('rivers')}>
+                <TrendingUp size={16} /> แนวโน้มน้ำแม่น้ำ
               </button>
             )}
             {layers.radar && (
@@ -587,6 +598,16 @@ export default function App() {
                     <span key={item.pin}>
                       <i className="legend-pin" style={{ background: item.color }} /> {item.label}
                       {item.range && <small>{item.range}</small>}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {layers.rivers && rivers && step.kind !== 'forecast' && (
+                <div className="legend-row rain-hour">
+                  <span>แนวโน้มน้ำแม่น้ำ 7 วัน (แบบจำลอง)</span>
+                  {RIVER_CLASSES.map((item) => (
+                    <span key={item.pin}>
+                      <i className="legend-pin" style={{ background: item.color }} /> {item.label}
                     </span>
                   ))}
                 </div>

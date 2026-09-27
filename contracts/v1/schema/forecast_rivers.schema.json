@@ -1,0 +1,172 @@
+{
+  "$defs": {
+    "RiverPoint": {
+      "additionalProperties": false,
+      "properties": {
+        "discharge": {
+          "description": "discharge[d]: river discharge of the model's control run in m³/s on days[d] (model value, not measured)",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Discharge",
+          "type": "array"
+        },
+        "id": {
+          "description": "Stable id of the point, e.g. cp-bangkok",
+          "title": "Id",
+          "type": "string"
+        },
+        "location": {
+          "description": "[lon, lat] asked of the model, chosen once so that its 0.05° GloFAS cell lies on the main stream",
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "title": "Location",
+          "type": "array"
+        },
+        "median": {
+          "description": "Median of the ensemble forecast in m³/s",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Median",
+          "type": "array"
+        },
+        "name_th": {
+          "description": "Where on which river, e.g. เจ้าพระยา ที่กรุงเทพฯ",
+          "title": "Name Th",
+          "type": "string"
+        },
+        "p25": {
+          "description": "25th percentile of the ensemble in m³/s",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "P25",
+          "type": "array"
+        },
+        "p75": {
+          "description": "75th percentile of the ensemble in m³/s",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "P75",
+          "type": "array"
+        },
+        "river_th": {
+          "title": "River Th",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name_th",
+        "river_th",
+        "location",
+        "discharge",
+        "median",
+        "p25",
+        "p75"
+      ],
+      "title": "RiverPoint",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "credit_th": {
+      "title": "Credit Th",
+      "type": "string"
+    },
+    "days": {
+      "description": "Thai calendar days, oldest first: 7 days before the day of the fetch, that day, then 30 forecast days",
+      "items": {
+        "format": "date",
+        "type": "string"
+      },
+      "title": "Days",
+      "type": "array"
+    },
+    "fetched_at": {
+      "description": "When fontokmai fetched this forecast",
+      "format": "date-time",
+      "title": "Fetched At",
+      "type": "string"
+    },
+    "name_th": {
+      "title": "Name Th",
+      "type": "string"
+    },
+    "notes_th": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Notes Th",
+      "type": "array"
+    },
+    "points": {
+      "items": {
+        "$ref": "#/$defs/RiverPoint"
+      },
+      "title": "Points",
+      "type": "array"
+    },
+    "product": {
+      "const": "glofas_open_meteo",
+      "default": "glofas_open_meteo",
+      "title": "Product",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1",
+      "default": "1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_url": {
+      "title": "Source Url",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name_th",
+    "credit_th",
+    "source_url",
+    "fetched_at",
+    "days",
+    "points",
+    "notes_th"
+  ],
+  "title": "RiverForecast",
+  "type": "object"
+}

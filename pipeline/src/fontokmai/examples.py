@@ -206,18 +206,34 @@ def forecast_fixture_run(out: Path, fixtures: Path, now: datetime) -> Any:
                                lattice=(lattice, points), pause=0)
 
 
+RIVERS_FETCHED_AT = "2026-09-27T11:42:00+07:00"
+
+
+def river_fixture_run(out: Path, fixtures: Path, now: datetime) -> Any:
+    """Build forecast/rivers.json for the shipped river points from a recorded Open-Meteo flood answer."""
+    from fontokmai.forecast_build import build_river_forecast
+    from fontokmai.sources.glofas import load_points, request_url
+    from fontokmai.sources.open_data.http import fixture_opener
+
+    points = load_points()
+    opener = fixture_opener({request_url(points): fixtures / "glofas_14_points.json"})
+    return build_river_forecast(out, now, opener=opener, points=points)
+
+
 def write_forecast_example(out: Path, fixtures: Path) -> list[Path]:
-    """contracts/v1/examples/forecast: forecast/rain.json for 12 points around Bangkok (recorded answer)."""
-    from fontokmai.forecast_build import FORECAST_PATH
+    """contracts/v1/examples/forecast: rain.json for 12 points around Bangkok and rivers.json (recorded answers)."""
+    from fontokmai.forecast_build import FORECAST_PATH, RIVERS_PATH
 
     target = out / "forecast"
     if target.exists():
         shutil.rmtree(target)
     with tempfile.TemporaryDirectory() as tmp:
         forecast_fixture_run(Path(tmp), fixtures, datetime.fromisoformat(FORECAST_FETCHED_AT))
+        river_fixture_run(Path(tmp), fixtures, datetime.fromisoformat(RIVERS_FETCHED_AT))
         target.mkdir(parents=True)
         shutil.copyfile(Path(tmp) / FORECAST_PATH, target / "rain.json")
-    return [target / "rain.json"]
+        shutil.copyfile(Path(tmp) / RIVERS_PATH, target / "rivers.json")
+    return [target / "rain.json", target / "rivers.json"]
 
 
 LIVE_FLOODS_AT = "2026-09-26T15:30:00+07:00"

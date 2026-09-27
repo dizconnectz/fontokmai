@@ -21,6 +21,7 @@ def test_export_schemas_writes_one_file_per_contract(tmp_path):
     assert sorted(p.name for p in written) == [
         "alerts.schema.json", "bkk_flooding.schema.json", "bkk_news.schema.json", "bkk_rain.schema.json",
         "bkk_water.schema.json", "cctv.schema.json", "dams.schema.json", "forecast.schema.json",
+        "forecast_rivers.schema.json",
         "live_floods.schema.json", "manifest.schema.json", "places.schema.json", "radar.schema.json",
         "road_flood_history.schema.json", "weather_today.schema.json"]
     schema = json.loads((tmp_path / "alerts.schema.json").read_text(encoding="utf-8"))
