@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { agoText, floodsNear, isOngoing, latestFloods, type LiveFloods } from './floods';
+import { agoText, floodsNear, isOngoing, isShown, latestFloods, type LiveFloods } from './floods';
 
 const at = (hhmm: string) => Date.parse(`2026-09-26T${hhmm}:00+07:00`);
 const report = (id: string, start: string, stop: string | null, location: [number, number]) => ({
@@ -47,6 +47,22 @@ describe('live flood reports', () => {
       'far',
       'highway',
     ]);
+  });
+
+  it('drops reports past the collector limits even from a file that stopped refreshing (D33)', () => {
+    const [nearNow, nearEnded, , highway] = floods.reports;
+    // the highway report started at 06:00 with no end: shown to 18:00 exactly, then gone everywhere
+    expect(isOngoing(highway, at('18:00'))).toBe(true);
+    expect(isOngoing(highway, at('18:00') + 1)).toBe(false);
+    expect(isShown(highway, at('18:00') + 1)).toBe(false);
+    expect(latestFloods(floods, at('18:01')).map((r) => r.id)).not.toContain('highway');
+    expect(
+      floodsNear(floods, [100.61, 14.005], at('18:01')).map((hit) => hit.report.id),
+    ).not.toContain('highway');
+    // an ended report stays two hours after its end, faded, then goes
+    expect(isShown(nearEnded, at('17:00'))).toBe(true);
+    expect(isShown(nearEnded, at('17:00') + 1)).toBe(false);
+    expect(isShown(nearNow, at('15:30'))).toBe(true);
   });
 
   it('says how long ago in plain words', () => {

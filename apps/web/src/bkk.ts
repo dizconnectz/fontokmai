@@ -4,6 +4,9 @@ import type { RoadFloodingDaily, RoadFloodingReport } from '../../../contracts/v
 import type { SituationReport } from '../../../contracts/v1/ts/bkk_news';
 import type { Dam, DamReport } from '../../../contracts/v1/ts/dams';
 import type { WeatherStation, WeatherToday } from '../../../contracts/v1/ts/weather_today';
+import { agoText } from './floods';
+import { dayRainWords } from './forecast';
+import { rainWords as rateWords } from './geo';
 import { distanceM } from './roads';
 
 // Bangkok readings of the Drainage and Sewerage Department through DXS (contract sections 14 and 15)
@@ -26,27 +29,77 @@ export function waterPin(station: CanalStation, now: number): string {
   return hasLevel && isRecent(station.observed_at, now) ? 'pin-water' : 'pin-water-old';
 }
 
-/** Rain in the last hour, in the classes the rain pins and their key use (mm). */
+/**
+ * Rain of the last hour in the words the site gives a radar rain rate (geo.rainWords: under 1 mm light, to 4
+ * slight, to 16 moderate, to 48 heavy, then very heavy), so a gauge and the radar over it read alike. TMD
+ * classes only a day's total (DAY_RAIN_CLASSES), so these words are the site's own.
+ */
 export const RAIN_HOUR_CLASSES = [
-  { pin: 'pin-rain-0', label: 'ไม่มีฝน', color: '#78909c' },
-  { pin: 'pin-rain-1', label: 'ต่ำกว่า 5', color: '#29b6f6' },
-  { pin: 'pin-rain-2', label: '5–20', color: '#1e6fd9' },
-  { pin: 'pin-rain-3', label: '20–40', color: '#6a3fc1' },
-  { pin: 'pin-rain-4', label: '40 ขึ้นไป', color: '#c2185b' },
+  { pin: 'pin-rain-0', label: 'ไม่มีฝน', range: '', color: '#78909c' },
+  { pin: 'pin-rain-1', label: 'เล็กน้อย', range: 'ต่ำกว่า 1', color: '#81d4fa' },
+  { pin: 'pin-rain-2', label: 'เบา', range: '1–4', color: '#29b6f6' },
+  { pin: 'pin-rain-3', label: 'ปานกลาง', range: '4–16', color: '#1e6fd9' },
+  { pin: 'pin-rain-4', label: 'หนัก', range: '16–48', color: '#6a3fc1' },
+  { pin: 'pin-rain-5', label: 'หนักมาก', range: '48 ขึ้นไป', color: '#c2185b' },
 ];
 export const RAIN_OLD_COLOR = '#b0bec5';
+
+const hourClass = (mm: number) =>
+  mm <= 0 ? 0 : 1 + [1, 4, 16, 48].filter((bound) => mm >= bound).length;
 
 /** Pin picture of a rain gauge by its rain in the last hour; grey without a recent reading. */
 export function rainPin(gauge: RainGauge, now: number): string {
   const mm = gauge.rain_1h_mm;
   if (mm === null || !isRecent(gauge.observed_at, now)) return 'pin-rain-old';
-  const index = mm <= 0 ? 0 : mm < 5 ? 1 : mm < 20 ? 2 : mm < 40 ? 3 : 4;
-  return RAIN_HOUR_CLASSES[index].pin;
+  return RAIN_HOUR_CLASSES[hourClass(mm)].pin;
+}
+
+/** "ฝนปานกลาง" for 8 mm in an hour (the words above); "ไม่มีค่า" without a reading */
+export function hourRainWords(mm: number | null): string {
+  if (mm === null) return 'ไม่มีค่า';
+  return mm <= 0 ? 'ไม่มีฝน' : rateWords(mm);
+}
+
+/** "ฝนปานกลาง (8 มม.)" for an hour, or "ฝนหนักมาก (120.5 มม.)" for 24 hours in TMD's words */
+export function rainAmountWords(mm: number | null, hours: 1 | 24): string {
+  if (mm === null) return 'ไม่มีค่า';
+  const words = hours === 1 ? hourRainWords(mm) : dayRainWords(mm);
+  return words === 'ไม่มีฝน' ? words : `${words} (${mmText(mm)})`;
+}
+
+/** "15 นาทีล่าสุดไม่มีฝน" or "15 นาทีล่าสุดยังมีฝน 2 มม."; null without a reading */
+export function lastQuarterText(mm: number | null): string | null {
+  if (mm === null) return null;
+  return mm > 0 ? `15 นาทีล่าสุดยังมีฝน ${mmText(mm)}` : '15 นาทีล่าสุดไม่มีฝน';
+}
+
+/** "กรมอุตุนิยมวิทยา" from "กรมอุตุนิยมวิทยา (ผ่านระบบ DXS ของ…)": the agency alone, for a short source link */
+export function shortCredit(credit: string): string {
+  return credit.replace(/\s*\(.*\)$/, '');
 }
 
 /** "1.78 ม.รทก." or "ไม่มีค่า" */
 export function levelText(metres: number | null): string {
   return metres === null ? 'ไม่มีค่า' : `${metres.toFixed(2)} ม.รทก.`;
+}
+
+/**
+ * "สูงกว่าระดับน้ำทะเล 2 ซม." for 0.02 ม.รทก. The department gives no bank or warning level with its stations,
+ * so a level alone cannot say high or low for its canal; this only says it plainly.
+ */
+export function levelWords(metres: number | null): string {
+  if (metres === null) return 'ไม่มีค่า';
+  const cm = Math.round(Math.abs(metres) * 100);
+  if (cm === 0) return 'เท่ากับระดับน้ำทะเล';
+  const size = cm < 100 ? `${cm} ซม.` : `${(cm / 100).toFixed(2)} ม.`;
+  return `${metres > 0 ? 'สูงกว่า' : 'ต่ำกว่า'}ระดับน้ำทะเล ${size}`;
+}
+
+/** "วัดเมื่อ 19:25 น. (27 นาทีก่อน)", with the date when it was another day */
+export function measuredText(observedAt: string | null, now: number): string {
+  if (!observedAt) return 'ไม่มีค่าล่าสุด';
+  const ago = agoText(observedAt, now);
+  return `วัดเมื่อ ${reportTime(observedAt, now)} (${ago === 'เมื่อสักครู่' ? ago : ago.replace(/^เมื่อ /, '')})`;
 }
 
 /** "12.5 มม.", "0 มม." or "–" */
@@ -170,28 +223,36 @@ export function oldNote(fetchedAt: string, now: number): string | null {
 // ---------- large dams (contract section 18) and TMD stations (section 19) ----------
 export type { Dam, DamReport, SituationReport, WeatherStation, WeatherToday };
 
+/** The Royal Irrigation Department's words for water in a reservoir (เกณฑ์ปริมาณน้ำกักเก็บ, % of capacity). */
 export const DAM_CLASSES = [
-  { pin: 'pin-dam-low', label: 'ต่ำกว่า 30%', color: '#a1887f' },
-  { pin: 'pin-dam', label: '30–80%', color: '#1e88e5' },
-  { pin: 'pin-dam-high', label: '80–100%', color: '#fb8c00' },
-  { pin: 'pin-dam-full', label: 'เกิน 100%', color: '#e53935' },
+  { pin: 'pin-dam-critical', label: 'น้ำน้อยวิกฤต', range: '≤30%', color: '#8d6e63' },
+  { pin: 'pin-dam-low', label: 'น้ำน้อย', range: '30–50%', color: '#c49a6c' },
+  { pin: 'pin-dam', label: 'น้ำปานกลาง', range: '50–80%', color: '#1e88e5' },
+  { pin: 'pin-dam-high', label: 'น้ำมาก', range: '80–100%', color: '#fb8c00' },
+  { pin: 'pin-dam-full', label: 'เกินความจุเก็บกัก', range: 'เกิน 100%', color: '#e53935' },
 ];
 export const DAM_UNKNOWN_COLOR = '#90a4ae';
 
+const damClass = (percent: number) =>
+  percent <= 30 ? 0 : percent <= 50 ? 1 : percent <= 80 ? 2 : percent <= 100 ? 3 : 4;
+
 /** Pin picture of a dam by how full it is. */
 export function damPin(dam: Dam): string {
-  if (dam.percent === null) return 'pin-dam-unknown';
-  const index = dam.percent < 30 ? 0 : dam.percent < 80 ? 1 : dam.percent < 100 ? 2 : 3;
-  return DAM_CLASSES[index].pin;
+  return dam.percent === null ? 'pin-dam-unknown' : DAM_CLASSES[damClass(dam.percent)].pin;
+}
+
+/** "น้ำมาก" for a reservoir 85 % full (the department's words); null without a figure */
+export function damWords(percent: number | null): string | null {
+  return percent === null ? null : DAM_CLASSES[damClass(percent)].label;
 }
 
 /** TMD's daily rain classes (mm), for the station pins */
 export const DAY_RAIN_CLASSES = [
-  { pin: 'pin-wx-0', label: 'ไม่มีฝน', color: '#78909c' },
-  { pin: 'pin-wx-1', label: '0.1–10', color: '#29b6f6' },
-  { pin: 'pin-wx-2', label: '10.1–35', color: '#1e6fd9' },
-  { pin: 'pin-wx-3', label: '35.1–90', color: '#6a3fc1' },
-  { pin: 'pin-wx-4', label: 'เกิน 90', color: '#c2185b' },
+  { pin: 'pin-wx-0', label: 'ไม่มีฝน', range: '', color: '#78909c' },
+  { pin: 'pin-wx-1', label: 'เล็กน้อย', range: '0.1–10', color: '#29b6f6' },
+  { pin: 'pin-wx-2', label: 'ปานกลาง', range: '10.1–35', color: '#1e6fd9' },
+  { pin: 'pin-wx-3', label: 'หนัก', range: '35.1–90', color: '#6a3fc1' },
+  { pin: 'pin-wx-4', label: 'หนักมาก', range: 'เกิน 90', color: '#c2185b' },
 ];
 
 /** Pin picture of a TMD station by the rain of its morning report. */

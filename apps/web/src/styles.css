@@ -641,6 +641,8 @@ svg {
   display: grid;
   gap: 4px;
   max-width: calc(100% - 140px);
+  max-height: calc(100% - 36px);
+  overflow-y: auto;
   padding: 8px 10px;
   border-radius: 10px;
   background: var(--glass);
@@ -1100,47 +1102,58 @@ details > ul {
 }
 .stage.has-timeline .map-legend {
   bottom: calc(var(--timeline-space) + 12px);
+  max-height: calc(100% - var(--timeline-space) - 36px);
 }
-.legend-toggle {
+/* the colour bars stay; what each pin means opens from the button under them */
+.legend-pins {
+  display: grid;
+  gap: 4px;
+}
+.legend-pins[hidden] {
   display: none;
 }
-/* on a phone the colour key is a chip under the map buttons (the map attribution opens across the bottom
-   until the first drag, and an open key would cover the pin); tap to open it */
+.legend-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  justify-self: start;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  color: var(--brand);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.map-legend.open .legend-toggle svg {
+  transform: rotate(180deg);
+}
+/* on a phone the key sits under the layer button on the right, clear of the map buttons on the left (the
+   map attribution opens across the bottom until the first drag); the button comes first and opens down */
 @media (max-width: 640px) {
   .stage .map-legend,
   .stage.has-timeline .map-legend {
-    /* under the layer button on the right, clear of the map buttons on the left */
     top: 58px;
     right: 12px;
     left: auto;
     bottom: auto;
-    justify-items: end;
-    padding: 0;
-    background: transparent;
-    box-shadow: none;
+    max-width: calc(100% - 172px);
+    max-height: calc(100% - 158px);
+    padding: 6px 8px;
+    font-size: 0.74rem;
+  }
+  .stage.has-timeline .map-legend {
+    max-height: calc(100% - var(--timeline-space) - 158px);
   }
   .legend-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+    order: -1;
     justify-self: end;
-    padding: 6px 10px;
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    background: var(--glass);
-    box-shadow: 0 2px 8px var(--shadow);
-    font-size: 0.82rem;
   }
-  .map-legend:not(.open) .legend-row {
-    display: none;
+  .legend-toggle svg {
+    transform: rotate(180deg);
   }
-  .map-legend.open .legend-row {
-    padding: 4px 10px;
-    background: var(--glass);
-  }
-  .map-legend.open .legend-row:last-child {
-    padding-bottom: 8px;
-    border-radius: 0 0 10px 10px;
+  .map-legend.open .legend-toggle svg {
+    transform: none;
   }
 }
 .timeline {
@@ -1552,6 +1565,9 @@ details > ul {
 .legend-row.rain-hour {
   flex-wrap: wrap;
   gap: 4px 8px;
+}
+.legend-row small {
+  color: var(--muted);
 }
 .measured-line {
   display: grid;

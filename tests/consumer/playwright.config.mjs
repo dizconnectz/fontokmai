@@ -2,7 +2,7 @@ import { fileURLToPath } from "node:url";
 
 export default {
   testDir: ".",
-  testMatch: "browser.spec.mjs",
+  testMatch: ["*-browser.spec.mjs", "browser.spec.mjs"],
   outputDir: "../../apps/web/test-results/consumer-review",
   reporter: "list",
   workers: 1,

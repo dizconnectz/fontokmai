@@ -17,6 +17,8 @@ jobs:
       - run: uv sync --locked
       - run: uv run ruff check .
       - run: uv run pytest
+      - name: DXS delivery consumer contracts
+        run: uv run pytest ../tests/consumer/test_dxs_delivery.py
       - name: Dependency licenses (no GPL family)
         run: uv run --with pip-licenses pip-licenses --partial-match --fail-on "GPL"
   contracts:

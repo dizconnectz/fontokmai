@@ -693,9 +693,11 @@ test('Bangkok rain gauges and canal levels show as measured values near a pin', 
   await page.goto('/?pin=13.7065,100.5703'); // at the example pumping station ส.คลองเตย
   const here = page.getByTestId('measured-here');
   // the nearest gauge is 2.3 km away; the one 13 km away is not "near"
-  await expect(here).toContainText('ฝน 1 ชม. 0 มม. · 24 ชม. 1.5 มม.');
+  await expect(here).toContainText('ชั่วโมงล่าสุดไม่มีฝน · 24 ชม. ฝนเล็กน้อย (1.5 มม.)');
   await expect(here).toContainText('สถานีสถานีสูบน้ำพระโขนง ห่าง 2.3 กม.');
-  await expect(here.getByTestId('water-here')).toContainText('ส.คลองเตย · ด้านใน 1.78 ม.รทก.');
+  await expect(here.getByTestId('water-here')).toContainText(
+    'ส.คลองเตย · น้ำในคลองสูงกว่าระดับน้ำทะเล 1.78 ม.',
+  );
   await expect(here.getByTestId('water-here').locator('li')).toHaveCount(1);
   await expect(here).toContainText('ไม่ใช่ความลึกน้ำท่วมบนถนน');
   await page.getByRole('button', { name: 'ชั้นข้อมูล' }).click();
@@ -734,7 +736,7 @@ test('the department situation text and the Chao Phraya dams show, with a note o
   await expect(situation).toContainText('ฝนเล็กน้อย & ลมแรง');
   await expect(situation).toContainText('ไม่ใช่ประกาศเตือนภัยของกรมอุตุฯ');
   const dams = page.getByTestId('dams');
-  await expect(dams).toContainText('เขื่อนภูมิพล · น้ำ 62.68%');
+  await expect(dams).toContainText('เขื่อนภูมิพล · น้ำปานกลาง 62.68%');
   await expect(dams).toContainText('เขื่อนป่าสักชลสิทธิ์');
   await expect(dams).not.toContainText('ไม่ใช่ข้อมูลเรียลไทม์');
   // choosing a dam moves the map only
@@ -861,5 +863,24 @@ test('static sources and method pages remain readable without JavaScript', async
   ).toBeVisible();
   await page.goto('http://localhost:4173/method/');
   await expect(page.getByRole('heading', { name: 'อ่านแผนที่อย่างไร' })).toBeVisible();
+  // the about page answers in plain text, and its questions are also structured data for search
+  await page.goto('http://localhost:4173/about/');
+  await expect(page.getByRole('heading', { name: 'เกี่ยวกับฝนตกไหม' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'เช็คน้ำท่วมตอนนี้ได้ที่ไหน' })).toBeVisible();
+  const faq = JSON.parse(
+    (await page.locator('script[type="application/ld+json"]').textContent()) ?? '{}',
+  );
+  expect(faq['@type']).toBe('FAQPage');
+  const questions = await page.locator('h3').allTextContents();
+  expect(faq.mainEntity.map((item: { name: string }) => item.name)).toEqual(questions);
+  // the map page itself says what it is before any script runs
+  await page.goto('http://localhost:4173/');
+  await expect(
+    page.getByRole('heading', { name: 'ฝนตกไหม — แผนที่ฝนและน้ำท่วมประเทศไทย' }),
+  ).toBeVisible();
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+    'href',
+    'https://dizconnectz.github.io/fontokmai/',
+  );
   await context.close();
 });

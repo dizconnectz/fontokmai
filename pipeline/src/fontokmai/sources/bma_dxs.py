@@ -296,7 +296,7 @@ RELAY_MODELS: dict[str, Any] = {}  # filled below, once the paths exist
 
 
 def relay_files(out: Path, now: datetime) -> dict[str, bytes]:
-    """Bangkok files delivered by a manual run: those that pass their contract and are less than a day old."""
+    """Bangkok files delivered by a manual run: those that pass their contract and are at most RELAY_MAX_AGE old."""
     files = {}
     for rel, model in RELAY_MODELS.items():
         try:

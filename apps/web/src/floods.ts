@@ -13,9 +13,29 @@ export const REPORTER_TH: Record<FloodReport['reporter'], string> = {
   public: 'ผู้ใช้รายงาน',
 };
 
-/** The report is within its own time window (public reports last one hour). */
+/** D33: a report made more than 12 hours ago is not shown, as the collector drops it (longdo_live.py). */
+export const REPORT_MAX_AGE_MS = 12 * 3_600_000;
+/** A report whose window ended more than 2 hours ago is not shown either (the collector's RECENT). */
+export const ENDED_KEEP_MS = 2 * 3_600_000;
+
+/**
+ * The report may be shown at all. The web applies the collector's limits again, so a snapshot that stopped
+ * refreshing (a tab left open, or the last good file after the source failed) never keeps an old report.
+ */
+export function isShown(report: FloodReport, now: number): boolean {
+  return (
+    now - Date.parse(report.start) <= REPORT_MAX_AGE_MS &&
+    (!report.stop || now - Date.parse(report.stop) <= ENDED_KEEP_MS)
+  );
+}
+
+/** The report is within its own time window (public reports last one hour) and still shown. */
 export function isOngoing(report: FloodReport, now: number): boolean {
-  return Date.parse(report.start) <= now && (!report.stop || now <= Date.parse(report.stop));
+  return (
+    isShown(report, now) &&
+    Date.parse(report.start) <= now &&
+    (!report.stop || now <= Date.parse(report.stop))
+  );
 }
 
 /** "เมื่อ 12 นาทีก่อน", "เมื่อ 3 ชม.ก่อน", "เมื่อ 5 วันก่อน" */
@@ -39,6 +59,7 @@ export function floodsNear(
   radiusM = FLOOD_RADIUS_M,
 ): NearFlood[] {
   return floods.reports
+    .filter((report) => isShown(report, now))
     .map((report) => ({ report, distance: distanceM(pin, report.location) }))
     .filter((hit) => hit.distance <= radiusM)
     .sort(

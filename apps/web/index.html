@@ -15,23 +15,90 @@
         document.documentElement.dataset.theme = 'light';
       }
     </script>
+    <title>ฝนตกไหม · เรดาร์ฝน น้ำท่วม และประกาศเตือนภัยทั่วไทย</title>
     <meta
       name="description"
-      content="ฝนตกไหม — ติดตามประกาศอากาศของกรมอุตุนิยมวิทยาบนแผนที่ประเทศไทย พร้อมแหล่งที่มาและเวลาข้อมูล"
+      content="เช็คว่าฝนตกไหมและน้ำท่วมตรงไหนบนแผนที่ประเทศไทย: เรดาร์ฝนและประกาศเตือนภัยของกรมอุตุนิยมวิทยา รายงานน้ำท่วมตอนนี้ ระดับน้ำคลองและฝนวัดจริงของกรุงเทพฯ พยากรณ์ฝน 7 วัน บอกที่มาและเวลาของทุกข้อมูล ใช้ฟรี"
     />
+    <!-- the site lives on GitHub Pages; local runs point to it as the page to index -->
+    <link rel="canonical" href="https://dizconnectz.github.io/fontokmai/" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ฝนตกไหม (fontokmai)" />
+    <meta property="og:locale" content="th_TH" />
+    <meta property="og:url" content="https://dizconnectz.github.io/fontokmai/" />
+    <meta property="og:title" content="ฝนตกไหม · เรดาร์ฝน น้ำท่วม และประกาศเตือนภัยทั่วไทย" />
+    <meta
+      property="og:description"
+      content="แผนที่ฝนและน้ำท่วมของประเทศไทย ใช้ฟรี: เรดาร์ฝน ประกาศเตือนภัยกรมอุตุนิยมวิทยา รายงานน้ำท่วมตอนนี้ และข้อมูลน้ำของกรุงเทพฯ ทุกค่าบอกที่มาและเวลา"
+    />
+    <meta property="og:image" content="https://dizconnectz.github.io/fontokmai/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="ฝนตกไหม แผนที่เรดาร์ฝน น้ำท่วม และประกาศเตือนภัยทั่วประเทศไทย"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
-    <title>ฝนตกไหม · ประกาศอากาศประเทศไทย</title>
+    <link rel="sitemap" type="application/xml" href="%BASE_URL%sitemap.xml" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://dizconnectz.github.io/fontokmai/#website",
+            "url": "https://dizconnectz.github.io/fontokmai/",
+            "name": "ฝนตกไหม",
+            "alternateName": ["fontokmai", "ฝนตกไหม แผนที่ฝนและน้ำท่วม"],
+            "inLanguage": "th"
+          },
+          {
+            "@type": "WebApplication",
+            "name": "ฝนตกไหม (fontokmai)",
+            "url": "https://dizconnectz.github.io/fontokmai/",
+            "description": "แผนที่ฝนและน้ำท่วมของประเทศไทย รวมเรดาร์ฝนและประกาศเตือนภัยของกรมอุตุนิยมวิทยา รายงานน้ำท่วมตอนนี้ ระดับน้ำคลองและฝนวัดจริงของกรุงเทพฯ ปริมาณน้ำในเขื่อนใหญ่ และพยากรณ์ฝน 7 วัน ทุกค่าบอกแหล่งที่มาและเวลาข้อมูล เป็นโครงการอิสระ ไม่ใช่เว็บของหน่วยงานรัฐ",
+            "inLanguage": "th",
+            "applicationCategory": "UtilitiesApplication",
+            "operatingSystem": "All",
+            "browserRequirements": "ต้องเปิด JavaScript",
+            "isAccessibleForFree": true,
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "THB" },
+            "spatialCoverage": { "@type": "Country", "name": "ประเทศไทย" },
+            "featureList": [
+              "เรดาร์ฝนของกรมอุตุนิยมวิทยา ย้อนหลัง 1 ชั่วโมง",
+              "ประกาศเตือนภัยสภาพอากาศของกรมอุตุนิยมวิทยาบนแผนที่",
+              "รายงานน้ำท่วมตอนนี้จาก iTIC และ Longdo Traffic",
+              "ระดับน้ำคลอง ฝนวัดจริง และถนนที่น้ำท่วมขังของกรุงเทพฯ",
+              "ปริมาณน้ำในเขื่อนใหญ่",
+              "พยากรณ์ฝนรายชั่วโมง 3 วัน และรายวัน 7 วัน"
+            ],
+            "isPartOf": { "@id": "https://dizconnectz.github.io/fontokmai/#website" }
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
+    <!-- shown while the map loads, to readers without JavaScript and to crawlers; React replaces it -->
     <div id="root">
-      <h1>ฝนตกไหม — ประกาศอากาศประเทศไทย</h1>
-      <p>กำลังเปิดแผนที่และรายการประกาศทางการ</p>
-      <p>ประกาศกรมอุตุนิยมวิทยา เรดาร์ฝน พยากรณ์ฝน และประวัติน้ำท่วมถนน บนแผนที่ประเทศไทย</p>
+      <h1>ฝนตกไหม — แผนที่ฝนและน้ำท่วมประเทศไทย</h1>
+      <p>กำลังเปิดแผนที่…</p>
+      <p>
+        เช็คว่าฝนตกไหมและน้ำท่วมตรงไหน: เรดาร์ฝนและประกาศเตือนภัยของกรมอุตุนิยมวิทยา
+        รายงานน้ำท่วมตอนนี้ ระดับน้ำคลองและฝนวัดจริงของกรุงเทพฯ ปริมาณน้ำในเขื่อนใหญ่ และพยากรณ์ฝน 7
+        วัน แตะที่ใดก็ได้บนแผนที่เพื่อดูสรุปของจุดนั้น ทุกค่าบอกที่มาและเวลา ใช้ฟรี
+      </p>
       <noscript
-        >เปิด JavaScript เพื่อดูแผนที่และข้อมูลประกาศ หรืออ่านประกาศโดยตรงที่
+        >เปิด JavaScript เพื่อดูแผนที่ หรืออ่านประกาศโดยตรงที่
         <a href="https://www.tmd.go.th">กรมอุตุนิยมวิทยา</a></noscript
       >
-      <a href="%BASE_URL%sources/">แหล่งข้อมูล</a> · <a href="%BASE_URL%method/">วิธีอ่านข้อมูล</a>
+      <p>
+        <a href="%BASE_URL%about/">เกี่ยวกับและคำถามที่พบบ่อย</a> ·
+        <a href="%BASE_URL%method/">วิธีอ่านข้อมูล</a> ·
+        <a href="%BASE_URL%sources/">แหล่งข้อมูลและเครดิต</a>
+      </p>
     </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -10,20 +10,26 @@ import type {
   StyleSpecification,
 } from 'maplibre-gl';
 import type { FeatureCollection, MultiPolygon, Point } from 'geojson';
-import { displayStatus, formatTime, type Alert, type Camera, type RadarFeed } from './data';
+import { displayStatus, type Alert, type Camera, type RadarFeed } from './data';
 import { LEVEL_FILL, LEVEL_LINE, levelOf } from './alerts';
 import type { ForecastAreas } from './forecast';
-import { agoText, isOngoing, REPORTER_TH, type FloodReport } from './floods';
+import { agoText, isOngoing, isShown, REPORTER_TH, type FloodReport } from './floods';
 import {
   amount,
   damPin,
+  damWords,
   DAY_RAIN_CLASSES,
   DAM_CLASSES,
-  levelText,
+  lastQuarterText,
+  levelWords,
+  measuredText,
   mmText,
   oldNote,
   RAIN_HOUR_CLASSES,
   rainPin,
+  rainAmountWords,
+  reportTime,
+  shortCredit,
   thaiDay,
   waterPin,
   weatherPin,
@@ -284,26 +290,24 @@ function floodPopup(report: FloodReport, now: number, onHere: () => void): HTMLE
   when.textContent = `${agoText(report.start, now)} · ${REPORTER_TH[report.reporter]}${
     isOngoing(report, now) ? '' : ' · ครบเวลารายงานแล้ว อาจลดลง'
   }`;
-  const note = document.createElement('small');
-  note.textContent = 'เป็นรายงาน ไม่ใช่การตรวจวัด · iTIC และ Longdo Traffic (CC BY 4.0)';
-  const link = document.createElement('a');
-  link.href = report.url;
-  link.target = '_blank';
-  link.rel = 'noopener noreferrer';
-  link.textContent = 'ดูรายงานต้นทาง ↗';
+  const link = sourceLink(report.url, 'iTIC และ Longdo Traffic');
   const here = document.createElement('button');
   here.type = 'button';
   here.className = 'popup-action';
   here.textContent = 'ดูฝนและประกาศตรงนี้';
   here.addEventListener('click', onHere);
-  root.append(title, when, note, link, here);
+  root.append(title, when, link, here);
   return root;
 }
 
-function line(text: string, tag: 'span' | 'small' | 'strong' = 'span'): HTMLElement {
+function line(text: string, tag: 'span' | 'small' | 'strong' | 'b' = 'span'): HTMLElement {
   const element = document.createElement(tag);
   element.textContent = text;
   return element;
+}
+/** "ที่มา: กรมอุตุนิยมวิทยา ↗" linked to the source's own page; the full credits are on the sources page */
+function sourceLink(href: string, credit: string): HTMLElement {
+  return linkOut(href, `ที่มา: ${shortCredit(credit)} ↗`);
 }
 function linkOut(href: string, text: string): HTMLElement {
   const link = document.createElement('a');
@@ -315,11 +319,6 @@ function linkOut(href: string, text: string): HTMLElement {
 }
 const district = (name: string | null) =>
   !name ? '' : name.startsWith('เขต') ? name : `เขต${name}`;
-function measured(observedAt: string | null, now: number): string {
-  return observedAt
-    ? `วัดเมื่อ ${formatTime(observedAt)} น. (${agoText(observedAt, now)})`
-    : 'ไม่มีค่าล่าสุด';
-}
 
 /** "not updated by itself" or "not real time, data of <date>" for a file fetched a while ago */
 function note(fetchedAt: string, now: number): HTMLElement[] {
@@ -336,16 +335,18 @@ function damPopup(dam: Dam, file: DamReport, now: number): HTMLElement {
   root.append(
     line(dam.name_th, 'strong'),
     line([dam.region_th, dam.owner_th].filter(Boolean).join(' · ')),
-    line(dam.percent === null ? 'ไม่มีค่าร้อยละ' : `น้ำ ${amount(dam.percent)}% ของความจุ`),
+    line(
+      dam.percent === null
+        ? 'ไม่มีค่าร้อยละ'
+        : `${damWords(dam.percent)} · ${amount(dam.percent)}% ของความจุ`,
+      'b',
+    ),
     line(`ปริมาณน้ำ ${amount(dam.volume_mcm)} / ${amount(dam.storage_mcm)} ล้าน ลบ.ม.`),
     line(`ไหลเข้า ${amount(dam.inflow_mcm)} · ระบาย ${amount(dam.outflow_mcm)} ล้าน ลบ.ม./วัน`),
     line(`ข้อมูลวันที่ ${thaiDay(file.report_date)}`),
     ...note(file.fetched_at, now),
-    line(
-      `${dam.location_kind === 'reservoir' ? 'หมุดอยู่กลางอ่างเก็บน้ำ · ' : ''}${file.credit_th} · ${file.location_credit_th}`,
-      'small',
-    ),
-    linkOut(file.source_url, 'ข้อมูลน้ำของกรมชลประทาน ↗'),
+    ...(dam.location_kind === 'reservoir' ? [line('หมุดอยู่กลางอ่างเก็บน้ำ', 'small')] : []),
+    sourceLink(file.source_url, file.credit_th),
   );
   return root;
 }
@@ -361,15 +362,16 @@ function weatherPopup(station: WeatherStation, file: WeatherToday, now: number):
   root.append(
     line(`สถานีอุตุฯ ${station.name_th}`, 'strong'),
     line(station.province_th ?? ''),
-    line(`ฝน ${mmText(station.rain_mm)} (รายงานรอบเช้า)`),
+    line(`ฝน 24 ชม. ถึงรอบตรวจเช้า: ${rainAmountWords(station.rain_mm, 24)}`, 'b'),
   );
   if (temps.length) root.append(line(temps.join(' · ')));
   if (station.humidity_pct !== null) root.append(line(`ความชื้น ${station.humidity_pct}%`));
   root.append(
-    line(station.observed_at ? `ตรวจเมื่อ ${formatTime(station.observed_at)} น.` : 'ไม่มีเวลาตรวจ'),
+    line(
+      station.observed_at ? `ตรวจเมื่อ ${reportTime(station.observed_at, now)}` : 'ไม่มีเวลาตรวจ',
+    ),
     ...note(file.fetched_at, now),
-    line(file.credit_th, 'small'),
-    linkOut(file.source_url, 'เว็บกรมอุตุนิยมวิทยา ↗'),
+    sourceLink(file.source_url, file.credit_th),
   );
   return root;
 }
@@ -380,15 +382,14 @@ function waterPopup(station: CanalStation, file: CanalLevels, now: number): HTML
   root.append(
     line(station.name_th, 'strong'),
     line([station.canal_th, district(station.district_th)].filter(Boolean).join(' · ')),
-    line(`ระดับน้ำด้านใน ${levelText(station.level_in_m)}`),
+    line(`น้ำในคลอง: ${levelWords(station.level_in_m)}`, 'b'),
   );
   if (station.level_out_m !== null)
-    root.append(line(`ระดับน้ำด้านนอก ${levelText(station.level_out_m)}`));
+    root.append(line(`ด้านนอก (ฝั่งที่ระบายน้ำออก): ${levelWords(station.level_out_m)}`));
   root.append(
-    line(measured(station.observed_at, now)),
+    line(measuredText(station.observed_at, now)),
     ...note(file.fetched_at, now),
-    line(`ม.รทก. = เทียบระดับทะเลปานกลาง ไม่ใช่ความลึกน้ำท่วมบนถนน · ${file.credit_th}`, 'small'),
-    linkOut(file.source_url, 'ดูระดับน้ำทุกสถานีของ กทม. ↗'),
+    sourceLink(file.source_url, file.credit_th),
   );
   return root;
 }
@@ -399,12 +400,19 @@ function rainPopup(gauge: RainGauge, file: RainGauges, now: number): HTMLElement
   root.append(
     line(gauge.name_th, 'strong'),
     line(district(gauge.district_th)),
-    line(`ฝน 1 ชม. ${mmText(gauge.rain_1h_mm)} · 24 ชม. ${mmText(gauge.rain_24h_mm)}`),
-    line(`15 นาที ${mmText(gauge.rain_15min_mm)} · 3 ชม. ${mmText(gauge.rain_3h_mm)}`),
-    line(measured(gauge.observed_at, now)),
+    line(`ชั่วโมงล่าสุด: ${rainAmountWords(gauge.rain_1h_mm, 1)}`, 'b'),
+    line(`รวม 24 ชม.: ${rainAmountWords(gauge.rain_24h_mm, 24)}`),
+    line(
+      [
+        lastQuarterText(gauge.rain_15min_mm),
+        gauge.rain_3h_mm !== null && `3 ชม. ${mmText(gauge.rain_3h_mm)}`,
+      ]
+        .filter(Boolean)
+        .join(' · '),
+    ),
+    line(measuredText(gauge.observed_at, now)),
     ...note(file.fetched_at, now),
-    line(`วัดจริงที่สถานี ไม่ใช่ค่าจากเรดาร์ · ${file.credit_th}`, 'small'),
-    linkOut(file.source_url, 'หน้าข้อมูลฝนของ กทม. ↗'),
+    sourceLink(file.source_url, file.credit_th),
   );
   return root;
 }
@@ -484,10 +492,12 @@ export default function MapView(props: Props) {
           },
         });
         map.current = instance;
-        instance.on('styleimagemissing', (event) => {
-          const picture = mapImage(event.id);
-          if (picture && !instance.hasImage(event.id))
-            instance.addImage(event.id, picture, { pixelRatio: MAP_IMAGE_RATIO });
+        // pins and bubbles are drawn when first needed; since MapLibre 6 only a resolver (not the
+        // styleimagemissing event) can supply a picture for the layout that asked for it
+        instance.setMissingStyleImageResolver((id) => {
+          const picture = mapImage(id);
+          if (picture && !instance.hasImage(id))
+            instance.addImage(id, picture, { pixelRatio: MAP_IMAGE_RATIO });
         });
         instance.addControl(new maplibre.NavigationControl({ showCompass: false }), 'bottom-right');
         instance.addControl(
@@ -566,7 +576,7 @@ export default function MapView(props: Props) {
                 )[0]
               : undefined;
             const layer = hit?.layer.id;
-            if (hit && (layer === 'flood-cluster' || layer === 'camera-cluster')) {
+            if (hit && layer?.endsWith('-cluster')) {
               const center = (hit.geometry as Point).coordinates as LngLat;
               void (instance.getSource(hit.source) as GeoJSONSource)
                 .getClusterExpansionZoom(hit.properties.cluster_id as number)
@@ -809,15 +819,17 @@ export default function MapView(props: Props) {
     const collection: FeatureCollection<Point> = {
       type: 'FeatureCollection',
       features: props.layers.floods
-        ? props.floods.map((report) => ({
-            type: 'Feature' as const,
-            geometry: { type: 'Point' as const, coordinates: report.location },
-            properties: {
-              id: report.id,
-              ongoing: isOngoing(report, props.now),
-              rank: isOngoing(report, props.now) ? 1 : 0,
-            },
-          }))
+        ? props.floods
+            .filter((report) => isShown(report, props.now))
+            .map((report) => ({
+              type: 'Feature' as const,
+              geometry: { type: 'Point' as const, coordinates: report.location },
+              properties: {
+                id: report.id,
+                ongoing: isOngoing(report, props.now),
+                rank: isOngoing(report, props.now) ? 1 : 0,
+              },
+            }))
         : [],
     };
     (map.current.getSource('floods') as GeoJSONSource | undefined)?.setData(collection);

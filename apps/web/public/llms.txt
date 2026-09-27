@@ -1,0 +1,32 @@
+# ฝนตกไหม (fontokmai)
+
+> แผนที่ฝนและน้ำท่วมของประเทศไทย ใช้ฟรีและไม่แสวงกำไร รวมเรดาร์ฝนและประกาศเตือนภัยของกรมอุตุนิยมวิทยา รายงานน้ำท่วมตอนนี้ ระดับน้ำคลองและฝนวัดจริงของกรุงเทพฯ ปริมาณน้ำในเขื่อนใหญ่ และพยากรณ์ฝน 7 วัน ทุกค่าบอกแหล่งที่มาและเวลาข้อมูล เป็นโครงการอิสระ ไม่ใช่เว็บของหน่วยงานรัฐ
+>
+> fontokmai ("is it raining?") is a free, noncommercial map of rain and floods in Thailand: warnings and rain radar of the Thai Meteorological Department, live flood reports, Bangkok canal levels and rain gauges, large dams and a 7-day rain forecast, each value with its source and time. It is independent, not a government site. The pages are in Thai.
+
+ข้อเท็จจริงสั้นๆ:
+
+- เว็บ: https://dizconnectz.github.io/fontokmai/ ใช้ฟรี ไม่ต้องสมัคร ไม่มีโฆษณา
+- ประกาศเตือนภัยมาจากประกาศ CAP ของกรมอุตุนิยมวิทยา แสดงตามต้นฉบับ แยกจากค่าที่คำนวณเอง
+- เก็บประกาศ เรดาร์ และรายงานน้ำท่วมทุก 15 นาที พยากรณ์ฝนทุก 6 ชั่วโมง ข้อมูลน้ำของกรุงเทพฯ ดึงเป็นครั้งๆ และมีป้ายบอกเมื่อไม่ใช่ข้อมูลเรียลไทม์
+- รายงานน้ำท่วมมาจากผู้ใช้ เจ้าหน้าที่ iTIC และกรมทางหลวง ผ่าน Longdo Traffic ไม่แสดงรายงานที่แจ้งไว้เกิน 12 ชั่วโมง
+- ฝนรวม 24 ชั่วโมงใช้เกณฑ์กรมอุตุนิยมวิทยา: 0.1–10.0 มม. เล็กน้อย, 10.1–35.0 ปานกลาง, 35.1–90.0 หนัก, เกิน 90.0 หนักมาก
+- ระดับน้ำคลองของกรุงเทพฯ เทียบระดับน้ำทะเลปานกลาง ไม่ใช่ความลึกน้ำท่วมบนถนน
+- สายด่วน: 1784 ปภ., 1669 เจ็บป่วยฉุกเฉิน, 1586 กรมทางหลวง, 1146 กรมทางหลวงชนบท
+
+## หน้าเว็บ
+
+- [แผนที่ (หน้าหลัก)](https://dizconnectz.github.io/fontokmai/): เรดาร์ฝน ประกาศเตือนภัย รายงานน้ำท่วม และข้อมูลน้ำบนแผนที่ ต้องเปิด JavaScript
+- [เกี่ยวกับและคำถามที่พบบ่อย](https://dizconnectz.github.io/fontokmai/about/): เว็บนี้คืออะไร ดูฝนและน้ำท่วมอย่างไร ข้อมูลอัปเดตบ่อยแค่ไหน
+- [วิธีอ่านข้อมูล](https://dizconnectz.github.io/fontokmai/method/): ความหมายของสี หมุด คำบอกความแรงฝน และข้อจำกัด
+- [แหล่งข้อมูลและเครดิต](https://dizconnectz.github.io/fontokmai/sources/): ที่มา เครดิต และเงื่อนไขของข้อมูลทุกชุด
+
+## ข้อมูลล่าสุด (JSON)
+
+- [manifest.json](https://dizconnectz.github.io/fontokmai-data/data/v1/manifest.json): รายการไฟล์ข้อมูลรอบล่าสุดพร้อมเวลา ไฟล์อื่นอยู่ใต้ที่อยู่เดียวกันตาม path ในรายการ (ต่อท้าย `?t=<เวลา>` เพื่อข้าม cache)
+- [รูปแบบข้อมูล](https://github.com/dizconnectz/fontokmai/blob/main/contracts/v1/README.md): ความหมายของทุกช่อง หน่วย เวลา และค่าที่ไม่มี
+- ข้อมูลแต่ละชุดเป็นของเจ้าของต้นทางและมีเงื่อนไขต่างกัน เมื่อนำไปใช้หรืออ้างอิงต้องให้เครดิตต้นทางตามหน้าแหล่งข้อมูลและเครดิต
+
+## Optional
+
+- [โค้ดบน GitHub](https://github.com/dizconnectz/fontokmai): PolyForm Noncommercial 1.0.0

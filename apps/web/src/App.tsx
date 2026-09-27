@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowDown,
   Camera as CameraIcon,
+  ChevronUp,
   CircleHelp,
   Moon,
   Sun,
@@ -10,7 +11,6 @@ import {
   Droplets,
   Info,
   Layers as LayersIcon,
-  Palette,
   Waves,
   RefreshCw,
   ShieldAlert,
@@ -148,7 +148,7 @@ export default function App() {
     query.addEventListener('change', follow);
     return () => query.removeEventListener('change', follow);
   }, []);
-  // on a phone the colour key folds into a chip so it does not cover the pin; always open on wider screens
+  // the colour bars always show; what each pin means folds behind a button (it would cover the map)
   const [legendOpen, setLegendOpen] = useState(false);
   const panel = useRef<HTMLElement>(null);
 
@@ -191,6 +191,15 @@ export default function App() {
   const stepIndex = chosen >= 0 ? chosen : nowIndex;
   const step = steps[stepIndex];
   const rainLegend = snapshot?.radar?.legend ?? RAIN_LEGEND;
+  const colourKey = layers.alerts || (layers.radar && (step.kind !== 'now' || frames.length > 0));
+  const pinKey =
+    layers.cameras ||
+    (step.kind !== 'forecast' &&
+      (layers.floods ||
+        (layers.water && !!water) ||
+        (layers.rain && !!rain) ||
+        (layers.dams && !!dams) ||
+        (layers.weather && !!weather)));
   const forecastLayer = useMemo(
     () => (step.kind === 'forecast' && forecast ? forecastAreas(forecast, step.hour) : null),
     [step, forecast],
@@ -484,112 +493,125 @@ export default function App() {
           </div>
         </div>
 
-        <div className={`map-legend ${legendOpen ? 'open' : ''}`} aria-label="คำอธิบายสี">
-          <button
-            className="legend-toggle"
-            aria-expanded={legendOpen}
-            onClick={() => setLegendOpen((open) => !open)}
-          >
-            <Palette size={15} /> สีบนแผนที่
-          </button>
-          {layers.alerts && (
-            <div className="legend-row">
-              {LEGEND_LEVELS.map((level) => (
-                <span key={level}>
-                  <i style={{ background: LEVEL_FILL[level] }} /> {LEVEL_LABEL[level]}
-                </span>
-              ))}
-            </div>
-          )}
-          {layers.radar && (step.kind !== 'now' || frames.length > 0) && (
-            <div className="legend-row radar-scale">
-              <span>{step.kind === 'forecast' ? 'พยากรณ์ฝน' : 'ฝน'}</span>
-              <span
-                className="radar-gradient"
-                style={{
-                  background: `linear-gradient(90deg, ${(step.kind === 'forecast'
-                    ? FORECAST_LEVELS.map((level) => level.color)
-                    : [...rainLegend]
-                        .reverse()
-                        .filter((item) => item.min_mm_per_hr !== null && item.min_mm_per_hr > 0)
-                        .map((item) => item.color)
-                  ).join(', ')})`,
-                }}
-              />
-              <span>หนัก</span>
-              {step.kind === 'radar' && radarAge !== null && radarAge > 45 && (
-                <b className="stale-mark">เก่า</b>
+        {(colourKey || pinKey) && (
+          <div className={`map-legend ${legendOpen ? 'open' : ''}`} aria-label="คำอธิบายสี">
+            {layers.alerts && (
+              <div className="legend-row">
+                {LEGEND_LEVELS.map((level) => (
+                  <span key={level}>
+                    <i style={{ background: LEVEL_FILL[level] }} /> {LEVEL_LABEL[level]}
+                  </span>
+                ))}
+              </div>
+            )}
+            {layers.radar && (step.kind !== 'now' || frames.length > 0) && (
+              <div className="legend-row radar-scale">
+                <span>{step.kind === 'forecast' ? 'พยากรณ์ฝน' : 'ฝน'}</span>
+                <span
+                  className="radar-gradient"
+                  style={{
+                    background: `linear-gradient(90deg, ${(step.kind === 'forecast'
+                      ? FORECAST_LEVELS.map((level) => level.color)
+                      : [...rainLegend]
+                          .reverse()
+                          .filter((item) => item.min_mm_per_hr !== null && item.min_mm_per_hr > 0)
+                          .map((item) => item.color)
+                    ).join(', ')})`,
+                  }}
+                />
+                <span>หนัก</span>
+                {step.kind === 'radar' && radarAge !== null && radarAge > 45 && (
+                  <b className="stale-mark">เก่า</b>
+                )}
+              </div>
+            )}
+            {layers.radar && step.kind === 'forecast' && (
+              <div className="legend-row">
+                <small>ระบายสีตั้งแต่ 0.5 มม./ชม. · ไม่มีสีไม่ได้แปลว่าไม่มีฝน</small>
+              </div>
+            )}
+            <div id="legend-pins" className="legend-pins" hidden={!legendOpen}>
+              {layers.floods && step.kind !== 'forecast' && (
+                <div className="legend-row">
+                  <span>
+                    <i className="legend-pin legend-flood" /> รายงานน้ำท่วม (สีอ่อน =
+                    ครบเวลารายงานแล้ว)
+                  </span>
+                </div>
+              )}
+              {(layers.cameras || (layers.floods && step.kind !== 'forecast')) && (
+                <div className="legend-row">
+                  <span>
+                    <i className="legend-bubble">3</i> จุดที่อยู่ใกล้กัน แตะเพื่อซูมเข้า
+                  </span>
+                </div>
+              )}
+              {layers.water && water && step.kind !== 'forecast' && (
+                <div className="legend-row">
+                  <span>
+                    <i className="legend-pin legend-water" /> ระดับน้ำคลอง กทม. (เทา =
+                    ไม่มีค่าล่าสุด)
+                  </span>
+                </div>
+              )}
+              {layers.rain && rain && step.kind !== 'forecast' && (
+                <div className="legend-row rain-hour">
+                  <span>ฝนวัดจริง 1 ชม. (มม.)</span>
+                  {RAIN_HOUR_CLASSES.map((item) => (
+                    <span key={item.pin}>
+                      <i className="legend-pin" style={{ background: item.color }} /> {item.label}
+                      {item.range && <small>{item.range}</small>}
+                    </span>
+                  ))}
+                  <span>
+                    <i className="legend-pin" style={{ background: RAIN_OLD_COLOR }} />{' '}
+                    ไม่มีค่าล่าสุด
+                  </span>
+                </div>
+              )}
+              {layers.dams && dams && step.kind !== 'forecast' && (
+                <div className="legend-row rain-hour">
+                  <span>เขื่อน (น้ำในอ่าง)</span>
+                  {DAM_CLASSES.map((item) => (
+                    <span key={item.pin}>
+                      <i className="legend-pin" style={{ background: item.color }} /> {item.label}
+                      {item.range && <small>{item.range}</small>}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {layers.weather && weather && step.kind !== 'forecast' && (
+                <div className="legend-row rain-hour">
+                  <span>สถานีกรมอุตุฯ ฝน 24 ชม. (มม.)</span>
+                  {DAY_RAIN_CLASSES.map((item) => (
+                    <span key={item.pin}>
+                      <i className="legend-pin" style={{ background: item.color }} /> {item.label}
+                      {item.range && <small>{item.range}</small>}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {layers.cameras && (
+                <div className="legend-row">
+                  <span>
+                    <i className="legend-pin legend-camera" /> กล้อง (แตะหมุดเพื่อเปิดดู)
+                    {camerasState === 'error' && ' · โหลดทะเบียนกล้องไม่สำเร็จ'}
+                  </span>
+                </div>
               )}
             </div>
-          )}
-          {layers.radar && step.kind === 'forecast' && (
-            <div className="legend-row">
-              <small>ระบายสีตั้งแต่ 0.5 มม./ชม. · ไม่มีสีไม่ได้แปลว่าไม่มีฝน</small>
-            </div>
-          )}
-          {layers.floods && step.kind !== 'forecast' && (
-            <div className="legend-row">
-              <span>
-                <i className="legend-pin legend-flood" /> รายงานน้ำท่วม (สีอ่อน = ครบเวลารายงานแล้ว)
-              </span>
-            </div>
-          )}
-          {(layers.cameras || (layers.floods && step.kind !== 'forecast')) && (
-            <div className="legend-row">
-              <span>
-                <i className="legend-bubble">3</i> จุดที่อยู่ใกล้กัน แตะเพื่อซูมเข้า
-              </span>
-            </div>
-          )}
-          {layers.water && water && step.kind !== 'forecast' && (
-            <div className="legend-row">
-              <span>
-                <i className="legend-pin legend-water" /> ระดับน้ำคลอง กทม. (เทา = ไม่มีค่าล่าสุด)
-              </span>
-            </div>
-          )}
-          {layers.rain && rain && step.kind !== 'forecast' && (
-            <div className="legend-row rain-hour">
-              <span>ฝนวัดจริง 1 ชม. (มม.)</span>
-              {RAIN_HOUR_CLASSES.map((item) => (
-                <span key={item.pin}>
-                  <i className="legend-pin" style={{ background: item.color }} /> {item.label}
-                </span>
-              ))}
-              <span>
-                <i className="legend-pin" style={{ background: RAIN_OLD_COLOR }} /> ไม่มีค่าล่าสุด
-              </span>
-            </div>
-          )}
-          {layers.dams && dams && step.kind !== 'forecast' && (
-            <div className="legend-row rain-hour">
-              <span>เขื่อน (น้ำในอ่าง)</span>
-              {DAM_CLASSES.map((item) => (
-                <span key={item.pin}>
-                  <i className="legend-pin" style={{ background: item.color }} /> {item.label}
-                </span>
-              ))}
-            </div>
-          )}
-          {layers.weather && weather && step.kind !== 'forecast' && (
-            <div className="legend-row rain-hour">
-              <span>สถานีกรมอุตุฯ ฝนรอบเช้า (มม.)</span>
-              {DAY_RAIN_CLASSES.map((item) => (
-                <span key={item.pin}>
-                  <i className="legend-pin" style={{ background: item.color }} /> {item.label}
-                </span>
-              ))}
-            </div>
-          )}
-          {layers.cameras && (
-            <div className="legend-row">
-              <span>
-                <i className="legend-pin legend-camera" /> กล้อง (แตะหมุดเพื่อเปิดดู)
-                {camerasState === 'error' && ' · โหลดทะเบียนกล้องไม่สำเร็จ'}
-              </span>
-            </div>
-          )}
-        </div>
+            {pinKey && (
+              <button
+                className="legend-toggle"
+                aria-expanded={legendOpen}
+                aria-controls="legend-pins"
+                onClick={() => setLegendOpen((open) => !open)}
+              >
+                <ChevronUp size={14} /> {legendOpen ? 'ย่อ' : 'ความหมายหมุด'}
+              </button>
+            )}
+          </div>
+        )}
       </main>
 
       <aside id="panel" className="panel" ref={panel} tabIndex={-1} aria-label="ข้อมูล">
@@ -804,7 +826,8 @@ export default function App() {
             <strong>fontokmai by Takuma</strong> · {disclaimer}
           </p>
           <nav aria-label="ลิงก์ท้ายเว็บ">
-            <a href={`${BASE}sources/`}>แหล่งข้อมูล</a>
+            <a href={`${BASE}about/`}>เกี่ยวกับ</a>
+            <a href={`${BASE}sources/`}>แหล่งข้อมูลและเครดิต</a>
             <a href={`${BASE}method/`}>วิธีอ่านข้อมูล</a>
             <a href={`${BASE}LICENSE`}>License</a>
             <a href={`${BASE}NOTICE`}>เครดิต</a>

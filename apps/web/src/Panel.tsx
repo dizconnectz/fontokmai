@@ -75,13 +75,16 @@ import {
   isRecent,
   amount,
   CHAO_PHRAYA_DAMS,
+  damWords,
   isTodaysReport,
-  levelText,
+  levelWords,
+  measuredText,
   oldNote,
-  mmText,
   nearest,
+  rainAmountWords,
   RAIN_RADIUS_M,
   reportsOnRoads,
+  shortCredit,
   reportTime,
   roadLabel,
   thaiDay,
@@ -527,7 +530,9 @@ function ChaoPhrayaDams({
   onDam: (location: number[]) => void;
 }) {
   const main = CHAO_PHRAYA_DAMS.flatMap((id) => dams.dams.filter((dam) => dam.id === id));
-  if (!main.length) return null;
+  // a dam without a place has no pin; list it here rather than guess where it is (contract section 18)
+  const unplaced = dams.dams.filter((dam) => !dam.location && !CHAO_PHRAYA_DAMS.includes(dam.id));
+  if (!main.length && !unplaced.length) return null;
   const note = oldNote(dams.fetched_at, now);
   return (
     <section className="panel-section" aria-labelledby="dams-heading" data-testid="dams">
@@ -544,7 +549,7 @@ function ChaoPhrayaDams({
             >
               <span className="flood-line">
                 <strong>
-                  {dam.name_th} · น้ำ {amount(dam.percent)}%
+                  {dam.name_th} · {damWords(dam.percent) ?? 'น้ำ'} {amount(dam.percent)}%
                 </strong>
                 <small>
                   ไหลเข้า {amount(dam.inflow_mcm)} · ระบาย {amount(dam.outflow_mcm)} ล้าน ลบ.ม./วัน
@@ -554,14 +559,33 @@ function ChaoPhrayaDams({
           </li>
         ))}
       </ul>
+      {unplaced.length > 0 && (
+        <details className="flood-history" data-testid="dams-unplaced">
+          <summary>เขื่อนที่ไม่มีหมุดบนแผนที่ {unplaced.length} แห่ง</summary>
+          <ul className="flood-list">
+            {unplaced.map((dam) => (
+              <li key={dam.id} className="flood-line">
+                <strong>
+                  {dam.name_th} · {damWords(dam.percent) ?? 'น้ำ'} {amount(dam.percent)}%
+                </strong>
+                <small>
+                  น้ำ {amount(dam.volume_mcm)} / {amount(dam.storage_mcm)} ล้าน ลบ.ม. · ไหลเข้า{' '}
+                  {amount(dam.inflow_mcm)} · ระบาย {amount(dam.outflow_mcm)} ล้าน ลบ.ม./วัน
+                </small>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
       {note && (
         <p className="inline-warning">
           <Info size={15} /> {note}
         </p>
       )}
       <small className="source-note">
-        ข้อมูลวันที่ {thaiDay(dams.report_date)} · {dams.credit_th} · ดูเขื่อนอื่นเป็นหมุดบนแผนที่ ·
-        น้ำเกินร้อยละ 80 แปลว่าเหลือที่รับน้ำน้อย ไม่ใช่การพยากรณ์ว่าจะท่วม
+        ข้อมูลวันที่ {thaiDay(dams.report_date)} · ที่มา: {shortCredit(dams.credit_th)} ·
+        เขื่อนอื่นดูเป็นหมุดบนแผนที่ · น้ำเกิน 80% แปลว่าเหลือที่รับน้ำน้อย
+        ไม่ใช่การพยากรณ์ว่าจะท่วม
       </small>
     </section>
   );
@@ -898,9 +922,13 @@ export function PinCard({
     () => (water ? nearest(water.stations, pin, WATER_RADIUS_M, 3) : []),
     [water, pin],
   );
-  const bkkOld = [water, rain].some(
-    (file) => file && now - Date.parse(file.fetched_at) > BKK_STALE_MS,
-  );
+  // each file has its own age: new canal levels must not hide that the rain beside them is a day old
+  const rainOld = nearRain.length > 0 && rain ? oldNote(rain.fetched_at, now) : null;
+  const waterOld = nearWater.length > 0 && water ? oldNote(water.fetched_at, now) : null;
+  const bkkNotes =
+    rainOld && waterOld && rainOld !== waterOld
+      ? [`ฝน: ${rainOld}`, `ระดับน้ำ: ${waterOld}`]
+      : [rainOld ?? waterOld].filter((text): text is string => !!text);
   const bkkFailed = [waterState, rainState].some((state) => state === 'error');
   const worst = worstLevel(here);
   return (
@@ -1119,13 +1147,12 @@ export function PinCard({
           {nearRain.map(({ item: gauge, distance }) => (
             <p key={gauge.code} className="measured-line">
               <strong>
-                ฝน 1 ชม. {mmText(gauge.rain_1h_mm)} · 24 ชม. {mmText(gauge.rain_24h_mm)}
+                ชั่วโมงล่าสุด{rainAmountWords(gauge.rain_1h_mm, 1)} · 24 ชม.{' '}
+                {rainAmountWords(gauge.rain_24h_mm, 24)}
               </strong>
               <span>
                 สถานี{gauge.name_th} ห่าง {distanceText(distance)} ·{' '}
-                {gauge.observed_at
-                  ? `วัดเมื่อ ${agoText(gauge.observed_at, now).replace(/^เมื่อ /, '')}`
-                  : 'ไม่มีค่าล่าสุด'}
+                {measuredText(gauge.observed_at, now)}
                 {gauge.observed_at && !isRecent(gauge.observed_at, now) && ' (ค่าเก่า)'}
               </span>
             </p>
@@ -1135,28 +1162,25 @@ export function PinCard({
               {nearWater.map(({ item: station, distance }) => (
                 <li key={station.code} className="road-line">
                   <strong>
-                    {station.name_th} · ด้านใน {levelText(station.level_in_m)}
+                    {station.name_th} · น้ำในคลอง{levelWords(station.level_in_m)}
                   </strong>
                   <span>
                     {station.canal_th ? `${station.canal_th} · ` : ''}ห่าง {distanceText(distance)}{' '}
-                    ·{' '}
-                    {station.observed_at
-                      ? `วัดเมื่อ ${agoText(station.observed_at, now).replace(/^เมื่อ /, '')}`
-                      : 'ไม่มีค่าล่าสุด'}
+                    · {measuredText(station.observed_at, now)}
                     {station.observed_at && !isRecent(station.observed_at, now) && ' (ค่าเก่า)'}
                   </span>
                 </li>
               ))}
             </ul>
           )}
-          {bkkOld && (
-            <p className="inline-warning">
-              <Info size={15} /> {oldNote((water ?? rain)!.fetched_at, now)}
+          {bkkNotes.map((text) => (
+            <p key={text} className="inline-warning">
+              <Info size={15} /> {text}
             </p>
-          )}
+          ))}
           <small className="source-note">
-            วัดจริงโดย{(water ?? rain)!.credit_th.replace(/ \(ผ่านระบบ DXS\)$/, '')} ผ่านระบบ DXS ·
-            ระดับน้ำเป็น ม.รทก. (เทียบระดับทะเล) ไม่ใช่ความลึกน้ำท่วมบนถนน
+            ที่มา: {shortCredit((water ?? rain)!.credit_th)} · ระดับน้ำเทียบระดับน้ำทะเล
+            ไม่ใช่ความลึกน้ำท่วมบนถนน
           </small>
         </section>
       )}
