@@ -8,6 +8,7 @@ import roadFloodSchema from '../../../contracts/v1/schema/road_flood_history.sch
 import placesSchema from '../../../contracts/v1/schema/places.schema.json';
 import forecastSchema from '../../../contracts/v1/schema/forecast.schema.json';
 import riversSchema from '../../../contracts/v1/schema/forecast_rivers.schema.json';
+import overviewSchema from '../../../contracts/v1/schema/overview.schema.json';
 import liveFloodsSchema from '../../../contracts/v1/schema/live_floods.schema.json';
 import bkkWaterSchema from '../../../contracts/v1/schema/bkk_water.schema.json';
 import bkkRainSchema from '../../../contracts/v1/schema/bkk_rain.schema.json';
@@ -23,6 +24,7 @@ import type { RoadFloodHistory } from '../../../contracts/v1/ts/road_flood_histo
 import type { PlaceGazetteer } from '../../../contracts/v1/ts/places';
 import type { RainForecast } from '../../../contracts/v1/ts/forecast';
 import type { RiverForecast } from '../../../contracts/v1/ts/forecast_rivers';
+import type { Overview as SummaryOverview } from '../../../contracts/v1/ts/overview';
 import type { LiveFloods } from '../../../contracts/v1/ts/live_floods';
 import type { CanalLevels } from '../../../contracts/v1/ts/bkk_water';
 import type { RainGauges } from '../../../contracts/v1/ts/bkk_rain';
@@ -43,6 +45,7 @@ export type {
   RadarFeed,
   RainForecast,
   RiverForecast,
+  SummaryOverview,
   RainGauges,
   RoadFloodHistory,
   RoadFloodingDaily,
@@ -92,6 +95,7 @@ export const validRoadFlood = ajv.compile<RoadFloodHistory>(
 export const validPlaces = ajv.compile<PlaceGazetteer>(allowAdditions(placesSchema) as object);
 export const validForecast = ajv.compile<RainForecast>(allowAdditions(forecastSchema) as object);
 export const validRivers = ajv.compile<RiverForecast>(allowAdditions(riversSchema) as object);
+export const validOverview = ajv.compile<SummaryOverview>(allowAdditions(overviewSchema) as object);
 export const validLiveFloods = ajv.compile<LiveFloods>(allowAdditions(liveFloodsSchema) as object);
 export const validCanalLevels = ajv.compile<CanalLevels>(allowAdditions(bkkWaterSchema) as object);
 export const validRainGauges = ajv.compile<RainGauges>(allowAdditions(bkkRainSchema) as object);

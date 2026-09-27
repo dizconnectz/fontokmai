@@ -1600,6 +1600,78 @@ details > ul {
   color: var(--muted);
   fill: var(--muted);
 }
+/* ---------- the summary of places to watch (overview.json) ---------- */
+.summary-lead,
+.summary-official {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.summary-official {
+  color: var(--ink);
+  font-weight: 600;
+}
+.summary-group h3 {
+  margin: 10px 0 6px;
+  font-size: 0.95rem;
+}
+.summary-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.summary-item {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.summary-item:hover {
+  background: var(--hover);
+}
+.summary-place {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+.summary-item small {
+  color: var(--muted);
+}
+.summary-reasons {
+  display: grid;
+  gap: 1px;
+  font-size: 0.9rem;
+}
+.level-chip {
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.level-chip.level-extreme {
+  background: var(--extreme-bg);
+  color: var(--extreme-ink);
+}
+.level-chip.level-severe {
+  background: var(--severe-bg);
+  color: var(--severe-ink);
+}
+.level-chip.level-moderate,
+.level-chip.level-minor,
+.level-chip.level-unknown {
+  background: var(--moderate-bg);
+  color: var(--moderate-ink);
+}
 .map-surface .popup-old {
   color: var(--warn-ink);
   font-weight: 600;

@@ -450,7 +450,7 @@ function riverPopup(point: RiverPoint, file: RiverForecast, now: number): HTMLEl
     RIVER_CLASSES.find((item) => item.trend === outlook?.trend)?.color ?? RIVER_UNKNOWN_COLOR;
   root.append(
     line(`แม่น้ำ${point.name_th}`, 'strong'),
-    line(`7 วันข้างหน้า: ${riverWords(outlook)}`, 'b'),
+    line(`แนวโน้ม 7 วันข้างหน้า (ทดลอง): ${riverWords(outlook)}`, 'b'),
   );
   if (outlook) {
     const width = 230;
@@ -462,7 +462,7 @@ function riverPopup(point: RiverPoint, file: RiverForecast, now: number): HTMLEl
       height: height + 14,
       class: 'river-chart',
       role: 'img',
-      'aria-label': `กราฟแนวโน้ม 7 วันย้อนหลังถึง 30 วันข้างหน้า: ${riverWords(outlook)}`,
+      'aria-label': `กราฟ ${outlook.today} วันย้อนหลังถึง ${file.days.length - 1 - outlook.today} วันข้างหน้า: ${riverWords(outlook)}`,
     });
     if (chart.band) figure.append(svg('path', { d: chart.band, fill: color, opacity: 0.18 }));
     figure.append(
@@ -486,9 +486,9 @@ function riverPopup(point: RiverPoint, file: RiverForecast, now: number): HTMLEl
     );
     // "today" sits at the top of its line, clear of the day labels under the chart
     for (const [x, y, text, anchor] of [
-      [0, height + 12, '−7 วัน', 'start'],
+      [0, height + 12, `−${outlook.today} วัน`, 'start'],
       [chart.todayX + 3, 9, 'วันนี้', 'start'],
-      [width, height + 12, '+30 วัน', 'end'],
+      [width, height + 12, `+${file.days.length - 1 - outlook.today} วัน`, 'end'],
     ] as const) {
       const label = svg('text', { x, y, 'text-anchor': anchor, 'font-size': 10 });
       label.textContent = text;
@@ -534,7 +534,10 @@ function cameraPopup(camera: Camera): HTMLElement {
   link.href = camera.page_url;
   link.target = '_blank';
   link.rel = 'noopener noreferrer';
-  link.textContent = 'เปิดดูกล้องที่เว็บเจ้าของ ↗';
+  // the department's page lists every camera: say which one to look for there
+  link.textContent = camera.page_url.startsWith('https://telemetry.dwr.go.th/reportCctv')
+    ? `เปิดหน้ากล้องของกรมทรัพยากรน้ำ แล้วหา “${camera.name_th}” ↗`
+    : 'เปิดดูกล้องที่เว็บเจ้าของ ↗';
   root.append(link);
   return root;
 }
@@ -546,6 +549,9 @@ export default function MapView(props: Props) {
   const pinTag = useRef<HTMLSpanElement | null>(null);
   const popup = useRef<Popup | null>(null);
   const popupKind = useRef<PointKind | null>(null);
+  /** rebuilds the open popup for a time, or null when what it shows is gone (an expired report, a removed file) */
+  const popupRebuild = useRef<((now: number) => HTMLElement | null) | null>(null);
+  const popupShown = useRef<HTMLElement | null>(null);
   const showFlood = useRef<(report: FloodReport) => void>(() => undefined);
   const latest = useRef(props);
   latest.current = props;
@@ -626,7 +632,12 @@ export default function MapView(props: Props) {
         });
         instance.on('load', () => {
           addOverlays(instance);
-          const open = (kind: PointKind, at: LngLat, content: HTMLElement) => {
+          const open = (
+            kind: PointKind,
+            at: LngLat,
+            content: HTMLElement,
+            rebuild: ((now: number) => HTMLElement | null) | null = null,
+          ) => {
             popup.current?.remove();
             const next = new maplibre.Popup({
               closeButton: true,
@@ -640,21 +651,26 @@ export default function MapView(props: Props) {
               popup.current = null;
               if (popupKind.current === 'flood') latest.current.onFloodPopup(null);
               popupKind.current = null;
+              popupRebuild.current = null;
+              popupShown.current = null;
             });
             popup.current = next;
             popupKind.current = kind;
+            popupRebuild.current = rebuild;
+            popupShown.current = content;
             next.addTo(instance);
           };
           showFlood.current = (report) => {
             const at = report.location as LngLat;
-            open(
-              'flood',
-              at,
-              floodPopup(report, Date.now(), () => {
-                popup.current?.remove();
-                latest.current.onPin(at);
-              }),
-            );
+            const here = () => {
+              popup.current?.remove();
+              latest.current.onPin(at);
+            };
+            open('flood', at, floodPopup(report, Date.now(), here), (now) => {
+              // the report itself, while it is still shown (D33): another report staying is no reason (M17)
+              const current = latest.current.floods.find((r) => r.id === report.id);
+              return current && isShown(current, now) ? floodPopup(current, now, here) : null;
+            });
             latest.current.onFloodPopup(report.id);
           };
           instance.on('click', (event) => {
@@ -687,13 +703,31 @@ export default function MapView(props: Props) {
               const file = latest.current.dams;
               const dam = file.dams.find((d) => d.id === hit?.properties.code);
               if (dam?.location)
-                return open('dam', dam.location as LngLat, damPopup(dam, file, Date.now()));
+                return open(
+                  'dam',
+                  dam.location as LngLat,
+                  damPopup(dam, file, Date.now()),
+                  (now) => {
+                    const dams = latest.current.dams;
+                    const current = dams?.dams.find((d) => d.id === dam.id);
+                    return dams && current ? damPopup(current, dams, now) : null;
+                  },
+                );
             }
             if (layer === 'river-pin' && latest.current.rivers) {
               const file = latest.current.rivers;
               const point = file.points.find((p) => p.id === hit?.properties.code);
               if (point)
-                return open('river', point.location as LngLat, riverPopup(point, file, Date.now()));
+                return open(
+                  'river',
+                  point.location as LngLat,
+                  riverPopup(point, file, Date.now()),
+                  (now) => {
+                    const rivers = latest.current.rivers;
+                    const current = rivers?.points.find((p) => p.id === point.id);
+                    return rivers && current ? riverPopup(current, rivers, now) : null;
+                  },
+                );
             }
             if (layer === 'weather-pin' && latest.current.weather) {
               const file = latest.current.weather;
@@ -703,6 +737,11 @@ export default function MapView(props: Props) {
                   'weather',
                   station.location as LngLat,
                   weatherPopup(station, file, Date.now()),
+                  (now) => {
+                    const weather = latest.current.weather;
+                    const current = weather?.stations.find((s) => s.wmo === station.wmo);
+                    return weather && current ? weatherPopup(current, weather, now) : null;
+                  },
                 );
             }
             if (layer === 'water-pin' && latest.current.water) {
@@ -713,13 +752,27 @@ export default function MapView(props: Props) {
                   'water',
                   station.location as LngLat,
                   waterPopup(station, file, Date.now()),
+                  (now) => {
+                    const water = latest.current.water;
+                    const current = water?.stations.find((s) => s.code === station.code);
+                    return water && current ? waterPopup(current, water, now) : null;
+                  },
                 );
             }
             if (layer === 'rain-pin' && latest.current.rain) {
               const file = latest.current.rain;
               const gauge = file.gauges.find((g) => g.code === hit?.properties.code);
               if (gauge?.location)
-                return open('rain', gauge.location as LngLat, rainPopup(gauge, file, Date.now()));
+                return open(
+                  'rain',
+                  gauge.location as LngLat,
+                  rainPopup(gauge, file, Date.now()),
+                  (now) => {
+                    const rain = latest.current.rain;
+                    const current = rain?.gauges.find((g) => g.code === gauge.code);
+                    return rain && current ? rainPopup(current, rain, now) : null;
+                  },
+                );
             }
             if (layer === 'camera-pin') {
               const camera = latest.current.cameras.find((c) => c.id === hit?.properties.id);
@@ -958,6 +1011,23 @@ export default function MapView(props: Props) {
     (map.current.getSource('dams') as GeoJSONSource | undefined)?.setData(collection);
     if (!collection.features.length && popupKind.current === 'dam') popup.current?.remove();
   }, [props.dams, props.layers.dams, ready, styleVersion]);
+
+  // An open popup follows the clock and the files: its age labels change, and it closes when what it shows is
+  // gone (a report past its time, a station no longer in the file). Rebuilt only when its words change.
+  useEffect(() => {
+    const current = popup.current;
+    const rebuild = popupRebuild.current;
+    if (!current || !rebuild) return;
+    const content = rebuild(props.now);
+    if (!content) {
+      current.remove();
+      return;
+    }
+    if (content.textContent !== popupShown.current?.textContent) {
+      current.setDOMContent(content);
+      popupShown.current = content;
+    }
+  }, [props.now, props.floods, props.rivers, props.water, props.rain, props.dams, props.weather]);
 
   // The GloFAS river trend, coloured by the next 7 days against today (model values)
   useEffect(() => {

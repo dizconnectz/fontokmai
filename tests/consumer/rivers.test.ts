@@ -61,22 +61,15 @@ describe("contract 20: river forecast consumer", () => {
     expect(outlook?.day).toBe("2026-09-29");
   });
 
-  // Known defects at 8aed643. Remove `fails` when Claude closes the corresponding review item.
-  it.fails(
-    "M18: six missing forecast days must not become an unqualified seven-day steady outlook",
-    () => {
-      const { file, point } = series([100, null, null, null, null, null, null]);
-      expect(riverOutlook(file, point, NOW)).toBeNull();
-    },
-  );
+  it("M18: six missing forecast days must not become an unqualified seven-day steady outlook", () => {
+    const { file, point } = series([100, null, null, null, null, null, null]);
+    expect(riverOutlook(file, point, NOW)).toBeNull();
+  });
 
-  it.fails(
-    "M19: exactly minus ten percent belongs to falling, not steady",
-    () => {
-      const { file, point } = series(Array(7).fill(90));
-      expect(riverOutlook(file, point, NOW)?.trend).toBe("falling");
-    },
-  );
+  it("M19: exactly minus ten percent belongs to falling, not steady", () => {
+    const { file, point } = series(Array(7).fill(90));
+    expect(riverOutlook(file, point, NOW)?.trend).toBe("falling");
+  });
 });
 
 describe("plain Thai wording keeps the measurement and period", () => {

@@ -280,3 +280,34 @@ def write_live_floods_example(out: Path, fixtures: Path) -> list[Path]:
     path = target / "floods.json"
     path.write_text(floods.feed.model_dump_json(indent=2) + "\n", encoding="utf-8", newline="\n")
     return [path]
+
+
+OVERVIEW_AT = "2026-09-26T17:30:00+07:00"
+
+
+def write_overview_example(out: Path) -> list[Path]:
+    """contracts/v1/examples/overview: summary/overview.json from the other examples at 17:30 on 26 Sep.
+
+    The live flood reports are moved to that time with two more beside the first, so the example shows a cluster.
+    """
+    from fontokmai.contracts.live_floods import LiveFloods
+    from fontokmai.overview_build import build_overview
+
+    now = datetime.fromisoformat(OVERVIEW_AT)
+    floods = LiveFloods.model_validate_json((out / "live-floods" / "floods.json").read_bytes())
+    first = floods.reports[0]
+    cluster = [first.model_copy(update={
+        "id": f"longdo:90001{n}", "location": [round(first.location[0] + d, 6), round(first.location[1] + d, 6)],
+        "start": now - timedelta(minutes=10 + n), "stop": now + timedelta(minutes=50 - n)})
+        for n, d in ((0, 0.0), (1, 0.004), (2, -0.003))]
+    floods = floods.model_copy(update={"fetched_at": now, "reports": cluster})
+    files = {"live/floods.json": floods.model_dump_json().encode("utf-8")}
+    for rel, example in (("bkk/rain.json", "bkk/rain.json"), ("bkk/flooding.json", "bkk/flooding.json"),
+                         ("forecast/rain.json", "forecast/rain.json"),
+                         ("forecast/rivers.json", "forecast/rivers.json"), ("water/dams.json", "bkk/dams.json")):
+        files[rel] = (out / example).read_bytes()
+    target = out / "overview"
+    target.mkdir(parents=True, exist_ok=True)
+    path = target / "overview.json"
+    path.write_text(build_overview(files, now).model_dump_json(indent=2) + "\n", encoding="utf-8", newline="\n")
+    return [path]

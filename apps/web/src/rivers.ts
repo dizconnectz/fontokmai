@@ -33,6 +33,8 @@ const FAST = 0.3;
 const RISE = 0.1;
 const FALL = -0.1;
 const AHEAD_DAYS = 7;
+/** so that 100 → 90 is −10 % (falling) rather than −9.999… % after floating point (M19) */
+const EDGE = 1e-9;
 
 const DAY = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' });
 const SHORT_DAY = new Intl.DateTimeFormat('th-TH', {
@@ -60,16 +62,25 @@ export function riverOutlook(
   const today = file.days.indexOf(DAY.format(now));
   const base = today >= 0 ? (point.median[today] ?? point.discharge[today]) : null;
   if (base === null || base <= 0) return null;
-  const ahead = point.median
-    .slice(today + 1, today + 1 + AHEAD_DAYS)
-    .flatMap((value, i) => (value === null ? [] : [{ value, day: file.days[today + 1 + i] }]));
-  if (!ahead.length) return null;
+  const window = point.median.slice(today + 1, today + 1 + AHEAD_DAYS);
+  // a trend of the next 7 days needs all 7 of them: a missing day or the end of the file cannot be told (M18)
+  if (window.length < AHEAD_DAYS || window.some((value) => value === null)) return null;
+  const ahead = window.map((value, i) => ({
+    value: value as number,
+    day: file.days[today + 1 + i],
+  }));
   const peak = ahead.reduce((best, next) => (next.value > best.value ? next : best));
   const low = ahead.reduce((best, next) => (next.value < best.value ? next : best));
   const up = peak.value / base - 1;
   const down = low.value / base - 1;
   const trend: Trend =
-    up >= FAST ? 'rising_fast' : up >= RISE ? 'rising' : down <= FALL ? 'falling' : 'steady';
+    up >= FAST - EDGE
+      ? 'rising_fast'
+      : up >= RISE - EDGE
+        ? 'rising'
+        : down <= FALL + EDGE
+          ? 'falling'
+          : 'steady';
   return trend === 'falling'
     ? { trend, change: down, day: low.day, today }
     : { trend, change: up, day: peak.day, today };

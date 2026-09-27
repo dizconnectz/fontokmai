@@ -1,0 +1,82 @@
+import { readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+import {
+  dayWord,
+  liveItems,
+  officialFor,
+  officialLine,
+  oldInputs,
+  reasonLine,
+  type Overview,
+} from './overview';
+import type { Alert } from './data';
+
+// the producer's example: the other examples summed up at 17:30 on 26 Sep (contract section 21)
+const overview = JSON.parse(
+  readFileSync(
+    new URL('../../../contracts/v1/examples/overview/overview.json', import.meta.url),
+    'utf8',
+  ),
+) as Overview;
+const AT = Date.parse('2026-09-26T17:30:00+07:00');
+const DAY = 86_400_000;
+
+describe('the summary of places to watch', () => {
+  it('says the day of a forecast from the reader’s clock, and drops a day that has passed', () => {
+    expect(dayWord('2026-09-26', AT)).toBe('วันนี้');
+    expect(dayWord('2026-09-27', AT)).toBe('พรุ่งนี้');
+    expect(dayWord('2026-09-28', AT)).toBe('อีก 2 วัน (วันจันทร์)');
+    const forecast = {
+      kind: 'rain_forecast',
+      text_th: 'ฝนหนักบางพื้นที่ สูงสุดราว 50 มม.',
+      day: '2026-09-27',
+    };
+    expect(reasonLine(forecast as never, AT)).toBe('พรุ่งนี้: ฝนหนักบางพื้นที่ สูงสุดราว 50 มม.');
+    expect(reasonLine(forecast as never, AT + 2 * DAY)).toBeNull();
+    const three = { kind: 'rain_3days', text_th: 'ฝนสะสม 3 วันราว 160 มม.', day: '2026-09-26' };
+    expect(reasonLine(three as never, AT)).toBe('ฝนสะสม 3 วันราว 160 มม.');
+  });
+
+  it('lists what is happening first and what to prepare for apart', () => {
+    const now = liveItems(overview, 'now', AT);
+    expect(now.map((item) => item.place_th)).toEqual([
+      'เขตจตุจักร กรุงเทพมหานคร',
+      'เขตห้วยขวาง กรุงเทพมหานคร',
+    ]);
+    expect(now[1].reasons.map((reason) => reasonLine(reason, AT))).toEqual([
+      'น้ำท่วมหลายจุด (รายงาน 3 จุด)',
+      'พรุ่งนี้: ฝนหนักเกือบทั่ว กทม. สูงสุดราว 50 มม.',
+    ]);
+    const next = liveItems(overview, 'next', AT);
+    expect(next[0].place_th).toBe('จ.สมุทรปราการ');
+    // two days later every forecast of the example has passed, and the rules never keep them
+    expect(liveItems(overview, 'next', AT + 5 * DAY)).toEqual([]);
+    expect(oldInputs(overview)).toEqual(['แนวโน้มแม่น้ำ (GloFAS)']);
+  });
+
+  it('points to official alerts of the same province without copying them', () => {
+    const alert = (code: string, severity: string, effective: number): Alert =>
+      ({
+        event_id: `tmd:${code}`,
+        severity,
+        lifecycle_status: 'active',
+        effective: new Date(effective).toISOString(),
+        expires: new Date(AT + DAY).toISOString(),
+        targets: [{ kind: 'province', code }],
+      }) as unknown as Alert;
+    const bangkok = liveItems(overview, 'now', AT)[0];
+    expect(officialFor(bangkok, [alert('TH-10', 'Severe', AT - 3_600_000)], AT)).toEqual({
+      level: 'severe',
+      pending: false,
+    });
+    expect(officialFor(bangkok, [alert('TH-10', 'Extreme', AT + 3_600_000)], AT)).toEqual({
+      level: 'extreme',
+      pending: true,
+    });
+    expect(officialFor(bangkok, [alert('TH-50', 'Severe', AT)], AT)).toBeNull();
+    expect(officialLine([alert('TH-10', 'Severe', AT), alert('TH-13', 'Moderate', AT)])).toBe(
+      'มีประกาศเตือนภัยของกรมอุตุฯ 2 ฉบับ ครอบคลุม 2 จังหวัด (ดูด้านล่าง)',
+    );
+    expect(officialLine([])).toBeNull();
+  });
+});

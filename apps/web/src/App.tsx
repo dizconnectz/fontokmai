@@ -95,6 +95,7 @@ export default function App() {
     dams,
     weather,
     rivers,
+    overview,
   } = data;
   const [layers, setLayers] = useState<Layers>({
     alerts: true,
@@ -604,7 +605,7 @@ export default function App() {
               )}
               {layers.rivers && rivers && step.kind !== 'forecast' && (
                 <div className="legend-row rain-hour">
-                  <span>แนวโน้มน้ำแม่น้ำ 7 วัน (แบบจำลอง)</span>
+                  <span>แนวโน้มน้ำแม่น้ำ 7 วัน (แบบจำลอง · ทดลอง)</span>
                   {RIVER_CLASSES.map((item) => (
                     <span key={item.pin}>
                       <i className="legend-pin" style={{ background: item.color }} /> {item.label}
@@ -764,6 +765,22 @@ export default function App() {
               }}
               news={news}
               dams={dams}
+              summary={overview}
+              onPlace={(item) => {
+                // a district close, a province or river wider: the half size follows the item's zoom
+                const half = 0.05 * 2 ** (12 - item.zoom);
+                const [lon, lat] = item.location;
+                setFocus({
+                  key: `summary:${item.place_th}:${Date.now()}`,
+                  bounds: [
+                    [lon - half, lat - half],
+                    [lon + half, lat + half],
+                  ],
+                  maxZoom: item.zoom,
+                });
+                if (typeof matchMedia === 'function' && matchMedia('(max-width: 899px)').matches)
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
               onDam={(location) => {
                 setFocus({
                   key: `dam:${location.join(',')}:${Date.now()}`,

@@ -74,7 +74,8 @@ class RiverForecast(ContractModel):
     source_url: str
     fetched_at: AwareDatetime = Field(description="When fontokmai fetched this forecast")
     days: list[dt.date] = Field(description=(
-        "Thai calendar days, oldest first: 7 days before the day of the fetch, that day, then 30 forecast days"))
+        "Thai calendar days, oldest first: 7 days before the day of the fetch, that day, then 29 more "
+        "(the API's forecast_days=30 counts the day of the fetch)"))
     points: list[RiverPoint]
     notes_th: list[str]
 

@@ -149,10 +149,6 @@ test("M17: an expired flood popup is removed even while another report remains",
   await expect(
     page.getByRole("button", { name: /รายงานใหม่ที่ต้องคงอยู่/ }),
   ).toBeVisible();
-  test.fail(
-    true,
-    "M17: only an empty layer closes the expired report's popup at 8aed643",
-  );
   await expect(popup).not.toBeVisible();
 });
 
@@ -166,10 +162,6 @@ test("M20: an already open river popup gains its stale label at the 36-hour cuto
   await expect(popup).not.toContainText("พยากรณ์ไม่อัปเดต");
   await page.clock.fastForward(2 * 60000);
   // Closing outdated content is also acceptable; it must not remain silently current.
-  test.fail(
-    true,
-    "M20: the popup captures its opening time instead of refreshing its age at 8aed643",
-  );
   await expect
     .poll(
       async () =>
@@ -188,9 +180,5 @@ test("M21: the chart's last-day label matches the actual delivered forecast hori
   const daysAhead =
     (Date.parse(file.days.at(-1)) - Date.parse("2026-09-27")) / 86400000;
   const labels = popup.locator("svg text");
-  test.fail(
-    true,
-    "M21: a fixed +30 label is one day beyond the example's last forecast date at 8aed643",
-  );
   await expect(labels.last()).toHaveText(`+${daysAhead} วัน`);
 });

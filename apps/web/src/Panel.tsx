@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowUpRight,
   Camera as CameraIcon,
@@ -14,6 +14,7 @@ import {
   Dam as DamIcon,
   Droplet,
   Info,
+  ListChecks,
   Megaphone,
   MapPin,
   Phone,
@@ -97,6 +98,18 @@ import {
   type SituationReport,
 } from './bkk';
 import { useRadarAt } from './radarAt';
+import {
+  liveItems,
+  officialFor,
+  officialLine,
+  oldInputs,
+  OVERVIEW_STALE_MS,
+  OVERVIEW_TOO_OLD_MS,
+  OVERVIEW_TOP,
+  reasonLine,
+  type Overview as SummaryOverview,
+  type OverviewItem,
+} from './overview';
 import type { RefState } from './useData';
 
 type Road = RoadFloodHistory['roads'][number];
@@ -591,6 +604,109 @@ function ChaoPhrayaDams({
   );
 }
 
+/** Places to watch now and to prepare for, by the site's rules; the official alerts come below, apart. */
+function WatchSummary({
+  overview,
+  alerts,
+  now,
+  onPlace,
+}: {
+  overview: SummaryOverview;
+  alerts: Alert[];
+  now: number;
+  onPlace: (item: OverviewItem) => void;
+}) {
+  const [all, setAll] = useState(false);
+  const age = now - Date.parse(overview.generated_at);
+  const tooOld = age > OVERVIEW_TOO_OLD_MS;
+  const lists = [
+    { when: 'now' as const, title: 'ต้องระวังตอนนี้', empty: 'ยังไม่พบจุดที่เข้าเกณฑ์ตอนนี้' },
+    {
+      when: 'next' as const,
+      title: 'เตรียมรับมือในวันข้างหน้า',
+      empty: 'ยังไม่พบฝนหนักหรือน้ำขึ้นมากตามเกณฑ์',
+    },
+  ].map((list) => ({ ...list, items: tooOld ? [] : liveItems(overview, list.when, now) }));
+  const more = lists.some((list) => list.items.length > OVERVIEW_TOP);
+  const official = officialLine(alerts);
+  const missing = oldInputs(overview);
+  return (
+    <section
+      className="panel-section summary-card"
+      aria-labelledby="summary-heading"
+      data-testid="summary"
+    >
+      <h2 id="summary-heading">
+        <ListChecks size={18} /> ภาพรวม: จุดที่ต้องระวัง
+      </h2>
+      <p className="summary-lead">
+        สรุปอัตโนมัติจากข้อมูลทุกชุดด้วยเกณฑ์ของเว็บ (ทดลอง) ไม่ใช่ประกาศทางการ
+      </p>
+      {official && <p className="summary-official">{official}</p>}
+      {age > OVERVIEW_STALE_MS && (
+        <p className="inline-warning">
+          <Info size={15} /> สรุปนี้ไม่ได้อัปเดต · สรุปเมื่อ{' '}
+          {reportTime(overview.generated_at, now)}
+          {tooOld && ' เก่าเกินไปจึงไม่แสดงรายการ'}
+        </p>
+      )}
+      {lists.map((list) => (
+        <div key={list.when} className="summary-group">
+          <h3>{list.title}</h3>
+          {list.items.length === 0 ? (
+            <p className="quiet">
+              {tooOld ? 'ไม่มีข้อมูลที่ใหม่พอ' : `${list.empty} (ไม่ได้แปลว่าปลอดภัย)`}
+            </p>
+          ) : (
+            <ul className="summary-list">
+              {(all ? list.items : list.items.slice(0, OVERVIEW_TOP)).map((item) => {
+                const alert = officialFor(item, alerts, now);
+                // one line per reason, the three that matter most (they come ordered)
+                const lines = item.reasons
+                  .map((reason) => reasonLine(reason, now))
+                  .filter((line): line is string => line !== null)
+                  .slice(0, 3);
+                return (
+                  <li key={`${item.when}:${item.place_th}`}>
+                    <button className="summary-item" onClick={() => onPlace(item)}>
+                      <span className="summary-place">
+                        <strong>{item.place_th}</strong>
+                        {alert && (
+                          <span className={`level-chip level-${alert.level}`}>
+                            {alert.pending ? 'ประกาศล่วงหน้า' : 'มีประกาศ'}{' '}
+                            {LEVEL_LABEL[alert.level]}
+                          </span>
+                        )}
+                      </span>
+                      {item.detail_th && <small>{item.detail_th}</small>}
+                      <span className="summary-reasons">
+                        {lines.map((line) => (
+                          <span key={line}>{line}</span>
+                        ))}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      ))}
+      {more && (
+        <button className="link-button" aria-expanded={all} onClick={() => setAll((open) => !open)}>
+          {all ? 'แสดงน้อยลง' : 'ดูทั้งหมด'}
+        </button>
+      )}
+      <small className="source-note">
+        สรุปเมื่อ {reportTime(overview.generated_at, now)} จากรายงานน้ำท่วม, สำนักการระบายน้ำ กทม.,
+        พยากรณ์ Open-Meteo, GloFAS และกรมชลประทาน
+        {missing.length > 0 && ` · ไม่ได้ใช้เพราะไม่อัปเดต: ${missing.join(', ')}`} ·{' '}
+        <a href={`${import.meta.env.BASE_URL}method/#summary`}>วิธีคิด</a>
+      </small>
+    </section>
+  );
+}
+
 function FloodsNow({
   floods,
   floodsState,
@@ -667,6 +783,8 @@ export function Overview({
   news,
   dams,
   onDam,
+  summary,
+  onPlace,
   onSelectAlert,
   onFlood,
   onFavorite,
@@ -684,6 +802,9 @@ export function Overview({
   news: SituationReport | null;
   dams: DamReport | null;
   onDam: (location: number[]) => void;
+  /** the places to watch (summary/overview.json), or null before it is published */
+  summary: SummaryOverview | null;
+  onPlace: (item: OverviewItem) => void;
   onSelectAlert: (id: string) => void;
   onFlood: (report: FloodReport) => void;
   onFavorite: () => void;
@@ -701,6 +822,14 @@ export function Overview({
           </span>
         </button>
       )}
+      {summary && <WatchSummary overview={summary} alerts={alerts} now={now} onPlace={onPlace} />}
+      <FloodsNow
+        floods={floods}
+        floodsState={floodsState}
+        now={now}
+        openId={openFloodId}
+        onFlood={onFlood}
+      />
       <section className="panel-section" aria-labelledby="alerts-heading">
         <h2
           id="alerts-heading"
@@ -736,13 +865,6 @@ export function Overview({
           ))}
         </div>
       </section>
-      <FloodsNow
-        floods={floods}
-        floodsState={floodsState}
-        now={now}
-        openId={openFloodId}
-        onFlood={onFlood}
-      />
       {flooding && <RoadFloodingToday flooding={flooding} now={now} onRoad={onRoadName} />}
       {news && <SituationCard news={news} now={now} />}
       {dams && <ChaoPhrayaDams dams={dams} now={now} onDam={onDam} />}

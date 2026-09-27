@@ -1,9 +1,10 @@
 """GloFAS river discharge through the Open-Meteo Flood API (free for non-commercial use, data CC BY 4.0).
 
 Daily discharge of the Global Flood Awareness System (Copernicus Emergency Management Service) at a few points on
-the main rivers of Thailand (ref_data/river_points.json), 7 days back and 30 ahead. It is a global model on a 0.05°
-grid: its values can be far from the discharge measured on the river, so the site shows whether the water is
-forecast to rise or fall, not the number. One request asks for every point; the forecast changes once a day.
+the main rivers of Thailand (ref_data/river_points.json), 7 days back, the day of the fetch and 29 ahead. It is a
+global model on a 0.05° grid: its values can be far from the discharge measured on the river, so the site shows
+whether the water is forecast to rise or fall, not the number. One request asks for every point; the forecast
+changes once a day.
 """
 
 from __future__ import annotations
@@ -22,7 +23,7 @@ from fontokmai.sources.open_data.http import OpenDataError, Opener, open_url, re
 API_URL = "https://flood-api.open-meteo.com/v1/flood"
 PAGE_URL = "https://open-meteo.com/en/docs/flood-api"
 PAST_DAYS = 7
-FORECAST_DAYS = 30
+FORECAST_DAYS = 30  # counts the day of the fetch: the last day is 29 days after it
 FIELDS = ("river_discharge", "river_discharge_median", "river_discharge_p25", "river_discharge_p75")
 MAX_FLOW = 200_000.0  # m³/s, far above any river of the region: a larger value is not a discharge
 ICT = timezone(timedelta(hours=7))

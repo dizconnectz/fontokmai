@@ -18,6 +18,7 @@ from fontokmai.contracts.places import PlaceGazetteer
 from fontokmai.contracts.radar import RadarFeed
 from fontokmai.contracts.road_flood import RoadFloodHistory
 from fontokmai.feeds.alerts import LIVE_STATUSES, AlertCandidate, assemble_alerts_feed
+from fontokmai.overview_build import OVERVIEW_PATH, build_overview
 from fontokmai.publish.snapshot import atomic_write, write_snapshot
 from fontokmai.sources import bma_dxs
 from fontokmai.sources.open_data import longdo_live
@@ -50,6 +51,7 @@ class SnapshotResult:
     feed: AlertsFeed
     status: SourceStatus
     radar: RadarFeed | None = None
+    overview_error: str | None = None
 
 
 def generation_id_for(now: datetime, writer: str) -> str:
@@ -173,10 +175,17 @@ def run_cap_snapshot(*, db: Path, out: Path, fetch: Fetcher, now: datetime, writ
                     content = model.model_dump_json().encode("utf-8")
                     atomic_write(out / rel, content)
                     files[rel] = content
+        # the summary of places to watch reads the files of this very round; it never stops the alerts
+        overview_error = None
+        try:
+            files[OVERVIEW_PATH] = build_overview(files, now).model_dump_json().encode("utf-8")
+        except Exception as exc:  # noqa: BLE001 - reported in the round log; the web shows the summary missing
+            overview_error = f"{type(exc).__name__}: {exc}"[:300]
         manifest = write_snapshot(out, files, store,
                                   generation_id=generation_id, now=now, writer=writer,
                                   owner_epoch=owner_epoch, recovery_epoch=recovery_epoch,
                                   due=SNAPSHOT_INTERVAL, source_status=statuses)
         if radar is not None:
             prune_frames(out, radar.feed)
-    return SnapshotResult(manifest=manifest, feed=feed, status=status, radar=radar.feed if radar else None)
+    return SnapshotResult(manifest=manifest, feed=feed, status=status, radar=radar.feed if radar else None,
+                          overview_error=overview_error)

@@ -54,6 +54,8 @@ def _summary(result: SnapshotResult) -> dict[str, Any]:
     if result.radar is not None:
         radar_status = next(s.status for s in result.manifest.source_status if s.source_id == "tmd_radar")
         summary["radar"] = {**radar_summary(result.radar), "status": radar_status}
+    if result.overview_error:
+        summary["overview"] = f"error: {result.overview_error}"
     return summary
 
 
@@ -206,6 +208,9 @@ def main(argv: list[str] | None = None) -> int:
             written += write_live_floods_example(args.out, args.live_floods_fixtures)
         if args.bkk_fixtures:
             written += write_bkk_examples(args.out, args.bkk_fixtures)
+        if args.forecast_fixtures and args.live_floods_fixtures and args.bkk_fixtures:
+            from fontokmai.examples import write_overview_example
+            written += write_overview_example(args.out)
         for path in written:
             print(path.as_posix())
         return 0

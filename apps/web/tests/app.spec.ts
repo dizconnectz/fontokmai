@@ -797,7 +797,10 @@ test('the river trend is a pin with a plain-word popup and never the model numbe
   await page.mouse.click(x, y);
   const popup = page.locator('.maplibregl-popup');
   await expect(popup).toContainText('แม่น้ำเจ้าพระยา ที่กรุงเทพฯ');
-  await expect(popup).toContainText('7 วันข้างหน้า: น้ำเพิ่มขึ้น สูงสุดราว +19% วันที่ 29 ก.ย.');
+  await expect(popup).toContainText(
+    'แนวโน้ม 7 วันข้างหน้า (ทดลอง): น้ำเพิ่มขึ้น สูงสุดราว +19% วันที่ 29 ก.ย.',
+  );
+  await expect(popup.locator('svg text').last()).toHaveText('+29 วัน');
   await expect(popup).toContainText('ค่าจากแบบจำลอง ใช้ดูแนวโน้ม ไม่ใช่ระดับน้ำที่วัดจริง');
   await expect(popup.getByRole('img')).toBeVisible();
   await expect(popup).not.toContainText('m³');
@@ -807,6 +810,37 @@ test('the river trend is a pin with a plain-word popup and never the model numbe
     }),
   ).toBeVisible();
   await expect(page.getByTestId('pin-card')).not.toBeVisible();
+});
+
+test('the summary of places to watch comes first, then flood reports, then the official alerts', async ({
+  page,
+}) => {
+  await prepare(page);
+  // every round lists summary/overview.json; here it is the producer's example, made at the time of this
+  // snapshot (so its forecast days are two and three days ahead)
+  const manifest = read('active', 'manifest');
+  expect(manifest.files.map((f: { path: string }) => f.path)).toContain('summary/overview.json');
+  const overview = read('overview', 'overview');
+  overview.generated_at = manifest.generated_at;
+  await page.route('**/summary/overview.json?*', (route) => route.fulfill({ json: overview }));
+  await page.goto('/');
+  const summary = page.getByTestId('summary');
+  await expect(summary).toContainText('ภาพรวม: จุดที่ต้องระวัง');
+  await expect(summary).toContainText('ไม่ใช่ประกาศทางการ');
+  await expect(summary).toContainText('เขตห้วยขวาง กรุงเทพมหานคร');
+  await expect(summary).toContainText('น้ำท่วมหลายจุด (รายงาน 3 จุด)');
+  await expect(summary).toContainText(
+    'อีก 2 วัน (วันอาทิตย์): ฝนหนักเกือบทั้งจังหวัด สูงสุดราว 50 มม.',
+  );
+  const headings = await page.locator('#panel h2').allTextContents();
+  const at = (text: string) => headings.findIndex((heading) => heading.includes(text));
+  expect(at('ภาพรวม')).toBeGreaterThanOrEqual(0);
+  expect(at('ภาพรวม')).toBeLessThan(at('รายงานน้ำท่วม'));
+  expect(at('รายงานน้ำท่วม')).toBeLessThan(at('ประกาศ'));
+  // a place moves the map; the side panel stays where it is
+  await summary.getByRole('button', { name: /เขตห้วยขวาง/ }).click();
+  await expect(summary).toBeVisible();
+  await expect(page).not.toHaveURL(/pin=/);
 });
 
 test('the Bangkok layers have no switch until their files are published', async ({ page }) => {

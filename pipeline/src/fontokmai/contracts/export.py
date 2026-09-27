@@ -20,6 +20,7 @@ from fontokmai.contracts.cctv import CctvRegistry
 from fontokmai.contracts.forecast import RainForecast, RiverForecast
 from fontokmai.contracts.live_floods import LiveFloods
 from fontokmai.contracts.manifest import Manifest
+from fontokmai.contracts.overview import Overview
 from fontokmai.contracts.places import PlaceGazetteer
 from fontokmai.contracts.radar import RadarFeed
 from fontokmai.contracts.road_flood import RoadFloodHistory
@@ -36,6 +37,7 @@ SCHEMAS: dict[str, type[BaseModel]] = {
     "forecast_rivers.schema.json": RiverForecast,
     "live_floods.schema.json": LiveFloods,
     "manifest.schema.json": Manifest,
+    "overview.schema.json": Overview,
     "places.schema.json": PlaceGazetteer,
     "radar.schema.json": RadarFeed,
     "road_flood_history.schema.json": RoadFloodHistory,

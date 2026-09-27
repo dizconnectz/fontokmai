@@ -1,0 +1,235 @@
+{
+  "$defs": {
+    "OverviewInput": {
+      "additionalProperties": false,
+      "properties": {
+        "at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "When the input was fetched, null when missing",
+          "title": "At"
+        },
+        "name_th": {
+          "title": "Name Th",
+          "type": "string"
+        },
+        "status": {
+          "description": "stale or missing inputs add nothing to the items, so old data never raises a place",
+          "enum": [
+            "fresh",
+            "stale",
+            "missing"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name_th",
+        "status",
+        "at"
+      ],
+      "title": "OverviewInput",
+      "type": "object"
+    },
+    "OverviewItem": {
+      "additionalProperties": false,
+      "properties": {
+        "detail_th": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Where in the place, e.g. แถว ถ.พหลโยธิน, ถ.รังสิต-นครนายก",
+          "title": "Detail Th"
+        },
+        "location": {
+          "description": "[lon, lat] the map goes to: the reports' centre, a district or province",
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "title": "Location",
+          "type": "array"
+        },
+        "place_th": {
+          "description": "e.g. อ.ธัญบุรี จ.ปทุมธานี, จ.กาญจนบุรี, แม่น้ำบางปะกง ที่ฉะเชิงเทรา",
+          "title": "Place Th",
+          "type": "string"
+        },
+        "province_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "DOPA province code (2 digits), so the web can mark items under an official alert (TH-<code>)",
+          "title": "Province Code"
+        },
+        "reasons": {
+          "items": {
+            "$ref": "#/$defs/OverviewReason"
+          },
+          "minItems": 1,
+          "title": "Reasons",
+          "type": "array"
+        },
+        "score": {
+          "description": "Higher first within `when`; the rules of v0 on /method",
+          "minimum": 0,
+          "title": "Score",
+          "type": "integer"
+        },
+        "when": {
+          "description": "now = happening (reports, measurements); next = forecast, river trend or a full dam to prepare for",
+          "enum": [
+            "now",
+            "next"
+          ],
+          "title": "When",
+          "type": "string"
+        },
+        "zoom": {
+          "maximum": 17,
+          "minimum": 3,
+          "title": "Zoom",
+          "type": "number"
+        }
+      },
+      "required": [
+        "when",
+        "place_th",
+        "detail_th",
+        "province_code",
+        "location",
+        "zoom",
+        "score",
+        "reasons"
+      ],
+      "title": "OverviewItem",
+      "type": "object"
+    },
+    "OverviewReason": {
+      "additionalProperties": false,
+      "properties": {
+        "at": {
+          "description": "Time of the data behind the reason: the latest report, the measurement, or when the forecast was fetched",
+          "format": "date-time",
+          "title": "At",
+          "type": "string"
+        },
+        "day": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Thai day a forecast speaks of (the web says วันนี้/พรุ่งนี้/อีก 2 วัน from it); null for what is happening",
+          "title": "Day"
+        },
+        "kind": {
+          "enum": [
+            "flood_reports",
+            "road_flooding",
+            "rain_measured",
+            "rain_forecast",
+            "rain_burst",
+            "rain_3days",
+            "river_rising",
+            "dam_full"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "source_th": {
+          "description": "Short name of the source, e.g. Longdo Traffic or Open-Meteo",
+          "title": "Source Th",
+          "type": "string"
+        },
+        "text_th": {
+          "description": "Plain words without the day, e.g. น้ำท่วมหลายจุด (รายงาน 4 จุด) or ฝนหนักบางพื้นที่ สูงสุดราว 60 มม.",
+          "title": "Text Th",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "text_th",
+        "day",
+        "source_th",
+        "at"
+      ],
+      "title": "OverviewReason",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "generated_at": {
+      "format": "date-time",
+      "title": "Generated At",
+      "type": "string"
+    },
+    "inputs": {
+      "items": {
+        "$ref": "#/$defs/OverviewInput"
+      },
+      "title": "Inputs",
+      "type": "array"
+    },
+    "items": {
+      "description": "now first (highest score first), then next",
+      "items": {
+        "$ref": "#/$defs/OverviewItem"
+      },
+      "title": "Items",
+      "type": "array"
+    },
+    "notes_th": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Notes Th",
+      "type": "array"
+    },
+    "rules": {
+      "const": "v0",
+      "default": "v0",
+      "title": "Rules",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1",
+      "default": "1",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "generated_at",
+    "items",
+    "inputs",
+    "notes_th"
+  ],
+  "title": "Overview",
+  "type": "object"
+}

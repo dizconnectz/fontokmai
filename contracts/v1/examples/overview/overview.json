@@ -1,0 +1,233 @@
+{
+  "schema_version": "1",
+  "rules": "v0",
+  "generated_at": "2026-09-26T17:30:00+07:00",
+  "items": [
+    {
+      "when": "now",
+      "place_th": "เขตจตุจักร กรุงเทพมหานคร",
+      "detail_th": "แถว ถ.ทดสอบหนึ่ง",
+      "province_code": "10",
+      "location": [
+        100.565,
+        13.826
+      ],
+      "zoom": 12.0,
+      "score": 31,
+      "reasons": [
+        {
+          "kind": "road_flooding",
+          "text_th": "ถนนน้ำท่วมขัง 1 สาย ยังไม่แห้ง",
+          "day": null,
+          "source_th": "สำนักการระบายน้ำ กทม.",
+          "at": "2026-09-26T17:10:00+07:00"
+        },
+        {
+          "kind": "rain_forecast",
+          "text_th": "ฝนหนักเกือบทั่ว กทม. สูงสุดราว 50 มม.",
+          "day": "2026-09-27",
+          "source_th": "Open-Meteo",
+          "at": "2026-09-26T11:50:00+07:00"
+        }
+      ]
+    },
+    {
+      "when": "now",
+      "place_th": "เขตห้วยขวาง กรุงเทพมหานคร",
+      "detail_th": "แถว ซอยทดสอบ 1",
+      "province_code": "10",
+      "location": [
+        100.58033,
+        13.80033
+      ],
+      "zoom": 12.0,
+      "score": 31,
+      "reasons": [
+        {
+          "kind": "flood_reports",
+          "text_th": "น้ำท่วมหลายจุด (รายงาน 3 จุด)",
+          "day": null,
+          "source_th": "Longdo Traffic",
+          "at": "2026-09-26T17:20:00+07:00"
+        },
+        {
+          "kind": "rain_forecast",
+          "text_th": "ฝนหนักเกือบทั่ว กทม. สูงสุดราว 50 มม.",
+          "day": "2026-09-27",
+          "source_th": "Open-Meteo",
+          "at": "2026-09-26T11:50:00+07:00"
+        }
+      ]
+    },
+    {
+      "when": "next",
+      "place_th": "จ.สมุทรปราการ",
+      "detail_th": null,
+      "province_code": "11",
+      "location": [
+        100.6586,
+        13.6182
+      ],
+      "zoom": 8.0,
+      "score": 52,
+      "reasons": [
+        {
+          "kind": "rain_forecast",
+          "text_th": "ฝนหนักเกือบทั้งจังหวัด สูงสุดราว 50 มม.",
+          "day": "2026-09-27",
+          "source_th": "Open-Meteo",
+          "at": "2026-09-26T11:50:00+07:00"
+        },
+        {
+          "kind": "rain_forecast",
+          "text_th": "ฝนหนักบางพื้นที่ สูงสุดราว 36 มม.",
+          "day": "2026-09-28",
+          "source_th": "Open-Meteo",
+          "at": "2026-09-26T11:50:00+07:00"
+        }
+      ]
+    },
+    {
+      "when": "next",
+      "place_th": "จ.สระบุรี",
+      "detail_th": null,
+      "province_code": "19",
+      "location": [
+        100.891,
+        14.5582
+      ],
+      "zoom": 8.0,
+      "score": 50,
+      "reasons": [
+        {
+          "kind": "rain_forecast",
+          "text_th": "ฝนหนักเกือบทั้งจังหวัด สูงสุดราว 38 มม.",
+          "day": "2026-09-27",
+          "source_th": "Open-Meteo",
+          "at": "2026-09-26T11:50:00+07:00"
+        }
+      ]
+    },
+    {
+      "when": "next",
+      "place_th": "จ.นนทบุรี",
+      "detail_th": null,
+      "province_code": "12",
+      "location": [
+        100.4318,
+        13.8922
+      ],
+      "zoom": 8.0,
+      "score": 40,
+      "reasons": [
+        {
+          "kind": "rain_forecast",
+          "text_th": "ฝนหนักหลายพื้นที่ สูงสุดราว 44 มม.",
+          "day": "2026-09-27",
+          "source_th": "Open-Meteo",
+          "at": "2026-09-26T11:50:00+07:00"
+        }
+      ]
+    },
+    {
+      "when": "next",
+      "place_th": "จ.ปทุมธานี",
+      "detail_th": null,
+      "province_code": "13",
+      "location": [
+        100.6296,
+        14.0481
+      ],
+      "zoom": 8.0,
+      "score": 40,
+      "reasons": [
+        {
+          "kind": "rain_forecast",
+          "text_th": "ฝนหนักหลายพื้นที่ สูงสุดราว 44 มม.",
+          "day": "2026-09-27",
+          "source_th": "Open-Meteo",
+          "at": "2026-09-26T11:50:00+07:00"
+        }
+      ]
+    },
+    {
+      "when": "next",
+      "place_th": "จ.พระนครศรีอยุธยา",
+      "detail_th": null,
+      "province_code": "14",
+      "location": [
+        100.5319,
+        14.3738
+      ],
+      "zoom": 8.0,
+      "score": 40,
+      "reasons": [
+        {
+          "kind": "rain_forecast",
+          "text_th": "ฝนหนักหลายพื้นที่ สูงสุดราว 44 มม.",
+          "day": "2026-09-27",
+          "source_th": "Open-Meteo",
+          "at": "2026-09-26T11:50:00+07:00"
+        }
+      ]
+    },
+    {
+      "when": "next",
+      "place_th": "จ.สมุทรสาคร",
+      "detail_th": null,
+      "province_code": "74",
+      "location": [
+        100.2175,
+        13.5867
+      ],
+      "zoom": 8.0,
+      "score": 30,
+      "reasons": [
+        {
+          "kind": "rain_forecast",
+          "text_th": "ฝนหนักบางพื้นที่ สูงสุดราว 50 มม.",
+          "day": "2026-09-27",
+          "source_th": "Open-Meteo",
+          "at": "2026-09-26T11:50:00+07:00"
+        }
+      ]
+    }
+  ],
+  "inputs": [
+    {
+      "name_th": "รายงานน้ำท่วม (Longdo Traffic)",
+      "status": "fresh",
+      "at": "2026-09-26T17:30:00+07:00"
+    },
+    {
+      "name_th": "ถนนน้ำท่วมขัง กทม. (สำนักการระบายน้ำ)",
+      "status": "fresh",
+      "at": "2026-09-26T17:20:00+07:00"
+    },
+    {
+      "name_th": "ฝนวัดจริง กทม. (สำนักการระบายน้ำ)",
+      "status": "fresh",
+      "at": "2026-09-26T17:20:00+07:00"
+    },
+    {
+      "name_th": "พยากรณ์ฝน (Open-Meteo)",
+      "status": "fresh",
+      "at": "2026-09-26T11:50:00+07:00"
+    },
+    {
+      "name_th": "แนวโน้มแม่น้ำ (GloFAS)",
+      "status": "stale",
+      "at": "2026-09-27T11:42:00+07:00"
+    },
+    {
+      "name_th": "เขื่อนใหญ่ (กรมชลประทาน)",
+      "status": "fresh",
+      "at": "2026-09-26T17:20:00+07:00"
+    }
+  ],
+  "notes_th": [
+    "สรุปอัตโนมัติจากข้อมูลทุกชุดด้วยเกณฑ์ของเว็บ (ทดลอง v0) ไม่ใช่ประกาศทางการ และยังไม่ได้ตรวจความแม่น",
+    "ไม่มีรายการไม่ได้แปลว่าปลอดภัย แค่ยังไม่พบตามเกณฑ์ และข้อมูลที่เก่าเกินกำหนดจะไม่ถูกนับ",
+    "ประกาศเตือนภัยของกรมอุตุนิยมวิทยาแสดงแยก ไม่ได้รวมอยู่ในสรุปนี้"
+  ]
+}
