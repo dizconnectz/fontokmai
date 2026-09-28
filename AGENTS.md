@@ -43,13 +43,14 @@
 ### A5. งานที่กำลังทำ (Active claims)
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
+| Codex | 2026-09-28 11:09 | `tests/consumer/`, `docs/sources.md` §13, `docs/design/accuracy-evaluation.md`, `AGENTS.md` A5/A6/C2, `private/handoffs/2026-09-28-codex-overview-review.md` + index/archive | C2.1–5: verify HII thresholds, overview/fixes/accessibility tests, evaluation plan | review-overview |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md`)
 
 #### 2026-09-28 10:59 ICT — ทวนบั๊กบนข้อมูลจริง · data-watch เห็นไฟล์ใหม่ (Claude)
 - **ข้อมูลจริงเช้า 28 ก.ย.**: รายงานน้ำท่วม 105 จุด → สรุปขึ้น 20 อำเภอ/เขตพอดีเพดาน (บางกะปิ ประเวศ ลาดกระบัง ปากเกร็ด ฯลฯ) · แก้ `4625f43`: ชื่อทางหลวงชนบท “ทช.” (เดิมเป็น “ทล.ชนบท…”), เพดาน 40 และหัวข้อบอกจำนวน, เครดิตพิกัดเขื่อนมีลิงก์ ODbL, data-watch คาด `forecast/rivers.json` (≤ 37 ชม.) และ `summary/overview.json` (≤ 40 นาที) · VPS `4625f43`
 - **ตรวจแล้วปกติ**: rain.json 06:48 · rivers.json 08:03 (−7…+29 วัน) · overview ทุกรอบ · เว็บจริงบนมือถือไม่มี error ใน console และไม่เลื่อนข้าง · pytest/vitest 93/Playwright 64/consumer 45+18/watch 12 ผ่าน
-- **VPS**: ดิสก์ 70% (เหลือ 25 GB) ของ fontokmai ~11 MB แต่ Docker build cache 11 GB (คืนได้ ~7.5) + dangling image 16 ตัว (~1 GB) จาก deploy หลายรอบ · การล้างกระทบ cache ของ finnews-bot ด้วย จึงรอผู้ใช้อนุญาต (P0-B2)
+- **VPS**: ดิสก์ 70% (เหลือ 25 GB) ของ fontokmai ~11 MB แต่ Docker build cache 11 GB (คืนได้ ~7.5) + dangling image 16 ตัว (~1 GB) จาก deploy หลายรอบ · การล้างกระทบ cache ของงานอื่นบน VPS ด้วย จึงรอผู้ใช้อนุญาต (P0-B2)
 - **ก่อนหน้า (27 ก.ย. 16:51 ฉบับเต็มใน `private/handoffs/README.md`)**: การ์ดสรุปจุดที่ต้องระวัง (สัญญาข้อ 21, `e811ad1`), แก้ M17–M22 ของ Codex, ยืนยันเว็บกับ Google/Bing, การ์ดเขื่อนครบ 35 แห่ง (`52b6e11`)
 - **ต่อไป**: Codex ตาม C2 ข้อ 1–5 · Claude: P0-B2 (คุมดิสก์/เก็บย้อนหลัง/สำรอง SQLite) และเก็บข้อมูลสำหรับวัดความแม่นตามแผนของ Codex
 
