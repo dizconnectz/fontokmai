@@ -876,6 +876,8 @@ export function Overview({
         openId={openFloodId}
         onFlood={onFlood}
       />
+      {/* how full the dams are comes before the alerts: the user reads it at a glance (2026-09-28) */}
+      {dams && <ChaoPhrayaDams dams={dams} now={now} onDam={onDam} />}
       <section className="panel-section" aria-labelledby="alerts-heading">
         <h2
           id="alerts-heading"
@@ -913,7 +915,6 @@ export function Overview({
       </section>
       {flooding && <RoadFloodingToday flooding={flooding} now={now} onRoad={onRoadName} />}
       {news && <SituationCard news={news} now={now} />}
-      {dams && <ChaoPhrayaDams dams={dams} now={now} onDam={onDam} />}
       <RadarNow radar={snapshot?.radar} now={now} />
       <section className="panel-section pin-hint">
         <MapPin size={20} />

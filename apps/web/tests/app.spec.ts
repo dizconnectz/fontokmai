@@ -815,6 +815,11 @@ test('the department situation text and the Chao Phraya dams show, with a note o
   await expect(situation).toContainText('ฝนเล็กน้อย & ลมแรง');
   await expect(situation).toContainText('ไม่ใช่ประกาศเตือนภัยของกรมอุตุฯ');
   const dams = page.getByTestId('dams');
+  // the dams come before the official alerts (user, 2026-09-28)
+  const headings = await page.locator('#panel h2').allTextContents();
+  const order = (text: string) => headings.findIndex((heading) => heading.includes(text));
+  expect(order('เขื่อนใหญ่')).toBeGreaterThanOrEqual(0);
+  expect(order('เขื่อนใหญ่')).toBeLessThan(order('ประกาศ'));
   // how full, as a bar in the department's colour with the words and the figure beside it (user, 2026-09-28)
   const bhumibol = dams.locator('.dam-line').filter({ hasText: 'เขื่อนภูมิพล' });
   await expect(bhumibol).toContainText('เขื่อนภูมิพล · น้ำปานกลาง');
