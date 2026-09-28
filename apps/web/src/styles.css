@@ -1128,32 +1128,86 @@ details > ul {
 .map-legend.open .legend-toggle svg {
   transform: rotate(180deg);
 }
-/* on a phone the key sits under the layer button on the right, clear of the map buttons on the left (the
-   map attribution opens across the bottom until the first drag); the button comes first and opens down */
+.legend-toggle-info {
+  display: none;
+}
+/* on a phone the key is one slim line at the bottom left, level with the zoom buttons and just above the
+   timeline, so that it hides little of the map (a box under the layer button covered the middle of the
+   country: user, 2026-09-28); what the pins mean opens above it, below the map buttons on the left */
 @media (max-width: 640px) {
-  .stage .map-legend,
-  .stage.has-timeline .map-legend {
-    top: 58px;
-    right: 12px;
-    left: auto;
-    bottom: auto;
-    max-width: calc(100% - 172px);
-    max-height: calc(100% - 158px);
-    padding: 6px 8px;
-    font-size: 0.74rem;
+  .stage .map-legend {
+    bottom: 10px;
+    z-index: 3;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 8px;
+    max-width: calc(100% - 60px);
+    max-height: none;
+    overflow: visible;
+    padding: 3px 4px 3px 8px;
+    font-size: 0.72rem;
   }
   .stage.has-timeline .map-legend {
-    max-height: calc(100% - var(--timeline-space) - 158px);
+    bottom: calc(var(--timeline-space) + 10px);
+    max-height: none;
   }
-  .legend-toggle {
+  .map-legend .legend-row {
+    gap: 2px 6px;
+  }
+  .map-legend .legend-row span {
+    gap: 3px;
+  }
+  .map-legend .legend-levels i {
+    width: 10px;
+  }
+  .map-legend .radar-gradient {
+    width: 40px;
+  }
+  /* only the list scrolls, so that the line with the button to close it stays in sight; it stops below the
+     map buttons on the left (the map is 62svh tall, at least 360 px) */
+  .legend-pins {
     order: -1;
-    justify-self: end;
+    flex-basis: 100%;
+    max-height: max(96px, calc(max(62svh, 360px) - var(--timeline-space) - 200px));
+    overflow-y: auto;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--line);
   }
-  .legend-toggle svg {
-    transform: rotate(180deg);
+  .legend-note {
+    order: 1;
+    flex-basis: 100%;
   }
-  .map-legend.open .legend-toggle svg {
-    transform: none;
+  /* the button keeps its words for screen readers; on the screen it is an (i), and a chevron once open,
+     with a target of at least 24 px */
+  .legend-toggle {
+    justify-content: center;
+    min-width: 24px;
+    min-height: 24px;
+    padding: 0;
+  }
+  .legend-toggle-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+  .map-legend:not(.open) .legend-toggle-chevron {
+    display: none;
+  }
+  .map-legend:not(.open) .legend-toggle-info {
+    display: block;
+  }
+  /* the way back to the flood list stands above the key, over an open pin list */
+  .stage .back-to-list {
+    bottom: 48px;
+    z-index: 4;
+  }
+  .stage.has-timeline .back-to-list {
+    bottom: calc(var(--timeline-space) + 48px);
   }
 }
 .timeline {

@@ -508,7 +508,7 @@ export default function App() {
         {(colourKey || pinKey) && (
           <div className={`map-legend ${legendOpen ? 'open' : ''}`} aria-label="คำอธิบายสี">
             {layers.alerts && (
-              <div className="legend-row">
+              <div className="legend-row legend-levels">
                 {LEGEND_LEVELS.map((level) => (
                   <span key={level}>
                     <i style={{ background: LEVEL_FILL[level] }} /> {LEVEL_LABEL[level]}
@@ -538,7 +538,7 @@ export default function App() {
               </div>
             )}
             {layers.radar && step.kind === 'forecast' && (
-              <div className="legend-row">
+              <div className="legend-row legend-note">
                 <small>ระบายสีตั้งแต่ 0.5 มม./ชม. · ไม่มีสีไม่ได้แปลว่าไม่มีฝน</small>
               </div>
             )}
@@ -629,7 +629,9 @@ export default function App() {
                 aria-controls="legend-pins"
                 onClick={() => setLegendOpen((open) => !open)}
               >
-                <ChevronUp size={14} /> {legendOpen ? 'ย่อ' : 'ความหมายหมุด'}
+                <ChevronUp size={14} className="legend-toggle-chevron" aria-hidden="true" />
+                <Info size={16} className="legend-toggle-info" aria-hidden="true" />
+                <span className="legend-toggle-text">{legendOpen ? 'ย่อ' : 'ความหมายหมุด'}</span>
               </button>
             )}
           </div>

@@ -724,6 +724,34 @@ test('Bangkok rain gauges and canal levels show as measured values near a pin', 
   );
 });
 
+test('on a phone the colour key is one slim line by the zoom buttons, and its pin list keeps the close button in sight', async ({
+  page,
+}) => {
+  // a box under the layer button covered the middle of the country on a phone (user, 2026-09-28)
+  await page.setViewportSize({ width: 375, height: 812 });
+  await prepare(page);
+  await page.goto('/');
+  const legend = page.locator('.map-legend');
+  await expect(legend).toContainText('รุนแรงมาก');
+  const stage = (await page.locator('.stage').boundingBox())!;
+  const key = (await legend.boundingBox())!;
+  expect(key.height).toBeLessThan(40);
+  expect(key.y).toBeGreaterThan(stage.y + stage.height * 0.6);
+  const zoom = (await page.locator('.maplibregl-ctrl-zoom-in').boundingBox())!;
+  expect(key.x + key.width).toBeLessThan(zoom.x);
+  // the button keeps its words for a screen reader; on the screen it is an (i)
+  await page.getByRole('button', { name: 'ความหมายหมุด' }).click();
+  await expect(page.locator('#legend-pins')).toBeVisible();
+  const close = page.getByRole('button', { name: 'ย่อ', exact: true });
+  const shut = (await close.boundingBox())!;
+  const list = (await page.locator('#legend-pins').boundingBox())!;
+  expect(shut.y).toBeGreaterThan(list.y + list.height - 1);
+  expect(shut.y + shut.height).toBeLessThan(stage.y + stage.height);
+  expect(list.y).toBeGreaterThan(stage.y);
+  await close.click();
+  await expect(page.locator('#legend-pins')).toBeHidden();
+});
+
 test('a pumping station says how many of its pumps run, and a station without that says nothing', async ({
   page,
 }) => {
