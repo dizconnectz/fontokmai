@@ -93,6 +93,7 @@ test("river popup distinguishes the model from a measured level and links to its
   await prepare(page, { "forecast/rivers.json": file });
   const popup = await openRiver(page);
   await expect(popup).toContainText("ไม่ใช่ระดับน้ำที่วัดจริง");
+  await expect(popup).toContainText("แนวโน้ม 7 วันข้างหน้า (ทดลอง)");
   await expect(popup).not.toContainText(/m³|ลบ\.ม\.\/วินาที/);
   await expect(popup.getByRole("link")).toHaveAttribute(
     "href",
@@ -181,4 +182,29 @@ test("M21: the chart's last-day label matches the actual delivered forecast hori
     (Date.parse(file.days.at(-1)) - Date.parse("2026-09-27")) / 86400000;
   const labels = popup.locator("svg text");
   await expect(labels.last()).toHaveText(`+${daysAhead} วัน`);
+});
+
+test("M25: a clock refresh that changes the stale label preserves keyboard focus", async ({
+  page,
+}) => {
+  const file = riverFile();
+  file.fetched_at = new Date(NOW - 36 * 3600000 + 60000).toISOString();
+  await prepare(page, { "forecast/rivers.json": file }, NOW, true);
+  const popup = await openRiver(page);
+  const close = popup.getByRole("button", { name: "Close popup" });
+  await close.focus();
+  await expect(close).toBeFocused();
+  await page.clock.fastForward(2 * 60000);
+  await expect(popup).toContainText("พยากรณ์ไม่อัปเดต");
+  await test.info().attach("focus-after-clock-refresh", {
+    body: await page.evaluate(
+      () => document.activeElement?.outerHTML ?? "none",
+    ),
+    contentType: "text/plain",
+  });
+  test.fail(
+    true,
+    "M25: setDOMContent replaces the focused element on clock updates",
+  );
+  await expect(close).toBeFocused();
 });
