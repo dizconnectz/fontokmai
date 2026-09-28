@@ -306,6 +306,17 @@ def write_overview_example(out: Path) -> list[Path]:
                          ("forecast/rain.json", "forecast/rain.json"),
                          ("forecast/rivers.json", "forecast/rivers.json"), ("water/dams.json", "bkk/dams.json")):
         files[rel] = (out / example).read_bytes()
+    # the radar of the last half hour, with no echo: read, and nothing heavy on it
+    from io import BytesIO
+
+    from PIL import Image
+
+    from fontokmai.sources.tmd_radar import _feed, mercator_height
+    blank = BytesIO()
+    Image.new("RGBA", (1800, round(mercator_height(1800))), (255, 255, 255, 0)).save(blank, format="PNG")
+    frames = [(now - timedelta(minutes=m), f"radar/example-{m}.png") for m in (15, 0)]
+    files.update({path: blank.getvalue() for _, path in frames})
+    files["radar.json"] = _feed(frames, "example").model_dump_json().encode("utf-8")
     target = out / "overview"
     target.mkdir(parents=True, exist_ok=True)
     path = target / "overview.json"

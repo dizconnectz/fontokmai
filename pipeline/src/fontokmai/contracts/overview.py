@@ -13,8 +13,8 @@ from pydantic import AwareDatetime, Field
 
 from fontokmai.contracts.common import SCHEMA_VERSION, ContractModel, Position
 
-ReasonKind = Literal["flood_reports", "road_flooding", "rain_measured", "rain_forecast", "rain_burst",
-                     "rain_3days", "river_rising", "dam_full"]
+ReasonKind = Literal["flood_reports", "road_flooding", "rain_measured", "rain_radar", "rain_forecast",
+                     "rain_burst", "rain_3days", "river_rising", "dam_full"]
 
 
 class OverviewReason(ContractModel):

@@ -37,7 +37,9 @@ class RadarFeed(ContractModel):
         " in Mercator y, not in latitude (exactly how a MapLibre image source draws it). Read the row of a"
         " latitude with y = ln(tan(pi/4 + lat/2))"))
     frames: list[RadarFrame] = Field(description="Oldest first; the last frame is the latest; may be empty")
-    legend: list[RadarLegendItem] = Field(description="Highest class first, as on the TMD page")
+    legend: list[RadarLegendItem] = Field(description=(
+        "Highest class first, read from the colour bar of the TMD page every round; a colour the bar lists twice"
+        " keeps its lower value. Empty when the latest frame is not drawn in these colours: then read no values"))
     legend_opacity: float = Field(gt=0, le=1, description=(
         "Pixels show a legend colour blended over white at this opacity; undo it before matching a pixel to"
         " a class. Transparent pixels mean no echo"))

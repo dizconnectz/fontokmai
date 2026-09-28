@@ -10,23 +10,43 @@ from fontokmai.run import run_cap_snapshot
 from fontokmai.sources.tmd_cap.fetch import FetchError, fixture_fetcher
 from fontokmai.sources.tmd_radar import (
     IMAGE_BASE,
+    LEGEND,
     LIST_URL,
+    PAGE_URL,
+    _feed,
     collect_radar,
     mercator_height,
+    mercator_y,
+    parse_legend,
     parse_list,
     png_size,
     prune_frames,
+    rain_samples,
 )
 from helpers import FIXTURES
 
+THAILAND = (97.3, 5.6, 105.7, 20.5)
 
-def _png(seed: int, width: int = 68, height: int = 100) -> bytes:
-    """A small frame with the Web Mercator shape of the TMD corners (68 x 100 px; TMD's is 1800 x 2644)."""
+
+def _rgb(colour: str) -> bytes:
+    return bytes(int(colour[i:i + 2], 16) for i in (1, 3, 5))
+
+
+def _png(seed: int, width: int = 68, height: int = 100, colour: str | None = None) -> bytes:
+    """A small frame with the Web Mercator shape of the TMD corners (68 x 100 px; TMD's is 1800 x 2644), drawn in
+    a colour of the scale unless another is given."""
     def chunk(kind, data):
         return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data))
-    raw = (b"\x00" + bytes([seed % 256, 0, 0, 255]) * width) * height
+    raw = (b"\x00" + (_rgb(colour or LEGEND[seed % len(LEGEND)][1]) + b"\xff") * width) * height
     return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
             + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b""))
+
+
+def _page(legend: list[tuple[float, str, str]]) -> bytes:
+    """The colour bar as the TMD page writes it (2026-09-28)."""
+    items = "".join(f'<div class="cbar-item"><span class="cbar-swatch" style="background:{colour}"></span>'
+                    f'<span class="cbar-val">{label}</span></div>\n' for _, colour, label in legend)
+    return f'<html><div class="cbar-strip">\n{items}</div></html>'.encode()
 
 
 def _listing(times: list[str]) -> str:
@@ -39,16 +59,20 @@ class FakeTmd:
         self.times = times
         self.calls: list[str] = []
         self.shift_after_images = False
+        self.page = _page(LEGEND)
+        self.old_scale: set[int] = set()  # frames drawn in TMD's scale before 28 Sep
 
     def __call__(self, url: str) -> bytes:
         self.calls.append(url)
         if url == LIST_URL:
             return _listing(self.times).encode()
+        if url == PAGE_URL:
+            return self.page
         index = int(url.removeprefix(IMAGE_BASE + "zr/").removesuffix(".png"))
         if self.shift_after_images and index == len(self.times) - 1:
             self.shift_after_images = False
             self.times = self.times[1:] + ["2026-09-25 19:15"]
-        return _png(index)
+        return _png(index, colour="#FF8000" if index in self.old_scale else None)
 
 
 TIMES = ["2026-09-25 17:45", "2026-09-25 18:00", "2026-09-25 18:15", "2026-09-25 18:30", "2026-09-25 18:45"]
@@ -72,7 +96,7 @@ def test_collect_keeps_the_last_hour_and_reuses_files_on_disk(tmp_path):
     tmd.calls.clear()
     tmd.times = TIMES[1:] + ["2026-09-25 19:00"]
     second = collect_radar(tmd, tmp_path, "g2")
-    assert [c for c in tmd.calls if c != LIST_URL] == [IMAGE_BASE + "zr/4.png"]  # only the new frame
+    assert [c for c in tmd.calls if c not in (LIST_URL, PAGE_URL)] == [IMAGE_BASE + "zr/4.png"]  # only the new
     assert second.feed.frames[-1].path == "radar/20260925T1900Z.png"
     assert RadarFeed.model_validate_json(second.files["radar.json"]).generation_id == "g2"
 
@@ -147,3 +171,70 @@ def test_a_frame_of_another_shape_is_rejected(tmp_path):
     assert result.rejected == 1 and result.ok
     assert "Web Mercator" in result.message
     assert result.feed.projection == "EPSG:3857"
+
+
+def test_the_colour_scale_is_read_from_the_page_and_a_repeated_colour_keeps_its_lower_value():
+    page = _page([(636.0, "#EFE6F1", "&gt; 636.0"), (445.0, "#EFE6F1", "445.0"), (36.5, "#D43320", "36.5"),
+                  (17.9, "#D79C37", "17.9"), (12.5, "#D79C37", "12.5"), (3.0, "#F3F453", "3.00"),
+                  (1.03, "#69CB5A", "1.03"), (0.21, "#54A431", "0.21")]).decode()
+    assert parse_legend(page) == [(445.0, "#EFE6F1", "445"), (36.5, "#D43320", "36.5"), (12.5, "#D79C37", "12.5"),
+                                  (3.0, "#F3F453", "3"), (1.03, "#69CB5A", "1.03"), (0.21, "#54A431", "0.21")]
+    assert parse_legend("<html>no colour bar</html>") is None
+
+
+def test_a_page_without_its_colour_bar_leaves_the_scale_of_28_september(tmp_path):
+    tmd = FakeTmd(TIMES)
+    tmd.page = b"<html>a new page</html>"
+    result = collect_radar(tmd, tmp_path, "g")
+    assert result.ok and [(i.min_mm_per_hr, i.color) for i in result.feed.legend] == [(v, c) for v, c, _ in LEGEND]
+    assert "2026-09-28" in result.message
+
+
+def test_older_frames_in_another_colour_scale_are_left_out(tmp_path):
+    # TMD changed its scale between 11:30 and 11:45 on 28 Sep 2026: an hour had frames of both
+    tmd = FakeTmd(TIMES)
+    tmd.old_scale = {0, 1, 2, 3}
+    result = collect_radar(tmd, tmp_path, "g")
+    assert [f.path for f in result.feed.frames] == ["radar/20260925T1845Z.png"]
+    assert set(result.files) == {"radar/20260925T1845Z.png", "radar.json"}
+    assert result.feed.legend and "3 older frame(s) left out" in result.message
+
+
+def test_a_latest_frame_in_another_colour_scale_goes_out_without_a_legend(tmp_path):
+    tmd = FakeTmd(TIMES)
+    tmd.old_scale = {0, 1, 2, 3, 4}
+    result = collect_radar(tmd, tmp_path, "g")
+    assert len(result.feed.frames) == 4 and result.feed.legend == []  # the pictures, but nothing to read them with
+    assert "legend left empty" in result.message
+
+
+def _frame(blocks: list[tuple[float, float, str]], half: int = 5) -> bytes:
+    """A frame of TMD's size, transparent but for squares of (2 half + 1) px of a colour at (lon, lat)."""
+    from io import BytesIO
+
+    from PIL import Image
+    width = 1800
+    height = round(mercator_height(width))
+    image = Image.new("RGBA", (width, height), (255, 255, 255, 0))
+    top, span = mercator_y(22.5), mercator_y(22.5) - mercator_y(4.0)
+    for lon, lat, colour in blocks:
+        x = int((lon - 95.0) / 13.0 * width)
+        y = int((top - mercator_y(lat)) / span * height)
+        image.paste((*_rgb(colour), 255), (x - half, y - half, x + half + 1, y + half + 1))
+    out = BytesIO()
+    image.save(out, format="PNG")
+    return out.getvalue()
+
+
+def test_rain_rates_are_read_where_the_frame_draws_them():
+    feed = _feed([], "g", LEGEND)
+    png = _frame([(100.63, 13.99, "#D43320"), (100.3, 16.0, "#F3F453")])  # 36.5 at Rangsit, 3 near Phitsanulok
+    heavy = rain_samples(feed, png, THAILAND, 35.0)
+    assert heavy and {value for *_, value in heavy} == {36.5}
+    assert sum(lon for lon, *_ in heavy) / len(heavy) == pytest.approx(100.63, abs=0.02)
+    assert sum(lat for _, lat, *_ in heavy) / len(heavy) == pytest.approx(13.99, abs=0.02)
+    assert sum(km2 for _, _, km2, _ in heavy) == pytest.approx(11 * 11 * 0.78**2, rel=0.35)  # 121 px of ~0.8 km
+    assert len(rain_samples(feed, png, THAILAND, 1.0)) > len(heavy)
+    assert rain_samples(_feed([], "g", []), png, THAILAND, 35.0) == []  # no legend: nothing is read
+    assert rain_samples(feed, _png(0, colour="#F3F453"), THAILAND, 35.0) == []  # light rain everywhere
+

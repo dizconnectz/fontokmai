@@ -196,6 +196,14 @@ export default function App() {
   const stepIndex = chosen >= 0 ? chosen : nowIndex;
   const step = steps[stepIndex];
   const rainLegend = snapshot?.radar?.legend ?? RAIN_LEGEND;
+  // an empty legend means the producer could not match the frame to TMD's colour bar: no scale is drawn
+  const keyColours =
+    step.kind === 'forecast'
+      ? FORECAST_LEVELS.map((level) => level.color)
+      : [...rainLegend]
+          .reverse()
+          .filter((item) => item.min_mm_per_hr !== null && item.min_mm_per_hr > 0)
+          .map((item) => item.color);
   const colourKey = layers.alerts || (layers.radar && (step.kind !== 'now' || frames.length > 0));
   const pinKey =
     layers.cameras ||
@@ -519,19 +527,17 @@ export default function App() {
             {layers.radar && (step.kind !== 'now' || frames.length > 0) && (
               <div className="legend-row radar-scale">
                 <span>{step.kind === 'forecast' ? 'พยากรณ์ฝน' : 'ฝน'}</span>
-                <span
-                  className="radar-gradient"
-                  style={{
-                    background: `linear-gradient(90deg, ${(step.kind === 'forecast'
-                      ? FORECAST_LEVELS.map((level) => level.color)
-                      : [...rainLegend]
-                          .reverse()
-                          .filter((item) => item.min_mm_per_hr !== null && item.min_mm_per_hr > 0)
-                          .map((item) => item.color)
-                    ).join(', ')})`,
-                  }}
-                />
-                <span>หนัก</span>
+                {keyColours.length ? (
+                  <>
+                    <span
+                      className="radar-gradient"
+                      style={{ background: `linear-gradient(90deg, ${keyColours.join(', ')})` }}
+                    />
+                    <span>หนัก</span>
+                  </>
+                ) : (
+                  <span>สีตามภาพของกรมอุตุฯ</span>
+                )}
                 {step.kind === 'radar' && radarAge !== null && radarAge > 45 && (
                   <b className="stale-mark">เก่า</b>
                 )}

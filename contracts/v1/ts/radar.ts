@@ -31,7 +31,7 @@ export type Label = string;
  */
 export type MinMmPerHr = number | null;
 /**
- * Highest class first, as on the TMD page
+ * Highest class first, read from the colour bar of the TMD page every round; a colour the bar lists twice keeps its lower value. Empty when the latest frame is not drawn in these colours: then read no values
  */
 export type Legend = RadarLegendItem[];
 /**

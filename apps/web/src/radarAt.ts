@@ -38,6 +38,11 @@ export function useRadarAt(
       setReading({ state: 'none', item: null, time: null });
       return;
     }
+    // no legend: the producer found the frame in colours other than TMD's bar, so nothing may be read from it
+    if (!radar.legend.length) {
+      setReading({ state: 'error', item: null, time: frame.time });
+      return;
+    }
     let cancelled = false;
     setReading({ state: 'loading', item: null, time: frame.time });
     loadImage(new URL(frame.path, base).href)

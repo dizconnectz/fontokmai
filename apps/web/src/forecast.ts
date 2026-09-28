@@ -102,21 +102,28 @@ export function dayRainWords(mm: number | null): string {
   return 'ฝนหนักมาก';
 }
 
-// TMD radar legend (radar.json carries the same list), for the key when radar.json is absent
+// TMD radar colour bar of 2026-09-28 (radar.json carries the one read in its round), for the key when radar.json
+// is absent
 export const RAIN_LEGEND: RadarLegendItem[] = [
-  { min_mm_per_hr: 80, color: '#DD0000', label: '> 80' },
-  { min_mm_per_hr: 56, color: '#FE45A2', label: '56' },
-  { min_mm_per_hr: 48, color: '#FF86FF', label: '48' },
-  { min_mm_per_hr: 40, color: '#FF8000', label: '40' },
-  { min_mm_per_hr: 32, color: '#FFFF00', label: '32' },
-  { min_mm_per_hr: 24, color: '#7CCE02', label: '24' },
-  { min_mm_per_hr: 16, color: '#46FF09', label: '16' },
-  { min_mm_per_hr: 12, color: '#00E10C', label: '12' },
-  { min_mm_per_hr: 8, color: '#00B347', label: '8' },
-  { min_mm_per_hr: 4, color: '#009375', label: '4' },
-  { min_mm_per_hr: 2, color: '#0006F0', label: '2' },
-  { min_mm_per_hr: 1, color: '#003C6C', label: '1' },
-  { min_mm_per_hr: 0.1, color: '#0077C6', label: '0.1' },
+  { min_mm_per_hr: 445, color: '#EFE6F1', label: '445' },
+  { min_mm_per_hr: 311.4, color: '#F3CBFA', label: '311.4' },
+  { min_mm_per_hr: 217.9, color: '#EA8CF8', label: '217.9' },
+  { min_mm_per_hr: 152.5, color: '#E345F5', label: '152.5' },
+  { min_mm_per_hr: 74.6, color: '#B72D54', label: '74.6' },
+  { min_mm_per_hr: 52.2, color: '#CA325D', label: '52.2' },
+  { min_mm_per_hr: 36.5, color: '#D43320', label: '36.5' },
+  { min_mm_per_hr: 25.6, color: '#E3622A', label: '25.6' },
+  { min_mm_per_hr: 12.5, color: '#D79C37', label: '12.5' },
+  { min_mm_per_hr: 8.76, color: '#F1C946', label: '8.76' },
+  { min_mm_per_hr: 6.13, color: '#D6D648', label: '6.13' },
+  { min_mm_per_hr: 4.29, color: '#DEDF4B', label: '4.29' },
+  { min_mm_per_hr: 3, color: '#F3F453', label: '3' },
+  { min_mm_per_hr: 2.1, color: '#7BEC4B', label: '2.1' },
+  { min_mm_per_hr: 1.47, color: '#73DE45', label: '1.47' },
+  { min_mm_per_hr: 1.03, color: '#69CB5A', label: '1.03' },
+  { min_mm_per_hr: 0.5, color: '#66C43C', label: '0.5' },
+  { min_mm_per_hr: 0.24, color: '#5EB738', label: '0.24' },
+  { min_mm_per_hr: 0.21, color: '#54A431', label: '0.21' },
 ];
 
 // Forecast areas are drawn as vector shapes, so their edges stay sharp at every zoom (an image of the

@@ -24,6 +24,8 @@ from fontokmai.contracts.forecast import RainForecast, RiverForecast
 from fontokmai.contracts.live_floods import LiveFloods
 from fontokmai.contracts.overview import Overview, OverviewInput, OverviewItem, OverviewReason
 from fontokmai.contracts.places import Place, PlaceGazetteer
+from fontokmai.contracts.radar import RadarFeed
+from fontokmai.sources.tmd_radar import rain_samples
 
 OVERVIEW_PATH = "summary/overview.json"
 ICT = timezone(timedelta(hours=7))
@@ -37,6 +39,7 @@ ROADS_MAX_AGE = timedelta(hours=3)
 FORECAST_MAX_AGE = timedelta(hours=12)
 RIVERS_MAX_AGE = timedelta(hours=36)
 DAMS_MAX_AGE = timedelta(days=3)
+RADAR_MAX_AGE = timedelta(minutes=45)  # the web marks the radar old after 45 minutes
 
 # criteria of sources (design 7.5); forecast/rain.json counts in 0.1 mm
 HOUR_WATCH_MM = 35.0
@@ -54,6 +57,14 @@ AHEAD_DAYS = 4  # today and 3 more days; later days are a trend only (design 7.3
 RIVER_FAST = 0.3  # the web's "rising a lot"
 RIVER_AHEAD = 7
 CELL = 0.2  # degrees of the lookup grid for the nearest subdistrict
+# radar classes are rain rates at 2 km (mm/hr) and count from their lower value: heavy from the ThaiWater 1-hour
+# watch (35; the TMD class from 36.5), very heavy from the web's ฝนหนักมาก (48; the class from 52.2). Only over an
+# area and in two frames in a row, so that a passing shower is not a place
+RADAR_HEAVY_MM = HOUR_WATCH_MM
+RADAR_VERY_HEAVY_MM = HOUR_VERY_HEAVY_MM
+RADAR_MIN_KM2 = 10.0  # of a district, in the latest frame and in the one before it
+RADAR_GAP = timedelta(minutes=20)  # the frame before is the previous one (TMD makes one every 15 minutes)
+THAILAND = (97.3, 5.6, 105.7, 20.5)  # west, south, east, north: the part of the frame that is read
 MAX_NOW = 40  # a morning after a storm had more than 20 districts (2026-09-28); the web folds after five
 MAX_NEXT = 40
 
@@ -251,6 +262,39 @@ def build_overview(files: dict[str, bytes], now: datetime, gazetteer: Gazetteer 
             spot.reasons.append((score, OverviewReason(
                 kind="rain_measured", text_th=text, day=None, source_th="สำนักการระบายน้ำ กทม.",
                 at=gauge.observed_at)))
+
+    # ---------- now: heavy rain on the TMD radar, in the latest frame and the one before it ----------
+    radar = _load(files, "radar.json", RadarFeed)
+    latest = radar.frames[-1] if radar and radar.frames and radar.legend else None  # no legend: not readable
+    state = _input("ภาพเรดาร์ (กรมอุตุฯ)", latest.time if latest else None, now, RADAR_MAX_AGE)
+    inputs.append(state)
+    if radar and latest and state.status == "fresh" and len(radar.frames) >= 2:
+        before = radar.frames[-2]
+        pngs = [files.get(before.path), files.get(latest.path)]
+        if latest.time - before.time <= RADAR_GAP and all(pngs):
+            covers = []
+            for png in pngs:
+                cover: dict[str, list[float]] = defaultdict(lambda: [0.0, 0.0, 0.0, 0.0])  # km², km² very, lon, lat
+                for lon, lat, km2, value in rain_samples(radar, png, THAILAND, RADAR_HEAVY_MM):
+                    district = district_of([lon, lat])
+                    if district:
+                        c = cover[district.code]
+                        c[0] += km2
+                        c[1] += km2 if value >= RADAR_VERY_HEAVY_MM else 0.0
+                        c[2] += lon * km2
+                        c[3] += lat * km2
+                covers.append(cover)
+            earlier, current = covers
+            for code, (heavy, very, lon_sum, lat_sum) in sorted(current.items()):
+                if heavy < RADAR_MIN_KM2 or code not in earlier or earlier[code][0] < RADAR_MIN_KM2:
+                    continue
+                strong = very >= RADAR_MIN_KM2
+                spot = _district_spot(spots, g.places[code])
+                spot.points.append([round(lon_sum / heavy, 5), round(lat_sum / heavy, 5)])
+                word, area = ("ฝนหนักมาก", very) if strong else ("ฝนหนัก", heavy)
+                spot.reasons.append((3 if strong else 2, OverviewReason(
+                    kind="rain_radar", text_th=f"เรดาร์เห็น{word}ต่อเนื่อง ราว {area:.0f} ตร.กม.", day=None,
+                    source_th="เรดาร์กรมอุตุฯ", at=latest.time)))
 
     # ---------- next: forecast rain by province (Open-Meteo lattice, TMD day classes) ----------
     forecast = _load(files, "forecast/rain.json", RainForecast)

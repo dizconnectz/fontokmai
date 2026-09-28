@@ -46,6 +46,7 @@ export type Kind =
   | "flood_reports"
   | "road_flooding"
   | "rain_measured"
+  | "rain_radar"
   | "rain_forecast"
   | "rain_burst"
   | "rain_3days"

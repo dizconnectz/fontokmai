@@ -2,6 +2,7 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import pytest
+from test_radar import _frame
 
 from fontokmai.contracts.bkk import DamReport, RainGauges, RoadFloodingDaily
 from fontokmai.contracts.forecast import ForecastLattice, RainForecast
@@ -11,6 +12,7 @@ from fontokmai.contracts.overview import Overview
 from fontokmai.overview_build import OVERVIEW_PATH, Gazetteer, _road, build_overview
 from fontokmai.run import run_cap_snapshot
 from fontokmai.sources.tmd_cap.fetch import fixture_fetcher
+from fontokmai.sources.tmd_radar import LEGEND, _feed
 from helpers import FIXTURES
 
 NOW = datetime.fromisoformat("2026-09-27T16:30:00+07:00")
@@ -195,3 +197,41 @@ def test_road_names_are_short_and_keep_the_kind_of_road():
     assert _road("ถนนกาญจนาภิเษก (ถนนวงแหวนรอบนอกด้านตะวันตก)") == "ถ.กาญจนาภิเษก"
     assert _road("ซอยสุขุมวิท 91") == "ซอยสุขุมวิท 91"
     assert _road("ทางเลียบถนนพหลโยธิน") == "ทางเลียบถนนพหลโยธิน"
+
+
+def _radar(frames, legend=LEGEND):
+    """radar.json and its frames: (minutes before NOW, png)."""
+    listed = [(NOW - timedelta(minutes=m), f"radar/{n}.png") for n, (m, _) in enumerate(frames)]
+    files = {path: png for (_, path), (_, png) in zip(listed, frames, strict=True)}
+    files["radar.json"] = _dump(_feed(listed, "g", legend))
+    return files
+
+
+def test_heavy_rain_on_the_radar_for_half_an_hour_makes_a_place_to_watch():
+    # a storm of 7 x 7 px (~5 km) stays in one district; a wider one is counted in each district it covers
+    heavy, very, light = (_frame([(RANGSIT[0], RANGSIT[1], c)], half=3) for c in ("#D43320", "#CA325D", "#F3F453"))
+    overview = build_overview(_radar([(40, light), (25, heavy), (10, heavy)]), NOW, G)
+    [item] = overview.items
+    assert item.when == "now" and item.place_th == "อ.ธัญบุรี จ.ปทุมธานี" and item.province_code == "13"
+    [reason] = item.reasons
+    assert reason.kind == "rain_radar" and reason.day is None and reason.source_th == "เรดาร์กรมอุตุฯ"
+    assert reason.text_th.startswith("เรดาร์เห็นฝนหนักต่อเนื่อง ราว ") and reason.text_th.endswith(" ตร.กม.")
+    assert reason.at == NOW - timedelta(minutes=10) and item.score == 20
+    assert item.location == [pytest.approx(RANGSIT[0], abs=0.02), pytest.approx(RANGSIT[1], abs=0.02)]
+    stronger = build_overview(_radar([(25, heavy), (10, very)]), NOW, G).items[0]
+    assert stronger.reasons[0].text_th.startswith("เรดาร์เห็นฝนหนักมากต่อเนื่อง") and stronger.score == 30
+    # one frame is a passing shower; light rain is not heavy; frames far apart are not "in a row"
+    assert build_overview(_radar([(25, light), (10, heavy)]), NOW, G).items == []
+    assert build_overview(_radar([(10, heavy)]), NOW, G).items == []
+    assert build_overview(_radar([(55, heavy), (10, heavy)]), NOW, G).items == []
+
+
+def test_radar_that_is_old_unreadable_or_over_the_sea_adds_nothing():
+    heavy = _frame([(RANGSIT[0], RANGSIT[1], "#D43320")], half=3)
+    old = build_overview(_radar([(75, heavy), (60, heavy)]), NOW, G)
+    assert old.items == [] and {i.name_th: i.status for i in old.inputs}["ภาพเรดาร์ (กรมอุตุฯ)"] == "stale"
+    blank = build_overview(_radar([(25, heavy), (10, heavy)], legend=[]), NOW, G)
+    assert blank.items == [] and {i.name_th: i.status for i in blank.inputs}["ภาพเรดาร์ (กรมอุตุฯ)"] == "missing"
+    sea = _frame([(100.5, 11.5, "#D43320")])  # the middle of the Gulf of Thailand
+    assert build_overview(_radar([(25, sea), (10, sea)]), NOW, G).items == []
+
