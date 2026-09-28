@@ -42,7 +42,7 @@ docker compose up -d
 
 ## ใช้งานประจำ
 ```bash
-cd ~/fontokmai/app && git pull && cd deploy/vps && docker compose up -d --build   # อัปเดต
+~/fontokmai/app/deploy/vps/deploy.sh                                               # อัปเดต: pull, build, เริ่มใหม่ แล้วลบ cache/image เก่าของ fontokmai เท่านั้น
 docker compose logs --tail 20 cap-collector                                        # ดูผลแต่ละรอบ (JSON หนึ่งบรรทัดต่อรอบ)
 docker compose stop                                                                # หยุด (ข้อมูลใน var/ ยังอยู่)
 ```
@@ -57,10 +57,11 @@ docker compose stop                                                             
 | log ของ container | JSON หนึ่งบรรทัดต่อรอบ | หมุนที่ 10 MB × 3 |
 | `var/state/cache/itic_flood_YYYY.json` | เหตุน้ำท่วมของ iTIC/Longdo ปีที่จบแล้ว เฉพาะกรอบ กทม.–ปริมณฑล | ไม่กี่ร้อย KB ต่อปี ไม่เก็บไฟล์ดิบ (อ่านแบบ stream) |
 | `var/out/data/v1/ref/road_flood_history.json` | ประวัติน้ำท่วมถนน (สัญญาข้อ 8) | สร้างใหม่สัปดาห์ละครั้ง เขียนทับ |
-| image `fontokmai-pipeline:local` | Python + โค้ด | ~450 MB · build ใหม่แต่ละครั้งทิ้ง image เก่าและ build cache ไว้ |
+| image `fontokmai-pipeline:local` | Python + โค้ด | ~450 MB (ก่อน 2026-09-28) · แยก stage แล้วไม่มี uv และ cache ของมันในภาพ · `deploy.sh` ลบ build cache ที่ build ล่าสุดไม่ได้ใช้และ image เก่าของ fontokmai ทุกครั้ง (วัด 28 ก.ย.: cache ของเรา 317 MB ลบได้ 219 MB) |
+| `var/state/archive/dxs/*.tgz` | สำเนาข้อมูล DXS ทุกครั้งที่ผู้ใช้กดอัปเดต (ประวัติ) | ~25 KB ต่อครั้ง · สคริปต์อัปเดตลบที่เก่ากว่า 365 วัน |
 
 - ตัวคุมงบดิสก์, retention และสำรองนอกเครื่องตาม design 4.9 เป็นงาน P0-B2 และต้องเสร็จก่อนเพิ่มแหล่งที่ดึงข้อมูลจำนวนมาก
-- เครื่องนี้ใช้ร่วมกับงานเดิม: `docker image prune` และ `docker builder prune` กระทบของงานเดิมด้วย จึงต้องถามผู้ใช้ก่อนล้าง
+- **เครื่องนี้ใช้ร่วมกับงานอื่น ห้ามแตะของงานอื่นเลย** (ผู้ใช้สั่ง 2026-09-28): ห้าม `docker image prune`, `docker builder prune` หรือ `docker system prune` แบบไม่กรอง · ของเราใช้ `prune_own_cache.py` ซึ่งเลือกเฉพาะ build cache ที่คำอธิบายมีคำว่า fontokmai (ชื่อ stage และท้าย RUN ใน `pipeline/Dockerfile`) หรือสร้างต่อจากรายการนั้น และ image ค้างที่ entrypoint เป็น `fontokmai` · ลองก่อนด้วย `--dry-run`
 
 ## ประวัติน้ำท่วมถนน (ครั้งแรกต้องสั่งเอง)
 ตัวตั้งเวลาสร้าง `ref/road_flood_history.json` ใหม่สัปดาห์ละครั้ง แต่จะไม่โหลดเหตุการณ์ย้อนหลังทั้งชุดเอง (ปีละ 20–50 MB) จึงต้องสั่งครั้งแรกนอกรอบ 15 นาที:
