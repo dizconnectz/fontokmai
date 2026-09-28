@@ -42,6 +42,7 @@ import {
 } from './data';
 import {
   LEVEL_LABEL,
+  dateTime,
   feedTrust,
   hazardTitle,
   hourRange,
@@ -58,12 +59,12 @@ import { inMultiPolygon, rainWords } from './geo';
 import type { FoundPlace, Place } from './places';
 import { dayRainWords, daysAt, forecastAt } from './forecast';
 import {
-  agoText,
   floodsNear,
   FLOOD_RADIUS_M,
   FLOODS_STALE_MS,
   isOngoing,
   latestFloods,
+  reportedAt,
   REPORTER_TH,
   type FloodReport,
 } from './floods';
@@ -366,7 +367,7 @@ function FloodLine({
     <span className={`flood-line ${ongoing ? '' : 'ended'}`}>
       <strong>{report.road_th ?? report.title_th.replace(/^น้ำท่วม\s*/, '')}</strong>
       <small>
-        {agoText(report.start, now)} · {REPORTER_TH[report.reporter]}
+        {reportedAt(report.start, now)} · {REPORTER_TH[report.reporter]}
         {distance !== undefined && ` · ห่าง ${distanceText(distance)}`}
         {!ongoing && ' · ครบเวลารายงานแล้ว อาจลดลง'}
       </small>
@@ -754,6 +755,7 @@ function FloodsNow({
       <h2 id="floods-now-heading" className={ongoing ? 'heading-rain' : undefined}>
         <Waves size={18} /> {ongoing ? `รายงานน้ำท่วมตอนนี้ ${ongoing} จุด` : 'รายงานน้ำท่วมตอนนี้'}
       </h2>
+      {floods && <p className="quiet">ข้อมูลถึง {dateTime(floods.fetched_at)}</p>}
       {(floodsState === 'idle' || floodsState === 'loading') && (
         <p className="quiet">กำลังโหลดรายงานน้ำท่วม…</p>
       )}

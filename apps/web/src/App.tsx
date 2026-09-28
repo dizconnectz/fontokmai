@@ -31,7 +31,7 @@ import { distanceM } from './roads';
 import Timeline, { type TimeStep } from './Timeline';
 import { FORECAST_LEVELS, forecastAreas, RAIN_LEGEND } from './forecast';
 import { RIVER_CLASSES } from './rivers';
-import { feedTrust, LEVEL_FILL, LEVEL_LABEL, worstLevel, type Level } from './alerts';
+import { dateTime, feedTrust, LEVEL_FILL, LEVEL_LABEL, worstLevel, type Level } from './alerts';
 import { nearestSubdistrict, type FoundPlace } from './places';
 import {
   DAM_CLASSES,
@@ -196,6 +196,12 @@ export default function App() {
   const stepIndex = chosen >= 0 ? chosen : nowIndex;
   const step = steps[stepIndex];
   const rainLegend = snapshot?.radar?.legend ?? RAIN_LEGEND;
+  // the files of Bangkok's DXS arrive when someone in Thailand sends them (D31), not every round: their newest time
+  // is the one way to see that an update arrived
+  const dxsAt = [water, rain, flooding, news, dams, weather]
+    .map((file) => (file ? Date.parse(file.fetched_at) : NaN))
+    .filter((time) => !Number.isNaN(time))
+    .reduce((newest, time) => Math.max(newest, time), 0);
   // an empty legend means the producer could not match the frame to TMD's colour bar: no scale is drawn
   const keyColours =
     step.kind === 'forecast'
@@ -840,6 +846,15 @@ export default function App() {
                 </small>
               </div>
             )) ?? <span>ยังไม่มีข้อมูล</span>}
+            {dxsAt > 0 &&
+              !snapshot?.manifest.source_status.some(
+                (source) => source.source_id === 'bma_dxs',
+              ) && (
+                <div data-testid="dxs-status">
+                  <span>น้ำและฝน กทม. เขื่อน สถานีอุตุฯ (DXS): ข้อมูล ณ {dateTime(dxsAt)}</span>
+                  <small>อัปเดตเป็นครั้งๆ ไม่ใช่ทุก 15 นาที</small>
+                </div>
+              )}
           </div>
           {snapshot?.feed && (
             <details className="history-details">

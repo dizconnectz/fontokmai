@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { agoText, floodsNear, isOngoing, isShown, latestFloods, type LiveFloods } from './floods';
+import {
+  agoText,
+  floodsNear,
+  isOngoing,
+  isShown,
+  latestFloods,
+  reportedAt,
+  type LiveFloods,
+} from './floods';
 
 const at = (hhmm: string) => Date.parse(`2026-09-26T${hhmm}:00+07:00`);
 const report = (id: string, start: string, stop: string | null, location: [number, number]) => ({
@@ -69,5 +77,12 @@ describe('live flood reports', () => {
     expect(agoText('2026-09-26T15:20:00+07:00', at('15:30'))).toBe('เมื่อ 10 นาทีก่อน');
     expect(agoText('2026-09-26T12:20:00+07:00', at('15:30'))).toBe('เมื่อ 3 ชม.ก่อน');
     expect(agoText('2026-09-26T15:30:00+07:00', at('15:30'))).toBe('เมื่อสักครู่');
+    // a report says its day and clock too: "10 นาทีก่อน" alone does not say which day
+    expect(reportedAt('2026-09-26T15:20:00+07:00', at('15:30'))).toBe(
+      'วันนี้ 15:20 น. (10 นาทีก่อน)',
+    );
+    expect(reportedAt('2026-09-25T23:50:00+07:00', at('15:30'))).toBe(
+      'เมื่อวาน 23:50 น. (16 ชม.ก่อน)',
+    );
   });
 });

@@ -1,4 +1,5 @@
 import type { LiveFloods } from '../../../contracts/v1/ts/live_floods';
+import { shortTime } from './alerts';
 import { distanceM } from './roads';
 
 export type { LiveFloods };
@@ -45,6 +46,12 @@ export function agoText(time: string, now: number): string {
   if (minutes < 60) return `เมื่อ ${minutes} นาทีก่อน`;
   const hours = Math.round(minutes / 60);
   return hours < 48 ? `เมื่อ ${hours} ชม.ก่อน` : `เมื่อ ${Math.round(hours / 24)} วันก่อน`;
+}
+
+/** "วันนี้ 15:05 น. (10 นาทีก่อน)": the day and clock of a report, then how long ago (a bare "10 นาทีก่อน" does
+ * not say which day) */
+export function reportedAt(time: string, now: number): string {
+  return `${shortTime(time, now)} (${agoText(time, now).replace(/^เมื่อ\s*/, '')})`;
 }
 
 export interface NearFlood {

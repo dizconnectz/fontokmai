@@ -570,6 +570,10 @@ test('a flood report opens on the map without leaving the list, and its popup le
   );
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'รายงานน้ำท่วมตอนนี้ 1 จุด' })).toBeVisible();
+  // the list says when its data is from, with the date (user, 2026-09-28)
+  await expect(page.locator('section[aria-labelledby="floods-now-heading"]')).toContainText(
+    /ข้อมูลถึง \d{1,2} \S+ \d\d:\d\d น\./,
+  );
   await expect(page.getByTestId('map-surface')).toHaveAttribute('aria-busy', 'false', {
     timeout: 15_000,
   });
@@ -590,7 +594,7 @@ test('a flood report opens on the map without leaving the list, and its popup le
   await expect(popup).toHaveCount(0);
   const here = page.getByTestId('pin-card').getByTestId('floods-here');
   await expect(here).toContainText('ซอยทดสอบ');
-  await expect(here).toContainText('เมื่อ 10 นาทีก่อน · ผู้ใช้รายงาน');
+  await expect(here).toContainText(/วันนี้ \d\d:\d\d น\. \(10 นาทีก่อน\) · ผู้ใช้รายงาน/);
   // past floods are still there, folded and labelled as the past
   const history = page.getByTestId('pin-card').locator('.flood-history');
   await expect(history).not.toHaveAttribute('open');
@@ -716,6 +720,8 @@ test('Bangkok rain gauges and canal levels show as measured values near a pin', 
     'ส.คลองเตย · น้ำในคลองสูงกว่าระดับน้ำทะเล 1.78 ม.',
   );
   await expect(here.getByTestId('water-here').locator('li')).toHaveCount(1);
+  // the data status says when the Bangkok files were fetched: they arrive now and then, not every round
+  await expect(page.getByTestId('dxs-status')).toContainText(/ข้อมูล ณ \d{1,2} \S+ \d\d:\d\d น\./);
   await expect(here).toContainText('ไม่ใช่ความลึกน้ำท่วมบนถนน');
   await page.getByRole('button', { name: 'ชั้นข้อมูล' }).click();
   await expect(page.getByRole('button', { name: 'ระดับน้ำคลอง กทม.' })).toHaveAttribute(

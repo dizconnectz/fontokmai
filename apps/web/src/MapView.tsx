@@ -13,7 +13,7 @@ import type { FeatureCollection, MultiPolygon, Point } from 'geojson';
 import { displayStatus, type Alert, type Camera, type RadarFeed } from './data';
 import { LEVEL_FILL, LEVEL_LINE, levelOf } from './alerts';
 import type { ForecastAreas } from './forecast';
-import { agoText, isOngoing, isShown, REPORTER_TH, type FloodReport } from './floods';
+import { isOngoing, isShown, reportedAt, REPORTER_TH, type FloodReport } from './floods';
 import {
   amount,
   damPin,
@@ -304,7 +304,7 @@ function floodPopup(report: FloodReport, now: number, onHere: () => void): HTMLE
   const title = document.createElement('strong');
   title.textContent = report.title_th;
   const when = document.createElement('span');
-  when.textContent = `${agoText(report.start, now)} · ${REPORTER_TH[report.reporter]}${
+  when.textContent = `${reportedAt(report.start, now)} · ${REPORTER_TH[report.reporter]}${
     isOngoing(report, now) ? '' : ' · ครบเวลารายงานแล้ว อาจลดลง'
   }`;
   const link = sourceLink(report.url, 'iTIC และ Longdo Traffic');

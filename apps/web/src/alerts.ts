@@ -85,6 +85,11 @@ const DATE = new Intl.DateTimeFormat('th-TH', {
   day: 'numeric',
   month: 'short',
 });
+/** "28 ก.ย. 16:33 น." in Thai time: the date is always written. */
+export function dateTime(value: string | number): string {
+  const time = typeof value === 'number' ? value : Date.parse(value);
+  return `${DATE.format(time)} ${CLOCK.format(time)} น.`;
+}
 /** "วันนี้ 18:00" / "พรุ่งนี้ 06:00" / "28 ก.ย. 06:00" in Thai time. */
 export function shortTime(value: string | number, now: number): string {
   const time = typeof value === 'number' ? value : Date.parse(value);
