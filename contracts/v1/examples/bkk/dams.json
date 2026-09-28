@@ -4,7 +4,7 @@
   "report_date": "2026-09-26",
   "source_url": "https://water.rid.go.th/",
   "credit_th": "กรมชลประทานและ กฟผ. (ผ่านระบบ DXS ของสำนักการระบายน้ำ กรุงเทพมหานคร)",
-  "location_credit_th": "ตำแหน่งจาก OpenStreetMap (ODbL)",
+  "location_credit_th": "ตำแหน่ง © ผู้ร่วมสร้าง OpenStreetMap (ODbL 1.0 https://opendatacommons.org/licenses/odbl/1-0/)",
   "dams": [
     {
       "id": "200101",

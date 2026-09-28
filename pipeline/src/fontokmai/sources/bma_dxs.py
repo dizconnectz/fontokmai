@@ -436,6 +436,8 @@ NEWS_PAGE = "https://dds.bangkok.go.th/"
 DAMS_PAGE = "https://water.rid.go.th/"
 WEATHER_PAGE = "https://www.tmd.go.th/"
 DAMS_CREDIT_TH = "กรมชลประทานและ กฟผ. (ผ่านระบบ DXS ของสำนักการระบายน้ำ กรุงเทพมหานคร)"
+# the places come from OpenStreetMap: its licence travels with the data (Codex, docs/sources.md §11.2)
+DAMS_LOCATION_CREDIT_TH = "ตำแหน่ง © ผู้ร่วมสร้าง OpenStreetMap (ODbL 1.0 https://opendatacommons.org/licenses/odbl/1-0/)"
 WEATHER_CREDIT_TH = "กรมอุตุนิยมวิทยา (ผ่านระบบ DXS ของสำนักการระบายน้ำ กรุงเทพมหานคร)"
 DAMS_NOTES_TH = [
     "ปริมาณน้ำเป็นล้าน ลบ.ม. และร้อยละของความจุที่ระดับเก็บกัก · น้ำไหลเข้าและระบายเป็นของวันที่รายงาน",
@@ -496,7 +498,7 @@ def parse_dams(result: ET.Element, now: datetime) -> DamReport:
     if not dams:
         raise DxsError("GetDam: no dam in the answer")
     return DamReport(fetched_at=now.astimezone(ICT), report_date=day, source_url=DAMS_PAGE, credit_th=DAMS_CREDIT_TH,
-                     location_credit_th="ตำแหน่งจาก OpenStreetMap (ODbL)", dams=dams, notes_th=DAMS_NOTES_TH)
+                     location_credit_th=DAMS_LOCATION_CREDIT_TH, dams=dams, notes_th=DAMS_NOTES_TH)
 
 
 def parse_weather(result: ET.Element, now: datetime) -> WeatherToday:

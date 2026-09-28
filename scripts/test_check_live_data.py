@@ -97,6 +97,16 @@ class Watch(unittest.TestCase):
         self.assertEqual(len(missing), 3)
         self.assertIn("bkk/flooding.json", missing[-1])
 
+    def test_the_river_trend_and_the_summary_must_stay_fresh_once_they_are_read(self):
+        rivers = {"fetched_at": (NOW - timedelta(hours=20)).isoformat()}
+        overview = {"generated_at": (NOW - timedelta(minutes=5)).isoformat()}
+        self.assertEqual(evaluate(manifest(), FRESH_FORECAST, NOW, FRESH_RADAR, rivers, overview), [])
+        old = evaluate(manifest(), FRESH_FORECAST, NOW, FRESH_RADAR, {"fetched_at": (NOW - timedelta(hours=40))
+                       .isoformat()}, {"generated_at": (NOW - timedelta(hours=2)).isoformat()})
+        self.assertEqual([m.split(" (")[0] for _, m in old], ["แนวโน้มน้ำแม่น้ำไม่อัปเดต", "สรุปจุดที่ต้องระวังไม่อัปเดต"])
+        # a file that could not be opened is not fresh either
+        self.assertEqual(len(evaluate(manifest(), FRESH_FORECAST, NOW, FRESH_RADAR, None, overview)), 1)
+
     def test_the_report_mentions_the_owner(self):
         text = report([("critical", "x")], NOW, "dizconnectz")
         self.assertIn("🔴 x", text)

@@ -674,7 +674,10 @@ function WatchSummary({
       )}
       {lists.map((list) => (
         <div key={list.when} className="summary-group">
-          <h3>{list.title}</h3>
+          <h3>
+            {list.title}
+            {list.items.length > 0 && ` ${list.items.length} แห่ง`}
+          </h3>
           {list.items.length === 0 ? (
             <p className="quiet">
               {tooOld ? 'ไม่มีข้อมูลที่ใหม่พอ' : `${list.empty} (ไม่ได้แปลว่าปลอดภัย)`}

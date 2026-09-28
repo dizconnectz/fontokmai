@@ -54,8 +54,8 @@ AHEAD_DAYS = 4  # today and 3 more days; later days are a trend only (design 7.3
 RIVER_FAST = 0.3  # the web's "rising a lot"
 RIVER_AHEAD = 7
 CELL = 0.2  # degrees of the lookup grid for the nearest subdistrict
-MAX_NOW = 20
-MAX_NEXT = 30
+MAX_NOW = 40  # a morning after a storm had more than 20 districts (2026-09-28); the web folds after five
+MAX_NEXT = 40
 
 NOTES_TH = [
     "สรุปอัตโนมัติจากข้อมูลทุกชุดด้วยเกณฑ์ของเว็บ (ทดลอง v0) ไม่ใช่ประกาศทางการ และยังไม่ได้ตรวจความแม่น",
@@ -124,11 +124,13 @@ def _mm(value: float) -> str:
 
 
 def _road(name: str) -> str:
-    """Short road names: "ถ.รามคำแหง" for ถนน/ถ./a bare name, "ทล.3480" for a highway, no note in brackets."""
+    """Short road names: "ถ.รามคำแหง" for ถนน/ถ./a bare name, "ทล.3480" for a highway, "ทช.สป.2003" for a rural
+    road of the Department of Rural Roads, no note in brackets."""
     name = re.sub(r"\s*\(.*?\)", "", name).strip()
+    name = re.sub(r"^ทางหลวงชนบท(?:หมายเลข)?\s*", "ทช.", name)
     name = re.sub(r"^ทางหลวง(?:แผ่นดิน)?(?:หมายเลข)?\s*", "ทล.", name)
     bare = name.removeprefix("ถนน").removeprefix("ถ.").strip()
-    return name if name.startswith(("ซอย", "ซ.", "ทล.", "ทาง", "สะพาน", "อุโมงค์")) else f"ถ.{bare}"
+    return name if name.startswith(("ซอย", "ซ.", "ทล.", "ทช.", "ทาง", "สะพาน", "อุโมงค์")) else f"ถ.{bare}"
 
 
 @dataclass

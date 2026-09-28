@@ -24,6 +24,8 @@ RADAR_DOWN = timedelta(minutes=60)
 # TMD posts a frame every 15 minutes about 20 minutes late; an hour means the source stopped making images
 RADAR_OLD = timedelta(minutes=60)
 FORECAST_OLD = timedelta(hours=13)
+RIVERS_OLD = timedelta(hours=37)  # rebuilt once a day; the web labels it after 36 hours
+OVERVIEW_OLD = timedelta(minutes=40)  # rebuilt every round, like the manifest
 FLOODS_DOWN = timedelta(minutes=60)
 DXS_DOWN = timedelta(minutes=60)
 # rejected documents are only worth an alert when they could not be read, not when a download failed once
@@ -34,6 +36,8 @@ EXPECTED_FILES = {
     "radar.json": ("warning", "เรดาร์"),
     "forecast/rain.json": ("warning", "พยากรณ์ฝน"),
     "live/floods.json": ("warning", "รายงานน้ำท่วมสด"),
+    "forecast/rivers.json": ("warning", "แนวโน้มน้ำแม่น้ำ"),
+    "summary/overview.json": ("warning", "สรุปจุดที่ต้องระวัง"),
     "ref/cctv.json": ("warning", "ทะเบียนกล้อง"),
     "ref/places.json": ("warning", "รายชื่อสถานที่สำหรับค้นหา"),
     "ref/road_flood_history.json": ("warning", "ประวัติน้ำท่วมถนน"),
@@ -58,8 +62,11 @@ def unreadable(message: str | None) -> list[str]:
     return [item for item in (message or "").split("; ") if item and not any(w in item for w in FETCH_WORDS)]
 
 
-def evaluate(manifest: dict, forecast: dict | None, now: datetime,
-             radar: dict | None = None) -> list[tuple[str, str]]:
+UNCHECKED: dict = {}  # a document the caller did not fetch: its age is not judged
+
+
+def evaluate(manifest: dict, forecast: dict | None, now: datetime, radar: dict | None = None,
+             rivers: dict | None = UNCHECKED, overview: dict | None = UNCHECKED) -> list[tuple[str, str]]:
     """(level, Thai message) for every problem; empty when all is well."""
     problems: list[tuple[str, str]] = []
     generated = _time(manifest.get("generated_at"))
@@ -116,6 +123,14 @@ def evaluate(manifest: dict, forecast: dict | None, now: datetime,
         if fetched is None or now - fetched > FORECAST_OLD:
             problems.append(("warning", "พยากรณ์ฝนไม่อัปเดต"
                                         + (f" (ดึงล่าสุด {_clock(fetched)} น.)" if fetched else "")))
+    for path, document, field, limit, name in (
+            ("forecast/rivers.json", rivers, "fetched_at", RIVERS_OLD, "แนวโน้มน้ำแม่น้ำ"),
+            ("summary/overview.json", overview, "generated_at", OVERVIEW_OLD, "สรุปจุดที่ต้องระวัง")):
+        if path not in listed or document is UNCHECKED:
+            continue
+        made = _time((document or {}).get(field))
+        if made is None or now - made > limit:
+            problems.append(("warning", f"{name}ไม่อัปเดต" + (f" (ทำล่าสุด {_clock(made)} น.)" if made else "")))
     return problems
 
 
@@ -148,7 +163,17 @@ def main(argv: list[str] | None = None) -> int:
         problems = [("critical", f"เปิดข้อมูลไม่ได้เลย: {exc}")]
     else:
         listed = {f.get("path") for f in manifest.get("files", [])}
-        forecast = radar = None
+        forecast = radar = rivers = overview = None
+        for path in ("forecast/rivers.json", "summary/overview.json"):
+            if path in listed:
+                try:
+                    document = _get_json(DATA_BASE + path)
+                except (OSError, ValueError):
+                    document = None
+                if path == "forecast/rivers.json":
+                    rivers = document
+                else:
+                    overview = document
         if "forecast/rain.json" in listed:
             try:
                 forecast = _get_json(DATA_BASE + "forecast/rain.json")
@@ -159,7 +184,7 @@ def main(argv: list[str] | None = None) -> int:
                 radar = _get_json(DATA_BASE + "radar.json")
             except (OSError, ValueError):
                 radar = None
-        problems = evaluate(manifest, forecast, now, radar)
+        problems = evaluate(manifest, forecast, now, radar, rivers, overview)
     with open(args.report, "w", encoding="utf-8") as fh:
         fh.write(report(problems, now, args.owner))
     with open(args.status, "w", encoding="utf-8") as fh:

@@ -8,7 +8,7 @@ from fontokmai.contracts.forecast import ForecastLattice, RainForecast
 from fontokmai.contracts.live_floods import LiveFloods
 from fontokmai.contracts.manifest import Manifest
 from fontokmai.contracts.overview import Overview
-from fontokmai.overview_build import OVERVIEW_PATH, Gazetteer, build_overview
+from fontokmai.overview_build import OVERVIEW_PATH, Gazetteer, _road, build_overview
 from fontokmai.run import run_cap_snapshot
 from fontokmai.sources.tmd_cap.fetch import fixture_fetcher
 from helpers import FIXTURES
@@ -185,3 +185,13 @@ def test_every_round_publishes_the_overview_and_a_broken_one_never_stops_the_ale
                               now=now + timedelta(minutes=15), writer="t", owner_epoch=1)
     assert result.overview_error == "RuntimeError: rules broke"
     assert "alerts.json" in [f.path for f in result.manifest.files]
+
+
+def test_road_names_are_short_and_keep_the_kind_of_road():
+    assert _road("ถนนรามคำแหง") == "ถ.รามคำแหง"
+    assert _road("ถ. รามคำแหง") == "ถ.รามคำแหง"
+    assert _road("ทางหลวงแผ่นดินหมายเลข 3480") == "ทล.3480"
+    assert _road("ทางหลวงชนบทหมายเลข สป.2003") == "ทช.สป.2003"  # seen on 2026-09-28, once written ทล.ชนบท…
+    assert _road("ถนนกาญจนาภิเษก (ถนนวงแหวนรอบนอกด้านตะวันตก)") == "ถ.กาญจนาภิเษก"
+    assert _road("ซอยสุขุมวิท 91") == "ซอยสุขุมวิท 91"
+    assert _road("ทางเลียบถนนพหลโยธิน") == "ทางเลียบถนนพหลโยธิน"
