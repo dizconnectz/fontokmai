@@ -136,7 +136,7 @@ def test_forecast_names_provinces_and_days_and_follows_a_place_already_watched()
     assert far.items == []
 
 
-def test_three_day_totals_and_short_bursts_use_the_thaiwater_watch_levels():
+def test_three_day_totals_and_short_bursts_use_the_experimental_levels_of_the_site():
     # east of 100.9°: 10 mm an hour to midnight with one hour of 38 mm, then 40 mm on each of the next two days
     forecast = _lattice_forecast(lambda d, lon, lat: 400 if d in (1, 2) and lon >= 100.9 else 0,
                                  hourly=lambda h, lon, lat: (380 if h == 3 else 100) if lon >= 100.9 else 0)
@@ -146,7 +146,8 @@ def test_three_day_totals_and_short_bursts_use_the_thaiwater_watch_levels():
     burst = next(r for i in overview.items for r in i.reasons if r.kind == "rain_burst")
     assert burst.text_th == "ฝนแรงช่วงสั้นราว 38 มม./ชม. เสี่ยงน้ำขังรอระบาย"
     three = next(r for i in overview.items for r in i.reasons if r.kind == "rain_3days")
-    assert three.text_th == "ฝนสะสม 3 วันราว 188 มม. ถึงเกณฑ์เฝ้าระวังของ สสน."
+    # no agency is named for a threshold nobody could confirm (Codex M23), and the text says which three days
+    assert three.text_th == "ฝนพยากรณ์รวมวันนี้ถึงมะรืนราว 188 มม. ถึงเกณฑ์ทดลองของเว็บ"
     stale = build_overview({"forecast/rain.json": _dump(_lattice_forecast(lambda d, lon, lat: 1500,
                                                                             fetched=NOW - timedelta(hours=13)))},
                            NOW, G)
@@ -167,7 +168,8 @@ def test_rivers_rising_a_lot_and_dams_over_capacity_are_to_prepare_for():
     assert bang_pakong.reasons[0].text_th == "น้ำเพิ่มขึ้นมาก สูงสุดราว +118% (ค่าแบบจำลอง)"
     assert bang_pakong.province_code == "24"
     dam = places[full.name_th]
-    assert dam.reasons[0].text_th == "น้ำเกินความจุเก็บกัก 104.2% ติดตามการระบายน้ำ"
+    assert dam.reasons[0].text_th == "น้ำเกินความจุเก็บกัก 104.2% (รายงาน 26 ก.ย.) ติดตามการระบายน้ำ"
+    assert dam.reasons[0].at == datetime.fromisoformat("2026-09-26T00:00:00+07:00")  # the report day, not the download
     assert all(i.when == "next" for i in overview.items)
 
 
@@ -235,3 +237,16 @@ def test_radar_that_is_old_unreadable_or_over_the_sea_adds_nothing():
     sea = _frame([(100.5, 11.5, "#D43320")])  # the middle of the Gulf of Thailand
     assert build_overview(_radar([(25, sea), (10, sea)]), NOW, G).items == []
 
+
+def test_what_is_happening_says_until_when_it_holds():
+    # two reports: one stops in 20 minutes, the other runs to its 12 hours; the cluster holds while two are left
+    reports = [_report(1, RANGSIT, timedelta(minutes=40), stop=NOW + timedelta(minutes=20)),
+               _report(2, [100.636, 13.990], timedelta(minutes=10), stop=None),
+               _report(3, [100.628, 13.984], timedelta(hours=11), stop=None)]
+    [item] = build_overview({"live/floods.json": _dump(_floods(reports))}, NOW, G).items
+    [reason] = item.reasons
+    assert reason.text_th == "น้ำท่วมหลายจุด (รายงาน 3 จุด)"
+    # the one that stops ends first (two are left), then the report of 11 hours ago at its 12 hours: one is left
+    assert reason.until == NOW + timedelta(hours=1)
+    two = build_overview({"live/floods.json": _dump(_floods(reports[:2]))}, NOW, G).items[0].reasons[0]
+    assert two.until == NOW + timedelta(minutes=20)  # the first to end leaves one: the rule no longer holds

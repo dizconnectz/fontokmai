@@ -54,6 +54,34 @@ describe('the summary of places to watch', () => {
     expect(oldInputs(overview)).toEqual(['แนวโน้มแม่น้ำ (GloFAS)']);
   });
 
+  it('drops what was happening once it is over, even while the file is fresh (Codex M27)', () => {
+    const [cluster] = liveItems(overview, 'now', AT).filter((item) =>
+      item.reasons.some((reason) => reason.kind === 'flood_reports'),
+    );
+    const reports = cluster.reasons.find((reason) => reason.kind === 'flood_reports')!;
+    expect(reports.until).toBeTruthy();
+    const over = Date.parse(reports.until!) + 60_000;
+    expect(reasonLine(reports, over)).toBeNull();
+    // a file without `until`: a flood report holds 12 hours from the latest start (D33)
+    const old = {
+      ...reports,
+      until: null,
+      at: new Date(AT - 12 * 3_600_000 - 60_000).toISOString(),
+    };
+    expect(reasonLine(old, AT)).toBeNull();
+    // a forecast taken along does not keep a place on the list of now by itself
+    const alone = {
+      ...cluster,
+      reasons: cluster.reasons.map((r) => ({
+        ...r,
+        until: null,
+        at: old.at,
+      })) as typeof cluster.reasons,
+    };
+    const onlyForecast = { ...overview, items: [alone] };
+    expect(liveItems(onlyForecast, 'now', AT)).toEqual([]);
+  });
+
   it('points to official alerts of the same province without copying them', () => {
     const alert = (code: string, severity: string, effective: number): Alert =>
       ({

@@ -35,7 +35,7 @@ export type ProvinceCode = string | null;
  */
 export type Reasons = [OverviewReason, ...OverviewReason[]];
 /**
- * Time of the data behind the reason: the latest report, the measurement, or when the forecast was fetched
+ * Time of the data behind the reason: the latest report, the measurement, the day of a dam report, or when the forecast was fetched
  */
 export type At1 = string;
 /**
@@ -60,6 +60,10 @@ export type SourceTh = string;
  * Plain words without the day, e.g. น้ำท่วมหลายจุด (รายงาน 4 จุด) or ฝนหนักบางพื้นที่ สูงสุดราว 60 มม.
  */
 export type TextTh = string;
+/**
+ * What is happening holds until this time, and the web leaves the reason out after it (Codex M27): flood reports while two are still within their time (stop, or 12 hours after start), a gauge 60 minutes, the radar 45 minutes, a road report the end of its day. The count in the text is of the round, so it may be one or two too many until the next round. Null for forecasts, which the web drops when their day passes
+ */
+export type Until = string | null;
 /**
  * Higher first within `when`; the rules of v0 on /method
  */
@@ -106,4 +110,5 @@ export interface OverviewReason {
   kind: Kind;
   source_th: SourceTh;
   text_th: TextTh;
+  until?: Until;
 }

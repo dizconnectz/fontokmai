@@ -1131,6 +1131,60 @@ details > ul {
 .legend-toggle-info {
   display: none;
 }
+/* a button that reads as a link ("ดูทั้งหมด"): the browser's own dark button face gave 4.45:1 (Codex M28) */
+.link-button {
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--brand);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.link-button:hover {
+  text-decoration: underline;
+}
+/* dams: how full, as a bar (user, 2026-09-28) */
+.dam-line {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+}
+.dam-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.dam-percent {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.dam-bar {
+  position: relative;
+  display: block;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--line);
+}
+.dam-bar .dam-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 4px;
+}
+.dam-bar i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--surface);
+  opacity: 0.8;
+}
+.dam-bar.over {
+  outline: 2px solid #e53935;
+  outline-offset: 1px;
+}
 /* on a phone the key is one slim line at the bottom left, level with the zoom buttons and just above the
    timeline, so that it hides little of the map (a box under the layer button covered the middle of the
    country: user, 2026-09-28); what the pins mean opens above it, below the map buttons on the left */

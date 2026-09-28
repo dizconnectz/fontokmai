@@ -1,9 +1,10 @@
 """summary/overview.json: the places to watch now and to prepare for, from the files of the round (rules v0).
 
-Fixed rules, not a model and not AI. Thresholds borrowed from sources (design section 7.5): ThaiWater warning zone 06
-watches rain of 35 mm in 1 hour, 95 mm in 24 hours and 150 mm in 3 days; TMD calls 35.1–90.0 mm in a day heavy and
-more than 90.0 very heavy. The rest (how many reports make a cluster, what share of a province, how far ahead) are
-rules of the site, written down on /method. An input that is missing or older than its limit adds nothing and is
+Fixed rules, not a model and not AI. TMD calls 35.1–90.0 mm in a day heavy and more than 90.0 very heavy. 35 mm in
+1 hour, 95 mm in 24 hours and 150 mm in 3 days are experimental thresholds of the site: design 7.5 took them from a
+ThaiWater warning zone, but no official document confirms that set (Codex M23), so no agency's name goes with them.
+The rest (how many reports make a cluster, what share of a province, how far ahead) are rules of the site, written
+down on /method. An input that is missing or older than its limit adds nothing and is
 listed as such, so old data never raises a place, and no item means "nothing found by these rules", never "safe".
 Official alerts are not copied: the web shows alerts.json apart.
 """
@@ -41,7 +42,8 @@ RIVERS_MAX_AGE = timedelta(hours=36)
 DAMS_MAX_AGE = timedelta(days=3)
 RADAR_MAX_AGE = timedelta(minutes=45)  # the web marks the radar old after 45 minutes
 
-# criteria of sources (design 7.5); forecast/rain.json counts in 0.1 mm
+# experimental thresholds of the site (not confirmed as ThaiWater's: Codex M23) and TMD's day classes;
+# forecast/rain.json counts in 0.1 mm
 HOUR_WATCH_MM = 35.0
 HOUR_VERY_HEAVY_MM = 48.0  # the site's hourly word "ฝนหนักมาก" (geo.rainWords)
 DAY_WATCH_MM = 95.0
@@ -57,14 +59,17 @@ AHEAD_DAYS = 4  # today and 3 more days; later days are a trend only (design 7.3
 RIVER_FAST = 0.3  # the web's "rising a lot"
 RIVER_AHEAD = 7
 CELL = 0.2  # degrees of the lookup grid for the nearest subdistrict
-# radar classes are rain rates at 2 km (mm/hr) and count from their lower value: heavy from the ThaiWater 1-hour
-# watch (35; the TMD class from 36.5), very heavy from the web's ฝนหนักมาก (48; the class from 52.2). Only over an
-# area and in two frames in a row, so that a passing shower is not a place
+# radar classes are rain rates at 2 km (mm/hr), not rain in an hour, and count from their lower value: heavy from
+# the site's experimental 35 (the TMD class from 36.5), very heavy from the web's ฝนหนักมาก (48; the class from 52.2).
+# Only over an area and in two frames in a row, so that a passing shower is not a place
 RADAR_HEAVY_MM = HOUR_WATCH_MM
 RADAR_VERY_HEAVY_MM = HOUR_VERY_HEAVY_MM
 RADAR_MIN_KM2 = 10.0  # of a district, in the latest frame and in the one before it
 RADAR_GAP = timedelta(minutes=20)  # the frame before is the previous one (TMD makes one every 15 minutes)
 THAILAND = (97.3, 5.6, 105.7, 20.5)  # west, south, east, north: the part of the frame that is read
+COVERED = 0.8  # below this share of a province's cells with a value, no extent wider than บางพื้นที่ is claimed
+DAMS_REPORT_DAYS = 1  # a dam report of today or yesterday (RID reports once a day); older is not current (M26)
+THAI_MONTHS = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."]
 MAX_NOW = 40  # a morning after a storm had more than 20 districts (2026-09-28); the web folds after five
 MAX_NEXT = 40
 
@@ -128,6 +133,14 @@ def _input(name_th: str, fetched: datetime | None, now: datetime, max_age: timed
         return OverviewInput(name_th=name_th, status="missing", at=None)
     fresh = fetched <= now + SKEW and now - fetched <= max_age
     return OverviewInput(name_th=name_th, status="fresh" if fresh else "stale", at=fetched)
+
+
+def _thai_day(day: date) -> str:
+    return f"{day.day} {THAI_MONTHS[day.month - 1]}"
+
+
+def _extent(share: float, whole: str) -> str:
+    return "บางพื้นที่" if share < 0.4 else "หลายพื้นที่" if share < 0.8 else whole
 
 
 def _mm(value: float) -> str:
@@ -213,9 +226,11 @@ def build_overview(files: dict[str, bytes], now: datetime, gazetteer: Gazetteer 
             spot.roads += [_road(r.road_th) if r.road_th else r.title_th.removeprefix("น้ำท่วม").strip()
                            for r in reports]
             text = f"น้ำท่วมหลายจุด (รายงาน {count} จุด)" if count >= 3 else f"มีรายงานน้ำท่วม {count} จุด"
+            # a report ends at its stop or 12 hours after its start (D33): the cluster holds while two are left
+            ends = sorted(min(r.stop or r.start + REPORT_MAX_AGE, r.start + REPORT_MAX_AGE) for r in reports)
             spot.reasons.append((4 if count >= 5 else 3 if count >= 3 else 2, OverviewReason(
                 kind="flood_reports", text_th=text, day=None, source_th="Longdo Traffic",
-                at=max(r.start for r in reports))))
+                at=max(r.start for r in reports), until=ends[count - MIN_REPORTS])))
 
     # ---------- now: main roads of Bangkok still flooded in today's report of the department ----------
     flooding = _load(files, "bkk/flooding.json", RoadFloodingDaily)
@@ -233,7 +248,8 @@ def build_overview(files: dict[str, bytes], now: datetime, gazetteer: Gazetteer 
             spot.roads += [_road(r.road_th) for r in reports]
             spot.reasons.append((3, OverviewReason(
                 kind="road_flooding", text_th=f"ถนนน้ำท่วมขัง {len(reports)} สาย ยังไม่แห้ง", day=None,
-                source_th="สำนักการระบายน้ำ กทม.", at=flooding.updated_at or flooding.fetched_at)))
+                source_th="สำนักการระบายน้ำ กทม.", at=flooding.updated_at or flooding.fetched_at,
+                until=datetime.combine(today + timedelta(days=1), time.min, tzinfo=ICT))))
 
     # ---------- now: rain measured at the department's gauges (fresh readings only) ----------
     gauges = _load(files, "bkk/rain.json", RainGauges)
@@ -261,7 +277,7 @@ def build_overview(files: dict[str, bytes], now: datetime, gazetteer: Gazetteer 
                 score, text = 2, f"ฝนสะสม 24 ชม. {_mm(value)} มม."
             spot.reasons.append((score, OverviewReason(
                 kind="rain_measured", text_th=text, day=None, source_th="สำนักการระบายน้ำ กทม.",
-                at=gauge.observed_at)))
+                at=gauge.observed_at, until=gauge.observed_at + GAUGE_MAX_AGE)))
 
     # ---------- now: heavy rain on the TMD radar, in the latest frame and the one before it ----------
     radar = _load(files, "radar.json", RadarFeed)
@@ -294,7 +310,7 @@ def build_overview(files: dict[str, bytes], now: datetime, gazetteer: Gazetteer 
                 word, area = ("ฝนหนักมาก", very) if strong else ("ฝนหนัก", heavy)
                 spot.reasons.append((3 if strong else 2, OverviewReason(
                     kind="rain_radar", text_th=f"เรดาร์เห็น{word}ต่อเนื่อง ราว {area:.0f} ตร.กม.", day=None,
-                    source_th="เรดาร์กรมอุตุฯ", at=latest.time)))
+                    source_th="เรดาร์กรมอุตุฯ", at=latest.time, until=latest.time + RADAR_MAX_AGE)))
 
     # ---------- next: forecast rain by province (Open-Meteo lattice, TMD day classes) ----------
     forecast = _load(files, "forecast/rain.json", RainForecast)
@@ -324,6 +340,7 @@ def build_overview(files: dict[str, bytes], now: datetime, gazetteer: Gazetteer 
                     if rest and all(forecast.rain[h][i] is not None for h in rest)}
 
         for province, members in cells.items():
+            whole = "เกือบทั่ว กทม." if province == "10" else "เกือบทั้งจังหวัด"
             for d, day, away in days:
                 values = list(day_values(d, away, members).values())
                 if not values:
@@ -331,28 +348,39 @@ def build_overview(files: dict[str, bytes], now: datetime, gazetteer: Gazetteer 
                 heavy = sum(v >= HEAVY for v in values)
                 very = sum(v >= VERY_HEAVY for v in values)
                 if very >= max(1, math.ceil(VERY_HEAVY_SHARE * len(values))):
-                    word, base = "ฝนหนักมาก", 4
+                    base = 4
                 elif heavy >= max(1, math.ceil(HEAVY_SHARE * len(values))):
-                    word, base = "ฝนหนัก", 2
+                    base = 2
                 else:
                     continue
-                share = heavy / len(values)
-                whole = "เกือบทั่ว กทม." if province == "10" else "เกือบทั้งจังหวัด"
-                extent = "บางพื้นที่" if share < 0.4 else "หลายพื้นที่" if share < 0.8 else whole
-                score = base + (share >= 0.4) + (share >= 0.8) + (2 if away == 0 else 1 if away == 1 else 0)
+                # shares are of the cells with a value; a province mostly without values claims no wide extent and
+                # says so (Codex M24: 1 known cell of 10 is not "the whole province")
+                covered = len(values) / len(members) >= COVERED
+                heavy_share, very_share = heavy / len(values), very / len(values)
+                heavy_extent = _extent(heavy_share, whole) if covered else "บางพื้นที่"
+                very_extent = _extent(very_share, whole) if covered else "บางพื้นที่"
+                if base == 4:
+                    # the extent of each word is of the rain it names: heavy nearly everywhere, very heavy in parts
+                    text = (f"ฝนหนักมาก{very_extent}" if very_extent == heavy_extent
+                            else f"ฝนหนัก{heavy_extent} หนักมาก{very_extent}")
+                else:
+                    text = f"ฝนหนัก{heavy_extent}"
+                text += f" สูงสุดราว {max(values) / 10:.0f} มม." + ("" if covered else " (ข้อมูลพยากรณ์ไม่ครบทั้งจังหวัด)")
+                wide = (heavy_share >= 0.4) + (heavy_share >= 0.8) if covered else 0
+                score = base + wide + (2 if away == 0 else 1 if away == 1 else 0)
                 ahead[province].append((score, OverviewReason(
-                    kind="rain_forecast", text_th=f"{word}{extent} สูงสุดราว {max(values) / 10:.0f} มม.",
-                    day=day, source_th="Open-Meteo", at=forecast.fetched_at)))
-            # three days from today at one cell (ThaiWater 3-day watch)
+                    kind="rain_forecast", text_th=text, day=day, source_th="Open-Meteo", at=forecast.fetched_at)))
+            # the forecast of today (hours to come), tomorrow and the day after at one cell (experimental 150 mm)
             three = [(d, away) for d, _, away in days if away < 3]
             if len(three) == 3:
                 parts = [day_values(d, away, members) for d, away in three]
                 sums = [sum(part[i] for part in parts) for i in members if all(i in part for part in parts)]
                 if sums and max(sums) >= THREE_DAYS_WATCH:
                     ahead[province].append((3, OverviewReason(
-                        kind="rain_3days", text_th=f"ฝนสะสม 3 วันราว {max(sums) / 10:.0f} มม. ถึงเกณฑ์เฝ้าระวังของ สสน.",
+                        kind="rain_3days",
+                        text_th=f"ฝนพยากรณ์รวมวันนี้ถึงมะรืนราว {max(sums) / 10:.0f} มม. ถึงเกณฑ์ทดลองของเว็บ",
                         day=today, source_th="Open-Meteo", at=forecast.fetched_at)))
-            # a short burst in the next 24 hours (ThaiWater 1-hour watch)
+            # a short burst in the next 24 hours (the experimental 35 mm in an hour)
             burst = [(forecast.rain[h][i], end) for h, end in enumerate(forecast.hours)
                      if now < end <= now + timedelta(hours=24) for i in members if forecast.rain[h][i] is not None]
             if burst:
@@ -404,15 +432,20 @@ def build_overview(files: dict[str, bytes], now: datetime, gazetteer: Gazetteer 
     # ---------- next: dams over their storage capacity (the Royal Irrigation Department's class) ----------
     dams = _load(files, "water/dams.json", DamReport)
     state = _input("เขื่อนใหญ่ (กรมชลประทาน)", dams.fetched_at if dams else None, now, DAMS_MAX_AGE)
+    if dams and state.status == "fresh" and not 0 <= (today - dams.report_date).days <= DAMS_REPORT_DAYS:
+        # downloaded now, but the report is of another day (or of a day to come): not the dams of today
+        state = OverviewInput(name_th=state.name_th, status="stale", at=state.at)
     inputs.append(state)
     if dams and state.status == "fresh":
+        reported = datetime.combine(dams.report_date, time.min, tzinfo=ICT)
         for dam in dams.dams:
             if dam.percent is not None and dam.percent > 100 and dam.location:
                 sub = g.nearest(dam.location)
                 nexts.append(_Spot("next", dam.name_th, sub.code[:2] if sub else None, list(dam.location), 10, [
                     (2, OverviewReason(kind="dam_full",
-                                       text_th=f"น้ำเกินความจุเก็บกัก {dam.percent:.1f}% ติดตามการระบายน้ำ",
-                                       day=None, source_th="กรมชลประทาน", at=dams.fetched_at))]))
+                                       text_th=f"น้ำเกินความจุเก็บกัก {dam.percent:.1f}% (รายงาน "
+                                               f"{_thai_day(dams.report_date)}) ติดตามการระบายน้ำ",
+                                       day=None, source_th="กรมชลประทาน", at=reported))]))
 
     now_items = sorted((s.item() for s in spots.values()), key=lambda i: (-i.score, i.place_th))[:MAX_NOW]
     next_items = sorted((s.item() for s in nexts),

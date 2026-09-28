@@ -1032,11 +1032,27 @@ export default function MapView(props: Props) {
     const rebuild = popupRebuild.current;
     if (!current || !rebuild) return;
     const content = rebuild(props.now);
+    const focused = current.getElement()?.contains(document.activeElement) ?? false;
     if (!content) {
       current.remove();
+      // the popup closed under the keyboard: focus goes back to the map, not to the top of the page
+      if (focused) map.current?.getCanvas().focus();
       return;
     }
-    if (content.textContent !== popupShown.current?.textContent) {
+    const shown = popupShown.current;
+    if (content.textContent === shown?.textContent) return;
+    if (shown?.isConnected) {
+      // setDOMContent would rebuild the close button and focus the first link (Codex M25): the new words go into
+      // the element already shown instead, and a control inside them keeps focus by its place among the controls
+      const controls = (root: HTMLElement) => [
+        ...root.querySelectorAll<HTMLElement>('a[href], button'),
+      ];
+      const at = focused ? controls(shown).indexOf(document.activeElement as HTMLElement) : -1;
+      shown.className = content.className;
+      shown.replaceChildren(...content.childNodes);
+      if (at >= 0) controls(shown)[at]?.focus();
+      current.setLngLat(current.getLngLat());
+    } else {
       current.setDOMContent(content);
       popupShown.current = content;
     }

@@ -31,8 +31,37 @@ export function dayWord(isoDate: string, now: number): string {
   return `อีก ${away} วัน (${WEEKDAY.format(Date.parse(`${isoDate}T12:00:00+07:00`))})`;
 }
 
-/** A reason in plain words with its day; null when its day has passed (the file is older than the forecast). */
+/**
+ * How long what is happening holds when a reason carries no `until` (a file made before it, contract section 21):
+ * the producer's own limits (D33 for flood reports).
+ */
+const HOLDS_MS: Partial<Record<OverviewReason['kind'], number>> = {
+  flood_reports: 12 * 3_600_000,
+  rain_measured: 60 * 60_000,
+  rain_radar: 45 * 60_000,
+};
+/**
+ * Until when a reason holds; null when only its day decides (forecasts, rivers, dams). The producer's `until` and
+ * the kind's own limit from `at` both bound it: the earlier one counts, so a reason whose time was changed keeps
+ * no older `until` alive.
+ */
+export function holdsUntil(reason: OverviewReason): number | null {
+  const bounds: number[] = [];
+  if (reason.until) bounds.push(Date.parse(reason.until));
+  if (reason.kind === 'road_flooding')
+    bounds.push(Date.parse(`${DAY.format(Date.parse(reason.at))}T00:00:00+07:00`) + 86_400_000);
+  const holds = HOLDS_MS[reason.kind];
+  if (holds !== undefined) bounds.push(Date.parse(reason.at) + holds);
+  return bounds.length ? Math.min(...bounds) : null;
+}
+
+/**
+ * A reason in plain words with its day; null when it no longer holds: its day has passed, or what was happening is
+ * over (Codex M27: the reports of a cluster passed their 12 hours while the file itself was still fresh).
+ */
 export function reasonLine(reason: OverviewReason, now: number): string | null {
+  const until = holdsUntil(reason);
+  if (until !== null && now > until) return null;
   if (!reason.day) return reason.text_th;
   if (daysAway(reason.day, now) < 0) return null;
   // three days counted from its day read as they are; the others lead with their day
@@ -41,10 +70,17 @@ export function reasonLine(reason: OverviewReason, now: number): string | null {
     : `${dayWord(reason.day, now)}: ${reason.text_th}`;
 }
 
-/** The items of one list whose reasons still hold at `now` (a forecast day that has passed drops out). */
+/**
+ * The items of one list whose reasons still hold at `now`. A place to watch now needs something that is still
+ * happening: a forecast taken along with it does not keep it on the list alone.
+ */
 export function liveItems(overview: Overview, when: 'now' | 'next', now: number): OverviewItem[] {
   return overview.items.filter(
-    (item) => item.when === when && item.reasons.some((reason) => reasonLine(reason, now) !== null),
+    (item) =>
+      item.when === when &&
+      item.reasons.some(
+        (reason) => reasonLine(reason, now) !== null && (when === 'next' || !reason.day),
+      ),
   );
 }
 

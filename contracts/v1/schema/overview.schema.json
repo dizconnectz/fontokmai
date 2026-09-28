@@ -128,7 +128,7 @@
       "additionalProperties": false,
       "properties": {
         "at": {
-          "description": "Time of the data behind the reason: the latest report, the measurement, or when the forecast was fetched",
+          "description": "Time of the data behind the reason: the latest report, the measurement, the day of a dam report, or when the forecast was fetched",
           "format": "date-time",
           "title": "At",
           "type": "string"
@@ -170,6 +170,20 @@
           "description": "Plain words without the day, e.g. น้ำท่วมหลายจุด (รายงาน 4 จุด) or ฝนหนักบางพื้นที่ สูงสุดราว 60 มม.",
           "title": "Text Th",
           "type": "string"
+        },
+        "until": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "What is happening holds until this time, and the web leaves the reason out after it (Codex M27): flood reports while two are still within their time (stop, or 12 hours after start), a gauge 60 minutes, the radar 45 minutes, a road report the end of its day. The count in the text is of the round, so it may be one or two too many until the next round. Null for forecasts, which the web drops when their day passes",
+          "title": "Until"
         }
       },
       "required": [

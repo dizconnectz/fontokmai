@@ -202,9 +202,5 @@ test("M25: a clock refresh that changes the stale label preserves keyboard focus
     ),
     contentType: "text/plain",
   });
-  test.fail(
-    true,
-    "M25: setDOMContent replaces the focused element on clock updates",
-  );
   await expect(close).toBeFocused();
 });

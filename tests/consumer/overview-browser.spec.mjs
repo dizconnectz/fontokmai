@@ -161,10 +161,6 @@ test("M27: summary does not keep a cluster after all reports pass D33's twelve-h
   await expect(
     page.getByRole("button", { name: /รายงานหมดอายุหมายเลข 0/ }),
   ).toHaveCount(0);
-  test.fail(
-    true,
-    "M27: only generated_at and forecast day are checked, not the report reason's age",
-  );
   await expect(item).toHaveCount(0);
 });
 
@@ -272,9 +268,5 @@ test("M28: the dark summary expansion button meets text contrast", async ({
     path: test.info().outputPath("overview-dark-390.png"),
     fullPage: true,
   });
-  test.fail(
-    true,
-    "M28: the default dark button background produces 4.45:1 text contrast",
-  );
   expect(result.violations).toEqual([]);
 });

@@ -25,7 +25,13 @@ class OverviewReason(ContractModel):
         "Thai day a forecast speaks of (the web says วันนี้/พรุ่งนี้/อีก 2 วัน from it); null for what is happening"))
     source_th: str = Field(description="Short name of the source, e.g. Longdo Traffic or Open-Meteo")
     at: AwareDatetime = Field(description=(
-        "Time of the data behind the reason: the latest report, the measurement, or when the forecast was fetched"))
+        "Time of the data behind the reason: the latest report, the measurement, the day of a dam report, or when the"
+        " forecast was fetched"))
+    until: AwareDatetime | None = Field(default=None, description=(
+        "What is happening holds until this time, and the web leaves the reason out after it (Codex M27): flood"
+        " reports while two are still within their time (stop, or 12 hours after start), a gauge 60 minutes, the"
+        " radar 45 minutes, a road report the end of its day. The count in the text is of the round, so it may be"
+        " one or two too many until the next round. Null for forecasts, which the web drops when their day passes"))
 
 
 class OverviewItem(ContractModel):

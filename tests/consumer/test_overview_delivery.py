@@ -108,31 +108,16 @@ def test_untrusted_forecast_age_cannot_raise_a_place(age):
     assert next(i for i in result.inputs if "Open-Meteo" in i.name_th).status == "stale"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="M24: the extent uses heavy cells even when the word is very heavy",
-)
 def test_very_heavy_in_one_of_ten_cells_does_not_mean_very_heavy_province_wide():
     reason = tomorrow_reason(build(forecast([1000] + [400] * 9)))
     assert "ฝนหนักมากเกือบทั้งจังหวัด" not in reason.text_th
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="M24: null cells disappear from the spatial denominator",
-)
 def test_one_known_wet_cell_and_nine_missing_cells_cannot_mean_province_wide():
     result = build(forecast([1000] + [None] * 9))
     assert not any("เกือบทั้งจังหวัด" in r.text_th for i in result.items for r in i.reasons)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="M23: official provenance has not been verified",
-)
 def test_experimental_three_day_rule_does_not_claim_hii_authority():
     file = forecast([500] * 10, hourly=100)
     file.day_rain[2] = [500] * 10
@@ -176,11 +161,6 @@ def test_forty_district_limit_and_rural_road_names_survive_busy_round():
     assert build_overview(files, NOW + timedelta(minutes=46), g).items == []
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="M26: dam report_date is ignored when the download is fresh",
-)
 def test_fresh_download_does_not_make_an_old_dam_observation_current():
     import json
 
