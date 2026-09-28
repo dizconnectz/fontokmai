@@ -224,6 +224,14 @@ def _items(result: ET.Element) -> list[ET.Element]:
     return children(child(result, "Items"), "item")
 
 
+def _pumps_running(reading: ET.Element | None) -> int | None:
+    """Pumps running at the reading: pumpdata lists pump01…pump40 as true or false; none listed gives None."""
+    data = child(reading, "pumpdata")
+    states = [(pump.text or "").strip().lower() for pump in (data if data is not None else [])]
+    known = [state for state in states if state in ("true", "false")]
+    return sum(state == "true" for state in known) if known else None
+
+
 def parse_water(info: ET.Element, last: ET.Element, now: datetime) -> CanalLevels:
     readings = {text(item, "code"): item for item in _items(last)}
     stations = []
@@ -241,6 +249,7 @@ def parse_water(info: ET.Element, last: ET.Element, now: datetime) -> CanalLevel
             level_in_m=_number(text(reading, "wl_in"), -10, 10) if reading is not None else None,
             level_out_m=_number(text(reading, "wl_out01"), -10, 10) if reading is not None else None,
             pumps=int(pumps) if pumps else None,
+            pumps_running=_pumps_running(reading),
         ))
     stations.sort(key=lambda station: station.code)
     return CanalLevels(fetched_at=now.astimezone(ICT), source_url=WATER_PAGE, credit_th=CREDIT_TH,

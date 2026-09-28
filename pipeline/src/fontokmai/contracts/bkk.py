@@ -23,6 +23,9 @@ class CanalStation(ContractModel):
                                                  "sea level (ม.รทก.), not the depth of water on a road")
     level_out_m: float | None = Field(description="Water level on the outer side (ระดับน้ำด้านนอก), m above MSL")
     pumps: int | None = Field(description="Number of pumps, for a pumping station")
+    pumps_running: int | None = Field(default=None, description=(
+        "Pumps running at the reading (pumpdata true); null when the station gives no pump status. A count of "
+        "pumps, not a drainage capacity"))
 
 
 class CanalLevels(ContractModel):

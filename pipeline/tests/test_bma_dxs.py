@@ -92,6 +92,9 @@ def test_water_levels_keep_readings_with_their_station_and_drop_impossible_value
     assert result.ok and result.message is None
     stations = {s.code: s for s in result.water.stations}
     assert (stations["S001"].level_in_m, stations["S001"].level_out_m, stations["S001"].pumps) == (1.78, 0.95, 4)
+    # pumpdata true/false per pump: 2 of the 4 run; a station without pump status says nothing, not "none run"
+    assert stations["S001"].pumps_running == 2
+    assert stations["S002"].pumps_running is None
     assert stations["S001"].observed_at.isoformat() == "2026-09-26T17:15:00+07:00"  # no offset = Thai time
     assert stations["S002"].observed_at.year == 2026  # a Buddhist-era year is converted
     assert stations["S002"].level_out_m is None  # "-" is no value

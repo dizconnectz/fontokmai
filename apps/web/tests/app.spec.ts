@@ -50,6 +50,23 @@ async function prepare(page: Page, scenario = 'active') {
     }),
   );
 }
+/** Tap the one pin at the centre of the first view; a pin stands on its tip, so aim at its head. */
+async function tapCentrePin(page: Page) {
+  const canvas = page.locator('.maplibregl-canvas');
+  const box = (await canvas.boundingBox())!;
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2 - 12;
+  // the pin is drawn a moment after its file arrives: wait for the hand over it
+  await expect
+    .poll(async () => {
+      await page.mouse.move(x + 50, y);
+      await page.mouse.move(x, y);
+      return canvas.evaluate((el) => getComputedStyle(el).cursor);
+    })
+    .toBe('pointer');
+  await page.mouse.click(x, y);
+  return page.locator('.maplibregl-popup');
+}
 
 test('official alerts show their severity and a one-line summary, then open in full', async ({
   page,
@@ -707,6 +724,34 @@ test('Bangkok rain gauges and canal levels show as measured values near a pin', 
   );
 });
 
+test('a pumping station says how many of its pumps run, and a station without that says nothing', async ({
+  page,
+}) => {
+  await prepare(page);
+  const manifest = read('active', 'manifest');
+  manifest.files.push({ path: 'bkk/water.json', sha256: 'b'.repeat(64), size: 1, revision: 1 });
+  await page.route('**/examples/active/manifest.json?*', (route) =>
+    route.fulfill({ json: manifest }),
+  );
+  // the producer's example station with 2 of its 4 pumps running, alone at the centre of the map
+  const water = read('bkk', 'water');
+  const station = water.stations.find((s: { code: string }) => s.code === 'S001');
+  water.fetched_at = manifest.generated_at;
+  water.stations = [{ ...station, location: [101, 13.2], observed_at: manifest.generated_at }];
+  let file = water;
+  await page.route('**/bkk/water.json?*', (route) => route.fulfill({ json: file }));
+  await page.goto('/');
+  const popup = await tapCentrePin(page);
+  await expect(popup).toContainText('ส.คลองเตย');
+  await expect(popup).toContainText('เครื่องสูบน้ำเดินอยู่ 2 จาก 4 เครื่อง');
+  // a file written before pump status was published (no field) shows no pump line at all
+  const { pumps_running: _, ...before } = water.stations[0];
+  file = { ...water, stations: [before] };
+  await page.goto('/');
+  await expect(await tapCentrePin(page)).toContainText('ส.คลองเตย');
+  await expect(page.locator('.maplibregl-popup')).not.toContainText('เครื่องสูบน้ำ');
+});
+
 test('the department situation text and the Chao Phraya dams show, with a note once a day old', async ({
   page,
 }) => {
@@ -783,19 +828,7 @@ test('the river trend is a pin with a plain-word popup and never the model numbe
     'true',
   );
   await page.getByRole('button', { name: 'ชั้นข้อมูล' }).click();
-  const canvas = page.locator('.maplibregl-canvas');
-  const box = (await canvas.boundingBox())!;
-  const x = box.x + box.width / 2;
-  const y = box.y + box.height / 2 - 12;
-  await expect
-    .poll(async () => {
-      await page.mouse.move(x + 50, y);
-      await page.mouse.move(x, y);
-      return canvas.evaluate((el) => getComputedStyle(el).cursor);
-    })
-    .toBe('pointer');
-  await page.mouse.click(x, y);
-  const popup = page.locator('.maplibregl-popup');
+  const popup = await tapCentrePin(page);
   await expect(popup).toContainText('แม่น้ำเจ้าพระยา ที่กรุงเทพฯ');
   await expect(popup).toContainText(
     'แนวโน้ม 7 วันข้างหน้า (ทดลอง): น้ำเพิ่มขึ้น สูงสุดราว +19% วันที่ 29 ก.ย.',

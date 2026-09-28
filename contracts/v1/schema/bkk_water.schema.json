@@ -99,6 +99,19 @@
           ],
           "description": "Number of pumps, for a pumping station",
           "title": "Pumps"
+        },
+        "pumps_running": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Pumps running at the reading (pumpdata true); null when the station gives no pump status. A count of pumps, not a drainage capacity",
+          "title": "Pumps Running"
         }
       },
       "required": [

@@ -403,6 +403,19 @@ function waterPopup(station: CanalStation, file: CanalLevels, now: number): HTML
   );
   if (station.level_out_m !== null)
     root.append(line(`ด้านนอก (ฝั่งที่ระบายน้ำออก): ${levelWords(station.level_out_m)}`));
+  // how many pumps run, as the station reports it: a count, never turned into a drainage capacity; a
+  // station that lists more running pumps than it has is not given a "5 of 4"
+  const running = station.pumps_running;
+  if (running != null && (running > 0 || station.pumps))
+    root.append(
+      line(
+        running === 0
+          ? `เครื่องสูบน้ำหยุดทั้ง ${station.pumps} เครื่อง`
+          : station.pumps && running <= station.pumps
+            ? `เครื่องสูบน้ำเดินอยู่ ${running} จาก ${station.pumps} เครื่อง`
+            : `เครื่องสูบน้ำเดินอยู่ ${running} เครื่อง`,
+      ),
+    );
   root.append(
     line(measuredText(station.observed_at, now)),
     ...note(file.fetched_at, now),

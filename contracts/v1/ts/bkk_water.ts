@@ -36,6 +36,10 @@ export type ObservedAt = string | null;
  */
 export type Pumps = number | null;
 /**
+ * Pumps running at the reading (pumpdata true); null when the station gives no pump status. A count of pumps, not a drainage capacity
+ */
+export type PumpsRunning = number | null;
+/**
  * Every station DXS lists, sorted by code
  */
 export type Stations = CanalStation[];
@@ -58,4 +62,5 @@ export interface CanalStation {
   name_th: NameTh;
   observed_at: ObservedAt;
   pumps: Pumps;
+  pumps_running?: PumpsRunning;
 }
