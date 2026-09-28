@@ -8,7 +8,7 @@ unmistakably fontokmai's:
 - a dangling image whose entrypoint is ["fontokmai"].
 Records that the latest build used (last used within KEEP_SECONDS) stay, so that the next deploy is still quick.
 
-Usage: python3 prune_own_cache.py [--dry-run] [--only ID]
+Usage: python3 prune_own_cache.py [--dry-run] [--only ID] [--keep-minutes N]
 """
 
 from __future__ import annotations
@@ -80,11 +80,12 @@ def own_dangling_images() -> list[str]:
 def main(argv: list[str]) -> int:
     dry = "--dry-run" in argv
     only = argv[argv.index("--only") + 1] if "--only" in argv else None
+    keep = int(argv[argv.index("--keep-minutes") + 1]) * 60 if "--keep-minutes" in argv else KEEP_SECONDS
     records = own_records()
     old = [r for r in records if r.get("Reclaimable") and not r.get("Mutable")
-           and seconds_ago(r.get("LastUsedAt", "")) > KEEP_SECONDS and (only is None or r["ID"] == only)]
+           and seconds_ago(r.get("LastUsedAt", "")) > keep and (only is None or r["ID"] == only)]
     print(f"fontokmai build cache: {len(records)} records ({sum(size_bytes(r.get('Size')) for r in records) / 1e6:.0f}"
-          f" MB), {len(old)} not used in the last {KEEP_SECONDS // 3600} h"
+          f" MB), {len(old)} not used in the last {keep // 60} min"
           f" ({sum(size_bytes(r.get('Size')) for r in old) / 1e6:.0f} MB)" + (" · dry run" if dry else ""))
     if not dry:
         for record in leaves_first(old):
