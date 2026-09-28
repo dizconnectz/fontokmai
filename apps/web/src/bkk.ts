@@ -241,6 +241,11 @@ export function damPin(dam: Dam): string {
   return dam.percent === null ? 'pin-dam-unknown' : DAM_CLASSES[damClass(dam.percent)].pin;
 }
 
+/** Colour of the department's class of a dam this full; grey without a figure. */
+export function damColor(percent: number | null): string {
+  return percent === null ? DAM_UNKNOWN_COLOR : DAM_CLASSES[damClass(percent)].color;
+}
+
 /** "น้ำมาก" for a reservoir 85 % full (the department's words); null without a figure */
 export function damWords(percent: number | null): string | null {
   return percent === null ? null : DAM_CLASSES[damClass(percent)].label;

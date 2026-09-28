@@ -815,7 +815,11 @@ test('the department situation text and the Chao Phraya dams show, with a note o
   await expect(situation).toContainText('ฝนเล็กน้อย & ลมแรง');
   await expect(situation).toContainText('ไม่ใช่ประกาศเตือนภัยของกรมอุตุฯ');
   const dams = page.getByTestId('dams');
-  await expect(dams).toContainText('เขื่อนภูมิพล · น้ำปานกลาง 62.68%');
+  // how full, as a bar in the department's colour with the words and the figure beside it (user, 2026-09-28)
+  const bhumibol = dams.locator('.dam-line').filter({ hasText: 'เขื่อนภูมิพล' });
+  await expect(bhumibol).toContainText('เขื่อนภูมิพล · น้ำปานกลาง');
+  await expect(bhumibol.locator('.dam-percent')).toHaveText('62.68%');
+  await expect(bhumibol.locator('.dam-fill')).toHaveAttribute('style', /width: 62\.68%/);
   await expect(dams).toContainText('เขื่อนป่าสักชลสิทธิ์');
   await expect(dams).not.toContainText('ไม่ใช่ข้อมูลเรียลไทม์');
   // choosing a dam moves the map only

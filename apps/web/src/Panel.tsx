@@ -77,6 +77,7 @@ import {
   isRecent,
   amount,
   CHAO_PHRAYA_DAMS,
+  damColor,
   damWords,
   isTodaysReport,
   levelWords,
@@ -535,11 +536,29 @@ function SituationCard({ news, now }: { news: SituationReport; now: number }) {
 }
 
 function DamLine({ dam, onDam }: { dam: Dam; onDam: (location: number[]) => void }) {
+  // a bar filled to how full the reservoir is, in the department's colour for that class, with marks where the
+  // classes change (30, 50, 80 %): read at a glance, the words and figures say the same for a screen reader
+  const fill = dam.percent === null ? 0 : Math.max(0, Math.min(dam.percent, 100));
   const text = (
-    <span className="flood-line">
-      <strong>
-        {dam.name_th} · {damWords(dam.percent) ?? 'น้ำ'} {amount(dam.percent)}%
-      </strong>
+    <span className="dam-line">
+      <span className="dam-head">
+        <span>
+          <strong>{dam.name_th}</strong> · {damWords(dam.percent) ?? 'ไม่มีตัวเลข'}
+        </span>
+        <b className="dam-percent">{dam.percent === null ? '–' : `${amount(dam.percent)}%`}</b>
+      </span>
+      <span
+        className={`dam-bar ${dam.percent !== null && dam.percent > 100 ? 'over' : ''}`}
+        aria-hidden="true"
+      >
+        <span
+          className="dam-fill"
+          style={{ width: `${fill}%`, background: damColor(dam.percent) }}
+        />
+        <i style={{ left: '30%' }} />
+        <i style={{ left: '50%' }} />
+        <i style={{ left: '80%' }} />
+      </span>
       <small>
         {dam.region_th ? `${dam.region_th} · ` : ''}ไหลเข้า {amount(dam.inflow_mcm)} · ระบาย{' '}
         {amount(dam.outflow_mcm)} ล้าน ลบ.ม./วัน{!dam.location && ' · ไม่มีหมุดบนแผนที่'}
