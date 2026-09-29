@@ -121,6 +121,14 @@ def test_failure_keeps_the_previous_frames_and_reports_failed(tmp_path):
     assert not failed.ok and "503" in (failed.message or "")
     assert [f.path for f in failed.feed.frames] == [f.path for f in ok.feed.frames]
     assert failed.feed.generation_id == "g2"
+    # the frames keep the colour bar they were published with, not the one written in the code (Codex M29)
+    assert failed.feed.legend == ok.feed.legend and failed.feed.legend_opacity == ok.feed.legend_opacity
+    unreadable = ok.feed.model_copy(update={"legend": []})
+    (tmp_path / "radar.json").write_text(unreadable.model_dump_json(), encoding="utf-8")
+    assert collect_radar(down, tmp_path, "g3").feed.legend == []
+    (tmp_path / "radar.json").write_text("{broken", encoding="utf-8")
+    nothing = collect_radar(down, tmp_path, "g4")
+    assert nothing.feed.frames == [] and nothing.feed.legend == []
 
 
 def test_prune_removes_frames_no_longer_listed(tmp_path):

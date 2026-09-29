@@ -179,13 +179,16 @@ def _page_legend(fetch: Fetcher) -> tuple[list[tuple[float, str, str]], str | No
     return (parsed, None) if parsed else (LEGEND, "no colour bar on the page; the one of 2026-09-28 is used")
 
 
-def _previous_frames(out: Path) -> list[tuple[datetime, str]]:
-    """Frames of the last published radar.json whose PNG files are still on disk."""
+def _previous_feed(out: Path, generation_id: str) -> RadarFeed:
+    """The last published radar.json with only the frames whose PNG files are still on disk, under this generation.
+    The frames keep the colour bar, opacity and corners they were published with (an empty bar stays empty: those
+    pictures were not readable then either, Codex M29); without a readable file, nothing is shown or read."""
     try:
         previous = RadarFeed.model_validate_json((out / "radar.json").read_bytes())
     except (OSError, ValueError):
-        return []
-    return [(f.time, f.path) for f in previous.frames if (out / f.path).is_file()]
+        return _feed([], generation_id, [])
+    frames = [frame for frame in previous.frames if (out / frame.path).is_file()]
+    return previous.model_copy(update={"generation_id": generation_id, "frames": frames})
 
 
 def collect_radar(fetch: Fetcher, out: Path, generation_id: str) -> RadarRound:
@@ -235,9 +238,8 @@ def collect_radar(fetch: Fetcher, out: Path, generation_id: str) -> RadarRound:
         return RadarRound(files=files, feed=feed, ok=bool(frames), frames_seen=len(listed), rejected=rejected,
                           message=message if frames else f"no valid frame ({message or 'empty list'})")
     except (FetchError, OSError) as exc:
-        frames = _previous_frames(out)
-        feed = _feed(frames, generation_id)
-        files = {path: (out / path).read_bytes() for _, path in frames}
+        feed = _previous_feed(out, generation_id)
+        files = {frame.path: (out / frame.path).read_bytes() for frame in feed.frames}
         files["radar.json"] = feed.model_dump_json().encode("utf-8")
         return RadarRound(files=files, feed=feed, ok=False, frames_seen=0, rejected=rejected, message=str(exc)[:200])
 

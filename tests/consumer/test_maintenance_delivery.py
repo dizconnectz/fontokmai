@@ -47,11 +47,6 @@ def rows(root, kind):
 
 
 @pytest.mark.parametrize("manifest_kind", ["invalid", "missing"])
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="M30: restore replaces DB before manifest validation",
-)
 def test_restore_rejects_unusable_manifest_before_replacing_database(
     tmp_path, manifest_kind
 ):
@@ -118,11 +113,6 @@ def test_valid_restore_moves_above_published_epoch_and_retains_backup(tmp_path):
     assert backup.read_bytes() == before
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="M31: retention deletes versions still referenced by rounds",
-)
 def test_retention_keeps_input_versions_needed_by_retained_rounds(
     tmp_path, monkeypatch
 ):
@@ -141,11 +131,6 @@ def test_retention_keeps_input_versions_needed_by_retained_rounds(
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="M33: current day bypasses archive size cap",
-)
 def test_archive_budget_is_bounded_even_when_only_today_remains(tmp_path, monkeypatch):
     out, root = tmp_path / "out", tmp_path / "eval"
     published(out, {"stations": []})
@@ -156,11 +141,6 @@ def test_archive_budget_is_bounded_even_when_only_today_remains(tmp_path, monkey
     assert daily_bytes <= 128, "current-day archive bypasses the documented maximum"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="M32: publication failure skips daily backup",
-)
 def test_daily_backup_still_runs_when_remote_publication_fails(tmp_path, monkeypatch):
     db, out = tmp_path / "state/fontokmai.db", tmp_path / "out"
     state(db, 1, "latest-collected")

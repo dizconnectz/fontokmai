@@ -102,6 +102,24 @@ def test_a_broken_backup_is_refused_and_the_database_stays(tmp_path):
     assert not (tmp_path / "fontokmai.db.restoring").exists()
 
 
+@pytest.mark.parametrize("manifest", ["{incomplete", None, '{"recovery_epoch": "9"}', '{"recovery_epoch": 0}'])
+def test_a_restore_with_an_unusable_manifest_leaves_the_live_database_alone(tmp_path, manifest):
+    from fontokmai.cli import main
+
+    live, saved = tmp_path / "live.db", tmp_path / "saved.db"
+    _store(saved, 1, 2)
+    backup_db(saved, tmp_path / "backups", NOW)
+    _store(live, 5)
+    path = tmp_path / "manifest.json"
+    if manifest is not None:
+        path.write_text(manifest, encoding="utf-8")
+    with pytest.raises(ValueError, match="manifest"):
+        main(["restore-db", "--backup", str(tmp_path / "backups" / "fontokmai-20260929.db.gz"), "--db", str(live),
+              "--manifest", str(path)])
+    assert _identifiers(live) == ["id-0"]  # the live file is the one it was (Codex M30)
+    assert not (tmp_path / "live.db.restoring").exists()
+
+
 def test_cap_documents_older_than_half_a_year_are_deleted(tmp_path):
     db = tmp_path / "fontokmai.db"
     _store(db, 1, 179, 181, 400)
@@ -182,21 +200,57 @@ def test_flood_reports_first_seen_changed_and_gone_from_the_feed(tmp_path):
     assert len(read_lines(root / "floods" / "2026-09-29.jsonl.gz")) == 4
 
 
-def test_the_archive_keeps_ninety_days_and_its_size_cap_but_never_today(tmp_path, monkeypatch):
-    root = tmp_path / "eval"
-    for days_ago in (0, 1, 2, 91, 120):
-        day = (NOW - timedelta(days=days_ago)).astimezone(housekeeping.ICT).strftime("%Y-%m-%d")
-        for kind in ("rounds", "versions"):
-            (root / kind).mkdir(parents=True, exist_ok=True)
-            (root / kind / f"{day}.jsonl.gz").write_bytes(b"x" * 1000)
-    assert prune_archive(root, NOW) == "archive: 4 old file(s) deleted"
-    monkeypatch.setattr(housekeeping, "ARCHIVE_MAX_BYTES", 3000)
-    prune_archive(root, NOW)
-    assert sorted(p.name for p in root.glob("*/*.gz")) == [
-        "2026-09-28.jsonl.gz", "2026-09-29.jsonl.gz", "2026-09-29.jsonl.gz"]
-    monkeypatch.setattr(housekeeping, "ARCHIVE_MAX_BYTES", 10)
-    prune_archive(root, NOW)
-    assert sorted(p.name for p in root.glob("*/*.gz")) == ["2026-09-29.jsonl.gz", "2026-09-29.jsonl.gz"]
+def _days(root, kind):
+    return sorted(path.name[:10] for path in (root / kind).glob("*.jsonl.gz"))
+
+
+def test_old_days_go_but_a_version_rounds_still_name_is_carried(tmp_path, monkeypatch):
+    out, root = tmp_path / "out", tmp_path / "eval"
+    # radar.json changes 120 and 91 days ago, then stays: rounds of the last days still name the version of day 91
+    for days_ago, value in ((120, 1), (91, 2), (2, 2), (0, 2)):
+        when = NOW - timedelta(days=days_ago)
+        _publish(out, {"radar.json": {"f": value}})
+        archive_round(root, out, when, {}, when)
+    kept_sha = json.loads((root / "versions" / "last.json").read_text(encoding="utf-8"))["radar.json"]
+    note = prune_archive(root, NOW)
+    assert note == "archive: 4 file(s) deleted, 1 version(s) still in use moved to 2026-09-27"
+    assert _days(root, "rounds") == ["2026-09-27", "2026-09-29"]
+    (carried,) = read_lines(root / "versions" / "2026-09-27.jsonl.gz")
+    assert (carried["sha256"], carried["data"], carried["carried_from"]) == (kept_sha, {"f": 2}, "2026-06-30")
+    # the version of day 120, which no round that stays names, is not carried
+    assert all(line["data"] == {"f": 2} for line in read_lines(root / "versions" / "2026-09-27.jsonl.gz"))
+
+
+def test_a_smaller_cap_holds_for_today_too_and_the_archive_forgets_what_went(tmp_path, monkeypatch):
+    out, root = tmp_path / "out", tmp_path / "eval"
+    _publish(out, {"radar.json": {"f": 1}})
+    archive_round(root, out, NOW, {}, NOW)
+    monkeypatch.setattr(housekeeping, "ARCHIVE_MAX_BYTES", 128)
+    assert prune_archive(root, NOW) == "archive: 2 file(s) deleted"
+    assert not list(root.glob("*/*.jsonl.gz"))
+    # nothing names the version any more, so the next round (under the usual cap) keeps it again
+    assert json.loads((root / "versions" / "last.json").read_text(encoding="utf-8")) == {}
+    monkeypatch.setattr(housekeeping, "ARCHIVE_MAX_BYTES", 300 * 1024**2)
+    assert archive_round(root, out, NOW, {}, NOW) == "archive +1 version(s) +0 flood line(s)"
+
+
+def test_a_day_adds_no_more_than_its_share_and_says_so(tmp_path, monkeypatch):
+    out, root = tmp_path / "out", tmp_path / "eval"
+    _publish(out, {"radar.json": {"f": 1}})
+    archive_round(root, out, NOW, {}, NOW)
+    used = sum(path.stat().st_size for path in root.glob("*/*.jsonl.gz"))
+    monkeypatch.setattr(housekeeping, "ARCHIVE_DAYS", 1)
+    monkeypatch.setattr(housekeeping, "ARCHIVE_MAX_BYTES", used + 10)
+    _publish(out, {"radar.json": {"f": 2}}, generation="g2")
+    note = archive_round(root, out, NOW + timedelta(minutes=15), {}, NOW + timedelta(minutes=15))
+    assert note.startswith("archive: today's share") and note.endswith("this round is not in it")
+    assert len(read_lines(root / "rounds" / "2026-09-29.jsonl.gz")) == 1
+    assert sum(path.stat().st_size for path in root.glob("*/*.jsonl.gz")) == used
+    # the version it could not keep is not marked as kept: a later day with room keeps it
+    assert len(read_lines(root / "versions" / "2026-09-29.jsonl.gz")) == 1
+    monkeypatch.setattr(housekeeping, "ARCHIVE_MAX_BYTES", 300 * 1024**2)
+    later = NOW + timedelta(days=1)
+    assert archive_round(root, out, later, {}, later) == "archive +1 version(s) +0 flood line(s)"
 
 
 def test_the_archive_stops_at_the_reserve_of_the_shared_disk(tmp_path, monkeypatch):
@@ -255,6 +309,31 @@ def test_a_failing_housekeeping_never_fails_the_round(tmp_path, monkeypatch):
     args = cli._parse_args(["schedule", "--db", str(tmp_path / "s.db"), "--out", str(tmp_path / "v1")])
     summary = cli._scheduled_job(args)(datetime(2026, 9, 25, 11, 20, tzinfo=UTC))
     assert summary["keep"] == {"error": "OSError: disk gone"} and summary["alerts"] == 3
+
+
+def test_a_round_whose_publishing_fails_still_keeps_its_backup_and_says_it_failed(tmp_path, monkeypatch):
+    from fontokmai import cli
+    from fontokmai.schedule import run_forever
+
+    def outage(*args, **kwargs):
+        raise OSError("git host unreachable")
+
+    monkeypatch.setattr(cli, "LiveFetcher", _Fixtures)
+    monkeypatch.setattr(cli, "open_url", _offline)
+    monkeypatch.setattr(cli, "publish_snapshot", outage)
+    db = tmp_path / "state" / "fontokmai.db"
+    args = cli._parse_args(["schedule", "--db", str(db), "--out", str(tmp_path / "v1"), "--publish-remote",
+                            "git@example.test:data.git", "--publish-work", str(tmp_path / "pages")])
+    logged = []
+    start = datetime(2026, 9, 25, 11, 19, 59, tzinfo=UTC)
+    run_forever(cli._scheduled_job(args), clock=lambda: start, sleep=lambda s: None, log=logged.append,
+                max_rounds=1)
+    (record,) = [json.loads(line) for line in logged]
+    # the round failed and says why; what it did before failing is logged with it (Codex M32)
+    assert record["ok"] is False and record["error"] == "OSError: git host unreachable"
+    assert "backup fontokmai-20260925.db.gz" in record["keep"]["done"]
+    (line,) = read_lines(tmp_path / "state" / "archive" / "eval" / "rounds" / "2026-09-25.jsonl.gz")
+    assert line["published"] is None  # the archive does not call it published
 
 
 def test_restore_db_command(tmp_path, capsys):

@@ -218,8 +218,6 @@ for (const viewport of [
     await expect(info).toBeVisible();
     const size = await info.boundingBox();
     expect(size.width).toBeGreaterThanOrEqual(24);
-    if (viewport.width === 844)
-      test.fail(true, "M34: landscape uses a 23px legend target");
     expect(size.height).toBeGreaterThanOrEqual(24);
   });
 }

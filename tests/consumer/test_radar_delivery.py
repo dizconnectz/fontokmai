@@ -39,11 +39,6 @@ def test_html_legend_uses_values_from_page_and_lowest_duplicate_colour():
 
 
 @pytest.mark.parametrize("legend", [[], [(1.0, "#D43320", "1")]])
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="M29: fallback replaces the previous frame's legend",
-)
 def test_network_fallback_preserves_the_previous_frames_own_legend(tmp_path, legend):
     path = "radar/review.png"
     feed = radar._feed([(NOW, path)], "review-old", legend)

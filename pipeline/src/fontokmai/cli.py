@@ -27,10 +27,10 @@ from fontokmai.forecast_build import (
     refresh_rain_forecast,
     refresh_river_forecast,
 )
-from fontokmai.housekeeping import housekeeping, restore_db
+from fontokmai.housekeeping import housekeeping, published_epoch, restore_db
 from fontokmai.publish.git_pages import publish_snapshot
 from fontokmai.road_flood_build import build_road_flood_history, fixture_files, is_fresh
-from fontokmai.run import RECOVERY_EPOCH_KEY, SnapshotResult, run_cap_snapshot
+from fontokmai.run import SnapshotResult, run_cap_snapshot
 from fontokmai.schedule import run_forever
 from fontokmai.sources.open_data.http import fixture_opener, open_url
 from fontokmai.sources.open_data.longdo_live import FEED_URL as LONGDO_FEED_URL
@@ -180,24 +180,33 @@ def _scheduled_job(args: argparse.Namespace) -> Callable[[datetime], dict[str, A
         summary = _summary(result)
         if road_flood:
             summary["road_flood_history"] = road_flood
+        failed: Exception | None = None
         if args.publish_remote:
-            commit = publish_snapshot(args.out, args.publish_work, args.publish_remote,
-                                      message=result.manifest.generation_id, ssh_command=ssh)
-            summary["published"] = commit[:12]
-        # after publishing: the paced requests (about 2.5 minutes) never delay the alerts; the next round
-        # lists the new forecast
-        forecast = refresh_forecast(now)
-        if forecast:
-            summary["forecast"] = forecast
-        rivers = refresh_rivers(now)
-        if rivers:
-            summary["rivers"] = rivers
-        # last: the daily backup, the retention and the archive for checking accuracy (P0-B2); what it did goes in
-        # the round log, and a failure here never fails a round that has published
+            try:
+                commit = publish_snapshot(args.out, args.publish_work, args.publish_remote,
+                                          message=result.manifest.generation_id, ssh_command=ssh)
+                summary["published"] = commit[:12]
+            except Exception as exc:  # noqa: BLE001 - the round still keeps its backup, then fails (Codex M32)
+                failed = exc
+        if failed is None:
+            # after publishing: the paced requests (about 2.5 minutes) never delay the alerts; the next round
+            # lists the new forecast
+            forecast = refresh_forecast(now)
+            if forecast:
+                summary["forecast"] = forecast
+            rivers = refresh_rivers(now)
+            if rivers:
+                summary["rivers"] = rivers
+        # last, and whether or not publishing worked: the daily backup, the retention and the archive for checking
+        # accuracy (P0-B2); what it did goes in the round log, and a failure here never fails the round
         try:
             summary["keep"] = housekeeping(args.db, args.out, now, summary)
         except Exception as exc:  # noqa: BLE001
             summary["keep"] = {"error": f"{type(exc).__name__}: {exc}"[:300]}
+        if failed is not None:
+            # the round is logged as failed with its own error; what it did before goes with it (schedule.py)
+            failed.round_summary = summary  # type: ignore[attr-defined]
+            raise failed
         return summary
 
     return job
@@ -295,15 +304,12 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "restore-db":
         # a daily backup is older than what was published: a new recovery epoch tells the web to drop what it
-        # holds and read the feed again (design 4.4 item 14, contracts/v1/README.md §5)
-        restore_db(args.backup, args.db)
+        # holds and read the feed again (design 4.4 item 14, contracts/v1/README.md §5). A manifest named but not
+        # readable stops everything before the database is touched (Codex M30)
+        published = published_epoch(args.manifest) if args.manifest is not None else 0
+        epoch = restore_db(args.backup, args.db, above_epoch=published)
         from fontokmai.state import StateStore
-        published = 0
-        if args.manifest and args.manifest.is_file():
-            published = int(json.loads(args.manifest.read_text(encoding="utf-8")).get("recovery_epoch", 0))
         with StateStore(args.db) as store:
-            epoch = max(int(store.get_meta(RECOVERY_EPOCH_KEY) or "1"), published) + 1
-            store.set_meta(RECOVERY_EPOCH_KEY, str(epoch))
             documents = len(store.cap_documents())
         print(json.dumps({"restored": args.db.as_posix(), "from": args.backup.name, "cap_documents": documents,
                           "recovery_epoch": epoch}))

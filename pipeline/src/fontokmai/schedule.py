@@ -43,6 +43,8 @@ def run_forever(job: Callable[[datetime], dict[str, Any]], *, clock: Callable[[]
         try:
             record.update(ok=True, **job(started))
         except Exception as exc:
+            # a round that failed part way may say what it did before (round_summary, e.g. its backup)
+            record.update(getattr(exc, "round_summary", {}))
             record.update(ok=False, error=f"{type(exc).__name__}: {exc}")
         log(json.dumps(record, ensure_ascii=False))
         rounds += 1

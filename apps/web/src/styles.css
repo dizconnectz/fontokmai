@@ -1170,6 +1170,8 @@ details > ul {
   align-items: center;
   gap: 4px;
   justify-self: start;
+  /* a target of at least 24 px on every screen, a short landscape phone too (Codex M34) */
+  min-height: 24px;
   padding: 2px 0;
   border: 0;
   background: none;

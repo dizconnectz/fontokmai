@@ -7,8 +7,8 @@
   rounds/    one line a round: times, code and data commit, file hashes, source status, the whole summary
   versions/  every new version of the files the rules read, once, when it is first seen here (by sha256)
   floods/    every flood report when first seen, when what it says changes, and when it leaves the feed
-  kept ARCHIVE_DAYS days and at most ARCHIVE_MAX_BYTES, oldest days first; the computer that sends the Bangkok
-  files copies the finished days, and keeps them
+  kept ARCHIVE_DAYS days and at most ARCHIVE_MAX_BYTES: a day may add ARCHIVE_MAX_BYTES / ARCHIVE_DAYS, and what
+  goes first is the oldest day; the computer that sends the Bangkok files copies the finished days, and keeps them
 - design 4.9: the disk is shared with other work. Below DISK_RESERVE free, the archive is not written (the daily
   backup is: it takes the place of the oldest one); from DISK_WARN used, the round log says so
 """
@@ -82,18 +82,46 @@ def backup_db(db: Path, backups: Path, now: datetime) -> str | None:
     return f"backup {target.name} {target.stat().st_size // 1024} KB"
 
 
-def restore_db(backup: Path, db: Path) -> None:
-    """Put a backup in place of the database (the collector must be stopped): decompress, check, replace."""
+def restore_db(backup: Path, db: Path, above_epoch: int = 0) -> int:
+    """Put a backup in place of the database (the collector must be stopped). Everything is done on a copy first:
+    decompress, check, and a recovery epoch above both the backup's and `above_epoch` (the published manifest's,
+    design 4.4 item 14); the live file is replaced only when all of it worked (Codex M30). Returns the new epoch."""
+    from fontokmai.run import RECOVERY_EPOCH_KEY  # the round reads the epoch under this key
+
     partial = db.with_name(db.name + ".restoring")
-    with gzip.open(backup, "rb") as packed, partial.open("wb") as raw:
-        shutil.copyfileobj(packed, raw)
-    state = _integrity(partial)
-    if state != "ok":
-        partial.unlink()
-        raise ValueError(f"{backup.name}: integrity {state[:100]}")
+    try:
+        with gzip.open(backup, "rb") as packed, partial.open("wb") as raw:
+            shutil.copyfileobj(packed, raw)
+        state = _integrity(partial)
+        if state != "ok":
+            raise ValueError(f"{backup.name}: integrity {state[:100]}")
+        conn = sqlite3.connect(partial)
+        try:
+            with conn:
+                conn.execute("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+                row = conn.execute("SELECT value FROM meta WHERE key = ?", (RECOVERY_EPOCH_KEY,)).fetchone()
+                epoch = max(int(row[0]) if row else 1, above_epoch) + 1
+                conn.execute("INSERT OR REPLACE INTO meta VALUES (?, ?)", (RECOVERY_EPOCH_KEY, str(epoch)))
+        finally:
+            conn.close()
+    except BaseException:
+        partial.unlink(missing_ok=True)
+        raise
     for extra in (db.with_name(db.name + "-wal"), db.with_name(db.name + "-shm")):
         extra.unlink(missing_ok=True)
     partial.replace(db)
+    return epoch
+
+
+def published_epoch(manifest: Path) -> int:
+    """recovery_epoch of a published manifest.json; ValueError when the file is missing or not a manifest."""
+    try:
+        epoch = json.loads(manifest.read_text(encoding="utf-8"))["recovery_epoch"]
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        raise ValueError(f"{manifest}: not a readable manifest ({type(exc).__name__}: {exc})") from exc
+    if not isinstance(epoch, int) or isinstance(epoch, bool) or epoch < 1:
+        raise ValueError(f"{manifest}: recovery_epoch {epoch!r} is not a positive whole number")
+    return epoch
 
 
 def prune_cap(db: Path, now: datetime) -> str | None:
@@ -121,15 +149,21 @@ def _aware(when: datetime) -> datetime:
     return when if when.tzinfo else when.replace(tzinfo=UTC)
 
 
-def _append(path: Path, rows: list[dict[str, Any]]) -> None:
-    """Add JSON lines to a daily .jsonl.gz. Each call adds one gzip member in one write; gzip readers (Python's gzip,
-    zcat) read the members as one stream."""
+def _lines(rows: list[dict[str, Any]]) -> bytes:
+    """JSON lines as one gzip member (b"" for none). Members appended to a daily .jsonl.gz read as one stream
+    (Python's gzip, zcat), and each is added in one write."""
     if not rows:
-        return
+        return b""
     text = "".join(json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n" for row in rows)
+    return gzip.compress(text.encode("utf-8"), compresslevel=6)
+
+
+def _append(path: Path, member: bytes) -> None:
+    if not member:
+        return
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("ab") as out:
-        out.write(gzip.compress(text.encode("utf-8"), compresslevel=6))
+        out.write(member)
 
 
 def read_lines(path: Path) -> list[dict[str, Any]]:
@@ -152,12 +186,24 @@ def _save(path: Path, value: Any) -> None:
     partial.replace(path)
 
 
+def day_budget() -> float:
+    """Bytes a day may add: ARCHIVE_DAYS days of this stay within ARCHIVE_MAX_BYTES, so one day never takes the room
+    of the others (Codex M33)."""
+    return ARCHIVE_MAX_BYTES / ARCHIVE_DAYS
+
+
+def _day_files(root: Path) -> list[tuple[str, Path]]:
+    return sorted((path.name[:10], path) for path in root.glob("*/*.jsonl.gz"))
+
+
 def archive_round(root: Path, out: Path, now: datetime, summary: dict[str, Any], archived_at: datetime) -> str:
-    """One round into the archive: the round line, new versions of VERSIONED and the flood reports' changes."""
+    """One round into the archive: the round line, new versions of VERSIONED and the flood reports' changes. All of
+    it is made first and written only if the day's share of the archive has room for it; otherwise nothing of the
+    round is written, and the note says so (the missing round is a gap in rounds/)."""
     day = _day(now)
     manifest = _load(out / "manifest.json")
     files = {f["path"]: f for f in manifest.get("files", []) if isinstance(f, dict) and "path" in f}
-    _append(root / "rounds" / f"{day}.jsonl.gz", [{
+    round_line = {
         "started": now.isoformat(), "archived_at": archived_at.isoformat(),
         "code": os.environ.get("FONTOKMAI_CODE") or None, "published": summary.get("published"),
         "generation_id": manifest.get("generation_id"), "generated_at": manifest.get("generated_at"),
@@ -165,7 +211,7 @@ def archive_round(root: Path, out: Path, now: datetime, summary: dict[str, Any],
         "source_status": manifest.get("source_status", []),
         "files": {path: [f.get("sha256"), f.get("size")] for path, f in sorted(files.items())},
         "overview": _load(out / "summary" / "overview.json") or None,
-    }])
+    }
     # the files the rules read: a version once, under the time it was first seen here. The bytes must be the ones
     # the manifest names: the Bangkok files can be replaced between the round and this (update-bkk.sh), and then
     # the next round keeps the new version under its own hash
@@ -185,8 +231,6 @@ def archive_round(root: Path, out: Path, now: datetime, summary: dict[str, Any],
         versions.append({"path": path, "sha256": sha, "first_seen": archived_at.isoformat(),
                          "generation_id": manifest.get("generation_id"), "data": json.loads(raw)})
         last[path] = sha
-    _append(root / "versions" / f"{day}.jsonl.gz", versions)
-    _save(last_path, last)
     # flood reports: first seen, changed, and gone from the feed (gone is not the water gone: the feed keeps a
     # report 2 hours after its stop time, and a report that ends is not a road that is dry)
     open_path = root / "floods" / "open.json"
@@ -204,32 +248,69 @@ def archive_round(root: Path, out: Path, now: datetime, summary: dict[str, Any],
     if floods:  # a round without the file says nothing about the reports
         rows += [{"event": "gone_from_feed", "at": archived_at.isoformat(), "fetched_at": floods.get("fetched_at"),
                   "id": gone} for gone in sorted(set(before) - set(now_open))]
+    members = {root / "rounds" / f"{day}.jsonl.gz": _lines([round_line]),
+               root / "versions" / f"{day}.jsonl.gz": _lines(versions),
+               root / "floods" / f"{day}.jsonl.gz": _lines(rows)}
+    used = sum(path.stat().st_size for d, path in _day_files(root) if d == day)
+    if used + sum(len(member) for member in members.values()) > day_budget():
+        return f"archive: today's share ({day_budget() / 1024**2:.1f} MB) is used up, this round is not in it"
+    for path, member in members.items():
+        _append(path, member)
+    _save(last_path, last)
+    if floods:
         _save(open_path, now_open)
-    _append(root / "floods" / f"{day}.jsonl.gz", rows)
     return f"archive +{len(versions)} version(s) +{len(rows)} flood line(s)"
 
 
+def _carried(doomed: list[tuple[str, Path]]) -> list[dict[str, Any]]:
+    """The newest version of each file among the versions about to be deleted: rounds that stay may still name it
+    (a file that did not change since), so it moves to the oldest day that stays (Codex M31)."""
+    newest: dict[str, dict[str, Any]] = {}
+    for day, path in doomed:
+        if path.parent.name != "versions":
+            continue
+        for line in read_lines(path):
+            if line.get("path") and line.get("first_seen", "") >= newest.get(line["path"], {}).get("first_seen", ""):
+                newest[line["path"]] = {**line, "carried_from": line.get("carried_from", day)}
+    return [newest[path] for path in sorted(newest)]
+
+
 def prune_archive(root: Path, now: datetime) -> str | None:
-    """Delete the days older than ARCHIVE_DAYS, then the oldest days while the archive is over ARCHIVE_MAX_BYTES."""
+    """Days older than ARCHIVE_DAYS go, then the oldest days while the whole archive (its bookkeeping included) is
+    over ARCHIVE_MAX_BYTES, today too if a smaller cap asks for it. The newest version of each file among what goes
+    is carried to the oldest day that stays, so no round that stays names a version the archive no longer has; when
+    no day stays, versions/last.json forgets them, and the next round keeps the files again."""
     if not root.exists():
         return None
     cutoff = _day(now - timedelta(days=ARCHIVE_DAYS))
-    days = sorted((path.name[:10], path) for path in root.glob("*/*.jsonl.gz"))
-    gone = 0
-    for day, path in days:
-        if day < cutoff:
-            path.unlink()
-            gone += 1
-    left = [(day, path) for day, path in days if path.exists()]
-    total = sum(path.stat().st_size for _, path in left)
-    today = _day(now)
-    for day, path in left:
-        if total <= ARCHIVE_MAX_BYTES or day == today:
+    files = _day_files(root)
+    doomed = [(day, path) for day, path in files if day < cutoff]
+    kept = [(day, path) for day, path in files if day >= cutoff]
+    total = sum(path.stat().st_size for path in root.glob("*/*.json")) + sum(p.stat().st_size for _, p in kept)
+    while True:
+        carry = _lines(_carried(doomed)) if kept else b""
+        if total + len(carry) <= ARCHIVE_MAX_BYTES or not kept:
             break
-        total -= path.stat().st_size
+        oldest = kept[0][0]
+        for pair in [pair for pair in kept if pair[0] == oldest]:
+            kept.remove(pair)
+            doomed.append(pair)
+            total -= pair[1].stat().st_size
+    if not doomed:
+        return None
+    carried = _carried(doomed) if kept else []
+    if carried:
+        _append(root / "versions" / f"{kept[0][0]}.jsonl.gz", _lines(carried))
+    gone_shas = {line["sha256"] for day, path in doomed if path.parent.name == "versions"
+                 for line in read_lines(path)} - {line["sha256"] for line in carried}
+    for _, path in doomed:
         path.unlink()
-        gone += 1
-    return f"archive: {gone} old file(s) deleted" if gone else None
+    last_path = root / "versions" / "last.json"
+    last = _load(last_path)
+    if any(sha in gone_shas for sha in last.values()):
+        _save(last_path, {path: sha for path, sha in last.items() if sha not in gone_shas})
+    note = f"archive: {len(doomed)} file(s) deleted"
+    return note + (f", {len(carried)} version(s) still in use moved to {kept[0][0]}" if carried else "")
 
 
 def archive_bytes(root: Path) -> int:
@@ -251,8 +332,8 @@ def housekeeping(db: Path, out: Path, now: datetime, summary: dict[str, Any],
     notes = [
         prune_cap(db, now) if daily else None,
         backup_db(db, backups, now) if daily else None,
+        prune_archive(root, now),  # first, so that the round below is measured against what stays
         None if reserve else archive_round(root, out, now, summary, archived_at or datetime.now(UTC)),
-        prune_archive(root, now),
     ]
     if reserve:
         report["skipped"] = f"archive not written: less than {DISK_RESERVE:.0%} of the shared disk is free"
