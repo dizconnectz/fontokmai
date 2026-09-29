@@ -44,6 +44,7 @@
 ### A5. งานที่กำลังทำ (Active claims)
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
+| Claude | 2026-09-29 15:45 | `pipeline/src/fontokmai/{sources/tmd_radar,housekeeping,cli}.py` + tests, `apps/web/src/styles.css`, xfail/expected-failure ของ M29–M34 ใน `tests/consumer/`, `docs/sources.md` | แก้ M29–M34 | — |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md`)
 
