@@ -157,7 +157,8 @@ def main(argv: list[str]) -> int:
         else:
             shp = given
         result = build(shp)
-    OUT.write_text(json.dumps(result, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+    OUT.write_text(json.dumps(result, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8",
+                   newline="\n")
     print(f"{OUT.name}: {len(result['dams'])} dams, {OUT.stat().st_size} bytes")
     return 0
 
