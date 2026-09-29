@@ -170,6 +170,9 @@ def test_rivers_rising_a_lot_and_dams_over_capacity_are_to_prepare_for():
     dam = places[full.name_th]
     assert dam.reasons[0].text_th == "น้ำเกินความจุเก็บกัก 104.2% (รายงาน 26 ก.ย.) ติดตามการระบายน้ำ"
     assert dam.reasons[0].at == datetime.fromisoformat("2026-09-26T00:00:00+07:00")  # the report day, not the download
+    # where its water goes, from the river network: places to follow (user, 2026-09-28)
+    assert dam.detail_th.startswith("ท้ายน้ำ: ตาก → กำแพงเพชร → นครสวรรค์")
+    assert dam.detail_th.endswith("ออกทะเลที่ อ.เมืองสมุทรปราการ จ.สมุทรปราการ")
     assert all(i.when == "next" for i in overview.items)
 
 
