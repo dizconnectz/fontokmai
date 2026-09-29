@@ -24,4 +24,8 @@ RUN (getent group "$APP_GID" || groupadd --gid "$APP_GID" fontokmai) \
 WORKDIR /app
 ENV PYTHONUNBUFFERED=1 PATH="/app/.venv/bin:$PATH" HOME=/tmp
 COPY --from=fontokmai-build /app/.venv /app/.venv
+# the commit the image is built from, for the round archive (deploy.sh passes it; empty when built by hand).
+# Last, so that a new commit changes only this
+ARG FONTOKMAI_CODE=""
+ENV FONTOKMAI_CODE=$FONTOKMAI_CODE
 ENTRYPOINT ["fontokmai"]

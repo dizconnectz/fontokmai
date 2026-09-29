@@ -12,6 +12,7 @@ if [ "$now" -ge 1700 ] && [ "$now" -lt 1805 ] && [ -z "${FORCE:-}" ]; then
 fi
 git -C ../.. pull -q
 git -C ../.. log --oneline -1
-docker compose up -d --build
+# the commit goes into the image, and from there into each line of the round archive
+FONTOKMAI_CODE=$(git -C ../.. rev-parse --short=12 HEAD) docker compose up -d --build
 python3 prune_own_cache.py
 docker compose ps --format "{{.Service}} {{.Status}}"

@@ -7,6 +7,7 @@ services:
       args:
         APP_UID: ${FONTOKMAI_UID}
         APP_GID: ${FONTOKMAI_GID}
+        FONTOKMAI_CODE: ${FONTOKMAI_CODE:-}
     image: fontokmai-pipeline:local
     user: "${FONTOKMAI_UID}:${FONTOKMAI_GID}"
     command:

@@ -9,6 +9,8 @@
 |---|---|
 | `~/fontokmai/app` | clone ของ repo นี้ |
 | `~/fontokmai/var/state` | SQLite state (checkpoint) |
+| `~/fontokmai/var/state/backups` | สำรองฐานข้อมูลวันละครั้ง `fontokmai-YYYYMMDD.db.gz` (เก็บ 7 วันล่าสุด) |
+| `~/fontokmai/var/state/archive/eval` | คลังไว้ตรวจความแม่นภายหลัง (`docs/design/accuracy-evaluation.md` §6) |
 | `~/fontokmai/var/out/data/v1` | snapshot ล่าสุด |
 | `~/fontokmai/var/pages` | พื้นที่ชั่วคราวของ commit ที่จะเผยแพร่ |
 | `~/fontokmai/secrets/deploy_key` | deploy key ที่เขียนได้เฉพาะ repo ข้อมูล (สิทธิ์ 600 ไม่อยู่ใน repo) |
@@ -47,21 +49,37 @@ docker compose logs --tail 20 cap-collector                                     
 docker compose stop                                                                # หยุด (ข้อมูลใน var/ ยังอยู่)
 ```
 
-## ข้อมูลอยู่ที่ไหนและโตแค่ไหน (วัด 2026-09-25)
+## ข้อมูลอยู่ที่ไหนและโตแค่ไหน (วัด 2026-09-29: ของ fontokmai รวมราว 0.7 GB จากดิสก์ 86 GB ที่ว่าง 25 GB)
 | ที่เก็บ | มีอะไร | ขนาดและการโต |
 |---|---|---|
-| `var/state/fontokmai.db` (SQLite ไฟล์เดียว ไม่มี database server) | ประกาศ CAP ดิบแบบบีบอัด, revision ของเหตุ/ไฟล์, ค่า meta | ~0.5 MB · โตราว 40 KB ต่อประกาศ (ประมาณ 70–150 MB ต่อปี) · **ยังไม่มีงานลบและสำเนานอกเครื่อง** |
-| `var/out/data/v1` | snapshot ล่าสุด (`manifest.json`, `alerts.json`) | ~0.5 MB เขียนทับทุกรอบ |
+| `var/state/fontokmai.db` (SQLite ไฟล์เดียว ไม่มี database server) | ประกาศ CAP ดิบแบบบีบอัด, revision ของเหตุ/ไฟล์, ค่า meta | 1.1 MB · โตราว 0.3 MB ต่อวัน · ลบประกาศที่ออกเกิน 180 วันวันละครั้ง (ฟีดใช้แค่ 7 วัน) จึงไม่เกินราว 50 MB |
+| `var/state/backups` | สำรองฐานข้อมูลวันละครั้ง (SQLite online backup → ตรวจ `integrity_check` → gzip) | 7 ไฟล์ล่าสุด ไฟล์ละไม่ถึง 1 MB ตอนนี้ · สคริปต์อัปเดต กทม. บนเครื่องผู้ใช้คัดลอกไฟล์ล่าสุดไปเก็บที่ `~/.fontokmai/backups` (14 ไฟล์) |
+| `var/state/archive/eval` | คลังตรวจความแม่น: รอบละบรรทัด (`rounds/`), ไฟล์ที่กฎอ่านทุกรุ่นที่เปลี่ยน (`versions/`), รายงานน้ำท่วมเมื่อเห็นครั้งแรก/เปลี่ยน/หายจากฟีด (`floods/`) | วันละไฟล์ต่อชนิด ประมาณ 0.5 MB ต่อวัน · เก็บ 90 วัน และไม่เกิน 300 MB (ลบวันเก่าสุดก่อน) · สคริปต์อัปเดต กทม. คัดลอกวันที่จบแล้วไปเก็บถาวรที่ `~/.fontokmai/archive` |
+| `var/out/data/v1` | snapshot ล่าสุด | ราว 4 MB เขียนทับทุกรอบ |
 | `var/pages` | ไฟล์ที่ประกอบเป็น commit เผยแพร่ | ~1 MB สร้างใหม่ทุกรอบ |
 | repo `fontokmai-data` (GitHub Pages) | สำเนาสาธารณะของ snapshot | force-push commit เดียวต่อรอบ จึงมีแค่รุ่นล่าสุด |
 | log ของ container | JSON หนึ่งบรรทัดต่อรอบ | หมุนที่ 10 MB × 3 |
 | `var/state/cache/itic_flood_YYYY.json` | เหตุน้ำท่วมของ iTIC/Longdo ปีที่จบแล้ว เฉพาะกรอบ กทม.–ปริมณฑล | ไม่กี่ร้อย KB ต่อปี ไม่เก็บไฟล์ดิบ (อ่านแบบ stream) |
 | `var/out/data/v1/ref/road_flood_history.json` | ประวัติน้ำท่วมถนน (สัญญาข้อ 8) | สร้างใหม่สัปดาห์ละครั้ง เขียนทับ |
-| image `fontokmai-pipeline:local` | Python + โค้ด | ~450 MB (ก่อน 2026-09-28) · แยก stage แล้วไม่มี uv และ cache ของมันในภาพ · `deploy.sh` ลบ build cache ที่ build ล่าสุดไม่ได้ใช้และ image เก่าของ fontokmai ทุกครั้ง (วัด 28 ก.ย.: cache ของเรา 317 MB ลบได้ 219 MB) |
+| image `fontokmai-pipeline:local` | Python + โค้ด | 376 MB (29 ก.ย.) · แยก stage แล้วไม่มี uv และ cache ของมันในภาพ · `deploy.sh` ลบ build cache ที่ build ล่าสุดไม่ได้ใช้และ image เก่าของ fontokmai ทุกครั้ง (วัด 28 ก.ย.: cache ของเรา 317 MB ลบได้ 219 MB) |
 | `var/state/archive/dxs/*.tgz` | สำเนาข้อมูล DXS ทุกครั้งที่ผู้ใช้กดอัปเดต (ประวัติ) | ~25 KB ต่อครั้ง · สคริปต์อัปเดตลบที่เก่ากว่า 365 วัน |
 
-- ตัวคุมงบดิสก์, retention และสำรองนอกเครื่องตาม design 4.9 เป็นงาน P0-B2 และต้องเสร็จก่อนเพิ่มแหล่งที่ดึงข้อมูลจำนวนมาก
+- **ตัวคุมดิสก์ (design 4.9)**: ท้ายทุกรอบ (`fontokmai/housekeeping.py`) ถ้าดิสก์ที่ใช้ร่วมกับงานอื่นว่างน้อยกว่า 15% (reserve) จะไม่เขียนคลังตรวจความแม่น (`keep.skipped`) แต่ยังสำรองรายวัน เพราะไฟล์ใหม่แทนไฟล์เก่าสุด ขนาดรวมไม่โต · ใช้ถึง 80% log บอก `keep.warning` (ยังไม่มีช่องทางแจ้งผู้ใช้อัตโนมัติ) · log ของรอบบอก `keep.disk_free_gb` ทุกรอบ และ `keep.archive_mb` วันละครั้ง
+- ยังต้องมีงบรวมและ retention ของแหล่งใหม่ก่อนเพิ่มแหล่งที่ดึงข้อมูลจำนวนมาก (design 4.9)
 - **เครื่องนี้ใช้ร่วมกับงานอื่น ห้ามแตะของงานอื่นเลย** (ผู้ใช้สั่ง 2026-09-28): ห้าม `docker image prune`, `docker builder prune` หรือ `docker system prune` แบบไม่กรอง · ของเราใช้ `prune_own_cache.py` ซึ่งเลือกเฉพาะ build cache ที่คำอธิบายมีคำว่า fontokmai (ชื่อ stage และท้าย RUN ใน `pipeline/Dockerfile`) หรือสร้างต่อจากรายการนั้น และ image ค้างที่ entrypoint เป็น `fontokmai` · ลองก่อนด้วย `--dry-run`
+
+## สำรองและกู้คืนฐานข้อมูล
+- สำรองอัตโนมัติรอบแรกหลังเที่ยงคืน (เวลาไทย) ของทุกวัน ไม่ต้องสั่ง · ถ้าตรวจแล้วไฟล์เสียจะไม่เก็บและบอกใน log
+- กู้คืน (ตัวเก็บต้องหยุดก่อน):
+```bash
+cd ~/fontokmai/app/deploy/vps
+docker compose stop cap-collector
+docker compose run --rm cap-collector restore-db --backup /var/lib/fontokmai/state/backups/fontokmai-YYYYMMDD.db.gz --db /var/lib/fontokmai/state/fontokmai.db --manifest /var/lib/fontokmai/out/data/v1/manifest.json
+docker compose start cap-collector
+```
+- `restore-db` คลายไฟล์ ตรวจ `integrity_check` ก่อน แล้วจึงแทนที่ (ไฟล์เสียจะไม่แทนที่ของเดิม) และเพิ่ม `recovery_epoch` ให้สูงกว่าที่เผยแพร่อยู่ เว็บจะล้างสถานะแล้วอ่านฟีดใหม่ (design 4.4 ข้อ 14) · ซ้อมโดยไม่แตะของจริง: ใส่ `--db /tmp/drill.db` แทน
+- จากสำเนาบนเครื่องผู้ใช้: `scp` ไฟล์จาก `~/.fontokmai/backups` ขึ้นไปที่ `~/fontokmai/var/state/backups/` แล้วทำตามข้างบน
+- สิ่งที่หายได้เมื่อกู้คืน: ประกาศที่เข้ามาหลังเวลาสำรอง (รอบถัดไปดึงใหม่เฉพาะที่ยังอยู่ในฟีดกรมอุตุฯ) · ยังไม่มีเทสต์กรณีประกาศยกเลิก/แก้ไขที่ออกระหว่างเวลาสำรองกับรอบล่าสุด (design 4.4 ข้อ 14) หลังกู้คืนให้เทียบ `alerts.json` กับหน้ากรมอุตุฯ
 
 ## ประวัติน้ำท่วมถนน (ครั้งแรกต้องสั่งเอง)
 ตัวตั้งเวลาสร้าง `ref/road_flood_history.json` ใหม่สัปดาห์ละครั้ง แต่จะไม่โหลดเหตุการณ์ย้อนหลังทั้งชุดเอง (ปีละ 20–50 MB) จึงต้องสั่งครั้งแรกนอกรอบ 15 นาที:
@@ -84,6 +102,5 @@ docker compose run --rm cap-collector road-flood-history --out /var/lib/fontokma
 - **ช่วงห้ามรันของงานเดิม** (ตั้งใน `.env` ของเครื่อง): ตัวเก็บนี้เป็นงานเบาที่ทำงานต่อได้ตามข้อ 4.3 · งานหนักในอนาคตต้องมี admission cutoff
 - **ยังไม่รองรับ (P0-B2)**:
   - takeover/failback ไปที่ GitHub Actions
-  - restore จากสำเนา
-  - ตัวตรวจจากนอกเครื่อง
   - systemd slice สำหรับงบรวม
+  - ตัวตรวจเว็บล่มจากนอกเครื่อง: ผู้ใช้ตัดสินไม่ทำ (2026-09-29)

@@ -1,5 +1,5 @@
-"""Command line: export-schemas, contract-examples, cap-snapshot, road-flood-history, rain-forecast, river-forecast
-and schedule (and the manual DXS commands)."""
+"""Command line: export-schemas, contract-examples, cap-snapshot, road-flood-history, rain-forecast, river-forecast,
+schedule and restore-db (and the manual DXS commands)."""
 
 from __future__ import annotations
 
@@ -27,9 +27,10 @@ from fontokmai.forecast_build import (
     refresh_rain_forecast,
     refresh_river_forecast,
 )
+from fontokmai.housekeeping import housekeeping, restore_db
 from fontokmai.publish.git_pages import publish_snapshot
 from fontokmai.road_flood_build import build_road_flood_history, fixture_files, is_fresh
-from fontokmai.run import SnapshotResult, run_cap_snapshot
+from fontokmai.run import RECOVERY_EPOCH_KEY, SnapshotResult, run_cap_snapshot
 from fontokmai.schedule import run_forever
 from fontokmai.sources.open_data.http import fixture_opener, open_url
 from fontokmai.sources.open_data.longdo_live import FEED_URL as LONGDO_FEED_URL
@@ -123,6 +124,11 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     sched.add_argument("--forecast", action="store_true",
                        help="rebuild forecast/rain.json from Open-Meteo every 6 hours (network)")
     sched.add_argument("--max-rounds", type=int, help=argparse.SUPPRESS)
+    restore = sub.add_parser("restore-db", help="put a daily backup in place of the state database (collector stopped)")
+    restore.add_argument("--backup", type=Path, required=True, help="fontokmai-YYYYMMDD.db.gz")
+    restore.add_argument("--db", type=Path, required=True, help="the database file to replace (or a new file)")
+    restore.add_argument("--manifest", type=Path,
+                         help="the published manifest.json, so that the new recovery epoch is above the web's")
     args = parser.parse_args(argv)
     if args.command == "schedule" and args.publish_remote and args.publish_work is None:
         parser.error("--publish-remote needs --publish-work")
@@ -186,6 +192,12 @@ def _scheduled_job(args: argparse.Namespace) -> Callable[[datetime], dict[str, A
         rivers = refresh_rivers(now)
         if rivers:
             summary["rivers"] = rivers
+        # last: the daily backup, the retention and the archive for checking accuracy (P0-B2); what it did goes in
+        # the round log, and a failure here never fails a round that has published
+        try:
+            summary["keep"] = housekeeping(args.db, args.out, now, summary)
+        except Exception as exc:  # noqa: BLE001
+            summary["keep"] = {"error": f"{type(exc).__name__}: {exc}"[:300]}
         return summary
 
     return job
@@ -276,6 +288,21 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "schedule":
         run_forever(_scheduled_job(args), max_rounds=args.max_rounds)
+        return 0
+    if args.command == "restore-db":
+        # a daily backup is older than what was published: a new recovery epoch tells the web to drop what it
+        # holds and read the feed again (design 4.4 item 14, contracts/v1/README.md §5)
+        restore_db(args.backup, args.db)
+        from fontokmai.state import StateStore
+        published = 0
+        if args.manifest and args.manifest.is_file():
+            published = int(json.loads(args.manifest.read_text(encoding="utf-8")).get("recovery_epoch", 0))
+        with StateStore(args.db) as store:
+            epoch = max(int(store.get_meta(RECOVERY_EPOCH_KEY) or "1"), published) + 1
+            store.set_meta(RECOVERY_EPOCH_KEY, str(epoch))
+            documents = len(store.cap_documents())
+        print(json.dumps({"restored": args.db.as_posix(), "from": args.backup.name, "cap_documents": documents,
+                          "recovery_epoch": epoch}))
         return 0
     now = datetime.fromisoformat(args.now) if args.now else datetime.now(UTC)
     if now.tzinfo is None:
