@@ -216,8 +216,9 @@ def _dams(day, outflows, previous_day=None, previous=None):
         (Path(__file__).resolve().parents[2] / "contracts" / "v1" / "examples" / "bkk" / "dams.json").read_bytes())
     dams = [d.model_copy(update={"outflow_mcm": outflows.get(d.id), "previous_outflow_mcm": (previous or {}).get(d.id)})
             for d in example.dams]
+    before = date.fromisoformat(previous_day) if previous_day else None
     return example.model_copy(update={"report_date": date.fromisoformat(day), "dams": dams,
-                                      "previous_report_date": date.fromisoformat(previous_day) if previous_day else None})
+                                      "previous_report_date": before})
 
 
 def test_the_release_is_compared_with_the_report_the_site_had_before():
