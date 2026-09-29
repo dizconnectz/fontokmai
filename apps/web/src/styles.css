@@ -610,6 +610,59 @@ svg {
 .layer-control.open .layer-options {
   display: grid;
 }
+/* an open layer list reaches down to just above the timeline and scrolls there, on any screen: on a short one (a
+   phone on its side) it ran under the timeline and could not scroll (user, 2026-09-29). The stretched box lets
+   taps through to the map, only its own buttons take them */
+.layer-control.open {
+  bottom: 12px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  pointer-events: none;
+}
+.stage.has-timeline .layer-control.open {
+  bottom: calc(var(--timeline-space) + 8px);
+}
+.layer-control.open > * {
+  pointer-events: auto;
+}
+.layer-control.open .layer-options {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+/* the map buttons on the left are round icons on a narrow or short screen, and keep their words for screen readers
+   (aria-label): with words they covered the top of the map (user, 2026-09-29) */
+@media (max-width: 640px), (max-height: 560px) {
+  .map-actions {
+    gap: 8px;
+  }
+  .map-actions button {
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border-radius: 50%;
+  }
+  .map-actions button span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+  .layer-options {
+    gap: 4px;
+    padding: 6px;
+  }
+  .layer-options button {
+    padding: 6px 8px;
+    font-size: 0.85rem;
+  }
+}
 .layer-options button {
   display: flex;
   align-items: center;

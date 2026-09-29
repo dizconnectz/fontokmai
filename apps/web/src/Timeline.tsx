@@ -1,4 +1,4 @@
-import { useEffect, useId } from 'react';
+import { useCallback, useEffect, useId, useRef } from 'react';
 import { Pause, Play } from 'lucide-react';
 import { hourRange, shortTime } from './alerts';
 
@@ -57,6 +57,29 @@ export default function Timeline({
     return () => window.clearTimeout(timer);
   }, [playing, index, last, onChange, onPlay]);
 
+  // the map's controls stand above the timeline (legend, zoom, layer list): they read its real height from
+  // --timeline-space on the map, measured here, since it grows with the note line and on a narrow screen
+  const stage = useRef<HTMLElement | null>(null);
+  const observer = useRef<ResizeObserver | null>(null);
+  const measure = useCallback((element: HTMLDivElement | null) => {
+    observer.current?.disconnect();
+    observer.current = null;
+    if (!element) {
+      stage.current?.style.removeProperty('--timeline-space');
+      return;
+    }
+    stage.current = element.parentElement;
+    const set = () =>
+      stage.current?.style.setProperty(
+        '--timeline-space',
+        `${Math.ceil(element.getBoundingClientRect().height) + 12}px`,
+      );
+    set();
+    if (typeof ResizeObserver === 'undefined') return;
+    observer.current = new ResizeObserver(set);
+    observer.current.observe(element);
+  }, []);
+
   if (steps.length < 2) return null;
   const step = steps[index];
   const at = (i: number) => (last > 0 ? (i / last) * 100 : 0);
@@ -68,7 +91,7 @@ export default function Timeline({
   );
   const label = stepLabel(step, now);
   return (
-    <div className={`timeline ${step.kind === 'forecast' ? 'is-forecast' : ''}`}>
+    <div ref={measure} className={`timeline ${step.kind === 'forecast' ? 'is-forecast' : ''}`}>
       <button
         className="timeline-play"
         aria-label={playing ? 'หยุดเล่น' : 'เล่นต่อเนื่องไปข้างหน้า'}
