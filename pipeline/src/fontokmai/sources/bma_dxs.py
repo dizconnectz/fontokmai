@@ -35,6 +35,7 @@ from fontokmai.contracts.bkk import (
     WeatherStation,
     WeatherToday,
 )
+from fontokmai.downstream import dam_downstream_th
 from fontokmai.sources.tmd_cap.fetch import USER_AGENT, make_ssl_context
 
 ENDPOINT = "https://dxg-api.dds.bangkok.go.th/WSS_DDSDXS.asmx"
@@ -503,6 +504,7 @@ def parse_dams(result: ET.Element, now: datetime) -> DamReport:
                 percent=_number(text(item, "percent_storage"), 0, 200),
                 inflow_mcm=_number(text(item, "inflow"), 0, 10_000),
                 outflow_mcm=_number(text(item, "outflow"), 0, 10_000),
+                downstream_th=dam_downstream_th(dam_id),
             ))
     if not dams:
         raise DxsError("GetDam: no dam in the answer")

@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 
-from fontokmai.overview_build import Gazetteer, downstream_table, downstream_th
+from fontokmai.downstream import dam_downstream_th, downstream_table, downstream_th
+from fontokmai.overview_build import Gazetteer
 from fontokmai.ref_data.build_downstream import Reach, districts_along, downstream_path, start_reach
 
 # three reaches in a line, flowing east along 14°N: 1 → 2 → 3 → the sea
@@ -46,9 +47,11 @@ def test_the_summary_line_names_the_provinces_below_a_dam_and_where_it_meets_the
     khun_dan = {"end": "sea", "districts": [["2601", 0.0], ["2603", 12.0], ["2604", 30.0], ["2403", 43.0],
                                              ["2506", 44.0], ["2402", 58.0], ["2401", 80.0], ["2404", 110.0]]}
     # the river is a border between Prachin Buri and Chachoengsao for a while: provinces go by their middle distance
-    assert downstream_th(g, khun_dan) == (
+    assert downstream_th(g.places, khun_dan) == (
         "ท้ายน้ำ: นครนายก → ปราจีนบุรี → ฉะเชิงเทรา · ออกทะเลที่ อ.บางปะกง จ.ฉะเชิงเทรา")
-    assert downstream_th(g, None) is None and downstream_th(g, {"districts": []}) is None
+    assert downstream_th(g.places, None) is None and downstream_th(g.places, {"districts": []}) is None
+    assert dam_downstream_th("200101").startswith("ท้ายน้ำ: ตาก → ")  # Bhumibol, from the built table
+    assert dam_downstream_th("no-such-dam") is None
     # the table built from HydroRIVERS lists the dams with a place, each with its districts
     table = downstream_table()
     assert len(table) >= 30 and all(entry["districts"] and entry["end"] in ("sea", "abroad")

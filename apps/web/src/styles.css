@@ -1234,6 +1234,9 @@ details > ul {
   background: var(--surface);
   opacity: 0.8;
 }
+.dam-downstream {
+  color: var(--text);
+}
 .dam-bar.over {
   outline: 2px solid #e53935;
   outline-offset: 1px;

@@ -110,6 +110,10 @@ class Dam(ContractModel):
     percent: float | None = Field(description="volume as a percentage of storage")
     inflow_mcm: float | None = Field(description="Inflow of the day, million cubic metres")
     outflow_mcm: float | None = Field(description="Release of the day, million cubic metres")
+    downstream_th: str | None = Field(default=None, description=(
+        "Provinces the dam's river runs through, down to the sea or out of Thailand, e.g. ท้ายน้ำ: นครนายก → "
+        "ปราจีนบุรี → ฉะเชิงเทรา · ออกทะเลที่ อ.บางปะกง จ.ฉะเชิงเทรา (HydroRIVERS river network); places to follow "
+        "when the dam releases water, not a flood forecast. Null when the dam has no place or river"))
 
 
 class DamReport(ContractModel):

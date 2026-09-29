@@ -11,10 +11,8 @@ Official alerts are not copied: the web shows alerts.json apart.
 
 from __future__ import annotations
 
-import json
 import math
 import re
-import statistics
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta, timezone
@@ -28,6 +26,7 @@ from fontokmai.contracts.live_floods import LiveFloods
 from fontokmai.contracts.overview import Overview, OverviewInput, OverviewItem, OverviewReason
 from fontokmai.contracts.places import Place, PlaceGazetteer
 from fontokmai.contracts.radar import RadarFeed
+from fontokmai.downstream import downstream_table, downstream_th
 from fontokmai.sources.tmd_radar import rain_samples
 
 OVERVIEW_PATH = "summary/overview.json"
@@ -188,31 +187,6 @@ class _Spot:
             detail_th=self.detail or (f"แถว {', '.join(roads)}" if roads else None),
             province_code=self.province, location=centre, zoom=self.zoom,
             score=scores[0] * 10 + sum(scores[1:]), reasons=[reason for _, reason in ordered])
-
-
-def downstream_table() -> dict[str, dict]:
-    """ref_data/dam_downstream.json (build_downstream.py): the districts below each dam, in the water's order."""
-    raw = resources.files("fontokmai.ref_data").joinpath("dam_downstream.json").read_text(encoding="utf-8")
-    return json.loads(raw)["dams"]
-
-
-def downstream_th(g: Gazetteer, entry: dict | None, most: int = 6) -> str | None:
-    """"ท้ายน้ำ: นครนายก → ปราจีนบุรี → ฉะเชิงเทรา · ออกทะเลที่ อ.บางปะกง จ.ฉะเชิงเทรา". A river that is a border
-    passes two provinces by turns, so provinces go in the order of the middle distance of their districts."""
-    districts = [(code, km) for code, km in (entry or {}).get("districts", []) if code in g.places]
-    if not districts:
-        return None
-    along: dict[str, list[float]] = defaultdict(list)
-    for code, km in districts:
-        along[code[:2]].append(km)
-    order = [p for p in sorted(along, key=lambda p: statistics.median(along[p])) if p in g.places]
-    names = ["กรุงเทพฯ" if p == "10" else g.places[p].name for p in order]
-    text = "ท้ายน้ำ: " + " → ".join(names[:most]) + (" → …" if len(names) > most else "")
-    if entry.get("end") == "sea":
-        text += f" · ออกทะเลที่ {g.places[max(districts, key=lambda d: d[1])[0]].label}"
-    elif entry.get("end") == "abroad":
-        text += " · แล้วไหลออกนอกประเทศ"
-    return text
 
 
 def _district_spot(spots: dict[str, _Spot], district: Place) -> _Spot:
@@ -473,7 +447,7 @@ def build_overview(files: dict[str, bytes], now: datetime, gazetteer: Gazetteer 
                 sub = g.nearest(dam.location)
                 # where its water goes, from the river network (HydroSHEDS): places to follow, not a flood forecast
                 nexts.append(_Spot("next", dam.name_th, sub.code[:2] if sub else None, list(dam.location), 10, detail=
-                                   downstream_th(g, below.get(dam.id)), reasons=[
+                                   downstream_th(g.places, below.get(dam.id)), reasons=[
                     (2, OverviewReason(kind="dam_full",
                                        text_th=f"น้ำเกินความจุเก็บกัก {dam.percent:.1f}% (รายงาน "
                                                f"{_thai_day(dams.report_date)}) ติดตามการระบายน้ำ",

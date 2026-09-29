@@ -14,6 +14,7 @@ import { displayStatus, type Alert, type Camera, type RadarFeed } from './data';
 import { LEVEL_FILL, LEVEL_LINE, levelOf } from './alerts';
 import type { ForecastAreas } from './forecast';
 import { isOngoing, isShown, reportedAt, REPORTER_TH, type FloodReport } from './floods';
+import { BARRAGE_LINK, BARRAGES, type Barrage } from './barrages';
 import {
   amount,
   damPin,
@@ -368,6 +369,23 @@ function damPopup(dam: Dam, file: DamReport, now: number): HTMLElement {
   return root;
 }
 
+function barragePopup(barrage: Barrage): HTMLElement {
+  const root = document.createElement('div');
+  root.className = 'camera-popup';
+  const link = document.createElement('a');
+  link.href = BARRAGE_LINK;
+  link.target = '_blank';
+  link.rel = 'noopener';
+  link.textContent = `${barrage.look_th} ที่กรมชลประทาน ↗`;
+  root.append(
+    line(barrage.name_th, 'strong'),
+    line(`เขื่อนทดน้ำบน${barrage.river_th} · ${barrage.place_th}`),
+    line('ไม่มีอ่างเก็บน้ำ จึงไม่มีตัวเลขความจุ และเว็บนี้ยังไม่มีตัวเลขการระบายน้ำ', 'small'),
+    link,
+  );
+  return root;
+}
+
 function weatherPopup(station: WeatherStation, file: WeatherToday, now: number): HTMLElement {
   const root = document.createElement('div');
   root.className = 'camera-popup';
@@ -712,6 +730,10 @@ export default function MapView(props: Props) {
               const report = latest.current.floods.find((r) => r.id === hit?.properties.id);
               if (report) return showFlood.current(report);
             }
+            if (layer === 'dam-pin') {
+              const barrage = BARRAGES.find((b) => b.id === hit?.properties.code);
+              if (barrage) return open('dam', barrage.location as LngLat, barragePopup(barrage));
+            }
             if (layer === 'dam-pin' && latest.current.dams) {
               const file = latest.current.dams;
               const dam = file.dams.find((d) => d.id === hit?.properties.code);
@@ -1009,17 +1031,27 @@ export default function MapView(props: Props) {
     const dams = props.layers.dams ? (props.dams?.dams ?? []) : [];
     const collection: FeatureCollection<Point> = {
       type: 'FeatureCollection',
-      features: dams.flatMap((dam) => {
-        if (!dam.location) return [];
-        const pin = damPin(dam);
-        return [
-          {
-            type: 'Feature' as const,
-            geometry: { type: 'Point' as const, coordinates: dam.location },
-            properties: { code: dam.id, pin, rank: DAM_CLASSES.findIndex((c) => c.pin === pin) },
-          },
-        ];
-      }),
+      features: [
+        ...dams.flatMap((dam) => {
+          if (!dam.location) return [];
+          const pin = damPin(dam);
+          return [
+            {
+              type: 'Feature' as const,
+              geometry: { type: 'Point' as const, coordinates: dam.location },
+              properties: { code: dam.id, pin, rank: DAM_CLASSES.findIndex((c) => c.pin === pin) },
+            },
+          ];
+        }),
+        // the barrages go with the dams, grey: no figure of theirs is on this site
+        ...(dams.length
+          ? BARRAGES.map((barrage) => ({
+              type: 'Feature' as const,
+              geometry: { type: 'Point' as const, coordinates: barrage.location },
+              properties: { code: barrage.id, pin: 'pin-dam-unknown', rank: -1 },
+            }))
+          : []),
+      ],
     };
     (map.current.getSource('dams') as GeoJSONSource | undefined)?.setData(collection);
     if (!collection.features.length && popupKind.current === 'dam') popup.current?.remove();

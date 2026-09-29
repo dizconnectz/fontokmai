@@ -20,7 +20,8 @@
       "volume_mcm": 8437.68,
       "percent": 62.68,
       "inflow_mcm": 31.38,
-      "outflow_mcm": 3.0
+      "outflow_mcm": 3.0,
+      "downstream_th": "ท้ายน้ำ: ตาก → กำแพงเพชร → นครสวรรค์ → อุทัยธานี → ชัยนาท → สิงห์บุรี → … · ออกทะเลที่ อ.เมืองสมุทรปราการ จ.สมุทรปราการ"
     },
     {
       "id": "999999",
@@ -33,7 +34,8 @@
       "volume_mcm": 95.0,
       "percent": 95.0,
       "inflow_mcm": 1.0,
-      "outflow_mcm": null
+      "outflow_mcm": null,
+      "downstream_th": null
     },
     {
       "id": "100301",
@@ -49,7 +51,8 @@
       "volume_mcm": 723.26,
       "percent": 82.99,
       "inflow_mcm": 49.01,
-      "outflow_mcm": 2.16
+      "outflow_mcm": 2.16,
+      "downstream_th": "ท้ายน้ำ: สระบุรี → พระนครศรีอยุธยา → ปทุมธานี → นนทบุรี → กรุงเทพฯ → สมุทรปราการ · ออกทะเลที่ อ.เมืองสมุทรปราการ จ.สมุทรปราการ"
     }
   ],
   "notes_th": [

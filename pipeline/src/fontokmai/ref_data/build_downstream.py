@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import math
+import shutil
 import sys
 import tempfile
 import urllib.request
@@ -26,6 +27,7 @@ from importlib import resources
 from pathlib import Path
 
 DOWNLOAD_URL = "https://data.hydrosheds.org/file/HydroRIVERS/HydroRIVERS_v10_as_shp.zip"
+USER_AGENT = "fontokmai-build/1.0 (+https://dizconnectz.github.io/fontokmai/)"  # the default one is refused
 SOURCE_URL = "https://www.hydrosheds.org/products/hydrorivers"
 SHP_NAME = "HydroRIVERS_v10_as.shp"
 BBOX = (95.0, 4.0, 108.0, 22.5)  # the rivers of Thailand, and the stretches by which they leave it
@@ -150,7 +152,9 @@ def main(argv: list[str]) -> int:
         if given is None or given.suffix == ".zip":
             archive = given or Path(work) / "hydrorivers.zip"
             if given is None:
-                urllib.request.urlretrieve(DOWNLOAD_URL, archive)
+                request = urllib.request.Request(DOWNLOAD_URL, headers={"User-Agent": USER_AGENT})
+                with urllib.request.urlopen(request, timeout=600) as reply, archive.open("wb") as out:
+                    shutil.copyfileobj(reply, out)
             with zipfile.ZipFile(archive) as bundle:
                 bundle.extractall(work)
             shp = next(Path(work).rglob(SHP_NAME))

@@ -101,6 +101,7 @@ import {
   type SituationReport,
 } from './bkk';
 import { useRadarAt } from './radarAt';
+import { BARRAGE_LINK, BARRAGES } from './barrages';
 import {
   liveItems,
   officialFor,
@@ -563,6 +564,10 @@ function DamLine({ dam, onDam }: { dam: Dam; onDam: (location: number[]) => void
         {dam.region_th ? `${dam.region_th} · ` : ''}ไหลเข้า {amount(dam.inflow_mcm)} · ระบาย{' '}
         {amount(dam.outflow_mcm)} ล้าน ลบ.ม./วัน{!dam.location && ' · ไม่มีหมุดบนแผนที่'}
       </small>
+      {/* where the water goes, for a dam with little room left: places to follow, not a flood forecast */}
+      {dam.downstream_th && dam.percent !== null && dam.percent >= 80 && (
+        <small className="dam-downstream">{dam.downstream_th}</small>
+      )}
     </span>
   );
   // a dam without a place has no pin: it is listed, never put at a guessed place (contract section 18)
@@ -611,6 +616,32 @@ function ChaoPhrayaDams({
               <DamLine key={dam.id} dam={dam} onDam={onDam} />
             ))}
           </ul>
+        </>
+      )}
+      {main.length > 0 && (
+        <>
+          <h3 className="dams-group">เขื่อนทดน้ำบนแม่น้ำ (ไม่มีอ่างเก็บน้ำ)</h3>
+          <ul className="flood-list" data-testid="barrages">
+            {BARRAGES.map((barrage) => (
+              <li key={barrage.id}>
+                <button className="road-button" onClick={() => onDam(barrage.location)}>
+                  <span className="flood-line">
+                    <strong>{barrage.name_th}</strong>
+                    <small>
+                      {barrage.river_th} · {barrage.place_th}
+                    </small>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <p className="quiet">
+            เว็บนี้ยังไม่มีตัวเลขการระบายน้ำของเขื่อนทดน้ำ ดูได้ที่{' '}
+            <a href={BARRAGE_LINK} target="_blank" rel="noopener">
+              หน้าข้อมูลน้ำของกรมชลประทาน ↗
+            </a>{' '}
+            (เขื่อนเจ้าพระยาดูสถานี C.13)
+          </p>
         </>
       )}
       {full.length > 0 && (

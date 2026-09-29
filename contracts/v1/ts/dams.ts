@@ -1,6 +1,10 @@
 /* Generated from contracts/v1/schema/dams.schema.json by scripts/gen-ts-types.sh. Do not edit by hand. */
 
 export type CreditTh = string;
+/**
+ * Provinces the dam's river runs through, down to the sea or out of Thailand, e.g. ท้ายน้ำ: นครนายก → ปราจีนบุรี → ฉะเชิงเทรา · ออกทะเลที่ อ.บางปะกง จ.ฉะเชิงเทรา (HydroRIVERS river network); places to follow when the dam releases water, not a flood forecast. Null when the dam has no place or river
+ */
+export type DownstreamTh = string | null;
 export type Id = string;
 /**
  * Inflow of the day, million cubic metres
@@ -52,6 +56,7 @@ export interface DamReport {
   source_url: SourceUrl;
 }
 export interface Dam {
+  downstream_th?: DownstreamTh;
   id: Id;
   inflow_mcm: InflowMcm;
   location: Location;

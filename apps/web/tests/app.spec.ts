@@ -815,6 +815,14 @@ test('the department situation text and the Chao Phraya dams show, with a note o
   await expect(situation).toContainText('ฝนเล็กน้อย & ลมแรง');
   await expect(situation).toContainText('ไม่ใช่ประกาศเตือนภัยของกรมอุตุฯ');
   const dams = page.getByTestId('dams');
+  // the barrages, which hold no reservoir, are listed with a link to the department's page (user, 2026-09-29)
+  const barrages = dams.getByTestId('barrages');
+  await expect(barrages).toContainText('เขื่อนเจ้าพระยา');
+  await expect(barrages).toContainText('เขื่อนพระราม 6');
+  await expect(dams.getByRole('link', { name: /หน้าข้อมูลน้ำของกรมชลประทาน/ })).toHaveAttribute(
+    'href',
+    'https://hyd-app-db.rid.go.th/hydro1d.html',
+  );
   // the dams come before the official alerts (user, 2026-09-28)
   const headings = await page.locator('#panel h2').allTextContents();
   const order = (text: string) => headings.findIndex((heading) => heading.includes(text));
