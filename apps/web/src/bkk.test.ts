@@ -5,6 +5,8 @@ import {
   bangkokDistrict,
   damPin,
   damWords,
+  releaseChange,
+  releaseWords,
   floodingText,
   hourRainWords,
   isRecent,
@@ -42,6 +44,45 @@ const flooding = read<RoadFloodingDaily>('flooding.json');
 const dams = read<DamReport>('dams.json');
 const weather = read<WeatherToday>('weather-today.json');
 const AT = Date.parse('2026-09-26T17:20:00+07:00');
+
+describe('dam releases against the report before', () => {
+  const dam = (outflow: number | null, previous: number | null | undefined) => ({
+    id: '1',
+    name_th: 'เขื่อนทดสอบ',
+    region_th: null,
+    owner_th: null,
+    location: null,
+    location_kind: null,
+    storage_mcm: null,
+    volume_mcm: null,
+    percent: null,
+    inflow_mcm: null,
+    outflow_mcm: outflow,
+    previous_outflow_mcm: previous,
+  });
+
+  it('is up a lot at 1 million m³ a day more and half as much again (the site trial rule)', () => {
+    expect(releaseChange(dam(12.34, 8.1))).toEqual({ direction: 'up', before: 8.1, big: true });
+    expect(releaseChange(dam(3, 2))).toEqual({ direction: 'up', before: 2, big: true }); // both edges
+    expect(releaseChange(dam(1, 0))?.big).toBe(true);
+    expect(releaseChange(dam(26, 20))).toEqual({ direction: 'up', before: 20, big: false }); // only 30 %
+    expect(releaseChange(dam(0.9, 0.2))?.big).toBe(false); // less than 1 more
+    expect(releaseChange(dam(2, 5))).toEqual({ direction: 'down', before: 5, big: false });
+    expect(releaseChange(dam(2.16, 2.16))?.direction).toBe('same');
+    // a file made before the field, or a dam without a figure on either day: nothing to compare
+    expect(releaseChange(dam(3, undefined))).toBeNull();
+    expect(releaseChange(dam(null, 3))).toBeNull();
+  });
+
+  it('says it in plain words with the day compared with', () => {
+    const words = (outflow: number, previous: number) =>
+      releaseWords(releaseChange(dam(outflow, previous))!, '2026-09-28');
+    expect(words(12.34, 8.1)).toBe('ระบายเพิ่มมาก จาก 8.1 (28 ก.ย.)');
+    expect(words(26, 20)).toBe('ระบายเพิ่มขึ้น จาก 20 (28 ก.ย.)');
+    expect(words(2, 5)).toBe('ระบายลดลง จาก 5 (28 ก.ย.)');
+    expect(words(2.16, 2.16)).toBe('ระบายเท่ากับ 28 ก.ย.');
+  });
+});
 
 describe('Bangkok canal levels and rain gauges', () => {
   it('turns a pin grey without a recent reading', () => {

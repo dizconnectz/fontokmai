@@ -2,6 +2,7 @@
   "schema_version": "1",
   "fetched_at": "2026-09-26T17:20:00+07:00",
   "report_date": "2026-09-26",
+  "previous_report_date": null,
   "source_url": "https://water.rid.go.th/",
   "credit_th": "กรมชลประทานและ กฟผ. (ผ่านระบบ DXS ของสำนักการระบายน้ำ กรุงเทพมหานคร)",
   "location_credit_th": "ตำแหน่ง © ผู้ร่วมสร้าง OpenStreetMap (ODbL 1.0 https://opendatacommons.org/licenses/odbl/1-0/)",
@@ -21,6 +22,7 @@
       "percent": 62.68,
       "inflow_mcm": 31.38,
       "outflow_mcm": 3.0,
+      "previous_outflow_mcm": null,
       "downstream_th": "ท้ายน้ำ: ตาก → กำแพงเพชร → นครสวรรค์ → อุทัยธานี → ชัยนาท → สิงห์บุรี → … · ออกทะเลที่ อ.เมืองสมุทรปราการ จ.สมุทรปราการ"
     },
     {
@@ -35,6 +37,7 @@
       "percent": 95.0,
       "inflow_mcm": 1.0,
       "outflow_mcm": null,
+      "previous_outflow_mcm": null,
       "downstream_th": null
     },
     {
@@ -52,6 +55,7 @@
       "percent": 82.99,
       "inflow_mcm": 49.01,
       "outflow_mcm": 2.16,
+      "previous_outflow_mcm": null,
       "downstream_th": "ท้ายน้ำ: สระบุรี → พระนครศรีอยุธยา → ปทุมธานี → นนทบุรี → กรุงเทพฯ → สมุทรปราการ · ออกทะเลที่ อ.เมืองสมุทรปราการ จ.สมุทรปราการ"
     }
   ],

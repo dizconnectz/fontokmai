@@ -96,7 +96,7 @@
           "type": "integer"
         },
         "when": {
-          "description": "now = happening (reports, measurements); next = forecast, river trend or a full dam to prepare for",
+          "description": "now = happening (reports, measurements); next = forecast, river trend, or a dam that is full or releases a lot more, to prepare for",
           "enum": [
             "now",
             "next"
@@ -156,7 +156,8 @@
             "rain_burst",
             "rain_3days",
             "river_rising",
-            "dam_full"
+            "dam_full",
+            "dam_release_up"
           ],
           "title": "Kind",
           "type": "string"

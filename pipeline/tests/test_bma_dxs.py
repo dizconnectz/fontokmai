@@ -1,12 +1,15 @@
 """BMA DXS SOAP client: the account travels only in the AuthHeader and never shows up in errors or reprs."""
 
+import io
 import json
 import xml.etree.ElementTree as ET
-from datetime import datetime, timedelta
+from contextlib import contextmanager
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import pytest
 
+from fontokmai.contracts.bkk import DamReport
 from fontokmai.run import run_cap_snapshot
 from fontokmai.sources.bma_dxs import (
     ENDPOINT,
@@ -24,8 +27,12 @@ from fontokmai.sources.bma_dxs import (
     fixture_poster,
     load_account,
     outline,
+    published_dams,
+    release_up,
     text,
+    with_previous,
 )
+from fontokmai.sources.open_data.http import OpenDataError
 from fontokmai.sources.tmd_cap.fetch import fixture_fetcher
 from helpers import FIXTURES
 
@@ -201,4 +208,66 @@ def test_the_situation_text_dams_and_weather_stations(tmp_path):
     assert stations["48455"].rain_mm == 52.8 and stations["48455"].location == [100.56034, 13.72627]
     assert stations["48455"].observed_at.isoformat() == "2026-09-26T07:00:00+07:00"
     assert stations["48000"].location is None and stations["48000"].temperature_c is None
+
+
+def _dams(day, outflows, previous_day=None, previous=None):
+    """A dams file of report day `day` with these releases (id → million m³ a day)."""
+    example = DamReport.model_validate_json(
+        (Path(__file__).resolve().parents[2] / "contracts" / "v1" / "examples" / "bkk" / "dams.json").read_bytes())
+    dams = [d.model_copy(update={"outflow_mcm": outflows.get(d.id), "previous_outflow_mcm": (previous or {}).get(d.id)})
+            for d in example.dams]
+    return example.model_copy(update={"report_date": date.fromisoformat(day), "dams": dams,
+                                      "previous_report_date": date.fromisoformat(previous_day) if previous_day else None})
+
+
+def test_the_release_is_compared_with_the_report_the_site_had_before():
+    today = _dams("2026-09-29", {"200101": 12.34, "100301": 2.5})
+    # GetDam answers only the latest day: the day before is the file the site published
+    compared = with_previous(today, _dams("2026-09-28", {"200101": 8.1, "999999": 1.0}))
+    assert compared.previous_report_date == date(2026, 9, 28)
+    assert {d.id: d.previous_outflow_mcm for d in compared.dams} == {"200101": 8.1, "999999": 1.0, "100301": None}
+    assert [d.outflow_mcm for d in compared.dams] == [d.outflow_mcm for d in today.dams]  # today's stay as they are
+    # a second update on the same report day keeps the comparison the first one made
+    again = with_previous(_dams("2026-09-29", {"200101": 12.5}), compared)
+    assert again.previous_report_date == date(2026, 9, 28) and again.dams[0].previous_outflow_mcm == 8.1
+    # a report more than 3 days older, none before it, or one of a later day: nothing to compare with
+    assert with_previous(today, _dams("2026-09-25", {"200101": 8.1})).previous_report_date is None
+    assert with_previous(today, _dams("2026-09-29", {"200101": 8.1})).previous_report_date is None
+    assert with_previous(today, _dams("2026-09-30", {"200101": 8.1})).previous_report_date is None
+    assert with_previous(today, None) is today
+
+
+@pytest.mark.parametrize(("before", "now", "up"), [
+    (8.1, 12.34, True),  # 4.2 more, half as much again
+    (2, 3, True),  # exactly 1 more and exactly 1.5 times
+    (0, 1.0, True),
+    (20, 26, False),  # 6 more but only 30 % more
+    (0.2, 0.9, False),  # 4.5 times but less than 1 more
+    (None, 5, False),
+    (5, None, False),
+])
+def test_a_release_up_a_lot_is_one_million_more_and_half_as_much_again(before, now, up):
+    dam = _dams("2026-09-29", {"200101": now}, "2026-09-28", {"200101": before}).dams[0]
+    assert release_up(dam) is up
+
+
+def test_the_published_dams_file_is_read_or_left_out():
+    published = _dams("2026-09-28", {"200101": 8.1})
+
+    @contextmanager
+    def site(url):
+        assert url.startswith("https://dizconnectz.github.io/fontokmai-data/data/v1/water/dams.json?t=")
+        yield io.BytesIO(published.model_dump_json().encode())
+
+    @contextmanager
+    def offline(url):
+        raise OpenDataError("offline")
+        yield  # pragma: no cover
+
+    @contextmanager
+    def junk(url):
+        yield io.BytesIO(b"<html>not json</html>")
+
+    assert published_dams(site) == published
+    assert published_dams(offline) is None and published_dams(junk) is None
 

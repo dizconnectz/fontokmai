@@ -27,6 +27,7 @@ from fontokmai.contracts.overview import Overview, OverviewInput, OverviewItem, 
 from fontokmai.contracts.places import Place, PlaceGazetteer
 from fontokmai.contracts.radar import RadarFeed
 from fontokmai.downstream import downstream_table, downstream_th
+from fontokmai.sources.bma_dxs import release_up
 from fontokmai.sources.tmd_radar import rain_samples
 
 OVERVIEW_PATH = "summary/overview.json"
@@ -146,6 +147,11 @@ def _extent(share: float, whole: str) -> str:
 
 def _mm(value: float) -> str:
     return f"{value:.0f}" if value >= 10 else f"{value:.1f}".rstrip("0").rstrip(".")
+
+
+def _mcm(value: float | None) -> str:
+    """Million cubic metres as the department writes them: 12.34, 8.1, 30"""
+    return "–" if value is None else f"{value:.2f}".rstrip("0").rstrip(".")
 
 
 def _road(name: str) -> str:
@@ -432,7 +438,8 @@ def build_overview(files: dict[str, bytes], now: datetime, gazetteer: Gazetteer 
                                        text_th=f"น้ำเพิ่มขึ้นมาก สูงสุดราว +{change * 100:.0f}% (ค่าแบบจำลอง)",
                                        day=day, source_th="GloFAS", at=rivers.fetched_at))]))
 
-    # ---------- next: dams over their storage capacity (the Royal Irrigation Department's class) ----------
+    # ---------- next: dams over their storage capacity (the Royal Irrigation Department's class), and dams that
+    # release a lot more than in the report before (a trial rule of this site: bma_dxs.release_up) ----------
     dams = _load(files, "water/dams.json", DamReport)
     state = _input("เขื่อนใหญ่ (กรมชลประทาน)", dams.fetched_at if dams else None, now, DAMS_MAX_AGE)
     if dams and state.status == "fresh" and not 0 <= (today - dams.report_date).days <= DAMS_REPORT_DAYS:
@@ -443,15 +450,23 @@ def build_overview(files: dict[str, bytes], now: datetime, gazetteer: Gazetteer 
         reported = datetime.combine(dams.report_date, time.min, tzinfo=ICT)
         below = downstream_table()
         for dam in dams.dams:
-            if dam.percent is not None and dam.percent > 100 and dam.location:
+            reasons: list[tuple[int, OverviewReason]] = []
+            if dam.percent is not None and dam.percent > 100:
+                reasons.append((2, OverviewReason(
+                    kind="dam_full", text_th=f"น้ำเกินความจุเก็บกัก {dam.percent:.1f}% (รายงาน "
+                                             f"{_thai_day(dams.report_date)}) ติดตามการระบายน้ำ",
+                    day=None, source_th="กรมชลประทาน", at=reported)))
+            if release_up(dam) and dams.previous_report_date:
+                reasons.append((3, OverviewReason(
+                    kind="dam_release_up",
+                    text_th=f"ระบายน้ำเพิ่มจาก {_mcm(dam.previous_outflow_mcm)} เป็น {_mcm(dam.outflow_mcm)} ล้าน ลบ.ม./วัน "
+                            f"(รายงาน {_thai_day(dams.report_date)} เทียบ {_thai_day(dams.previous_report_date)})",
+                    day=None, source_th="กรมชลประทาน", at=reported)))
+            if reasons and dam.location:
                 sub = g.nearest(dam.location)
                 # where its water goes, from the river network (HydroSHEDS): places to follow, not a flood forecast
-                nexts.append(_Spot("next", dam.name_th, sub.code[:2] if sub else None, list(dam.location), 10, detail=
-                                   downstream_th(g.places, below.get(dam.id)), reasons=[
-                    (2, OverviewReason(kind="dam_full",
-                                       text_th=f"น้ำเกินความจุเก็บกัก {dam.percent:.1f}% (รายงาน "
-                                               f"{_thai_day(dams.report_date)}) ติดตามการระบายน้ำ",
-                                       day=None, source_th="กรมชลประทาน", at=reported))]))
+                nexts.append(_Spot("next", dam.name_th, sub.code[:2] if sub else None, list(dam.location), 10,
+                                   detail=downstream_th(g.places, below.get(dam.id)), reasons=reasons))
 
     now_items = sorted((s.item() for s in spots.values()), key=lambda i: (-i.score, i.place_th))[:MAX_NOW]
     next_items = sorted((s.item() for s in nexts),

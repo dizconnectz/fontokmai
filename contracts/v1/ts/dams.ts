@@ -28,6 +28,10 @@ export type OwnerTh = string | null;
  * volume as a percentage of storage
  */
 export type Percent = number | null;
+/**
+ * Release on previous_report_date of the file, million cubic metres; null when there is no earlier report or the dam had no figure then. Release up a lot (the site's trial rule, /method): at least 1 million m³ a day more and at least half as much again
+ */
+export type PreviousOutflowMcm = number | null;
 export type RegionTh = string | null;
 /**
  * Capacity at normal storage level, million cubic metres
@@ -41,6 +45,10 @@ export type Dams = Dam[];
 export type FetchedAt = string;
 export type LocationCreditTh = string;
 export type NotesTh = string[];
+/**
+ * Day of the report the releases are compared with: the last one this site published before report_date, at most 3 days before it (GetDam gives only the latest day; the Bangkok update does not run every day). Null when there is none
+ */
+export type PreviousReportDate = string | null;
 export type ReportDate = string;
 export type SchemaVersion = "1";
 export type SourceUrl = string;
@@ -51,6 +59,7 @@ export interface DamReport {
   fetched_at: FetchedAt;
   location_credit_th: LocationCreditTh;
   notes_th: NotesTh;
+  previous_report_date?: PreviousReportDate;
   report_date: ReportDate;
   schema_version?: SchemaVersion;
   source_url: SourceUrl;
@@ -65,6 +74,7 @@ export interface Dam {
   outflow_mcm: OutflowMcm;
   owner_th: OwnerTh;
   percent: Percent;
+  previous_outflow_mcm?: PreviousOutflowMcm;
   region_th: RegionTh;
   storage_mcm: StorageMcm;
   volume_mcm: VolumeMcm;

@@ -14,7 +14,7 @@ from pydantic import AwareDatetime, Field
 from fontokmai.contracts.common import SCHEMA_VERSION, ContractModel, Position
 
 ReasonKind = Literal["flood_reports", "road_flooding", "rain_measured", "rain_radar", "rain_forecast",
-                     "rain_burst", "rain_3days", "river_rising", "dam_full"]
+                     "rain_burst", "rain_3days", "river_rising", "dam_full", "dam_release_up"]
 
 
 class OverviewReason(ContractModel):
@@ -36,7 +36,8 @@ class OverviewReason(ContractModel):
 
 class OverviewItem(ContractModel):
     when: Literal["now", "next"] = Field(description=(
-        "now = happening (reports, measurements); next = forecast, river trend or a full dam to prepare for"))
+        "now = happening (reports, measurements); next = forecast, river trend, or a dam that is full or releases"
+        " a lot more, to prepare for"))
     place_th: str = Field(description="e.g. อ.ธัญบุรี จ.ปทุมธานี, จ.กาญจนบุรี, แม่น้ำบางปะกง ที่ฉะเชิงเทรา")
     detail_th: str | None = Field(description="Where in the place, e.g. แถว ถ.พหลโยธิน, ถ.รังสิต-นครนายก")
     province_code: str | None = Field(description=(

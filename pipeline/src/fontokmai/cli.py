@@ -271,14 +271,18 @@ def main(argv: list[str] | None = None) -> int:
         fetched = bma_dxs.collect_bkk(bma_dxs.load_account(args.account), args.out, datetime.now(UTC))
         written = {}
         extras, problems = bma_dxs.collect_extras(bma_dxs.load_account(args.account), datetime.now(UTC))
+        if bma_dxs.DAMS_PATH in extras:  # GetDam answers only today: the day before comes from what the site has
+            extras[bma_dxs.DAMS_PATH] = bma_dxs.with_previous(extras[bma_dxs.DAMS_PATH], bma_dxs.published_dams())
         for rel, model in ((bma_dxs.WATER_PATH, fetched.water), (bma_dxs.RAIN_PATH, fetched.rain),
                            (bma_dxs.FLOODING_PATH, fetched.flooding), *extras.items()):
             if model is not None:
                 atomic_write(args.out / rel, model.model_dump_json().encode("utf-8"))
                 written[rel] = model.fetched_at.isoformat()
         message = "; ".join(filter(None, [fetched.message, *problems])) or None
+        dams = extras.get(bma_dxs.DAMS_PATH)
         print(json.dumps({"ok": fetched.ok and not problems, "seen": fetched.seen, "message": message,
-                          "written": written}, ensure_ascii=False))
+                          "written": written, "dams_compared_with": str(dams.previous_report_date)
+                          if dams is not None and dams.previous_report_date else None}, ensure_ascii=False))
         return 0 if fetched.ok and not problems else 1
     if args.command == "dxs-probe":
         from fontokmai.sources import bma_dxs

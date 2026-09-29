@@ -80,6 +80,8 @@ import {
   damColor,
   damWords,
   isTodaysReport,
+  releaseChange,
+  releaseWords,
   levelWords,
   measuredText,
   oldNote,
@@ -536,10 +538,20 @@ function SituationCard({ news, now }: { news: SituationReport; now: number }) {
   );
 }
 
-function DamLine({ dam, onDam }: { dam: Dam; onDam: (location: number[]) => void }) {
+function DamLine({
+  dam,
+  previousDay,
+  onDam,
+}: {
+  dam: Dam;
+  /** day of the report the releases are compared with (the file's previous_report_date) */
+  previousDay: string | null;
+  onDam: (location: number[]) => void;
+}) {
   // a bar filled to how full the reservoir is, in the department's colour for that class, with marks where the
   // classes change (30, 50, 80 %): read at a glance, the words and figures say the same for a screen reader
   const fill = dam.percent === null ? 0 : Math.max(0, Math.min(dam.percent, 100));
+  const change = previousDay ? releaseChange(dam) : null;
   const text = (
     <span className="dam-line">
       <span className="dam-head">
@@ -564,10 +576,21 @@ function DamLine({ dam, onDam }: { dam: Dam; onDam: (location: number[]) => void
         {dam.region_th ? `${dam.region_th} · ` : ''}ไหลเข้า {amount(dam.inflow_mcm)} · ระบาย{' '}
         {amount(dam.outflow_mcm)} ล้าน ลบ.ม./วัน{!dam.location && ' · ไม่มีหมุดบนแผนที่'}
       </small>
-      {/* where the water goes, for a dam with little room left: places to follow, not a flood forecast */}
-      {dam.downstream_th && dam.percent !== null && dam.percent >= 80 && (
-        <small className="dam-downstream">{dam.downstream_th}</small>
+      {/* the release against the report before (GetDam gives one day: the day before is what the site had) */}
+      {change && previousDay && (
+        <small className={`dam-release ${change.direction}${change.big ? ' big' : ''}`}>
+          {change.direction !== 'same' && (
+            <span aria-hidden="true">{change.direction === 'up' ? '↑ ' : '↓ '}</span>
+          )}
+          {releaseWords(change, previousDay)}
+        </small>
       )}
+      {/* where the water goes, for a dam with little room left or releasing a lot more: places to follow, not a
+          flood forecast */}
+      {dam.downstream_th &&
+        ((dam.percent !== null && dam.percent >= 80) || (change !== null && change.big)) && (
+          <small className="dam-downstream">{dam.downstream_th}</small>
+        )}
     </span>
   );
   // a dam without a place has no pin: it is listed, never put at a guessed place (contract section 18)
@@ -598,9 +621,14 @@ function ChaoPhrayaDams({
   const rest = dams.dams
     .filter((dam) => !CHAO_PHRAYA_DAMS.includes(dam.id))
     .sort((a, b) => (b.percent ?? -1) - (a.percent ?? -1));
-  // over storage capacity is worth seeing without opening the list, wherever the dam is
+  // over storage capacity, or releasing a lot more than the report before, is worth seeing without opening the
+  // list, wherever the dam is
+  const previousDay = dams.previous_report_date ?? null;
   const full = rest.filter((dam) => dam.percent !== null && dam.percent > 100);
-  const others = rest.filter((dam) => !full.includes(dam));
+  const releasing = previousDay
+    ? rest.filter((dam) => !full.includes(dam) && releaseChange(dam)?.big)
+    : [];
+  const others = rest.filter((dam) => !full.includes(dam) && !releasing.includes(dam));
   if (!dams.dams.length) return null;
   const note = oldNote(dams.fetched_at, now);
   return (
@@ -613,7 +641,7 @@ function ChaoPhrayaDams({
           <h3 className="dams-group">เขื่อนหลักเหนือกรุงเทพฯ (ลุ่มเจ้าพระยา)</h3>
           <ul className="flood-list">
             {main.map((dam) => (
-              <DamLine key={dam.id} dam={dam} onDam={onDam} />
+              <DamLine key={dam.id} dam={dam} previousDay={previousDay} onDam={onDam} />
             ))}
           </ul>
         </>
@@ -649,7 +677,17 @@ function ChaoPhrayaDams({
           <h3 className="dams-group">น้ำเกินความจุเก็บกัก</h3>
           <ul className="flood-list">
             {full.map((dam) => (
-              <DamLine key={dam.id} dam={dam} onDam={onDam} />
+              <DamLine key={dam.id} dam={dam} previousDay={previousDay} onDam={onDam} />
+            ))}
+          </ul>
+        </>
+      )}
+      {releasing.length > 0 && (
+        <>
+          <h3 className="dams-group">ระบายน้ำเพิ่มมาก</h3>
+          <ul className="flood-list" data-testid="dams-releasing">
+            {releasing.map((dam) => (
+              <DamLine key={dam.id} dam={dam} previousDay={previousDay} onDam={onDam} />
             ))}
           </ul>
         </>
@@ -659,7 +697,7 @@ function ChaoPhrayaDams({
           <summary>เขื่อนใหญ่อื่นๆ {others.length} แห่ง (น้ำมากก่อน)</summary>
           <ul className="flood-list">
             {others.map((dam) => (
-              <DamLine key={dam.id} dam={dam} onDam={onDam} />
+              <DamLine key={dam.id} dam={dam} previousDay={previousDay} onDam={onDam} />
             ))}
           </ul>
         </details>
@@ -672,6 +710,8 @@ function ChaoPhrayaDams({
       <small className="source-note">
         ข้อมูลวันที่ {thaiDay(dams.report_date)} · ที่มา: {shortCredit(dams.credit_th)} ·
         แตะชื่อเพื่อดูบนแผนที่ · น้ำเกิน 80% แปลว่าเหลือที่รับน้ำน้อย ไม่ใช่การพยากรณ์ว่าจะท่วม
+        {previousDay &&
+          ` · ระบายเพิ่มมาก = เพิ่มอย่างน้อย 1 ล้าน ลบ.ม./วัน และอย่างน้อยครึ่งหนึ่งจากรายงาน ${thaiDay(previousDay)} (เกณฑ์ทดลองของเว็บ)`}
       </small>
     </section>
   );

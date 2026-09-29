@@ -251,6 +251,45 @@ export function damWords(percent: number | null): string | null {
   return percent === null ? null : DAM_CLASSES[damClass(percent)].label;
 }
 
+/**
+ * Release up a lot: a trial rule of this site, not the department's (contract section 18, /method), the same as the
+ * producer's (bma_dxs.release_up): at least 1 million m³ a day more than the report before, and half as much again.
+ */
+export const RELEASE_UP_MIN_MCM = 1;
+export const RELEASE_UP_RATIO = 1.5;
+
+export interface ReleaseChange {
+  direction: 'up' | 'down' | 'same';
+  /** release in the report before, million m³ a day */
+  before: number;
+  big: boolean;
+}
+
+/** The dam's release against the report before (previous_report_date of its file); null without both figures. */
+export function releaseChange(dam: Dam): ReleaseChange | null {
+  const now = dam.outflow_mcm;
+  const before = dam.previous_outflow_mcm ?? null;
+  if (now === null || before === null) return null;
+  const direction = Math.abs(now - before) < 0.005 ? 'same' : now > before ? 'up' : 'down';
+  const big = now - before >= RELEASE_UP_MIN_MCM - 1e-9 && now >= before * RELEASE_UP_RATIO - 1e-9;
+  return { direction, before, big };
+}
+
+const SHORT_DAY = new Intl.DateTimeFormat('th-TH', {
+  timeZone: 'Asia/Bangkok',
+  day: 'numeric',
+  month: 'short',
+});
+
+/** "ระบายเพิ่มมาก จาก 8.1 (28 ก.ย.)", "ระบายลดลง จาก 5 (28 ก.ย.)", "ระบายเท่ากับ 28 ก.ย." */
+export function releaseWords(change: ReleaseChange, previousDay: string): string {
+  const day = SHORT_DAY.format(Date.parse(`${previousDay}T12:00:00+07:00`));
+  if (change.direction === 'same') return `ระบายเท่ากับ ${day}`;
+  const word =
+    change.direction === 'down' ? 'ระบายลดลง' : change.big ? 'ระบายเพิ่มมาก' : 'ระบายเพิ่มขึ้น';
+  return `${word} จาก ${amount(change.before)} (${day})`;
+}
+
 /** TMD's daily rain classes (mm), for the station pins */
 export const DAY_RAIN_CLASSES = [
   { pin: 'pin-wx-0', label: 'ไม่มีฝน', range: '', color: '#78909c' },

@@ -847,6 +847,48 @@ test('the department situation text and the Chao Phraya dams show, with a note o
   await expect(page.getByTestId('dams')).toContainText('ข้อมูลนี้ไม่ใช่ข้อมูลเรียลไทม์');
 });
 
+test('a dam releasing a lot more than the report before says so, with where its water goes', async ({
+  page,
+}) => {
+  await prepare(page);
+  const manifest = read('active', 'manifest');
+  manifest.files.push({ path: 'water/dams.json', sha256: 'f'.repeat(64), size: 1, revision: 1 });
+  await page.route('**/examples/active/manifest.json?*', (route) =>
+    route.fulfill({ json: manifest }),
+  );
+  const data = JSON.parse(
+    readFileSync(new URL('../../../contracts/v1/examples/bkk/dams.json', import.meta.url), 'utf8'),
+  );
+  data.fetched_at = manifest.generated_at;
+  // GetDam gives one day: the day before is the report the site had (user and Codex, 2026-09-29)
+  data.previous_report_date = '2026-09-25';
+  const [bhumibol, unplaced, pasak] = data.dams;
+  Object.assign(bhumibol, { outflow_mcm: 3, previous_outflow_mcm: 1.5 });
+  Object.assign(unplaced, { outflow_mcm: 9, previous_outflow_mcm: 1 });
+  Object.assign(pasak, { outflow_mcm: 2.16, previous_outflow_mcm: 2.16 });
+  await page.route('**/water/dams.json?*', (route) => route.fulfill({ json: data }));
+  await page.goto('/');
+  const dams = page.getByTestId('dams');
+  const line = (name: string) => dams.locator('.dam-line').filter({ hasText: name });
+  // up a lot: the words, the day compared with, and where its water goes though the dam is only 63 % full
+  await expect(line('เขื่อนภูมิพล').locator('.dam-release.big')).toHaveText(
+    '↑ ระบายเพิ่มมาก จาก 1.5 (25 ก.ย.)',
+  );
+  await expect(line('เขื่อนภูมิพล').locator('.dam-downstream')).toContainText('ท้ายน้ำ: ตาก');
+  await expect(line('เขื่อนป่าสักชลสิทธิ์').locator('.dam-release')).toHaveText(
+    'ระบายเท่ากับ 25 ก.ย.',
+  );
+  // a dam releasing a lot more is seen without opening the list of the others
+  await expect(dams.getByTestId('dams-releasing')).toContainText('เขื่อนทดสอบไม่มีพิกัด');
+  await expect(dams).toContainText('(เกณฑ์ทดลองของเว็บ)');
+  // a file without the report before shows no comparison at all
+  delete data.previous_report_date;
+  await page.goto('/');
+  await expect(page.getByTestId('dams')).toContainText('เขื่อนภูมิพล');
+  await expect(page.locator('.dam-release')).toHaveCount(0);
+  await expect(page.getByTestId('dams-releasing')).toHaveCount(0);
+});
+
 test('the river trend is a pin with a plain-word popup and never the model number', async ({
   page,
 }) => {

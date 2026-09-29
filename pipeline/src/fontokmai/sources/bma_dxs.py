@@ -512,6 +512,51 @@ def parse_dams(result: ET.Element, now: datetime) -> DamReport:
                      location_credit_th=DAMS_LOCATION_CREDIT_TH, dams=dams, notes_th=DAMS_NOTES_TH)
 
 
+# ---------- the release of the report before (GetDam has no date: it answers only the latest day) ----------
+
+PUBLISHED_DAMS_URL = "https://dizconnectz.github.io/fontokmai-data/data/v1/water/dams.json"
+PREVIOUS_MAX_DAYS = 3  # an older report is not "the one before" (the Bangkok update is run by hand, D31)
+# release up a lot, a trial rule of this site (not the department's), on /method and in contract section 18
+RELEASE_UP_MIN_MCM = 1.0
+RELEASE_UP_RATIO = 1.5
+
+
+def release_up(dam: Dam) -> bool:
+    """At least RELEASE_UP_MIN_MCM a day more than in the report before, and at least half as much again."""
+    now, before = dam.outflow_mcm, dam.previous_outflow_mcm
+    return (now is not None and before is not None and now - before >= RELEASE_UP_MIN_MCM - 1e-9
+            and now >= before * RELEASE_UP_RATIO - 1e-9)
+
+
+def with_previous(report: DamReport, published: DamReport | None) -> DamReport:
+    """The releases of the report before this one, from the dams file the site publishes now. A second update on
+    the same report day keeps the comparison the first one made; a report more than PREVIOUS_MAX_DAYS older is not
+    compared with."""
+    if published is None:
+        return report
+    if published.report_date == report.report_date:
+        day, before = published.previous_report_date, {d.id: d.previous_outflow_mcm for d in published.dams}
+    elif published.report_date < report.report_date:
+        day, before = published.report_date, {d.id: d.outflow_mcm for d in published.dams}
+    else:
+        return report
+    if day is None or not 0 < (report.report_date - day).days <= PREVIOUS_MAX_DAYS:
+        return report
+    return report.model_copy(update={"previous_report_date": day, "dams": [
+        dam.model_copy(update={"previous_outflow_mcm": before.get(dam.id)}) for dam in report.dams]})
+
+
+def published_dams(opener: Any = None, now: datetime | None = None) -> DamReport | None:
+    """The dams file this site publishes now (our own public data), or None when it cannot be read."""
+    from fontokmai.sources.open_data.http import OpenDataError, open_url, read_bytes
+
+    stamp = int((now or datetime.now(UTC)).timestamp())
+    try:
+        return DamReport.model_validate_json(read_bytes(opener or open_url, f"{PUBLISHED_DAMS_URL}?t={stamp}"))
+    except (OpenDataError, ValueError):
+        return None
+
+
 def parse_weather(result: ET.Element, now: datetime) -> WeatherToday:
     stations = []
     for item in children(child(result, "Stations"), "Station"):

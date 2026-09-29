@@ -176,6 +176,33 @@ def test_rivers_rising_a_lot_and_dams_over_capacity_are_to_prepare_for():
     assert all(i.when == "next" for i in overview.items)
 
 
+def test_a_dam_releasing_a_lot_more_than_the_report_before_is_to_prepare_for():
+    dams = DamReport.model_validate_json((EXAMPLES / "bkk" / "dams.json").read_bytes())
+    bhumibol, untested, pasak = dams.dams
+    dams = dams.model_copy(update={"fetched_at": NOW - timedelta(hours=5), "previous_report_date": date(2026, 9, 25),
+                                   "dams": [
+        bhumibol.model_copy(update={"percent": 104.2, "outflow_mcm": 12.34, "previous_outflow_mcm": 8.1}),
+        untested.model_copy(update={"outflow_mcm": 9, "previous_outflow_mcm": 1}),  # no place: no item
+        pasak.model_copy(update={"outflow_mcm": 2.5, "previous_outflow_mcm": 2.16}),  # a little more: no item
+    ]})
+    now = datetime.fromisoformat("2026-09-27T12:00:00+07:00")
+    items = build_overview({"water/dams.json": _dump(dams)}, now, G).items
+    assert [i.place_th for i in items] == ["เขื่อนภูมิพล"]
+    (dam,) = items
+    # the release leads, the full reservoir follows; both are facts of the department's report, not a forecast
+    assert [(r.kind, r.text_th) for r in dam.reasons] == [
+        ("dam_release_up", "ระบายน้ำเพิ่มจาก 8.1 เป็น 12.34 ล้าน ลบ.ม./วัน (รายงาน 26 ก.ย. เทียบ 25 ก.ย.)"),
+        ("dam_full", "น้ำเกินความจุเก็บกัก 104.2% (รายงาน 26 ก.ย.) ติดตามการระบายน้ำ")]
+    assert dam.when == "next" and dam.score == 32 and dam.detail_th.startswith("ท้ายน้ำ: ตาก → กำแพงเพชร")
+    # a dam that is not full but releases a lot more is listed alone, with where its water goes
+    alone = dams.model_copy(update={"dams": [pasak.model_copy(update={"outflow_mcm": 4, "previous_outflow_mcm": 2})]})
+    (item,) = build_overview({"water/dams.json": _dump(alone)}, now, G).items
+    assert [r.kind for r in item.reasons] == ["dam_release_up"] and item.detail_th.startswith("ท้ายน้ำ: สระบุรี")
+    # without the day of the report before, nothing is compared
+    unknown = alone.model_copy(update={"previous_report_date": None})
+    assert build_overview({"water/dams.json": _dump(unknown)}, now, G).items == []
+
+
 def test_every_round_publishes_the_overview_and_a_broken_one_never_stops_the_alerts(tmp_path, monkeypatch):
     out = tmp_path / "v1"
     now = datetime.fromisoformat("2026-09-25T18:20:00+07:00")

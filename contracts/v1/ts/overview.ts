@@ -51,7 +51,8 @@ export type Kind =
   | "rain_burst"
   | "rain_3days"
   | "river_rising"
-  | "dam_full";
+  | "dam_full"
+  | "dam_release_up";
 /**
  * Short name of the source, e.g. Longdo Traffic or Open-Meteo
  */
@@ -69,7 +70,7 @@ export type Until = string | null;
  */
 export type Score = number;
 /**
- * now = happening (reports, measurements); next = forecast, river trend or a full dam to prepare for
+ * now = happening (reports, measurements); next = forecast, river trend, or a dam that is full or releases a lot more, to prepare for
  */
 export type When = "now" | "next";
 export type Zoom = number;

@@ -110,6 +110,10 @@ class Dam(ContractModel):
     percent: float | None = Field(description="volume as a percentage of storage")
     inflow_mcm: float | None = Field(description="Inflow of the day, million cubic metres")
     outflow_mcm: float | None = Field(description="Release of the day, million cubic metres")
+    previous_outflow_mcm: float | None = Field(default=None, description=(
+        "Release on previous_report_date of the file, million cubic metres; null when there is no earlier report"
+        " or the dam had no figure then. Release up a lot (the site's trial rule, /method): at least 1 million m³"
+        " a day more and at least half as much again"))
     downstream_th: str | None = Field(default=None, description=(
         "Provinces the dam's river runs through, down to the sea or out of Thailand, e.g. ท้ายน้ำ: นครนายก → "
         "ปราจีนบุรี → ฉะเชิงเทรา · ออกทะเลที่ อ.บางปะกง จ.ฉะเชิงเทรา (HydroRIVERS river network); places to follow "
@@ -120,6 +124,10 @@ class DamReport(ContractModel):
     schema_version: Literal["1"] = SCHEMA_VERSION
     fetched_at: AwareDatetime
     report_date: date
+    previous_report_date: date | None = Field(default=None, description=(
+        "Day of the report the releases are compared with: the last one this site published before report_date,"
+        " at most 3 days before it (GetDam gives only the latest day; the Bangkok update does not run every day)."
+        " Null when there is none"))
     source_url: str
     credit_th: str
     location_credit_th: str

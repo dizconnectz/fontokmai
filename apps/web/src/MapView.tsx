@@ -26,6 +26,8 @@ import {
   measuredText,
   mmText,
   oldNote,
+  releaseChange,
+  releaseWords,
   RAIN_HOUR_CLASSES,
   rainPin,
   rainAmountWords,
@@ -347,6 +349,16 @@ function note(fetchedAt: string, now: number): HTMLElement[] {
   return [element];
 }
 
+/** "↑ ระบายเพิ่มมาก จาก 8.1 (28 ก.ย.)" against the report before, when the file has one */
+function releaseLine(dam: Dam, file: DamReport): HTMLElement[] {
+  const change = file.previous_report_date ? releaseChange(dam) : null;
+  if (!change || !file.previous_report_date) return [];
+  const arrow = change.direction === 'up' ? '↑ ' : change.direction === 'down' ? '↓ ' : '';
+  return [
+    line(`${arrow}${releaseWords(change, file.previous_report_date)}`, change.big ? 'b' : 'small'),
+  ];
+}
+
 function damPopup(dam: Dam, file: DamReport, now: number): HTMLElement {
   const root = document.createElement('div');
   root.className = 'camera-popup';
@@ -361,6 +373,7 @@ function damPopup(dam: Dam, file: DamReport, now: number): HTMLElement {
     ),
     line(`ปริมาณน้ำ ${amount(dam.volume_mcm)} / ${amount(dam.storage_mcm)} ล้าน ลบ.ม.`),
     line(`ไหลเข้า ${amount(dam.inflow_mcm)} · ระบาย ${amount(dam.outflow_mcm)} ล้าน ลบ.ม./วัน`),
+    ...releaseLine(dam, file),
     line(`ข้อมูลวันที่ ${thaiDay(file.report_date)}`),
     ...note(file.fetched_at, now),
     ...(dam.location_kind === 'reservoir' ? [line('หมุดอยู่กลางอ่างเก็บน้ำ', 'small')] : []),
