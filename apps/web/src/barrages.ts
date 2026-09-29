@@ -15,6 +15,12 @@ export interface Barrage {
 
 /** The department's page of daily water levels and flows at its river stations */
 export const BARRAGE_LINK = 'https://hyd-app-db.rid.go.th/hydro1d.html';
+/**
+ * ThaiWater's water chart of the Chao Phraya basin (HII): the flow below both barrages and the river levels against
+ * their banks, drawn from several agencies. Link out only: no licence lets this site copy its figures and HII has no
+ * API sign-up for the public (docs/sources.md, user 2026-09-29).
+ */
+export const BASIN_CHART_LINK = 'https://waterchart.thaiwater.net/basin/chaophraya';
 
 export const BARRAGES: Barrage[] = [
   {

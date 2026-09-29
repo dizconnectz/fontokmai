@@ -103,7 +103,7 @@ import {
   type SituationReport,
 } from './bkk';
 import { useRadarAt } from './radarAt';
-import { BARRAGE_LINK, BARRAGES } from './barrages';
+import { BARRAGE_LINK, BARRAGES, BASIN_CHART_LINK } from './barrages';
 import {
   liveItems,
   officialFor,
@@ -665,6 +665,10 @@ function ChaoPhrayaDams({
           </ul>
           <p className="quiet">
             เว็บนี้ยังไม่มีตัวเลขการระบายน้ำของเขื่อนทดน้ำ ดูได้ที่{' '}
+            <a href={BASIN_CHART_LINK} target="_blank" rel="noopener">
+              ผังน้ำลุ่มเจ้าพระยาของ ThaiWater ↗
+            </a>{' '}
+            (น้ำไหลผ่านท้ายเขื่อนทั้งสองแห่ง และระดับน้ำเทียบตลิ่ง) หรือ{' '}
             <a href={BARRAGE_LINK} target="_blank" rel="noopener">
               หน้าข้อมูลน้ำของกรมชลประทาน ↗
             </a>{' '}

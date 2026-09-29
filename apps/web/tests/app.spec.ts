@@ -823,6 +823,10 @@ test('the department situation text and the Chao Phraya dams show, with a note o
     'href',
     'https://hyd-app-db.rid.go.th/hydro1d.html',
   );
+  // ThaiWater's water chart shows the flow below the barrages: a link out, never its figures (user, 2026-09-29)
+  await expect(
+    dams.getByRole('link', { name: /ผังน้ำลุ่มเจ้าพระยาของ ThaiWater/ }),
+  ).toHaveAttribute('href', 'https://waterchart.thaiwater.net/basin/chaophraya');
   // the dams come before the official alerts (user, 2026-09-28)
   const headings = await page.locator('#panel h2').allTextContents();
   const order = (text: string) => headings.findIndex((heading) => heading.includes(text));
