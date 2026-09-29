@@ -27,6 +27,7 @@ import { AlertDetails, Hotlines, Overview, PinCard, RoadCard } from './Panel';
 import PlaceSearch from './PlaceSearch';
 import { applyTheme, storedTheme, storeTheme, systemTheme, type Theme } from './theme';
 import { loadFavorite, saveFavorite, type Favorite } from './favorite';
+import FavoriteForecast from './FavoriteForecast';
 import { distanceM } from './roads';
 import Timeline, { type TimeStep } from './Timeline';
 import { FORECAST_LEVELS, forecastAreas, RAIN_LEGEND } from './forecast';
@@ -701,6 +702,16 @@ export default function App() {
           </div>
         )}
 
+        {favorite && (
+          <FavoriteForecast
+            favorite={favorite}
+            forecast={forecast}
+            state={forecastState}
+            now={now}
+            onOpen={openFavorite}
+          />
+        )}
+
         {road && roads ? (
           <RoadCard road={road} history={roads} onClose={() => setRoadKey(null)} />
         ) : selected ? (
@@ -767,8 +778,6 @@ export default function App() {
               loading={loading}
               floods={floods}
               floodsState={floodsState}
-              favoriteLabel={favorite?.label ?? null}
-              onFavorite={openFavorite}
               onSelectAlert={selectAlert}
               openFloodId={floodPopupId}
               onFlood={(report) => openFloodReport(report.id)}

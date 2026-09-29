@@ -1,0 +1,53 @@
+.favorite-forecast .favorite-card {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--ink);
+  min-height: 44px;
+}
+.favorite-forecast .favorite-card span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.favorite-forecast .favorite-card svg {
+  flex-shrink: 0;
+}
+.favorite-forecast h2 {
+  margin: 14px 0 0;
+}
+.favorite-forecast-range {
+  margin: 2px 0 10px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.favorite-forecast table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+.favorite-forecast th,
+.favorite-forecast td {
+  padding: 7px 3px;
+  text-align: left;
+}
+.favorite-forecast thead th {
+  color: var(--muted);
+  font-weight: 400;
+}
+.favorite-forecast tbody tr {
+  border-top: 1px solid var(--line);
+}
+.favorite-forecast th:nth-child(n + 3),
+.favorite-forecast td:nth-child(n + 3) {
+  text-align: right;
+}
+.favorite-forecast .favorite-rain-day td:nth-child(2) {
+  color: var(--rain-ink);
+  font-weight: 600;
+}
+.favorite-forecast .source-note {
+  display: block;
+  margin-top: 10px;
+  overflow-wrap: anywhere;
+}

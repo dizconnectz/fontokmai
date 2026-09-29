@@ -822,7 +822,6 @@ export function Overview({
   loading,
   floods,
   floodsState,
-  favoriteLabel,
   openFloodId,
   flooding,
   onRoadName,
@@ -833,7 +832,6 @@ export function Overview({
   onPlace,
   onSelectAlert,
   onFlood,
-  onFavorite,
 }: {
   snapshot: Snapshot | null;
   alerts: Alert[];
@@ -841,7 +839,6 @@ export function Overview({
   loading: boolean;
   floods: LiveFloods | null;
   floodsState: RefState;
-  favoriteLabel: string | null;
   openFloodId: string | null;
   flooding: RoadFloodingDaily | null;
   onRoadName: (name: string) => void;
@@ -853,21 +850,11 @@ export function Overview({
   onPlace: (item: OverviewItem) => void;
   onSelectAlert: (id: string) => void;
   onFlood: (report: FloodReport) => void;
-  onFavorite: () => void;
 }) {
   const worst = worstLevel(alerts);
   const trusted = feedTrust(snapshot, now) === 'ok';
   return (
     <>
-      {favoriteLabel && (
-        <button className="panel-section favorite-card" onClick={onFavorite}>
-          <Star size={18} />
-          <span>
-            <strong>ที่ของฉัน · {favoriteLabel}</strong>
-            <small>แตะเพื่อดูประกาศ ฝน และน้ำท่วมของที่นี่</small>
-          </span>
-        </button>
-      )}
       {summary && <WatchSummary overview={summary} alerts={alerts} now={now} onPlace={onPlace} />}
       <FloodsNow
         floods={floods}
@@ -1263,46 +1250,50 @@ export function PinCard({
         </section>
       )}
 
-      <section className="panel-section" aria-labelledby="pin-forecast">
-        <h2 id="pin-forecast">ฝน 7 วัน</h2>
-        {(forecastState === 'idle' || forecastState === 'loading') && (
-          <p className="quiet">กำลังโหลดพยากรณ์…</p>
-        )}
-        {(forecastState === 'missing' || forecastState === 'error') && (
-          <p className="missing-value">ยังไม่มีข้อมูลพยากรณ์</p>
-        )}
-        {forecast && !days && (
-          <p className="missing-value">จุดนี้อยู่นอกพื้นที่พยากรณ์ (เฉพาะประเทศไทย)</p>
-        )}
-        {days && days.length > 0 && (
-          <ul className="forecast-days" data-testid="forecast-days">
-            {days.map((day) => (
-              <li key={day.date}>
-                <span className="day-name">{dayName(day.date, now)}</span>
-                <WeatherIcon code={day.code} />
-                <span className="day-words">{dayRainWords(day.rainMm)}</span>
-                <span className="day-bar" aria-hidden="true">
-                  <i style={{ width: `${Math.min(100, ((day.rainMm ?? 0) / wettest) * 100)}%` }} />
-                </span>
-                <span className="day-numbers">
-                  {day.rainMm === null ? '–' : `${Math.round(day.rainMm)} มม.`}
-                  {day.probability !== null && <small> · {day.probability}%</small>}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-        {forecastOld && (
-          <p className="inline-warning">
-            <Info size={15} /> พยากรณ์ไม่อัปเดต
-          </p>
-        )}
-        {forecast && (
-          <small className="source-note">
-            ฝนรวมทั้งวันและโอกาสฝนสูงสุดของวัน · {forecastSource}
-          </small>
-        )}
-      </section>
+      {!favorite && (
+        <section className="panel-section" aria-labelledby="pin-forecast">
+          <h2 id="pin-forecast">ฝน 7 วัน</h2>
+          {(forecastState === 'idle' || forecastState === 'loading') && (
+            <p className="quiet">กำลังโหลดพยากรณ์…</p>
+          )}
+          {(forecastState === 'missing' || forecastState === 'error') && (
+            <p className="missing-value">ยังไม่มีข้อมูลพยากรณ์</p>
+          )}
+          {forecast && !days && (
+            <p className="missing-value">จุดนี้อยู่นอกพื้นที่พยากรณ์ (เฉพาะประเทศไทย)</p>
+          )}
+          {days && days.length > 0 && (
+            <ul className="forecast-days" data-testid="forecast-days">
+              {days.map((day) => (
+                <li key={day.date}>
+                  <span className="day-name">{dayName(day.date, now)}</span>
+                  <WeatherIcon code={day.code} />
+                  <span className="day-words">{dayRainWords(day.rainMm)}</span>
+                  <span className="day-bar" aria-hidden="true">
+                    <i
+                      style={{ width: `${Math.min(100, ((day.rainMm ?? 0) / wettest) * 100)}%` }}
+                    />
+                  </span>
+                  <span className="day-numbers">
+                    {day.rainMm === null ? '–' : `${Math.round(day.rainMm)} มม.`}
+                    {day.probability !== null && <small> · {day.probability}%</small>}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {forecastOld && (
+            <p className="inline-warning">
+              <Info size={15} /> พยากรณ์ไม่อัปเดต
+            </p>
+          )}
+          {forecast && (
+            <small className="source-note">
+              ฝนรวมทั้งวันและโอกาสฝนสูงสุดของวัน · {forecastSource}
+            </small>
+          )}
+        </section>
+      )}
 
       {(nearRain.length > 0 || nearWater.length > 0) && (
         <section
