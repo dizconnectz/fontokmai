@@ -3,11 +3,63 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import AwareDatetime, Field
+from pydantic import AnyHttpUrl, AwareDatetime, Field
 
 from fontokmai.contracts.common import SCHEMA_VERSION, ContractModel, Position
+
+
+def _draft7_tuple(schema: dict) -> None:
+    # The browser's AJV and type generator consume draft 7, not 2020-12 prefixItems.
+    schema["items"] = schema.pop("prefixItems")
+    schema["additionalItems"] = False
+
+
+BankPosition = Annotated[
+    tuple[Annotated[float, Field(ge=-180, le=180)], Annotated[float, Field(ge=-90, le=90)]],
+    Field(json_schema_extra=_draft7_tuple),
+]
+
+
+class BankPointGeometry(ContractModel):
+    type: Literal["Point"] = "Point"
+    coordinates: BankPosition
+
+
+class BankReachGeometry(ContractModel):
+    type: Literal["LineString"] = "LineString"
+    coordinates: list[BankPosition] = Field(min_length=2)
+
+
+class BankEvidence(ContractModel):
+    id: str = Field(min_length=1)
+    name_th: str = Field(min_length=1)
+    observed_at: AwareDatetime | None
+    verified: bool = Field(description="Source quality control passed and evidence scope checked by producer")
+    source_url: AnyHttpUrl
+    credit_th: str = Field(min_length=1)
+
+
+class BankMeasurement(BankEvidence):
+    kind: Literal["measurement"]
+    geometry: BankPointGeometry
+    level_m: float | None = Field(allow_inf_nan=False)
+    bank_m: float | None = Field(allow_inf_nan=False)
+    level_datum: str | None = Field(min_length=1)
+    bank_datum: str | None = Field(min_length=1)
+    level_side: str | None = Field(min_length=1)
+    bank_side: str | None = Field(min_length=1)
+
+
+class BankReachReport(BankEvidence):
+    kind: Literal["reported_reach"]
+    geometry: BankReachGeometry
+    status: Literal["above_bank", "at_bank", "below_bank", "unknown"] = Field(
+        description="Explicit source observation for this exact reach, never extrapolated from one gauge")
+
+
+BankObservation = Annotated[BankMeasurement | BankReachReport, Field(discriminator="kind")]
 
 
 class CanalStation(ContractModel):
@@ -35,6 +87,9 @@ class CanalLevels(ContractModel):
     credit_th: str
     stations: list[CanalStation] = Field(description="Every station DXS lists, sorted by code")
     notes_th: list[str]
+    bank_observations: list[BankObservation] = Field(default_factory=list, description=(
+        "Optional verified bank-level evidence. DXS currently supplies none: keep empty, never invent banks or "
+        "reaches. Register rights and evidence coverage before enabling a source. Consumers expire at 60 minutes."))
 
 
 class RainGauge(ContractModel):

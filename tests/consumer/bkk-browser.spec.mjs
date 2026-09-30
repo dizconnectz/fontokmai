@@ -101,9 +101,20 @@ test("DXS situation text is readable as plain text and is separate from TMD aler
 }) => {
   await prepare(page, { "bkk/news.json": read("bkk/news.json") });
   await page.goto("/");
+  await page
+    .getByTestId("situation")
+    .getByText("ข้อความต้นฉบับ", { exact: true })
+    .click();
   await expect(page.getByText("รายงานสถานการณ์ทดสอบประจำวัน")).toBeVisible();
-  await expect(page.getByText(/ฝนเล็กน้อย & ลมแรง/)).toBeVisible();
-  await expect(page.getByText(/ไม่ใช่ข้อมูลเรียลไทม์/)).toBeVisible();
+  await expect(
+    page
+      .getByTestId("situation")
+      .locator("details")
+      .getByText(/ฝนเล็กน้อย & ลมแรง/),
+  ).toBeVisible();
+  await expect(
+    page.getByTestId("situation").getByText(/รายงานย้อนหลัง/),
+  ).toBeVisible();
 });
 
 test("M15: a dam without coordinates remains available in the list", async ({

@@ -226,11 +226,9 @@ test("barrage popup links to RID without inventing reservoir or release values",
   page,
 }) => {
   await prepare(page, { "water/dams.json": read("bkk/dams.json") });
-  await page.goto("/");
-  await page
-    .getByTestId("barrages")
-    .getByRole("button", { name: /เขื่อนเจ้าพระยา/ })
-    .click();
+  await page.goto("/?pin=15.15935,100.17999");
+  await page.getByRole("button", { name: "ปิดหมุด", exact: true }).click();
+  await expect(page.getByTestId("barrages")).toHaveCount(0);
   await expect(page.getByTestId("map-surface")).toHaveAttribute(
     "aria-busy",
     "false",

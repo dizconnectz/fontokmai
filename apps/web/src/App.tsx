@@ -46,6 +46,8 @@ import type { Focus, Layers, LngLat } from './MapView';
 const MapView = lazy(() => import('./MapView'));
 // "/" in development, "/fontokmai/" on GitHub Pages (WEB_BASE at build time)
 const BASE = import.meta.env.BASE_URL;
+import { BANK_COLORS } from './overflow';
+
 const disclaimer =
   'fontokmai ไม่ได้เกี่ยวข้องหรือได้รับการสนับสนุนจากกรมอุตุนิยมวิทยาหรือหน่วยงานเจ้าของข้อมูล';
 const LEGEND_LEVELS: Level[] = ['extreme', 'severe', 'moderate'];
@@ -212,6 +214,7 @@ export default function App() {
           .filter((item) => item.min_mm_per_hr !== null && item.min_mm_per_hr > 0)
           .map((item) => item.color);
   const colourKey = layers.alerts || (layers.radar && (step.kind !== 'now' || frames.length > 0));
+  const bankKey = layers.water && step.kind !== 'forecast' && !!water?.bank_observations?.length;
   const pinKey =
     layers.cameras ||
     (step.kind !== 'forecast' &&
@@ -520,8 +523,25 @@ export default function App() {
           </div>
         </div>
 
-        {(colourKey || pinKey) && (
+        {(colourKey || pinKey || bankKey) && (
           <div className={`map-legend ${legendOpen ? 'open' : ''}`} aria-label="คำอธิบายสี">
+            {bankKey && (
+              <div className="legend-row bank-key" aria-label="สีระดับน้ำเทียบตลิ่ง">
+                <span>ตลิ่ง:</span>
+                <span>
+                  <i style={{ background: BANK_COLORS.above_bank }} /> เกิน
+                </span>
+                <span>
+                  <i style={{ background: BANK_COLORS.at_bank }} /> ถึง
+                </span>
+                <span>
+                  <i style={{ background: BANK_COLORS.below_bank }} /> ต่ำกว่า
+                </span>
+                <span>
+                  <i style={{ background: BANK_COLORS.unknown }} /> ไม่ทราบ
+                </span>
+              </div>
+            )}
             {layers.alerts && (
               <div className="legend-row legend-levels">
                 {LEGEND_LEVELS.map((level) => (
@@ -788,6 +808,27 @@ export default function App() {
               }}
               news={news}
               dams={dams}
+              water={water}
+              onBank={(item) => {
+                const coords =
+                  item.kind === 'measurement'
+                    ? [item.geometry.coordinates]
+                    : item.geometry.coordinates;
+                const xs = coords.map((p) => p[0]),
+                  ys = coords.map((p) => p[1]);
+                setSelectedTime(null);
+                setLayers((current) => ({ ...current, water: true }));
+                setFocus({
+                  key: `bank:${item.id}:${Date.now()}`,
+                  maxZoom: 14,
+                  bounds: [
+                    [Math.min(...xs) - 0.002, Math.min(...ys) - 0.002],
+                    [Math.max(...xs) + 0.002, Math.max(...ys) + 0.002],
+                  ],
+                });
+                if (typeof matchMedia === 'function' && matchMedia('(max-width: 899px)').matches)
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
               summary={overview}
               onPlace={(item) => {
                 // a district close, a province or river wider: the half size follows the item's zoom

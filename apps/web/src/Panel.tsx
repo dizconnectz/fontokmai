@@ -103,7 +103,8 @@ import {
   type SituationReport,
 } from './bkk';
 import { useRadarAt } from './radarAt';
-import { BARRAGE_LINK, BARRAGES, BASIN_CHART_LINK } from './barrages';
+import { situationSummary, situationTimeLabel } from './situation';
+import { BANK_COLORS, bankState, type BankObservation } from './overflow';
 import {
   liveItems,
   officialFor,
@@ -501,38 +502,52 @@ function RoadFloodingToday({
 }
 
 function SituationCard({ news, now }: { news: SituationReport; now: number }) {
-  const note = oldNote(news.fetched_at, now);
-  const paragraphs = news.text_th.split('\n');
+  const { rain, time, warning } = situationSummary(news.text_th, now);
+  const source = safeLink(news.source_url);
   return (
     <section className="panel-section" aria-labelledby="situation-heading" data-testid="situation">
       <h2 id="situation-heading">
-        <Megaphone size={18} /> สรุปสถานการณ์จากสำนักการระบายน้ำ
+        <Megaphone size={18} /> รายงานฝน กทม.
       </h2>
-      <strong className="situation-subject">{news.subject_th}</strong>
-      {paragraphs.slice(0, 3).map((text, index) => (
-        <p key={index} className="situation-text">
-          {text}
-        </p>
-      ))}
-      {paragraphs.length > 3 && (
-        <details className="history-details">
-          <summary>อ่านต่อ</summary>
-          {paragraphs.slice(3).map((text, index) => (
-            <p key={index} className="situation-text">
-              {text}
-            </p>
-          ))}
-        </details>
-      )}
-      {note && (
+      {warning && (
         <p className="inline-warning">
-          <Info size={15} /> {note}
+          <Info size={15} /> {warning}
         </p>
       )}
+      <ul className="situation-summary">
+        {rain.length ? (
+          rain.map((text, index) => (
+            <li key={index}>
+              <strong>ฝน:</strong> {text}
+            </li>
+          ))
+        ) : (
+          <li>ยังสรุปฝนจากข้อความนี้ไม่ได้ · อ่านข้อความต้นฉบับ</li>
+        )}
+        <li>
+          <strong>เวลารายงาน:</strong> {time ? situationTimeLabel(time) : 'ไม่ทราบ'}
+        </li>
+      </ul>
+      <p className="quiet">ข้อมูล ณ เวลารายงาน ไม่ใช่พยากรณ์ฝน</p>
+      <details className="history-details">
+        <summary>ข้อความต้นฉบับ</summary>
+        <strong className="situation-subject">{news.subject_th}</strong>
+        {news.text_th.split('\n').map((text, index) => (
+          <p key={index} className="situation-text">
+            {text}
+          </p>
+        ))}
+      </details>
       <small className="source-note">
-        ข้อความของ{news.credit_th}
-        {news.updated_at ? ` · ปรับปรุง ${formatTime(news.updated_at)} น.` : ''} ·
-        ไม่ใช่ประกาศเตือนภัยของกรมอุตุฯ
+        ที่มา:{' '}
+        {source ? (
+          <a href={source} target="_blank" rel="noopener noreferrer">
+            {shortCredit(news.credit_th)} ↗
+          </a>
+        ) : (
+          shortCredit(news.credit_th)
+        )}{' '}
+        · ไม่ใช่ประกาศเตือนภัยของกรมอุตุฯ
       </small>
     </section>
   );
@@ -644,36 +659,6 @@ function ChaoPhrayaDams({
               <DamLine key={dam.id} dam={dam} previousDay={previousDay} onDam={onDam} />
             ))}
           </ul>
-        </>
-      )}
-      {main.length > 0 && (
-        <>
-          <h3 className="dams-group">เขื่อนทดน้ำบนแม่น้ำ (ไม่มีอ่างเก็บน้ำ)</h3>
-          <ul className="flood-list" data-testid="barrages">
-            {BARRAGES.map((barrage) => (
-              <li key={barrage.id}>
-                <button className="road-button" onClick={() => onDam(barrage.location)}>
-                  <span className="flood-line">
-                    <strong>{barrage.name_th}</strong>
-                    <small>
-                      {barrage.river_th} · {barrage.place_th}
-                    </small>
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-          <p className="quiet">
-            เว็บนี้ยังไม่มีตัวเลขการระบายน้ำของเขื่อนทดน้ำ ดูได้ที่{' '}
-            <a href={BASIN_CHART_LINK} target="_blank" rel="noopener">
-              ผังน้ำลุ่มเจ้าพระยาของ ThaiWater ↗
-            </a>{' '}
-            (น้ำไหลผ่านท้ายเขื่อนทั้งสองแห่ง และระดับน้ำเทียบตลิ่ง) หรือ{' '}
-            <a href={BARRAGE_LINK} target="_blank" rel="noopener">
-              หน้าข้อมูลน้ำของกรมชลประทาน ↗
-            </a>{' '}
-            (เขื่อนเจ้าพระยาดูสถานี C.13)
-          </p>
         </>
       )}
       {full.length > 0 && (
@@ -902,6 +887,8 @@ export function Overview({
   onRoadName,
   news,
   dams,
+  water,
+  onBank,
   onDam,
   summary,
   onPlace,
@@ -919,6 +906,8 @@ export function Overview({
   onRoadName: (name: string) => void;
   news: SituationReport | null;
   dams: DamReport | null;
+  water: CanalLevels | null;
+  onBank: (item: BankObservation) => void;
   onDam: (location: number[]) => void;
   /** the places to watch (summary/overview.json), or null before it is published */
   summary: SummaryOverview | null;
@@ -940,6 +929,61 @@ export function Overview({
       />
       {/* how full the dams are comes before the alerts: the user reads it at a glance (2026-09-28) */}
       {dams && <ChaoPhrayaDams dams={dams} now={now} onDam={onDam} />}
+      {!!water?.bank_observations?.length && (
+        <section
+          className="panel-section"
+          aria-labelledby="bank-heading"
+          data-testid="bank-evidence"
+        >
+          <h2 id="bank-heading">
+            <Waves size={18} /> ระดับน้ำเทียบตลิ่ง
+          </h2>
+          <p className="quiet">
+            แดง: เกินตลิ่ง · ส้ม: ถึงตลิ่ง · ฟ้า: ต่ำกว่าตลิ่ง · เทา: ยังยืนยันไม่ได้
+          </p>
+          <p className="quiet">
+            จุดแสดงเฉพาะที่วัด เส้นแสดงช่วงที่ต้นทางรายงาน ไม่ใช่ขอบเขตพื้นที่ท่วม
+          </p>
+          <ul className="flood-list">
+            {water.bank_observations.map((item) => {
+              const state = bankState(item, now);
+              const source = safeLink(item.source_url);
+              return (
+                <li key={item.id}>
+                  <button className="road-button" onClick={() => onBank(item)}>
+                    <span className="flood-line">
+                      <strong>{item.name_th}</strong>
+                      <span>
+                        <span
+                          className="bank-dot"
+                          style={{ background: BANK_COLORS[state.status] }}
+                        />{' '}
+                        {state.text}
+                      </span>
+                      <small>
+                        {item.observed_at
+                          ? `ข้อมูล ${situationTimeLabel(item.observed_at)}`
+                          : 'ไม่มีเวลาข้อมูล'}
+                      </small>
+                    </span>
+                  </button>
+                  <small className="source-note">
+                    {item.kind === 'measurement' ? 'เทียบระดับเฉพาะจุด · ทดลอง · ' : ''}
+                    ที่มา:{' '}
+                    {source ? (
+                      <a href={source} target="_blank" rel="noopener noreferrer">
+                        {item.credit_th} ↗
+                      </a>
+                    ) : (
+                      item.credit_th
+                    )}
+                  </small>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
       <section className="panel-section" aria-labelledby="alerts-heading">
         <h2
           id="alerts-heading"

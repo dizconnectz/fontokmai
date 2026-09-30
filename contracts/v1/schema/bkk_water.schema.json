@@ -1,5 +1,293 @@
 {
   "$defs": {
+    "BankMeasurement": {
+      "additionalProperties": false,
+      "properties": {
+        "bank_datum": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Bank Datum"
+        },
+        "bank_m": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Bank M"
+        },
+        "bank_side": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Bank Side"
+        },
+        "credit_th": {
+          "minLength": 1,
+          "title": "Credit Th",
+          "type": "string"
+        },
+        "geometry": {
+          "$ref": "#/$defs/BankPointGeometry"
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "measurement",
+          "title": "Kind",
+          "type": "string"
+        },
+        "level_datum": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Level Datum"
+        },
+        "level_m": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Level M"
+        },
+        "level_side": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Level Side"
+        },
+        "name_th": {
+          "minLength": 1,
+          "title": "Name Th",
+          "type": "string"
+        },
+        "observed_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Observed At"
+        },
+        "source_url": {
+          "format": "uri",
+          "minLength": 1,
+          "title": "Source Url",
+          "type": "string"
+        },
+        "verified": {
+          "description": "Source quality control passed and evidence scope checked by producer",
+          "title": "Verified",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "name_th",
+        "observed_at",
+        "verified",
+        "source_url",
+        "credit_th",
+        "kind",
+        "geometry",
+        "level_m",
+        "bank_m",
+        "level_datum",
+        "bank_datum",
+        "level_side",
+        "bank_side"
+      ],
+      "title": "BankMeasurement",
+      "type": "object"
+    },
+    "BankPointGeometry": {
+      "additionalProperties": false,
+      "properties": {
+        "coordinates": {
+          "additionalItems": false,
+          "items": [
+            {
+              "maximum": 180,
+              "minimum": -180,
+              "type": "number"
+            },
+            {
+              "maximum": 90,
+              "minimum": -90,
+              "type": "number"
+            }
+          ],
+          "maxItems": 2,
+          "minItems": 2,
+          "title": "Coordinates",
+          "type": "array"
+        },
+        "type": {
+          "const": "Point",
+          "default": "Point",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "coordinates"
+      ],
+      "title": "BankPointGeometry",
+      "type": "object"
+    },
+    "BankReachGeometry": {
+      "additionalProperties": false,
+      "properties": {
+        "coordinates": {
+          "items": {
+            "additionalItems": false,
+            "items": [
+              {
+                "maximum": 180,
+                "minimum": -180,
+                "type": "number"
+              },
+              {
+                "maximum": 90,
+                "minimum": -90,
+                "type": "number"
+              }
+            ],
+            "maxItems": 2,
+            "minItems": 2,
+            "type": "array"
+          },
+          "minItems": 2,
+          "title": "Coordinates",
+          "type": "array"
+        },
+        "type": {
+          "const": "LineString",
+          "default": "LineString",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "coordinates"
+      ],
+      "title": "BankReachGeometry",
+      "type": "object"
+    },
+    "BankReachReport": {
+      "additionalProperties": false,
+      "properties": {
+        "credit_th": {
+          "minLength": 1,
+          "title": "Credit Th",
+          "type": "string"
+        },
+        "geometry": {
+          "$ref": "#/$defs/BankReachGeometry"
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "reported_reach",
+          "title": "Kind",
+          "type": "string"
+        },
+        "name_th": {
+          "minLength": 1,
+          "title": "Name Th",
+          "type": "string"
+        },
+        "observed_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Observed At"
+        },
+        "source_url": {
+          "format": "uri",
+          "minLength": 1,
+          "title": "Source Url",
+          "type": "string"
+        },
+        "status": {
+          "description": "Explicit source observation for this exact reach, never extrapolated from one gauge",
+          "enum": [
+            "above_bank",
+            "at_bank",
+            "below_bank",
+            "unknown"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "verified": {
+          "description": "Source quality control passed and evidence scope checked by producer",
+          "title": "Verified",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "name_th",
+        "observed_at",
+        "verified",
+        "source_url",
+        "credit_th",
+        "kind",
+        "geometry",
+        "status"
+      ],
+      "title": "BankReachReport",
+      "type": "object"
+    },
     "CanalStation": {
       "additionalProperties": false,
       "properties": {
@@ -131,6 +419,28 @@
   },
   "additionalProperties": false,
   "properties": {
+    "bank_observations": {
+      "description": "Optional verified bank-level evidence. DXS currently supplies none: keep empty, never invent banks or reaches. Register rights and evidence coverage before enabling a source. Consumers expire at 60 minutes.",
+      "items": {
+        "discriminator": {
+          "mapping": {
+            "measurement": "#/$defs/BankMeasurement",
+            "reported_reach": "#/$defs/BankReachReport"
+          },
+          "propertyName": "kind"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/BankMeasurement"
+          },
+          {
+            "$ref": "#/$defs/BankReachReport"
+          }
+        ]
+      },
+      "title": "Bank Observations",
+      "type": "array"
+    },
     "credit_th": {
       "title": "Credit Th",
       "type": "string"

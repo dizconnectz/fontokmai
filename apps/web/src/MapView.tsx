@@ -10,11 +10,12 @@ import type {
   StyleSpecification,
 } from 'maplibre-gl';
 import type { FeatureCollection, MultiPolygon, Point } from 'geojson';
-import { displayStatus, type Alert, type Camera, type RadarFeed } from './data';
+import { displayStatus, safeLink, type Alert, type Camera, type RadarFeed } from './data';
 import { LEVEL_FILL, LEVEL_LINE, levelOf } from './alerts';
 import type { ForecastAreas } from './forecast';
 import { isOngoing, isShown, reportedAt, REPORTER_TH, type FloodReport } from './floods';
 import { BARRAGE_LINK, BARRAGES, type Barrage } from './barrages';
+import { bankFeatures, bankState, type BankObservation } from './overflow';
 import {
   amount,
   damPin,
@@ -269,6 +270,26 @@ function addOverlays(instance: LibreMap) {
       },
     });
   }
+  instance.addSource('bank-evidence', { type: 'geojson', data: empty });
+  instance.addLayer({
+    id: 'bank-reach',
+    type: 'line',
+    source: 'bank-evidence',
+    filter: ['==', ['geometry-type'], 'LineString'],
+    paint: { 'line-color': ['get', 'color'], 'line-width': 5 },
+  });
+  instance.addLayer({
+    id: 'bank-point',
+    type: 'circle',
+    source: 'bank-evidence',
+    filter: ['==', ['geometry-type'], 'Point'],
+    paint: {
+      'circle-color': ['get', 'color'],
+      'circle-radius': 9,
+      'circle-stroke-color': '#fff',
+      'circle-stroke-width': 2,
+    },
+  });
 }
 // popups open above the pin head, or below the tip when there is no room above
 const PIN_POPUP_OFFSET: Record<PositionAnchor, [number, number]> = {
@@ -298,8 +319,34 @@ const POINT_LAYERS = [
   'rain-pin',
   'flood-cluster',
   'flood-pin',
+  'bank-reach',
+  'bank-point',
 ];
-type PointKind = 'flood' | 'camera' | 'water' | 'rain' | 'dam' | 'weather' | 'river';
+type PointKind = 'flood' | 'camera' | 'water' | 'rain' | 'dam' | 'weather' | 'river' | 'bank';
+
+function bankPopup(item: BankObservation, now: number): HTMLElement {
+  const root = document.createElement('div');
+  root.className = 'camera-popup';
+  root.append(
+    line(item.name_th, 'strong'),
+    line(bankState(item, now).text, 'b'),
+    line(
+      item.kind === 'measurement'
+        ? measuredText(item.observed_at, now)
+        : item.observed_at
+          ? `รายงานเมื่อ ${reportTime(item.observed_at, now)}`
+          : 'ไม่มีเวลารายงาน',
+    ),
+    line(
+      item.kind === 'measurement'
+        ? 'เทียบระดับน้ำกับตลิ่งเฉพาะจุด · ทดลอง'
+        : 'รายงานเฉพาะช่วงเส้นที่แสดง',
+    ),
+    line('ไม่ใช่ขอบเขตพื้นที่ท่วม และไม่ใช่ประกาศเตือนภัย'),
+    sourceLink(item.source_url, item.credit_th),
+  );
+  return root;
+}
 
 function floodPopup(report: FloodReport, now: number, onHere: () => void): HTMLElement {
   const root = document.createElement('div');
@@ -330,8 +377,10 @@ function sourceLink(href: string, credit: string): HTMLElement {
   return linkOut(href, `ที่มา: ${shortCredit(credit)} ↗`);
 }
 function linkOut(href: string, text: string): HTMLElement {
+  const url = safeLink(href);
+  if (!url) return line(text);
   const link = document.createElement('a');
-  link.href = href;
+  link.href = url;
   link.target = '_blank';
   link.rel = 'noopener noreferrer';
   link.textContent = text;
@@ -731,6 +780,23 @@ export default function MapView(props: Props) {
                 )[0]
               : undefined;
             const layer = hit?.layer.id;
+            if (layer === 'bank-reach' || layer === 'bank-point') {
+              const item = latest.current.water?.bank_observations?.find(
+                (v) => v.id === hit?.properties.id,
+              );
+              if (item)
+                return open(
+                  'bank',
+                  [event.lngLat.lng, event.lngLat.lat],
+                  bankPopup(item, latest.current.now),
+                  (now) => {
+                    const current = latest.current.water?.bank_observations?.find(
+                      (v) => v.id === item.id,
+                    );
+                    return current && latest.current.layers.water ? bankPopup(current, now) : null;
+                  },
+                );
+            }
             if (hit && layer?.endsWith('-cluster')) {
               const center = (hit.geometry as Point).coordinates as LngLat;
               void (instance.getSource(hit.source) as GeoJSONSource)
@@ -1172,6 +1238,9 @@ export default function MapView(props: Props) {
     };
     (map.current.getSource('water') as GeoJSONSource | undefined)?.setData(collection);
     if (!collection.features.length && popupKind.current === 'water') popup.current?.remove();
+    const banks = bankFeatures(props.layers.water ? props.water : null, props.now);
+    (map.current.getSource('bank-evidence') as GeoJSONSource | undefined)?.setData(banks);
+    if (!banks.features.length && popupKind.current === 'bank') popup.current?.remove();
   }, [props.water, props.layers.water, props.now, ready, styleVersion]);
 
   // Bangkok rain gauges (DXS), coloured by the rain of the last hour

@@ -1761,6 +1761,23 @@ details > ul {
   display: block;
   margin-bottom: 4px;
 }
+.situation-summary {
+  padding-left: 1.25rem;
+  margin: 12px 0;
+  line-height: 1.65;
+}
+.situation-summary li + li {
+  margin-top: 6px;
+}
+.bank-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.bank-key {
+  flex-wrap: wrap;
+}
 .situation-text {
   margin: 0 0 6px;
   white-space: pre-line;

@@ -5,6 +5,7 @@ import pytest
 from pydantic import ValidationError
 
 from fontokmai.contracts.alerts import AlertsFeed
+from fontokmai.contracts.bkk import CanalLevels
 from fontokmai.contracts.common import GeoMultiPolygon
 from fontokmai.contracts.export import export_schemas
 
@@ -51,3 +52,26 @@ def test_positions_must_be_lon_lat_pairs():
     GeoMultiPolygon(coordinates=[[ring]])
     with pytest.raises(ValidationError):
         GeoMultiPolygon(coordinates=[[[[100.5, 13.7, 0.0]] * 4]])
+
+
+def test_bank_evidence_is_optional_and_does_not_expand_measurements_into_reaches():
+    old = dict(fetched_at=NOW, source_url="https://example.com", credit_th="Test", stations=[], notes_th=[])
+    assert CanalLevels(**old).bank_observations == []
+    point = dict(id="test", kind="measurement", name_th="Test", observed_at=NOW, verified=True,
+                 source_url="https://example.com/evidence", credit_th="Test",
+                 geometry={"type": "Point", "coordinates": [100.5, 13.75]}, level_m=1.2, bank_m=1,
+                 level_datum="MSL-test", bank_datum="MSL-test", level_side="inner", bank_side="inner")
+    file = CanalLevels(**old, bank_observations=[point])
+    assert CanalLevels.model_validate_json(file.model_dump_json()) == file
+    with pytest.raises(ValidationError):
+        CanalLevels(**old, bank_observations=[dict(point, geometry={"type": "LineString",
+                                                                  "coordinates": [[100, 13], [100, 14]]})])
+    for coordinates in ([100, 91], [181, 13], [100, float("nan")], [100, 13, 0]):
+        with pytest.raises(ValidationError):
+            CanalLevels(**old, bank_observations=[dict(point, geometry={"type": "Point", "coordinates": coordinates})])
+
+
+def test_bank_schema_uses_draft7_tuple_constraints_for_the_browser():
+    coords = CanalLevels.model_json_schema()["$defs"]["BankPointGeometry"]["properties"]["coordinates"]
+    assert "prefixItems" not in coords
+    assert coords["items"][1]["maximum"] == 90

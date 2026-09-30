@@ -815,18 +815,8 @@ test('the department situation text and the Chao Phraya dams show, with a note o
   await expect(situation).toContainText('ฝนเล็กน้อย & ลมแรง');
   await expect(situation).toContainText('ไม่ใช่ประกาศเตือนภัยของกรมอุตุฯ');
   const dams = page.getByTestId('dams');
-  // the barrages, which hold no reservoir, are listed with a link to the department's page (user, 2026-09-29)
-  const barrages = dams.getByTestId('barrages');
-  await expect(barrages).toContainText('เขื่อนเจ้าพระยา');
-  await expect(barrages).toContainText('เขื่อนพระราม 6');
-  await expect(dams.getByRole('link', { name: /หน้าข้อมูลน้ำของกรมชลประทาน/ })).toHaveAttribute(
-    'href',
-    'https://hyd-app-db.rid.go.th/hydro1d.html',
-  );
-  // ThaiWater's water chart shows the flow below the barrages: a link out, never its figures (user, 2026-09-29)
-  await expect(
-    dams.getByRole('link', { name: /ผังน้ำลุ่มเจ้าพระยาของ ThaiWater/ }),
-  ).toHaveAttribute('href', 'https://waterchart.thaiwater.net/basin/chaophraya');
+  // The main summary omits name-only barrages (user, 2026-09-30); their map references remain.
+  await expect(dams.getByTestId('barrages')).toHaveCount(0);
   // the dams come before the official alerts (user, 2026-09-28)
   const headings = await page.locator('#panel h2').allTextContents();
   const order = (text: string) => headings.findIndex((heading) => heading.includes(text));
@@ -842,12 +832,10 @@ test('the department situation text and the Chao Phraya dams show, with a note o
   // choosing a dam moves the map only
   await dams.getByRole('button', { name: /เขื่อนภูมิพล/ }).click();
   await expect(dams).toBeVisible();
-  // fetched two days before: both say it is not real time and give the date
+  // The dam file ages by fetch time; the bulletin keeps its own explicit report time.
   fetchedAt = at - 2 * 24 * 3_600_000;
   await page.goto('/');
-  await expect(page.getByTestId('situation')).toContainText(
-    'ข้อมูลนี้ไม่ใช่ข้อมูลเรียลไทม์ · ข้อมูล ณ วันที่',
-  );
+  await expect(page.getByTestId('situation').locator('ul')).toContainText('26 ก.ย. 2569');
   await expect(page.getByTestId('dams')).toContainText('ข้อมูลนี้ไม่ใช่ข้อมูลเรียลไทม์');
 });
 
