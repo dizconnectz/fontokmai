@@ -4,6 +4,13 @@ import {
 } from "../../apps/web/node_modules/@playwright/test/index.mjs";
 import { readFileSync } from "node:fs";
 
+// the side panel's sections fold to their heading line (Claude, 2026-10-01): open one before reading its list
+async function unfold(page, id) {
+  const fold = page.locator(`#${id} > details`);
+  if (!(await fold.evaluate((element) => element.open)))
+    await page.locator(`#${id} > details > summary`).click();
+}
+
 const read = (file) =>
   JSON.parse(
     readFileSync(
@@ -99,6 +106,7 @@ for (const viewport of [
       "วันที่ 30 กันยายน 2569 เวลา 10.00 น. /พื้นที่ กทม.ไม่พบกลุ่มฝน / อุณหภูมิที่สำนักการระบายน้ำ 31 องศาเซลเซียส ความชื้นสัมพัทธ์ 69%";
     await prepare(page, { "bkk/news.json": news });
     await page.goto("/");
+    await unfold(page, "situation");
     const card = page.getByTestId("situation");
     const bullets = card.locator("ul");
     await expect(bullets.locator("li")).toHaveCount(2);
@@ -106,13 +114,13 @@ for (const viewport of [
     await expect(bullets).toContainText("30 ก.ย. 2569");
     await expect(bullets).toContainText("10:00");
     await expect(bullets).not.toContainText(/อุณหภูมิ|ความชื้น/);
-    await expect(card.locator("details p")).not.toBeVisible();
+    await expect(card.locator("details.history-details p")).not.toBeVisible();
     await card.scrollIntoViewIfNeeded();
     await page.screenshot({
       path: `apps/web/test-results/situation-${viewport.width}.png`,
     });
-    await card.locator("summary").click();
-    await expect(card.locator("details p")).toContainText(
+    await card.locator("details.history-details > summary").click();
+    await expect(card.locator("details.history-details p")).toContainText(
       "ความชื้นสัมพัทธ์ 69%",
     );
     expect(

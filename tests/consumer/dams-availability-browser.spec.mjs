@@ -4,6 +4,13 @@ import {
 } from "../../apps/web/node_modules/@playwright/test/index.mjs";
 import { readFileSync } from "node:fs";
 
+// the side panel's sections fold to their heading line (Claude, 2026-10-01): open one before reading its list
+async function unfold(page, id) {
+  const fold = page.locator(`#${id} > details`);
+  if (!(await fold.evaluate((element) => element.open)))
+    await page.locator(`#${id} > details > summary`).click();
+}
+
 const read = (name) =>
   JSON.parse(
     readFileSync(
@@ -127,6 +134,7 @@ for (const width of [1440, 390]) {
       ]),
     );
     await page.goto("/");
+    await unfold(page, "dams");
     const card = page.getByTestId("dams");
     await expect(page.getByTestId("dams-coverage")).toHaveText(
       "มีตัวเลขในรายงานนี้ 1 จาก 5 แห่ง",
@@ -308,6 +316,7 @@ test("M39: partial last-known readings preserve zero and explain gaps and both d
   ]);
   await prepare(page, file);
   await page.goto("/");
+  await unfold(page, "dams");
   const card = page.getByTestId("dams");
   const line = card.locator(".dam-line");
   await expect(line).toContainText("ระบาย 0 ล้าน ลบ.ม./วัน");

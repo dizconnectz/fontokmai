@@ -4,6 +4,13 @@ import {
 } from "../../apps/web/node_modules/@playwright/test/index.mjs";
 import { readFileSync } from "node:fs";
 
+// the side panel's sections fold to their heading line (Claude, 2026-10-01): open one before reading its list
+async function unfold(page, id) {
+  const fold = page.locator(`#${id} > details`);
+  if (!(await fold.evaluate((element) => element.open)))
+    await page.locator(`#${id} > details > summary`).click();
+}
+
 const read = (file) =>
   JSON.parse(
     readFileSync(
@@ -260,6 +267,7 @@ test("dam bars clamp overflow, show missing values, and limit downstream text to
   }));
   await prepare(page, { "water/dams.json": file });
   await page.goto("/");
+  await unfold(page, "dams");
   const card = page.getByTestId("dams");
   await page.getByTestId("dams-others").locator("summary").click();
   for (const [n, width, downstream] of [
@@ -305,6 +313,8 @@ test("report clock and DXS file clock are distinct from the fresh manifest clock
   ];
   await prepare(page, { "bkk/water.json": water, "live/floods.json": floods });
   await page.goto("/");
+  await unfold(page, "floods-now");
+  await unfold(page, "data-status");
   await expect(page.getByTestId("dxs-status")).toContainText("11:40");
   await expect(page.getByTestId("dxs-status")).toContainText(
     "ไม่ใช่ทุก 15 นาที",

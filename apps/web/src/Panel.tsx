@@ -108,6 +108,8 @@ import {
   type SituationReport,
 } from './bkk';
 import { useRadarAt } from './radarAt';
+import { Fold } from './Fold';
+import { StatusBar, statusCounts } from './StatusBar';
 import { situationSummary, situationTimeLabel } from './situation';
 import { BANK_COLORS, bankState, type BankObservation } from './overflow';
 import {
@@ -316,10 +318,16 @@ const HOTLINES = [
 ];
 export function Hotlines() {
   return (
-    <section className="panel-section hotlines" aria-labelledby="hotlines-heading">
-      <h2 id="hotlines-heading">
-        <Phone size={18} /> สายด่วนเมื่อน้ำท่วม
-      </h2>
+    <Fold
+      id="hotlines"
+      headingId="hotlines-heading"
+      className="hotlines"
+      heading={
+        <>
+          <Phone size={18} /> สายด่วนเมื่อน้ำท่วม
+        </>
+      }
+    >
       <ul>
         {HOTLINES.map((line) => (
           <li key={line.number}>
@@ -334,7 +342,7 @@ export function Hotlines() {
         ))}
       </ul>
       <small className="source-note">เบอร์ที่หน่วยงานประกาศ ณ กันยายน 2569 · แตะเพื่อโทร</small>
-    </section>
+    </Fold>
   );
 }
 
@@ -433,19 +441,22 @@ function RoadFloodingToday({
       </section>
     );
   return (
-    <section
-      className="panel-section"
-      aria-labelledby="road-flooding-heading"
-      data-testid="road-flooding"
+    <Fold
+      id="road-flooding"
+      headingId="road-flooding-heading"
+      testId="road-flooding"
+      headingClass={wet.length ? 'heading-rain' : undefined}
+      heading={
+        <>
+          <Route size={18} />{' '}
+          {old
+            ? `รายงานถนนท่วม กทม. เมื่อ ${reportTime(flooding.fetched_at, now)}`
+            : wet.length
+              ? `ถนนสายหลัก กทม. ที่ยังท่วม ${wet.length} จุด`
+              : 'น้ำท่วมขังถนนสายหลัก กทม. วันนี้'}
+        </>
+      }
     >
-      <h2 id="road-flooding-heading" className={wet.length ? 'heading-rain' : undefined}>
-        <Route size={18} />{' '}
-        {old
-          ? `รายงานถนนท่วม กทม. เมื่อ ${reportTime(flooding.fetched_at, now)}`
-          : wet.length
-            ? `ถนนสายหลัก กทม. ที่ยังท่วม ${wet.length} จุด`
-            : 'น้ำท่วมขังถนนสายหลัก กทม. วันนี้'}
-      </h2>
       {flooding.reports.length === 0 && (
         <p className="quiet">วันนี้ยังไม่มีรายงานน้ำท่วมขังบนถนนสายหลัก · ถนนอื่นยังท่วมได้</p>
       )}
@@ -477,7 +488,7 @@ function RoadFloodingToday({
           รายงานต้นทาง ↗
         </a>
       </small>
-    </section>
+    </Fold>
   );
 }
 
@@ -485,10 +496,16 @@ function SituationCard({ news, now }: { news: SituationReport; now: number }) {
   const { rain, time, warning } = situationSummary(news.text_th, now);
   const source = safeLink(news.source_url);
   return (
-    <section className="panel-section" aria-labelledby="situation-heading" data-testid="situation">
-      <h2 id="situation-heading">
-        <Megaphone size={18} /> รายงานฝน กทม.
-      </h2>
+    <Fold
+      id="situation"
+      headingId="situation-heading"
+      testId="situation"
+      heading={
+        <>
+          <Megaphone size={18} /> รายงานฝน กทม.
+        </>
+      }
+    >
       {warning && (
         <p className="inline-warning">
           <Info size={15} /> {warning}
@@ -529,7 +546,7 @@ function SituationCard({ news, now }: { news: SituationReport; now: number }) {
         )}{' '}
         · ไม่ใช่ประกาศเตือนภัยของกรมอุตุฯ
       </small>
-    </section>
+    </Fold>
   );
 }
 
@@ -638,12 +655,20 @@ function ChaoPhrayaDams({
     ? rest.filter((dam) => !full.includes(dam) && releaseChange(dam)?.big)
     : [];
   const others = rest.filter((dam) => !full.includes(dam) && !releasing.includes(dam));
+  const overFull = available.filter((dam) => (shownDam(dam).percent ?? 0) > 100).length;
   const note = oldNote(dams.fetched_at, now);
   return (
-    <section className="panel-section" aria-labelledby="dams-heading" data-testid="dams">
-      <h2 id="dams-heading">
-        <DamIcon size={18} /> เขื่อนใหญ่
-      </h2>
+    <Fold
+      id="dams"
+      headingId="dams-heading"
+      testId="dams"
+      heading={
+        <>
+          <DamIcon size={18} /> เขื่อนใหญ่
+          {overFull > 0 && ` · เกินความจุ ${overFull} แห่ง`}
+        </>
+      }
+    >
       <p className="quiet" data-testid="dams-coverage">
         {ofToday > 0
           ? `มีตัวเลขในรายงานนี้ ${ofToday} จาก ${dams.dams.length} แห่ง`
@@ -731,7 +756,7 @@ function ChaoPhrayaDams({
           available.some((dam) => releaseChange(dam)) &&
           ` · ระบายเพิ่มมาก = เพิ่มอย่างน้อย 1 ล้าน ลบ.ม./วัน และอย่างน้อยครึ่งหนึ่งจากรายงาน ${thaiDay(previousDay)} (เกณฑ์ทดลองของเว็บ)`}
       </small>
-    </section>
+    </Fold>
   );
 }
 
@@ -763,6 +788,7 @@ function WatchSummary({
   const missing = oldInputs(overview);
   return (
     <section
+      id="summary"
       className="panel-section summary-card"
       aria-labelledby="summary-heading"
       data-testid="summary"
@@ -859,10 +885,17 @@ function FloodsNow({
   const ongoing = floods ? floods.reports.filter((r) => isOngoing(r, now)).length : 0;
   const old = floods ? now - Date.parse(floods.fetched_at) > FLOODS_STALE_MS : false;
   return (
-    <section className="panel-section" aria-labelledby="floods-now-heading">
-      <h2 id="floods-now-heading" className={ongoing ? 'heading-rain' : undefined}>
-        <Waves size={18} /> {ongoing ? `รายงานน้ำท่วมตอนนี้ ${ongoing} จุด` : 'รายงานน้ำท่วมตอนนี้'}
-      </h2>
+    <Fold
+      id="floods-now"
+      headingId="floods-now-heading"
+      headingClass={ongoing ? 'heading-rain' : undefined}
+      heading={
+        <>
+          <Waves size={18} />{' '}
+          {ongoing ? `รายงานน้ำท่วมตอนนี้ ${ongoing} จุด` : 'รายงานน้ำท่วมตอนนี้'}
+        </>
+      }
+    >
       {floods && <p className="quiet">ข้อมูลถึง {dateTime(floods.fetched_at)}</p>}
       {(floodsState === 'idle' || floodsState === 'loading') && (
         <p className="quiet">กำลังโหลดรายงานน้ำท่วม…</p>
@@ -900,7 +933,7 @@ function FloodsNow({
           แตะรายการเพื่อดูบนแผนที่ หรือแตะหมุดสีน้ำเงินบนแผนที่
         </small>
       )}
-    </section>
+    </Fold>
   );
 }
 
@@ -948,6 +981,7 @@ export function Overview({
   const trusted = feedTrust(snapshot, now) === 'ok';
   return (
     <>
+      <StatusBar counts={statusCounts({ summary, floods, dams, alerts, trusted, worst, now })} />
       {summary && <WatchSummary overview={summary} alerts={alerts} now={now} onPlace={onPlace} />}
       <FloodsNow
         floods={floods}
@@ -1013,7 +1047,7 @@ export function Overview({
           </ul>
         </section>
       )}
-      <section className="panel-section" aria-labelledby="alerts-heading">
+      <section id="alerts" className="panel-section" aria-labelledby="alerts-heading">
         <h2
           id="alerts-heading"
           className={worst ? `heading-level-${worst}` : trusted ? 'heading-ok' : 'heading-unknown'}

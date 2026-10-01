@@ -21,6 +21,7 @@ import {
   X,
 } from 'lucide-react';
 import { formatTime, isStale, radarAgeMinutes, staleAfter, visibleAlerts } from './data';
+import { Fold } from './Fold';
 import { useData } from './useData';
 import MapBoundary from './MapBoundary';
 import { AlertDetails, Hotlines, Overview, PinCard, RoadCard } from './Panel';
@@ -864,12 +865,12 @@ export default function App() {
 
         <Hotlines />
 
-        <section
+        <Fold
           id="data-status"
-          className="panel-section data-status"
-          aria-labelledby="data-status-heading"
+          headingId="data-status-heading"
+          className="data-status"
+          heading="สถานะข้อมูล"
         >
-          <h2 id="data-status-heading">สถานะข้อมูล</h2>
           <div className="source-times">
             {snapshot?.manifest.source_status.map((source) => (
               <div key={source.source_id}>
@@ -930,7 +931,7 @@ export default function App() {
             เว็บตรวจข้อมูลทุก 1 นาทีเมื่อเปิดแท็บ · เวลาไทย (UTC+7) ·
             ความครบของไฟล์ไม่ใช่การรับรองความแม่น
           </p>
-        </section>
+        </Fold>
 
         <footer className="panel-footer">
           <p>

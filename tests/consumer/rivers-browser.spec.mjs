@@ -4,6 +4,13 @@ import {
 } from "../../apps/web/node_modules/@playwright/test/index.mjs";
 import { readFileSync } from "node:fs";
 
+// the side panel's sections fold to their heading line (Claude, 2026-10-01): open one before reading its list
+async function unfold(page, id) {
+  const fold = page.locator(`#${id} > details`);
+  if (!(await fold.evaluate((element) => element.open)))
+    await page.locator(`#${id} > details > summary`).click();
+}
+
 const read = (path) =>
   JSON.parse(
     readFileSync(
@@ -138,6 +145,7 @@ test("M17: an expired flood popup is removed even while another report remains",
   ];
   await prepare(page, { "live/floods.json": feed }, NOW, true);
   await page.goto("/");
+  await unfold(page, "floods-now");
   await page
     .getByRole("button", { name: /รายงานเก่าใกล้ครบสิบสองชั่วโมง/ })
     .click();

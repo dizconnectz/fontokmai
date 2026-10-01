@@ -2,6 +2,13 @@ import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 
+/** Sections of the side panel fold to their heading line (user, 2026-10-01): open one before using its list. */
+async function unfold(page: Page, id: string) {
+  const fold = page.locator(`#${id} > details`);
+  if (!(await fold.evaluate((element) => (element as HTMLDetailsElement).open)))
+    await page.locator(`#${id} > details > summary`).click();
+}
+
 function read(scenario: string, file: string) {
   return JSON.parse(
     readFileSync(
@@ -103,6 +110,7 @@ test('no active alert is never shown as a safe area, and ended alerts stay in th
     page.getByText('ไม่มีข้อมูลหรือไม่พบประกาศ ไม่ได้แปลว่าพื้นที่ปลอดภัย'),
   ).toBeVisible();
   await expect(page.getByTestId('alert-card')).toHaveCount(0);
+  await unfold(page, 'data-status');
   await page.getByText('ประกาศที่สิ้นสุดในชุดข้อมูล (1)', { exact: true }).click();
   await expect(page.locator('.history-details li')).toContainText('ยกเลิก');
 });
@@ -570,6 +578,7 @@ test('a flood report opens on the map without leaving the list, and its popup le
   );
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'รายงานน้ำท่วมตอนนี้ 1 จุด' })).toBeVisible();
+  await unfold(page, 'floods-now');
   // the list says when its data is from, with the date (user, 2026-09-28)
   await expect(page.locator('section[aria-labelledby="floods-now-heading"]')).toContainText(
     /ข้อมูลถึง \d{1,2} \S+ \d\d:\d\d น\./,
@@ -662,6 +671,7 @@ test("today's report of flooded main roads lists roads and matches those near a 
   await page.goto('/');
   const list = page.getByTestId('road-flooding');
   await expect(list.getByRole('heading')).toHaveText('ถนนสายหลัก กทม. ที่ยังท่วม 3 จุด');
+  await unfold(page, 'road-flooding');
   await expect(list).toContainText('ถ.สุขุมวิท · ซอยสุขุมวิท 26 ช่วงกลางซอย');
   await expect(list).toContainText('ถนนที่ไม่มีในรายการไม่ได้แปลว่าไม่ท่วม');
   // a road opens on the map only; the list stays
@@ -828,6 +838,34 @@ test('a dam the report leaves blank shows its last known figures with their day 
   await expect(page.getByTestId('dams-main-missing')).toContainText('เขื่อนหลัก 2 แห่ง');
 });
 
+test('a status bar says the whole picture and opens the folded section it names', async ({
+  page,
+}) => {
+  await prepare(page);
+  const manifest = read('active', 'manifest');
+  manifest.files.push({ path: 'water/dams.json', sha256: 'f'.repeat(64), size: 1, revision: 1 });
+  await page.route('**/examples/active/manifest.json?*', (route) =>
+    route.fulfill({ json: manifest }),
+  );
+  const data = JSON.parse(
+    readFileSync(new URL('../../../contracts/v1/examples/bkk/dams.json', import.meta.url), 'utf8'),
+  );
+  data.fetched_at = manifest.generated_at;
+  data.dams[2].percent = 104.2;
+  await page.route('**/water/dams.json?*', (route) => route.fulfill({ json: data }));
+  await page.goto('/');
+  // the panel reads at a glance (user, 2026-10-01): one line on top, the sections folded to their heading
+  const bar = page.getByTestId('status-bar');
+  await expect(bar).toBeVisible();
+  await expect(page.locator('#dams > details')).not.toHaveAttribute('open');
+  await expect(page.getByRole('heading', { name: /เขื่อนใหญ่ · เกินความจุ 1 แห่ง/ })).toBeVisible();
+  await bar.getByRole('button', { name: 'เขื่อนเกินความจุ 1 แห่ง' }).click();
+  await expect(page.locator('#dams > details')).toHaveAttribute('open');
+  await expect(
+    page.getByTestId('dams').locator('.dam-line').filter({ hasText: 'เขื่อนป่าสักชลสิทธิ์' }),
+  ).toBeVisible();
+});
+
 test('the side panel has no card that only repeats the radar time or how to use the map', async ({
   page,
 }) => {
@@ -864,6 +902,8 @@ test('the department situation text and the Chao Phraya dams show, with a note o
     route.fulfill({ json: example('dams.json') }),
   );
   await page.goto('/');
+  await unfold(page, 'situation');
+  await unfold(page, 'dams');
   const situation = page.getByTestId('situation');
   await expect(situation).toContainText('รายงานสถานการณ์ทดสอบประจำวัน');
   await expect(situation).toContainText('ฝนเล็กน้อย & ลมแรง');

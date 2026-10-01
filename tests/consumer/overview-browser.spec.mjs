@@ -5,6 +5,13 @@ import {
 import AxeBuilder from "../../apps/web/node_modules/@axe-core/playwright/dist/index.mjs";
 import { readFileSync } from "node:fs";
 
+// the side panel's sections fold to their heading line (Claude, 2026-10-01): open one before reading its list
+async function unfold(page, id) {
+  const fold = page.locator(`#${id} > details`);
+  if (!(await fold.evaluate((element) => element.open)))
+    await page.locator(`#${id} > details > summary`).click();
+}
+
 const read = (path) =>
   JSON.parse(
     readFileSync(
@@ -150,6 +157,7 @@ test("M27: summary does not keep a cluster after all reports pass D33's twelve-h
     title_th: `รายงานหมดอายุหมายเลข ${n}`,
   }));
   await prepare(page, file, { "live/floods.json": floods }, true);
+  await unfold(page, "floods-now");
   const item = page
     .getByTestId("summary")
     .getByRole("button", { name: /พื้นที่รายงานใกล้หมดอายุ/ });
@@ -183,6 +191,7 @@ for (const width of [1440, 390]) {
       percent: 100.15,
     });
     await prepare(page, overview, { "water/dams.json": dams });
+    await unfold(page, "dams");
     const card = page.getByTestId("summary");
     await expect(card).toContainText("ต้องระวังตอนนี้ 40 แห่ง");
     await expect(card.locator(".summary-item")).toHaveCount(5);

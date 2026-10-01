@@ -747,6 +747,67 @@ svg {
   gap: 7px;
   font-size: 1rem;
 }
+/* the whole picture in one line at the top of the panel (user 2026-10-01) */
+.status-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.status-chip.danger {
+  border-color: transparent;
+  background: var(--extreme-bg);
+  color: var(--extreme-ink);
+}
+.status-chip.warn {
+  border-color: transparent;
+  background: var(--severe-bg);
+  color: var(--severe-ink);
+}
+.status-chip.ok {
+  border-color: transparent;
+  background: var(--ok-bg);
+  color: var(--ok-ink);
+}
+/* a folded section: its heading line with the figure that matters, and a chevron */
+.fold > details > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 28px;
+  list-style: none;
+  cursor: pointer;
+}
+.fold > details > summary::-webkit-details-marker {
+  display: none;
+}
+.fold > details > summary::after {
+  content: '▾';
+  color: var(--muted);
+  transition: transform 0.15s;
+}
+.fold > details:not([open]) > summary::after {
+  transform: rotate(-90deg);
+}
+.fold > details[open] > summary {
+  margin-bottom: 8px;
+}
+.fold-body {
+  display: grid;
+  gap: 8px;
+}
 .heading-ok {
   color: var(--ok-ink);
 }

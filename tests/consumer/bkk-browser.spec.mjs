@@ -4,6 +4,13 @@ import {
 } from "../../apps/web/node_modules/@playwright/test/index.mjs";
 import { readFileSync } from "node:fs";
 
+// the side panel's sections fold to their heading line (Claude, 2026-10-01): open one before reading its list
+async function unfold(page, id) {
+  const fold = page.locator(`#${id} > details`);
+  if (!(await fold.evaluate((element) => element.open)))
+    await page.locator(`#${id} > details > summary`).click();
+}
+
 const read = (file) =>
   JSON.parse(
     readFileSync(
@@ -101,6 +108,7 @@ test("DXS situation text is readable as plain text and is separate from TMD aler
 }) => {
   await prepare(page, { "bkk/news.json": read("bkk/news.json") });
   await page.goto("/");
+  await unfold(page, "situation");
   await page
     .getByTestId("situation")
     .getByText("ข้อความต้นฉบับ", { exact: true })
@@ -109,7 +117,7 @@ test("DXS situation text is readable as plain text and is separate from TMD aler
   await expect(
     page
       .getByTestId("situation")
-      .locator("details")
+      .locator("details.history-details")
       .getByText(/ฝนเล็กน้อย & ลมแรง/),
   ).toBeVisible();
   await expect(
@@ -122,6 +130,7 @@ test("M15: a dam without coordinates remains available in the list", async ({
 }) => {
   await prepare(page, { "water/dams.json": read("bkk/dams.json") });
   await page.goto("/");
+  await unfold(page, "dams");
   await expect(page.getByText(/เขื่อนภูมิพล · น้ำ/)).toBeVisible();
   // contract 18: a dam without a place is listed (folded), never pinned at a guessed place
   await page.getByTestId("dams-others").locator("summary").click();
@@ -190,6 +199,7 @@ test("M14: an open tab removes a DOH report when its start becomes more than twe
   ];
   await prepare(page, { "live/floods.json": feed }, true);
   await page.goto("/");
+  await unfold(page, "floods-now");
   const report = page.getByRole("button", { name: /ทางหลวง 32/ });
   await expect(report).toBeVisible();
   await page.clock.fastForward(2 * 60000);

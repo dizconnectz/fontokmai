@@ -4,6 +4,13 @@ import {
 } from "../../apps/web/node_modules/@playwright/test/index.mjs";
 import { readFileSync } from "node:fs";
 
+// the side panel's sections fold to their heading line (Claude, 2026-10-01): open one before reading its list
+async function unfold(page, id) {
+  const fold = page.locator(`#${id} > details`);
+  if (!(await fold.evaluate((element) => element.open)))
+    await page.locator(`#${id} > details > summary`).click();
+}
+
 const read = (file) =>
   JSON.parse(
     readFileSync(
@@ -113,6 +120,7 @@ test("an empty fresh flood feed does not claim that there is no flooding", async
 }) => {
   await prepare(page, false, 0);
   await page.goto("/");
+  await unfold(page, "floods-now");
   await expect(
     page.getByText("ยังไม่มีรายงานที่ยังไม่หมดเวลา · ไม่ได้แปลว่าไม่มีน้ำท่วม"),
   ).toBeVisible();
@@ -123,6 +131,7 @@ test("an old flood feed remains labelled both on the summary and at a pin", asyn
 }) => {
   await prepare(page, false, 46);
   await page.goto("/");
+  await unfold(page, "floods-now");
   await expect(page.getByText(/รายงานน้ำท่วมไม่อัปเดตตั้งแต่/)).toBeVisible();
   await page.goto("/?pin=13.75,100.5");
   await expect(
