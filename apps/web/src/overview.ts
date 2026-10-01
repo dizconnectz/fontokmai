@@ -84,6 +84,33 @@ export function liveItems(overview: Overview, when: 'now' | 'next', now: number)
   );
 }
 
+/** "อ.ทับปุด จ.พังงา" → ["อ.ทับปุด", "จ.พังงา"]; "เขตจตุจักร กรุงเทพมหานคร" → ["เขตจตุจักร", "กรุงเทพมหานคร"] */
+export function placeParts(place: string): [string, string] {
+  const space = place.indexOf(' ');
+  return space < 0 ? [place, place] : [place.slice(0, space), place.slice(space + 1)];
+}
+
+export interface PlaceGroup {
+  province: string;
+  /** strongest first, as the summary orders them */
+  items: OverviewItem[];
+}
+
+/**
+ * The places to watch now by province (user 2026-10-01: fifteen district cards were too long to take in): the
+ * province of the strongest place first, each with its districts in the summary's order.
+ */
+export function groupByProvince(items: OverviewItem[]): PlaceGroup[] {
+  const groups = new Map<string, PlaceGroup>();
+  for (const item of items) {
+    const province = placeParts(item.place_th)[1];
+    const group = groups.get(province) ?? { province, items: [] };
+    group.items.push(item);
+    groups.set(province, group);
+  }
+  return [...groups.values()];
+}
+
 /**
  * The strongest official alert in effect or announced for the item's province, read from alerts.json: the
  * summary never copies alerts, it only points to them.

@@ -808,6 +808,33 @@ svg {
   display: grid;
   gap: 8px;
 }
+/* a chip's section lands below the fixed header of a phone, not under it */
+@media (max-width: 899px) {
+  .panel-section {
+    scroll-margin-top: 120px;
+  }
+}
+/* a province with several districts to watch: one card, its districts as chips */
+.summary-districts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 2px 4px 6px;
+}
+.district-chip {
+  min-height: 26px;
+  padding: 2px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.district-chip:hover {
+  background: var(--hover);
+}
 .heading-ok {
   color: var(--ok-ink);
 }

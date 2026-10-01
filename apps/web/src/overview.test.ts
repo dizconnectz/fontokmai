@@ -2,10 +2,12 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   dayWord,
+  groupByProvince,
   liveItems,
   officialFor,
   officialLine,
   oldInputs,
+  placeParts,
   reasonLine,
   type Overview,
 } from './overview';
@@ -106,5 +108,30 @@ describe('the summary of places to watch', () => {
       'มีประกาศเตือนภัยของกรมอุตุฯ 2 ฉบับ ครอบคลุม 2 จังหวัด (ดูด้านล่าง)',
     );
     expect(officialLine([])).toBeNull();
+  });
+});
+
+describe('the places to watch now go by province (user, 2026-10-01)', () => {
+  it('splits a place into its district and its province', () => {
+    expect(placeParts('อ.ทับปุด จ.พังงา')).toEqual(['อ.ทับปุด', 'จ.พังงา']);
+    expect(placeParts('เขตจตุจักร กรุงเทพมหานคร')).toEqual(['เขตจตุจักร', 'กรุงเทพมหานคร']);
+    expect(placeParts('จ.สระบุรี')).toEqual(['จ.สระบุรี', 'จ.สระบุรี']);
+  });
+
+  it('keeps the summary order: the province of the strongest place first, its districts in order', () => {
+    const item = overview.items[0];
+    const places = [
+      'อ.ปลายพระยา จ.กระบี่',
+      'อ.ทับปุด จ.พังงา',
+      'อ.เขาพนม จ.กระบี่',
+      'อ.ตะกั่วป่า จ.พังงา',
+    ];
+    const groups = groupByProvince(places.map((place_th) => ({ ...item, place_th })));
+    expect(
+      groups.map((group) => [group.province, group.items.map((i) => placeParts(i.place_th)[0])]),
+    ).toEqual([
+      ['จ.กระบี่', ['อ.ปลายพระยา', 'อ.เขาพนม']],
+      ['จ.พังงา', ['อ.ทับปุด', 'อ.ตะกั่วป่า']],
+    ]);
   });
 });

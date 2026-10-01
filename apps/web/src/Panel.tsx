@@ -113,6 +113,7 @@ import { StatusBar, statusCounts } from './StatusBar';
 import { situationSummary, situationTimeLabel } from './situation';
 import { BANK_COLORS, bankState, type BankObservation } from './overflow';
 import {
+  groupByProvince,
   liveItems,
   officialFor,
   officialLine,
@@ -120,6 +121,7 @@ import {
   OVERVIEW_STALE_MS,
   OVERVIEW_TOO_OLD_MS,
   OVERVIEW_TOP,
+  placeParts,
   reasonLine,
   type Overview as SummaryOverview,
   type OverviewItem,
@@ -766,11 +768,14 @@ function WatchSummary({
   alerts,
   now,
   onPlace,
+  onPlaces,
 }: {
   overview: SummaryOverview;
   alerts: Alert[];
   now: number;
   onPlace: (item: OverviewItem) => void;
+  /** the districts of a province together on the map */
+  onPlaces: (items: OverviewItem[]) => void;
 }) {
   const [all, setAll] = useState(false);
   const age = now - Date.parse(overview.generated_at);
@@ -782,8 +787,44 @@ function WatchSummary({
       title: 'เตรียมรับมือในวันข้างหน้า',
       empty: 'ยังไม่พบฝนหนักหรือน้ำขึ้นมากตามเกณฑ์',
     },
-  ].map((list) => ({ ...list, items: tooOld ? [] : liveItems(overview, list.when, now) }));
-  const more = lists.some((list) => list.items.length > OVERVIEW_TOP);
+  ].map((list) => {
+    const items = tooOld ? [] : liveItems(overview, list.when, now);
+    // the places to watch now go by province; the ones to prepare for are provinces, rivers and dams already
+    const groups =
+      list.when === 'now'
+        ? groupByProvince(items)
+        : items.map((item) => ({ province: item.place_th, items: [item] }));
+    return { ...list, items, groups };
+  });
+  const more = lists.some((list) => list.groups.length > OVERVIEW_TOP);
+  const placeButton = (item: OverviewItem) => {
+    const alert = officialFor(item, alerts, now);
+    // one line per reason, the three that matter most (they come ordered)
+    const lines = item.reasons
+      .map((reason) => reasonLine(reason, now))
+      .filter((line): line is string => line !== null)
+      .slice(0, 3);
+    return (
+      <li key={`${item.when}:${item.place_th}`}>
+        <button className="summary-item" onClick={() => onPlace(item)}>
+          <span className="summary-place">
+            <strong>{item.place_th}</strong>
+            {alert && (
+              <span className={`level-chip level-${alert.level}`}>
+                {alert.pending ? 'ประกาศล่วงหน้า' : 'มีประกาศ'} {LEVEL_LABEL[alert.level]}
+              </span>
+            )}
+          </span>
+          {item.detail_th && <small>{item.detail_th}</small>}
+          <span className="summary-reasons">
+            {lines.map((line) => (
+              <span key={line}>{line}</span>
+            ))}
+          </span>
+        </button>
+      </li>
+    );
+  };
   const official = officialLine(alerts);
   const missing = oldInputs(overview);
   return (
@@ -812,6 +853,9 @@ function WatchSummary({
           <h3>
             {list.title}
             {list.items.length > 0 && ` ${list.items.length} แห่ง`}
+            {list.groups.length > 1 &&
+              list.groups.length < list.items.length &&
+              ` ใน ${list.groups.length} จังหวัด`}
           </h3>
           {list.items.length === 0 ? (
             <p className="quiet">
@@ -819,18 +863,31 @@ function WatchSummary({
             </p>
           ) : (
             <ul className="summary-list">
-              {(all ? list.items : list.items.slice(0, OVERVIEW_TOP)).map((item) => {
-                const alert = officialFor(item, alerts, now);
-                // one line per reason, the three that matter most (they come ordered)
-                const lines = item.reasons
-                  .map((reason) => reasonLine(reason, now))
-                  .filter((line): line is string => line !== null)
-                  .slice(0, 3);
+              {(all ? list.groups : list.groups.slice(0, OVERVIEW_TOP)).map((group) => {
+                if (group.items.length === 1) return placeButton(group.items[0]);
+                // a province with several districts: one card, the first line of each kind of reason (what is
+                // happening before what is forecast), the districts as chips
+                const top = group.items[0];
+                const alert = officialFor(top, alerts, now);
+                const kinds = new Set<string>();
+                const happening: string[] = [];
+                const ahead: string[] = [];
+                for (const item of group.items)
+                  for (const reason of item.reasons) {
+                    const text = kinds.has(reason.kind) ? null : reasonLine(reason, now);
+                    if (text === null) continue;
+                    kinds.add(reason.kind);
+                    (reason.day ? ahead : happening).push(text);
+                  }
+                const lines = [...happening, ...ahead].slice(0, 3);
+                const unit = group.items.every((item) => item.place_th.startsWith('เขต'))
+                  ? 'เขต'
+                  : 'อำเภอ';
                 return (
-                  <li key={`${item.when}:${item.place_th}`}>
-                    <button className="summary-item" onClick={() => onPlace(item)}>
+                  <li key={`${list.when}:province:${group.province}`} className="summary-province">
+                    <button className="summary-item" onClick={() => onPlaces(group.items)}>
                       <span className="summary-place">
-                        <strong>{item.place_th}</strong>
+                        <strong>{group.province}</strong> · {group.items.length} {unit}
                         {alert && (
                           <span className={`level-chip level-${alert.level}`}>
                             {alert.pending ? 'ประกาศล่วงหน้า' : 'มีประกาศ'}{' '}
@@ -838,13 +895,23 @@ function WatchSummary({
                           </span>
                         )}
                       </span>
-                      {item.detail_th && <small>{item.detail_th}</small>}
                       <span className="summary-reasons">
                         {lines.map((line) => (
                           <span key={line}>{line}</span>
                         ))}
                       </span>
                     </button>
+                    <span className="summary-districts">
+                      {group.items.map((item) => (
+                        <button
+                          key={item.place_th}
+                          className="district-chip"
+                          onClick={() => onPlace(item)}
+                        >
+                          {placeParts(item.place_th)[0]}
+                        </button>
+                      ))}
+                    </span>
                   </li>
                 );
               })}
@@ -954,6 +1021,7 @@ export function Overview({
   onDam,
   summary,
   onPlace,
+  onPlaces,
   onSelectAlert,
   onFlood,
 }: {
@@ -974,6 +1042,7 @@ export function Overview({
   /** the places to watch (summary/overview.json), or null before it is published */
   summary: SummaryOverview | null;
   onPlace: (item: OverviewItem) => void;
+  onPlaces: (items: OverviewItem[]) => void;
   onSelectAlert: (id: string) => void;
   onFlood: (report: FloodReport) => void;
 }) {
@@ -982,7 +1051,15 @@ export function Overview({
   return (
     <>
       <StatusBar counts={statusCounts({ summary, floods, dams, alerts, trusted, worst, now })} />
-      {summary && <WatchSummary overview={summary} alerts={alerts} now={now} onPlace={onPlace} />}
+      {summary && (
+        <WatchSummary
+          overview={summary}
+          alerts={alerts}
+          now={now}
+          onPlace={onPlace}
+          onPlaces={onPlaces}
+        />
+      )}
       <FloodsNow
         floods={floods}
         floodsState={floodsState}

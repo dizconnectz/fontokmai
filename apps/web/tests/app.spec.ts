@@ -1039,7 +1039,11 @@ test('the summary of places to watch comes first, then flood reports, then the o
   const summary = page.getByTestId('summary');
   await expect(summary).toContainText('ภาพรวม: จุดที่ต้องระวัง');
   await expect(summary).toContainText('ไม่ใช่ประกาศทางการ');
-  await expect(summary).toContainText('เขตห้วยขวาง กรุงเทพมหานคร');
+  // the two districts of Bangkok are one card, the districts as chips (user, 2026-10-01)
+  await expect(summary).toContainText('กรุงเทพมหานคร · 2 เขต');
+  await expect(summary).toContainText('ต้องระวังตอนนี้ 2 แห่ง');
+  await expect(summary.locator('.district-chip')).toHaveText(['เขตจตุจักร', 'เขตห้วยขวาง']);
+  await expect(summary).toContainText('ถนนน้ำท่วมขัง 1 สาย ยังไม่แห้ง');
   await expect(summary).toContainText('น้ำท่วมหลายจุด (รายงาน 3 จุด)');
   await expect(summary).toContainText(
     'อีก 2 วัน (วันอาทิตย์): ฝนหนักเกือบทั้งจังหวัด สูงสุดราว 50 มม.',

@@ -846,6 +846,21 @@ export default function App() {
                 if (typeof matchMedia === 'function' && matchMedia('(max-width: 899px)').matches)
                   window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
+              onPlaces={(items) => {
+                // the districts of a province together: the box around them, a little wider
+                const xs = items.map((item) => item.location[0]);
+                const ys = items.map((item) => item.location[1]);
+                setFocus({
+                  key: `summary-province:${items[0].place_th}:${Date.now()}`,
+                  bounds: [
+                    [Math.min(...xs) - 0.08, Math.min(...ys) - 0.08],
+                    [Math.max(...xs) + 0.08, Math.max(...ys) + 0.08],
+                  ],
+                  maxZoom: 11,
+                });
+                if (typeof matchMedia === 'function' && matchMedia('(max-width: 899px)').matches)
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
               onDam={(location) => {
                 setFocus({
                   key: `dam:${location.join(',')}:${Date.now()}`,
