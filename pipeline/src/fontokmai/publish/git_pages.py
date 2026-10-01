@@ -20,6 +20,11 @@ INDEX_HTML = (
     "</html>\n"
 )
 COMMITTER = ("fontokmai publisher", "4536990+dizconnectz@users.noreply.github.com")
+# git leaves nothing running behind a publish: no detached auto-maintenance or gc (the work tree is new every round,
+# and git 2.47 starts a background `git maintenance` after each commit; orphaned, they filled the container's process
+# limit on 2026-10-01), and a git that hangs is stopped so that the rounds go on
+GIT_OPTIONS = ("-c", "maintenance.auto=false", "-c", "gc.auto=0")
+GIT_TIMEOUT_S = 300
 
 
 class PublishError(RuntimeError):
@@ -33,7 +38,11 @@ def _remove_readonly(func, path, _exc) -> None:
 
 
 def _git(cwd: Path, *args: str, env: dict[str, str] | None = None) -> str:
-    result = subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, env=env)
+    try:
+        result = subprocess.run(["git", *GIT_OPTIONS, *args], cwd=cwd, capture_output=True, text=True, env=env,
+                                timeout=GIT_TIMEOUT_S)
+    except subprocess.TimeoutExpired as exc:
+        raise PublishError(f"git {args[0]} did not finish in {GIT_TIMEOUT_S} s") from exc
     if result.returncode != 0:
         raise PublishError(f"git {args[0]} failed: {result.stderr.strip()}")
     return result.stdout.strip()

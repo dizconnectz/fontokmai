@@ -9,6 +9,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 SLOT_MINUTES = (3, 18, 33, 48)
+RESTART_EXIT = 75  # EX_TEMPFAIL: ended on purpose, to be started again
 
 
 def next_slot(now: datetime) -> datetime:
@@ -47,4 +48,8 @@ def run_forever(job: Callable[[datetime], dict[str, Any]], *, clock: Callable[[]
             record.update(getattr(exc, "round_summary", {}))
             record.update(ok=False, error=f"{type(exc).__name__}: {exc}")
         log(json.dumps(record, ensure_ascii=False))
+        if record.get("restart"):
+            # the round asked for a fresh start (publishing failed round after round, or the process limit is
+            # near): the process ends and Docker's restart policy starts the collector again
+            raise SystemExit(RESTART_EXIT)
         rounds += 1

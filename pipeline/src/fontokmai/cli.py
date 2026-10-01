@@ -27,6 +27,7 @@ from fontokmai.forecast_build import (
     refresh_rain_forecast,
     refresh_river_forecast,
 )
+from fontokmai.health import process_pressure
 from fontokmai.housekeeping import housekeeping, published_epoch, restore_db
 from fontokmai.publish.git_pages import publish_snapshot
 from fontokmai.road_flood_build import build_road_flood_history, fixture_files, is_fresh
@@ -38,6 +39,10 @@ from fontokmai.sources.tmd_cap.fetch import LiveFetcher, fixture_fetcher
 from fontokmai.sources.tmd_radar import summary as radar_summary
 
 ROAD_FLOOD_RETRY = timedelta(hours=6)
+# the collector restarts itself (Docker starts it again) after this many failed publishes in a row, or when its
+# container nears the process limit: a stuck process heals within the hour instead of leaving the site stale
+RESTART_AFTER_FAILED_PUBLISHES = 3
+RESTART_AT_PROCESS_SHARE = 0.8
 
 
 def ssh_command(key: Path, known_hosts: Path) -> str:
@@ -146,6 +151,7 @@ def _dxs_account(path: Path | None) -> Any:
 def _scheduled_job(args: argparse.Namespace) -> Callable[[datetime], dict[str, Any]]:
     ssh = ssh_command(args.ssh_key, args.known_hosts) if args.ssh_key and args.known_hosts else None
     last_road_attempt: list[datetime] = []
+    failed_publishes = [0]  # in a row
 
     def refresh_road_flood(now: datetime) -> str | None:
         """Weekly rebuild of the road-flood history; failures never stop the alerts snapshot."""
@@ -186,8 +192,10 @@ def _scheduled_job(args: argparse.Namespace) -> Callable[[datetime], dict[str, A
                 commit = publish_snapshot(args.out, args.publish_work, args.publish_remote,
                                           message=result.manifest.generation_id, ssh_command=ssh)
                 summary["published"] = commit[:12]
+                failed_publishes[0] = 0
             except Exception as exc:  # noqa: BLE001 - the round still keeps its backup, then fails (Codex M32)
                 failed = exc
+                failed_publishes[0] += 1
         if failed is None:
             # after publishing: the paced requests (about 2.5 minutes) never delay the alerts; the next round
             # lists the new forecast
@@ -203,6 +211,13 @@ def _scheduled_job(args: argparse.Namespace) -> Callable[[datetime], dict[str, A
             summary["keep"] = housekeeping(args.db, args.out, now, summary)
         except Exception as exc:  # noqa: BLE001
             summary["keep"] = {"error": f"{type(exc).__name__}: {exc}"[:300]}
+        pressure = process_pressure()
+        if pressure:
+            summary["processes"] = f"{pressure[0]}/{pressure[1]}"
+        if failed_publishes[0] >= RESTART_AFTER_FAILED_PUBLISHES:
+            summary["restart"] = f"publishing failed {failed_publishes[0]} rounds in a row"
+        elif pressure and pressure[0] >= RESTART_AT_PROCESS_SHARE * pressure[1]:
+            summary["restart"] = f"{pressure[0]} of the container's {pressure[1]} processes in use"
         if failed is not None:
             # the round is logged as failed with its own error; what it did before goes with it (schedule.py)
             failed.round_summary = summary  # type: ignore[attr-defined]
