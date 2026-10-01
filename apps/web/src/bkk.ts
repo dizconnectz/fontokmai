@@ -251,6 +251,39 @@ export function damWords(percent: number | null): string | null {
   return percent === null ? null : DAM_CLASSES[damClass(percent)].label;
 }
 
+/** Capacity and the previous release are reference data, not readings for this report day. Zero is a reading. */
+export function hasDamReadings(dam: Dam): boolean {
+  return [dam.percent, dam.volume_mcm, dam.inflow_mcm, dam.outflow_mcm].some(
+    (value) => value !== null,
+  );
+}
+
+/** Only figures actually supplied by the source; never make a row of missing-value dashes. */
+export function damReadingLines(dam: Dam): string[] {
+  const lines: string[] = [];
+  if (dam.volume_mcm !== null) {
+    const capacity = dam.storage_mcm !== null ? ` / ${amount(dam.storage_mcm)}` : '';
+    lines.push(`ปริมาณน้ำ ${amount(dam.volume_mcm)}${capacity} ล้าน ลบ.ม.`);
+  }
+  const flows = [
+    dam.inflow_mcm !== null ? `ไหลเข้า ${amount(dam.inflow_mcm)}` : null,
+    dam.outflow_mcm !== null ? `ระบาย ${amount(dam.outflow_mcm)}` : null,
+  ].filter(Boolean);
+  if (flows.length) lines.push(`${flows.join(' · ')} ล้าน ลบ.ม./วัน`);
+  return lines;
+}
+
+/** Keep a gap visible without suggesting that an unreported release is zero or that the dam is safe. */
+export function damMissingText(dam: Dam): string | null {
+  if (!hasDamReadings(dam)) return 'ยังไม่มีตัวเลขปริมาณน้ำและการระบายในรายงานนี้';
+  const missing = [
+    dam.volume_mcm === null && dam.percent === null ? 'ปริมาณน้ำในอ่าง' : null,
+    dam.inflow_mcm === null ? 'น้ำไหลเข้า' : null,
+    dam.outflow_mcm === null ? 'การระบายน้ำ' : null,
+  ].filter(Boolean);
+  return missing.length ? `ยังไม่มีข้อมูล: ${missing.join(' / ')}` : null;
+}
+
 /**
  * Release up a lot: a trial rule of this site, not the department's (contract section 18, /method), the same as the
  * producer's (bma_dxs.release_up): at least 1 million m³ a day more than the report before, and half as much again.

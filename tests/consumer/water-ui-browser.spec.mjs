@@ -266,22 +266,24 @@ test("dam bars clamp overflow, show missing values, and limit downstream text to
     [0, "80%", true],
     [1, "100%", true],
     [2, "79%", false],
-    [3, "0%", false],
+    [3, null, false],
   ]) {
     const line = card
       .locator(".dam-line")
       .filter({ hasText: `เขื่อนตรวจ${n}` });
-    await expect(line.locator(".dam-fill")).toHaveAttribute(
-      "style",
-      new RegExp(`width: ${width}`),
-    );
+    if (width === null) await expect(line.locator(".dam-bar")).toHaveCount(0);
+    else
+      await expect(line.locator(".dam-fill")).toHaveAttribute(
+        "style",
+        new RegExp(`width: ${width}`),
+      );
     await expect(line.locator(".dam-downstream")).toHaveCount(
       downstream ? 1 : 0,
     );
   }
   await expect(
     card.locator(".dam-line").filter({ hasText: "เขื่อนตรวจ3" }),
-  ).toContainText("ไม่มีตัวเลข");
+  ).not.toContainText("ไม่มีตัวเลข");
   await expect(card).toContainText("ไม่ใช่การพยากรณ์ว่าจะท่วม");
 });
 

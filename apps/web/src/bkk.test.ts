@@ -5,6 +5,9 @@ import {
   bangkokDistrict,
   damPin,
   damWords,
+  damMissingText,
+  damReadingLines,
+  hasDamReadings,
   releaseChange,
   releaseWords,
   floodingText,
@@ -44,6 +47,41 @@ const flooding = read<RoadFloodingDaily>('flooding.json');
 const dams = read<DamReport>('dams.json');
 const weather = read<WeatherToday>('weather-today.json');
 const AT = Date.parse('2026-09-26T17:20:00+07:00');
+
+describe('dam readings when the source omits the daily figures', () => {
+  const missing = {
+    ...dams.dams[0],
+    percent: null,
+    volume_mcm: null,
+    inflow_mcm: null,
+    outflow_mcm: null,
+    previous_outflow_mcm: 2,
+  };
+
+  it('does not count capacity or a previous release as a current reading', () => {
+    expect(hasDamReadings(missing)).toBe(false);
+    expect(damReadingLines(missing)).toEqual([]);
+    expect(damMissingText(missing)).toBe('ยังไม่มีตัวเลขปริมาณน้ำและการระบายในรายงานนี้');
+  });
+
+  it.each(['percent', 'volume_mcm', 'inflow_mcm', 'outflow_mcm'] as const)(
+    'keeps a reported zero in %s',
+    (key) => {
+      expect(hasDamReadings({ ...missing, [key]: 0 })).toBe(true);
+    },
+  );
+
+  it('keeps partial observations with units and states the gaps without placeholder numbers', () => {
+    const partial = { ...missing, outflow_mcm: 0 };
+    expect(damReadingLines(partial)).toEqual(['ระบาย 0 ล้าน ลบ.ม./วัน']);
+    expect(damMissingText(partial)).toBe('ยังไม่มีข้อมูล: ปริมาณน้ำในอ่าง / น้ำไหลเข้า');
+    expect(damReadingLines({ ...partial, volume_mcm: 0, storage_mcm: null })).toEqual([
+      'ปริมาณน้ำ 0 ล้าน ลบ.ม.',
+      'ระบาย 0 ล้าน ลบ.ม./วัน',
+    ]);
+    expect(damMissingText({ ...partial, percent: 0, inflow_mcm: 0 })).toBeNull();
+  });
+});
 
 describe('dam releases against the report before', () => {
   const dam = (outflow: number | null, previous: number | null | undefined) => ({

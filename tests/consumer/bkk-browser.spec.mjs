@@ -233,7 +233,8 @@ for (const kind of ["dam", "weather"]) {
     ).toBeVisible();
     await expect(popup).toContainText(/ไม่ใช่ข้อมูลเรียลไทม์.*26.*2569/);
     if (kind === "dam") {
-      await expect(popup).toContainText("ระบาย – ล้าน ลบ.ม./วัน");
+      await expect(popup).toContainText("ยังไม่มีข้อมูล: การระบายน้ำ");
+      await expect(popup).not.toContainText("ระบาย –");
     } else
       await expect(popup).toContainText("ฝน 24 ชม. ถึงรอบตรวจเช้า: ไม่มีฝน");
     await expect(popup.getByRole("link")).toHaveAttribute("rel", /noopener/);

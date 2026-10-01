@@ -19,6 +19,8 @@ import { bankFeatures, bankState, type BankObservation } from './overflow';
 import {
   amount,
   damPin,
+  damMissingText,
+  damReadingLines,
   damWords,
   DAY_RAIN_CLASSES,
   DAM_CLASSES,
@@ -411,17 +413,15 @@ function releaseLine(dam: Dam, file: DamReport): HTMLElement[] {
 function damPopup(dam: Dam, file: DamReport, now: number): HTMLElement {
   const root = document.createElement('div');
   root.className = 'camera-popup';
+  const missing = damMissingText(dam);
   root.append(
     line(dam.name_th, 'strong'),
     line([dam.region_th, dam.owner_th].filter(Boolean).join(' · ')),
-    line(
-      dam.percent === null
-        ? 'ไม่มีค่าร้อยละ'
-        : `${damWords(dam.percent)} · ${amount(dam.percent)}% ของความจุ`,
-      'b',
-    ),
-    line(`ปริมาณน้ำ ${amount(dam.volume_mcm)} / ${amount(dam.storage_mcm)} ล้าน ลบ.ม.`),
-    line(`ไหลเข้า ${amount(dam.inflow_mcm)} · ระบาย ${amount(dam.outflow_mcm)} ล้าน ลบ.ม./วัน`),
+    ...(dam.percent !== null
+      ? [line(`${damWords(dam.percent)} · ${amount(dam.percent)}% ของความจุ`, 'b')]
+      : []),
+    ...damReadingLines(dam).map((reading) => line(reading)),
+    ...(missing ? [line(missing)] : []),
     ...releaseLine(dam, file),
     line(`ข้อมูลวันที่ ${thaiDay(file.report_date)}`),
     ...note(file.fetched_at, now),

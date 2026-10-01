@@ -78,7 +78,10 @@ import {
   amount,
   CHAO_PHRAYA_DAMS,
   damColor,
+  damMissingText,
+  damReadingLines,
   damWords,
+  hasDamReadings,
   isTodaysReport,
   releaseChange,
   releaseWords,
@@ -567,30 +570,33 @@ function DamLine({
   // classes change (30, 50, 80 %): read at a glance, the words and figures say the same for a screen reader
   const fill = dam.percent === null ? 0 : Math.max(0, Math.min(dam.percent, 100));
   const change = previousDay ? releaseChange(dam) : null;
+  const missing = damMissingText(dam);
   const text = (
     <span className="dam-line">
       <span className="dam-head">
         <span>
-          <strong>{dam.name_th}</strong> · {damWords(dam.percent) ?? 'ไม่มีตัวเลข'}
+          <strong>{dam.name_th}</strong>
+          {dam.percent !== null && ` · ${damWords(dam.percent)}`}
         </span>
-        <b className="dam-percent">{dam.percent === null ? '–' : `${amount(dam.percent)}%`}</b>
+        {dam.percent !== null && <b className="dam-percent">{amount(dam.percent)}%</b>}
       </span>
-      <span
-        className={`dam-bar ${dam.percent !== null && dam.percent > 100 ? 'over' : ''}`}
-        aria-hidden="true"
-      >
-        <span
-          className="dam-fill"
-          style={{ width: `${fill}%`, background: damColor(dam.percent) }}
-        />
-        <i style={{ left: '30%' }} />
-        <i style={{ left: '50%' }} />
-        <i style={{ left: '80%' }} />
-      </span>
-      <small>
-        {dam.region_th ? `${dam.region_th} · ` : ''}ไหลเข้า {amount(dam.inflow_mcm)} · ระบาย{' '}
-        {amount(dam.outflow_mcm)} ล้าน ลบ.ม./วัน{!dam.location && ' · ไม่มีหมุดบนแผนที่'}
-      </small>
+      {dam.percent !== null && (
+        <span className={`dam-bar ${dam.percent > 100 ? 'over' : ''}`} aria-hidden="true">
+          <span
+            className="dam-fill"
+            style={{ width: `${fill}%`, background: damColor(dam.percent) }}
+          />
+          <i style={{ left: '30%' }} />
+          <i style={{ left: '50%' }} />
+          <i style={{ left: '80%' }} />
+        </span>
+      )}
+      {dam.region_th && <small>{dam.region_th}</small>}
+      {damReadingLines(dam).map((reading) => (
+        <small key={reading}>{reading}</small>
+      ))}
+      {missing && <small className="quiet">{missing}</small>}
+      {!dam.location && <small>ไม่มีหมุดบนแผนที่</small>}
       {/* the release against the report before (GetDam gives one day: the day before is what the site had) */}
       {change && previousDay && (
         <small className={`dam-release ${change.direction}${change.big ? ' big' : ''}`}>
@@ -632,8 +638,11 @@ function ChaoPhrayaDams({
   /** show the dam on the map; the side panel stays */
   onDam: (location: number[]) => void;
 }) {
-  const main = CHAO_PHRAYA_DAMS.flatMap((id) => dams.dams.filter((dam) => dam.id === id));
-  const rest = dams.dams
+  const available = dams.dams.filter(hasDamReadings);
+  const missing = dams.dams.filter((dam) => !hasDamReadings(dam));
+  const main = CHAO_PHRAYA_DAMS.flatMap((id) => available.filter((dam) => dam.id === id));
+  const missingMain = CHAO_PHRAYA_DAMS.filter((id) => !main.some((dam) => dam.id === id)).length;
+  const rest = available
     .filter((dam) => !CHAO_PHRAYA_DAMS.includes(dam.id))
     .sort((a, b) => (b.percent ?? -1) - (a.percent ?? -1));
   // over storage capacity, or releasing a lot more than the report before, is worth seeing without opening the
@@ -644,21 +653,33 @@ function ChaoPhrayaDams({
     ? rest.filter((dam) => !full.includes(dam) && releaseChange(dam)?.big)
     : [];
   const others = rest.filter((dam) => !full.includes(dam) && !releasing.includes(dam));
-  if (!dams.dams.length) return null;
   const note = oldNote(dams.fetched_at, now);
   return (
     <section className="panel-section" aria-labelledby="dams-heading" data-testid="dams">
       <h2 id="dams-heading">
-        <DamIcon size={18} /> เขื่อนใหญ่ {dams.dams.length} แห่ง
+        <DamIcon size={18} /> เขื่อนใหญ่
       </h2>
-      {main.length > 0 && (
+      <p className="quiet" data-testid="dams-coverage">
+        {available.length > 0
+          ? `มีตัวเลขในรายงานนี้ ${available.length} จาก ${dams.dams.length} แห่ง`
+          : 'ยังไม่มีตัวเลขเขื่อนในรายงานนี้'}
+      </p>
+      {(main.length > 0 || missingMain > 0) && (
         <>
           <h3 className="dams-group">เขื่อนหลักเหนือกรุงเทพฯ (ลุ่มเจ้าพระยา)</h3>
-          <ul className="flood-list">
-            {main.map((dam) => (
-              <DamLine key={dam.id} dam={dam} previousDay={previousDay} onDam={onDam} />
-            ))}
-          </ul>
+          {main.length > 0 && (
+            <ul className="flood-list">
+              {main.map((dam) => (
+                <DamLine key={dam.id} dam={dam} previousDay={previousDay} onDam={onDam} />
+              ))}
+            </ul>
+          )}
+          {missingMain > 0 && (
+            <p className="inline-warning" data-testid="dams-main-missing">
+              ยังไม่มีตัวเลขล่าสุดของเขื่อนหลัก {missingMain} แห่ง
+              จึงยังประเมินสถานการณ์ของเขื่อนที่ขาดข้อมูลไม่ได้
+            </p>
+          )}
         </>
       )}
       {full.length > 0 && (
@@ -691,6 +712,24 @@ function ChaoPhrayaDams({
           </ul>
         </details>
       )}
+      {missing.length > 0 && (
+        <details className="flood-history" data-testid="dams-missing">
+          <summary>เขื่อนที่ยังไม่มีตัวเลขในรายงานนี้ ({missing.length} แห่ง)</summary>
+          <ul className="flood-list">
+            {missing.map((dam) => (
+              <li key={dam.id}>
+                {dam.location ? (
+                  <button className="road-button" onClick={() => onDam(dam.location!)}>
+                    {dam.name_th}
+                  </button>
+                ) : (
+                  dam.name_th
+                )}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
       {note && (
         <p className="inline-warning">
           <Info size={15} /> {note}
@@ -698,8 +737,11 @@ function ChaoPhrayaDams({
       )}
       <small className="source-note">
         ข้อมูลวันที่ {thaiDay(dams.report_date)} · ที่มา: {shortCredit(dams.credit_th)} ·
-        แตะชื่อเพื่อดูบนแผนที่ · น้ำเกิน 80% แปลว่าเหลือที่รับน้ำน้อย ไม่ใช่การพยากรณ์ว่าจะท่วม
+        แตะชื่อเพื่อดูบนแผนที่
+        {available.some((dam) => dam.percent !== null) &&
+          ' · น้ำเกิน 80% แปลว่าเหลือที่รับน้ำน้อย ไม่ใช่การพยากรณ์ว่าจะท่วม'}
         {previousDay &&
+          available.some((dam) => releaseChange(dam)) &&
           ` · ระบายเพิ่มมาก = เพิ่มอย่างน้อย 1 ล้าน ลบ.ม./วัน และอย่างน้อยครึ่งหนึ่งจากรายงาน ${thaiDay(previousDay)} (เกณฑ์ทดลองของเว็บ)`}
       </small>
     </section>
