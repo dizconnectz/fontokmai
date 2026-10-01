@@ -45,9 +45,12 @@
 ### A5. งานที่กำลังทำ (Active claims)
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
-| Claude | 2026-10-01 13:25 | `pipeline/src/fontokmai/{contracts/bkk,sources/bma_dxs,overview_build,cli}.py` + tests, contracts/v1 generated, `apps/web/src/{bkk,Panel,MapView}.ts(x)` + tests, `/method`, contract README §18 | ตัวเลขเขื่อนล่าสุดพร้อมวันที่เมื่อรายงานวันนี้ว่าง (ผู้ใช้ขอ) | last-known |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md`)
+
+#### 2026-10-01 13:50 ICT — ตัวเลขเขื่อนล่าสุดพร้อมวันที่เมื่อรายงานของวันว่าง · เลิกส่งอีเมล (Claude)
+- **ผู้ใช้**: รายงาน DXS 1 ต.ค. มีตัวเลข 10/35 เขื่อน (ดิบเป็นค่าว่างจริง) → `d016f56` สัญญาข้อ 18 `dams[].last_known` (วันรายงาน+เวลาดึง ≤ 7 วัน) การ์ด/หมุด/popup แสดงพร้อมวันที่ · สรุปใช้ได้ถ้า ≤ 1 วัน · เติมของวันนี้บน VPS จากคลัง 30 ก.ย. (25 เขื่อน) รอบ 13:48 เผยแพร่แล้ว (ยังรอ cache Pages ยืนยัน)
+- **ไม่ส่งอีเมล** (`d07ddbf`): data-watch เขียนผลใน log เท่านั้น · ตรวจจริง pytest 216 · consumer 57/61/62 · Playwright 74 · CI ผ่าน · **ต่อไป**: Codex ทวน `d016f56`, `d07ddbf` (C2 ข้อ 13)
 
 #### 2026-10-01 11:55 ICT — ข้อมูลค้าง 12 ชม. แก้และกันซ้ำ · ลบข้อมูลเก่าเองเมื่อดิสก์ใกล้เต็ม · M38 แทน Codex · ตัดการ์ด (Claude)
 - **เหตุ**: 30 ก.ย. 22:33 – 1 ต.ค. 10:45 publish ล้มทุกรอบ `cannot fork()`: git 2.47 ทิ้ง `git maintenance` แบบ detach ทุก commit, PID 1 (Python) ไม่เก็บ → zombie 126 ตัวเต็ม pids 128 · เว็บค้างที่ 22:03 แต่ยังเก็บ/สำรอง/เข้าคลัง (M32) · data-watch เปิด issue #2 ตอน 03:16
