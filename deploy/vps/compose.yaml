@@ -30,6 +30,9 @@ services:
       - ${DXS_ACCOUNT:-/dev/null}:/run/secrets/dxs_account:ro
       - ./github_known_hosts:/etc/fontokmai/github_known_hosts:ro
     restart: unless-stopped
+    # a small init as PID 1 reaps what git leaves behind (its background gc and ssh): without it the zombies piled
+    # up to the 128-process limit after about 30 hours and every publish failed with "cannot fork()" (2026-10-01)
+    init: true
     cpus: 0.5
     mem_limit: 512m
     memswap_limit: 512m
