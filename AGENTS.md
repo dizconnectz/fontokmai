@@ -45,6 +45,7 @@
 ### A5. งานที่กำลังทำ (Active claims)
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
+| Claude | 2026-10-01 13:25 | `pipeline/src/fontokmai/{contracts/bkk,sources/bma_dxs,overview_build,cli}.py` + tests, contracts/v1 generated, `apps/web/src/{bkk,Panel,MapView}.ts(x)` + tests, `/method`, contract README §18 | ตัวเลขเขื่อนล่าสุดพร้อมวันที่เมื่อรายงานวันนี้ว่าง (ผู้ใช้ขอ) | last-known |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md`)
 
