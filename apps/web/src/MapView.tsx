@@ -418,7 +418,7 @@ function damPopup(dam: Dam, file: DamReport, now: number): HTMLElement {
   root.className = 'camera-popup';
   const shown = shownDam(dam);
   const carried = carriedFrom(dam);
-  const missing = carried ? null : damMissingText(dam);
+  const missing = damMissingText(shown);
   root.append(
     line(dam.name_th, 'strong'),
     line([dam.region_th, dam.owner_th].filter(Boolean).join(' · ')),
@@ -429,7 +429,7 @@ function damPopup(dam: Dam, file: DamReport, now: number): HTMLElement {
     ...(carried ? [line(carriedText(carried), 'small')] : []),
     ...(missing ? [line(missing)] : []),
     ...releaseLine(dam, file),
-    line(`ข้อมูลวันที่ ${thaiDay(file.report_date)}`),
+    line(`${carried ? 'รายงานรอบนี้วันที่' : 'ข้อมูลวันที่'} ${thaiDay(file.report_date)}`),
     ...note(file.fetched_at, now),
     ...(dam.location_kind === 'reservoir' ? [line('หมุดอยู่กลางอ่างเก็บน้ำ', 'small')] : []),
     sourceLink(file.source_url, file.credit_th),

@@ -550,7 +550,7 @@ function DamLine({
   const carried = carriedFrom(dam);
   const fill = shown.percent === null ? 0 : Math.max(0, Math.min(shown.percent, 100));
   const change = previousDay ? releaseChange(dam) : null;
-  const missing = carried ? null : damMissingText(dam);
+  const missing = damMissingText(shown);
   const text = (
     <span className="dam-line">
       <span className="dam-head">

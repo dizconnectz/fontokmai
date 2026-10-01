@@ -225,6 +225,9 @@ test("M38: a subsequent feed restores readings without a reload and does not ret
   const state = await prepare(page, missing);
   await page.goto("/");
   const card = page.getByTestId("dams");
+  await expect(page.getByTestId("dams-coverage")).toHaveText(
+    "ยังไม่มีตัวเลขเขื่อนในรายงานนี้",
+  );
   await expect(card.locator(".dam-line")).toHaveCount(0);
   state.file = report(
     missing.dams.map((dam) => ({
@@ -257,4 +260,75 @@ test("M38: a subsequent feed restores readings without a reload and does not ret
   await expect(page.getByTestId("dams-main-missing")).toContainText(
     "เขื่อนหลัก 4 แห่ง",
   );
+});
+
+test("M39: an all-null last-known object does not bring back empty dam cards", async ({
+  page,
+}) => {
+  const file = report(
+    missingDams().map((dam) => ({
+      ...dam,
+      last_known: {
+        report_date: "2026-09-30",
+        fetched_at: "2026-09-30T17:14:00+07:00",
+        percent: null,
+        volume_mcm: null,
+        inflow_mcm: null,
+        outflow_mcm: null,
+      },
+    })),
+  );
+  await prepare(page, file);
+  await page.goto("/");
+  const card = page.getByTestId("dams");
+  await expect(page.getByTestId("dams-main-missing")).toContainText(
+    "เขื่อนหลัก 4 แห่ง",
+  );
+  await expect(card.locator(".dam-line")).toHaveCount(0);
+  await expect(page.getByTestId("dams-coverage")).not.toContainText(
+    "แสดงตัวเลขล่าสุดที่มี",
+  );
+});
+
+test("M39: partial last-known readings preserve zero and explain gaps and both dates in card and popup", async ({
+  page,
+}) => {
+  const file = report([
+    {
+      ...missingDams()[0],
+      last_known: {
+        report_date: "2026-09-30",
+        fetched_at: "2026-09-30T17:14:00+07:00",
+        percent: null,
+        volume_mcm: null,
+        inflow_mcm: null,
+        outflow_mcm: 0,
+      },
+    },
+  ]);
+  await prepare(page, file);
+  await page.goto("/");
+  const card = page.getByTestId("dams");
+  const line = card.locator(".dam-line");
+  await expect(line).toContainText("ระบาย 0 ล้าน ลบ.ม./วัน");
+  await expect(line).toContainText(
+    "ยังไม่มีข้อมูล: ปริมาณน้ำในอ่าง / น้ำไหลเข้า",
+  );
+  await expect(line).toContainText("รายงานวันที่ 30 ก.ย. 2569");
+  await expect(line).toContainText("ดึงเมื่อ 30 ก.ย. 17:14 น.");
+  await expect(line).not.toContainText("รายงานวันนี้");
+  await expect(line.locator(".dam-bar, .dam-release")).toHaveCount(0);
+  await card.getByRole("button", { name: /เขื่อนภูมิพล/ }).click();
+  await expect(page.getByTestId("map-surface")).toHaveAttribute(
+    "aria-busy",
+    "false",
+  );
+  await clickMiddleSymbol(page);
+  const popup = page.locator(".maplibregl-popup");
+  await expect(popup).toContainText(
+    "ยังไม่มีข้อมูล: ปริมาณน้ำในอ่าง / น้ำไหลเข้า",
+  );
+  await expect(popup).toContainText("รายงานวันที่ 30 ก.ย. 2569");
+  await expect(popup).toContainText("รายงานรอบนี้วันที่ 1 ต.ค. 2569");
+  await expect(popup).not.toContainText("ข้อมูลวันที่ 1 ต.ค.");
 });

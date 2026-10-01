@@ -123,8 +123,18 @@ describe('a dam the report leaves blank keeps its last known figures, dated', ()
 
   it('says the day of the report and when it was fetched', () => {
     expect(carriedText(last)).toBe(
-      'ตัวเลขล่าสุดที่มี: รายงานวันที่ 30 ก.ย. 2569 · ดึงเมื่อ 30 ก.ย. 17:14 น. (รายงานวันนี้ยังไม่มีตัวเลข)',
+      'ตัวเลขล่าสุดที่มี: รายงานวันที่ 30 ก.ย. 2569 · ดึงเมื่อ 30 ก.ย. 17:14 น. (รายงานฉบับนี้ยังไม่มีตัวเลข)',
     );
+  });
+
+  it('ignores an empty last-known set but preserves a partial set and a real zero', () => {
+    const empty = { ...last, percent: null, volume_mcm: null, inflow_mcm: null, outflow_mcm: null };
+    const blank = { ...dam(null, null), last_known: empty };
+    expect(carriedFrom(blank)).toBeNull();
+    expect(hasDamReadings(shownDam(blank))).toBe(false);
+    const partial = { ...blank, last_known: { ...empty, outflow_mcm: 0 } };
+    expect(damReadingLines(shownDam(partial))).toEqual(['ระบาย 0 ล้าน ลบ.ม./วัน']);
+    expect(damMissingText(shownDam(partial))).toBe('ยังไม่มีข้อมูล: ปริมาณน้ำในอ่าง / น้ำไหลเข้า');
   });
 });
 

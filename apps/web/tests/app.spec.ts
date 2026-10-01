@@ -821,7 +821,7 @@ test('a dam the report leaves blank shows its last known figures with their day 
   const line = dams.locator('.dam-line').filter({ hasText: 'เขื่อนภูมิพล' });
   await expect(line.locator('.dam-percent')).toHaveText('65.37%');
   await expect(line.locator('.dam-carried')).toHaveText(
-    'ตัวเลขล่าสุดที่มี: รายงานวันที่ 25 ก.ย. 2569 · ดึงเมื่อ 25 ก.ย. 17:14 น. (รายงานวันนี้ยังไม่มีตัวเลข)',
+    'ตัวเลขล่าสุดที่มี: รายงานวันที่ 25 ก.ย. 2569 · ดึงเมื่อ 25 ก.ย. 17:14 น. (รายงานฉบับนี้ยังไม่มีตัวเลข)',
   );
   await expect(page.getByTestId('dams-coverage')).toContainText('อีก 1 แห่งแสดงตัวเลขล่าสุดที่มี');
   // Bhumibol is shown, dated: only the two main dams the example file does not list at all are missing

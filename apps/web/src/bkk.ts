@@ -253,7 +253,9 @@ export function damWords(percent: number | null): string | null {
 }
 
 /** Capacity and the previous release are reference data, not readings for this report day. Zero is a reading. */
-export function hasDamReadings(dam: Dam): boolean {
+export function hasDamReadings(
+  dam: Pick<Dam, 'percent' | 'volume_mcm' | 'inflow_mcm' | 'outflow_mcm'>,
+): boolean {
   return [dam.percent, dam.volume_mcm, dam.inflow_mcm, dam.outflow_mcm].some(
     (value) => value !== null,
   );
@@ -287,7 +289,9 @@ export function damMissingText(dam: Dam): string | null {
 
 /** The earlier figures a dam the report leaves blank is shown with; null when the report has its own, or none. */
 export function carriedFrom(dam: Dam): DamFigures | null {
-  return !hasDamReadings(dam) && dam.last_known ? dam.last_known : null;
+  return !hasDamReadings(dam) && dam.last_known && hasDamReadings(dam.last_known)
+    ? dam.last_known
+    : null;
 }
 
 /**
@@ -308,9 +312,9 @@ export function shownDam(dam: Dam): Dam {
     : dam;
 }
 
-/** "ตัวเลขล่าสุดที่มี: รายงานวันที่ 30 ก.ย. 2569 · ดึงเมื่อ 30 ก.ย. 17:14 น. (รายงานวันนี้ยังไม่มีตัวเลข)" */
+/** Keep the figures' date distinct from the current file's report date, even when the file itself is old. */
 export function carriedText(figures: DamFigures): string {
-  return `ตัวเลขล่าสุดที่มี: รายงานวันที่ ${thaiDay(figures.report_date)} · ดึงเมื่อ ${dateTime(figures.fetched_at)} (รายงานวันนี้ยังไม่มีตัวเลข)`;
+  return `ตัวเลขล่าสุดที่มี: รายงานวันที่ ${thaiDay(figures.report_date)} · ดึงเมื่อ ${dateTime(figures.fetched_at)} (รายงานฉบับนี้ยังไม่มีตัวเลข)`;
 }
 
 /**
