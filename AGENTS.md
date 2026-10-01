@@ -1,7 +1,7 @@
 # AGENTS.md — fontokmai (ฝนตกไหม): ข้อตกลงทีม สถานะ และการตัดสินใจ
 
 > **สถานะ**: เว็บแบบแผนที่เป็นหลักออนไลน์ที่ `https://dizconnectz.github.io/fontokmai/` (D28, D29): ประกาศกรมอุตุฯ ระบายสีตามระดับ, เรดาร์ฝน, กล้อง CCTV, ปักหมุดดูข้อมูลจุด, ค้นหาสถานที่ (ตำบล/อำเภอ/จังหวัด/สถานที่/ถนน), แถบเลื่อนเวลา (เรดาร์ย้อนหลัง → พยากรณ์ฝน 72 ชม.), ฝน 7 วัน, สายด่วน, รายงานน้ำท่วมตอนนี้ (Longdo/iTIC), ที่ของฉัน, ตัวเฝ้าข้อมูลหยุด (data-watch), ระดับน้ำคลอง/ฝนวัดจริง/ถนนท่วม กทม. + เขื่อนใหญ่ + สถานีอุตุฯ (DXS ดึงเป็นครั้งๆ D31), หน้าเกี่ยวกับ/คำถามที่พบบ่อย + SEO/AEO, แนวโน้มน้ำแม่น้ำ 14 จุด (GloFAS วันละครั้ง), การ์ดสรุปจุดที่ต้องระวังบนสุดของแถบข้าง (`summary/overview.json` กฎ v0 + เรดาร์ + ท้ายน้ำของเขื่อน) · ข้อมูลจาก VPS ทุก 15 นาที · สำรองรายวัน + คลังตรวจความแม่น (P0-B2) · แบบระบบ v6.1
-> อัปเดตล่าสุด: 2026-10-01 10:53 ICT (Codex) · เวลาเป็น ICT (UTC+7) · วันที่แบบ ISO (ค.ศ.)
+> อัปเดตล่าสุด: 2026-10-01 11:05 ICT (Codex) · เวลาเป็น ICT (UTC+7) · วันที่แบบ ISO (ค.ศ.)
 > ไฟล์นี้เป็นช่องทางสื่อสารหลักระหว่าง Claude ↔ Codex ↔ ผู้ใช้ และ **ต้องมีขนาดไม่เกิน 32 KiB (UTF-8)** เพื่อให้ Codex โหลดได้ครบ
 > เอกสารอื่น: แบบระบบ `docs/design/fontokmai-design.md` · แหล่งข้อมูลและสิทธิ์ `docs/sources.md` · ประวัติเต็ม `private/handoffs/` (อยู่ใน private repo ไม่อยู่ใน repo สาธารณะ)
 
@@ -44,15 +44,15 @@
 ### A5. งานที่กำลังทำ (Active claims)
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
-| Codex | 2026-10-01 10:42 | A5/A6/C2; `pipeline/src/fontokmai/housekeeping.py`; `pipeline/tests/test_housekeeping.py`; `tests/consumer/test_archive_edges.py`; `apps/web/scripts/live-smoke.mjs`; `deploy/vps/README.md`; design§4.9; `private/handoffs/2026-10-01-codex-closeout.md`, `private/handoffs/README.md` | ปิด M36/M37 ต่อจากงานรับช่วง D34 | closeout |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md`)
 
-#### 2026-10-01 10:53 ICT — ปิด M36/M37 และทวนข้อมูลกลับมาอัปเดต (Codex)
-- M36: ตรวจงบรวมหลังเพิ่ม gzip และแทน metadata ก่อนเขียน; เกินเพดานข้ามทั้งรอบโดยไม่ขยับ state · M37: live-smoke ใช้ map-surface/aria-busy แทน selector เก่า
-- **โค้ด** Python260ผ่าน ไม่มีxfail; Ruff/Prettierผ่าน; เว็บจริงdesktop/Pixel7แผนที่พร้อม ไม่มีJSerror · **ความแม่น** เป็นการทดสอบระบบ ยังไม่วัดความแม่นพยากรณ์
-- **deploy** M36รอCIก่อนขึ้นVPS; ตรวจ950994aของClaude: รอบ10:48เผยแพร่สำเร็จและmanifestสาธารณะตรงกัน หลังข้อมูลค้างตั้งแต่เมื่อคืน22:03 · ไม่แตะงานอื่น
-- ไฟล์ housekeeping, consumer archive, live-smoke, design§4.9, VPS README; รายละเอียด/คำสั่ง/สำเนาA6เดิมใน `private/handoffs/2026-10-01-codex-closeout.md`
+#### 2026-10-01 11:05 ICT — ปิด M36/M37 และยืนยันข้อมูลกลับมาอัปเดต (Codex)
+- M36 commit17da6bf: ตรวจงบรวม gzip+metadata ก่อนเขียน; เกินเพดานข้ามทั้งรอบโดยไม่เลื่อนstate · M37: live-smoke ใช้ map-surface/aria-busy
+- **โค้ด** Python260ผ่าน ไม่มีxfail; รวมrecovery8305881ของClaudeแล้ว265ผ่าน; Ruff/Prettierผ่าน · CI36812545585/36812545586ผ่าน รวมbrowser161กรณี
+- **deploy** VPS8305881รวมM36แล้ว รอบ11:03เผยแพร่/เก็บคลังสำเร็จ; manifestจริง20261001T040300Z-vps พยากรณ์ดึง10:48; check_live_data=ok; เว็บจริงdesktop/Pixel7ไม่มีJSerror และPages36813188097ผ่าน
+- **ความแม่น** ทดสอบระบบ ยังไม่ได้วัดความแม่นพยากรณ์; เส้นตลิ่งจริงยังรอหลักฐานต้นทาง · Claudeแก้ข้อมูลค้างด้วยinit/recovery; Codexไม่restartซ้ำ ไม่แตะงานอื่น
+- ไฟล์ housekeeping, consumer archive, live-smoke, design§4.9, VPS README; รายละเอียด/คำสั่ง/สำเนาA6เดิม `private/handoffs/2026-10-01-codex-closeout.md`; ปลดจองแล้ว
 
 #### 2026-09-30 16:52 ICT — รับช่วง UX รายงานฝน / รองรับหลักฐานเทียบตลิ่ง (Codex)
 - D34: แก้ M35 ให้ใช้เวลาในรายงาน; การ์ดเป็น bullet ฝน+เวลา พับต้นฉบับ/อุณหภูมิ/ความชื้น; ซ่อนรายชื่อเขื่อนทดน้ำไม่มีค่า คงหมุดอ้างอิง
