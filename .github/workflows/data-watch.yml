@@ -1,6 +1,7 @@
-# Watch the published data from outside the VPS. When data stops updating (or an alert cannot be read), open one
-# issue labelled data-watch, which emails the owner; update it while the problem lasts and close it when all is
-# well again. Free on a public repository.
+# Watch the published data from outside the VPS, quietly. The report goes to the run's log and summary only: no
+# issue, no mention and no failed run, so nothing emails the owner (user 2026-10-01: "ไม่อยากให้มันส่งเมลมา ... คุณเช็ก
+# ของคุณเองก็พอ"). Claude reads the runs itself (`gh run list --workflow data-watch.yml`, `gh run view <id> --log`)
+# together with the round log on the VPS. Free on a public repository.
 name: data-watch
 on:
   schedule:
@@ -9,7 +10,6 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
-  issues: write
 concurrency:
   group: data-watch
   cancel-in-progress: false
@@ -17,24 +17,12 @@ jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # a failed scheduled run emails the owner too: what the check finds is in its report, not in the run's result
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v7
-      - name: Check the live data
-        run: python3 scripts/check_live_data.py --report report.md --status status.txt --owner "${{ github.repository_owner }}"
-      - name: Open, update or close the alert issue
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
+      - name: Check the live data (report in the log and the summary)
         run: |
-          status=$(cat status.txt)
-          gh label create data-watch --color d93f0b --description "fontokmai data watch" --force > /dev/null
-          number=$(gh issue list --label data-watch --state open --json number --jq '.[0].number // empty')
-          if [ "$status" = problem ]; then
-            if [ -z "$number" ]; then
-              gh issue create --title "ข้อมูล fontokmai มีปัญหา" --label data-watch --body-file report.md
-            else
-              gh issue edit "$number" --body-file report.md
-            fi
-          elif [ -n "$number" ]; then
-            gh issue close "$number" --comment "กลับมาปกติแล้ว (ตรวจเมื่อ $(TZ=Asia/Bangkok date '+%d/%m %H:%M') น.)"
-          fi
+          python3 scripts/check_live_data.py --report report.md --status status.txt || echo "problem" > status.txt
+          echo "data-watch status: $(cat status.txt)"
+          if [ -f report.md ]; then cat report.md; cat report.md >> "$GITHUB_STEP_SUMMARY"; fi

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Check the published data from outside the VPS (GitHub Actions, workflow data-watch).
 
-Writes a Thai report and "ok" or "problem" so the workflow can open, update or close one GitHub issue, which
-emails the owner. Only the standard library is used.
+Writes a Thai report and "ok" or "problem" for the run's log and summary. Nothing is sent to anyone: the owner
+asked for no emails (2026-10-01), and Claude reads the runs. Only the standard library is used.
 
     python3 scripts/check_live_data.py --report report.md --status status.txt
 """
@@ -134,12 +134,13 @@ def evaluate(manifest: dict, forecast: dict | None, now: datetime, radar: dict |
     return problems
 
 
-def report(problems: list[tuple[str, str]], now: datetime, owner: str) -> str:
+def report(problems: list[tuple[str, str]], now: datetime) -> str:
+    """The run's own record, read in its log and summary; it mentions no one, so it emails no one (user 2026-10-01)."""
     lines = [f"ตรวจเมื่อ {_clock(now)} น. (เวลาไทย) จาก GitHub Actions · ข้อมูลที่ตรวจ: {DATA_BASE}", ""]
     for level, message in problems:
         lines.append(f"- {'🔴' if level == 'critical' else '🟠'} {message}")
-    lines += ["", "issue นี้ปิดเองเมื่อทุกข้อกลับมาปกติ และจะไม่ส่งแจ้งเตือนซ้ำระหว่างที่ยังเปิดอยู่",
-              f"cc @{owner}" if owner else ""]
+    if not problems:
+        lines.append("- ปกติ")
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -154,7 +155,6 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--report", required=True)
     parser.add_argument("--status", required=True)
-    parser.add_argument("--owner", default="")
     args = parser.parse_args(argv)
     now = datetime.now(UTC)
     try:
@@ -186,7 +186,7 @@ def main(argv: list[str] | None = None) -> int:
                 radar = None
         problems = evaluate(manifest, forecast, now, radar, rivers, overview)
     with open(args.report, "w", encoding="utf-8") as fh:
-        fh.write(report(problems, now, args.owner))
+        fh.write(report(problems, now))
     with open(args.status, "w", encoding="utf-8") as fh:
         fh.write("problem" if problems else "ok")
     print("problem" if problems else "ok", *(message for _, message in problems), sep="\n")

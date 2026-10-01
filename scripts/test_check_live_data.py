@@ -107,10 +107,13 @@ class Watch(unittest.TestCase):
         # a file that could not be opened is not fresh either
         self.assertEqual(len(evaluate(manifest(), FRESH_FORECAST, NOW, FRESH_RADAR, None, overview)), 1)
 
-    def test_the_report_mentions_the_owner(self):
-        text = report([("critical", "x")], NOW, "dizconnectz")
+    def test_the_report_lists_the_problems_and_mentions_no_one(self):
+        # the owner asked for no emails (2026-10-01): a mention in a report would send one
+        text = report([("critical", "x"), ("warning", "y")], NOW)
         self.assertIn("🔴 x", text)
-        self.assertIn("@dizconnectz", text)
+        self.assertIn("🟠 y", text)
+        self.assertNotIn("@", text)
+        self.assertIn("- ปกติ", report([], NOW))
 
 
 if __name__ == "__main__":
