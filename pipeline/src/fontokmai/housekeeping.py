@@ -11,6 +11,9 @@
   goes first is the oldest day; the computer that sends the Bangkok files copies the finished days, and keeps them
 - design 4.9: the disk is shared with other work. Below DISK_RESERVE free, the archive is not written (the daily
   backup is: it takes the place of the oldest one); from DISK_WARN used, the round log says so
+- and as that disk fills, what fontokmai keeps shrinks by itself, oldest first (PRESSURE_TIERS, user 2026-10-01): the
+  archive, the backups and the copies of the Bangkok uploads; the state database itself always stays. The same
+  happens when fontokmai's own files pass DATA_BUDGET, whatever the disk
 """
 
 from __future__ import annotations
@@ -33,6 +36,11 @@ BACKUP_KEEP = 7
 CAP_KEEP = timedelta(days=180)  # the alert feed reads 7 days; the rest is the record of what was announced
 ARCHIVE_DAYS = 90
 ARCHIVE_MAX_BYTES = 300 * 1024**2
+DXS_UPLOADS_DAYS = 365  # copies of each Bangkok upload (update-bkk.sh keeps them as long)
+# (share of the shared disk in use, archive days, backups kept, Bangkok upload copies in days): the first that the
+# disk has reached applies. fontokmai uses well under 1 GB of it, so this mostly makes room for other work
+PRESSURE_TIERS = ((0.90, 1, 1, 7), (0.85, 7, 2, 30), (0.80, 30, 3, 90))
+DATA_BUDGET = 1024**3  # fontokmai's files under the state folder; over it, the last tier applies anyway
 # the files the rules and the forecasts read; they change when their source does, most of them not every round.
 # Not kept: alerts.json (its CAP documents are in the database), radar images, and the reference files.
 VERSIONED = ("forecast/rain.json", "forecast/rivers.json", "radar.json", "bkk/water.json", "bkk/rain.json",
@@ -55,7 +63,7 @@ def _integrity(path: Path) -> str:
         conn.close()
 
 
-def backup_db(db: Path, backups: Path, now: datetime) -> str | None:
+def backup_db(db: Path, backups: Path, now: datetime, keep: int | None = None) -> str | None:
     """Today's backup (Thai date), when there is none yet: an online copy, checked before it is kept."""
     target = backups / f"fontokmai-{_day(now).replace('-', '')}.db.gz"
     if target.exists() or not db.exists():
@@ -77,9 +85,29 @@ def backup_db(db: Path, backups: Path, now: datetime) -> str | None:
         with copy.open("rb") as raw, gzip.open(partial, "wb", compresslevel=6) as packed:
             shutil.copyfileobj(raw, packed)
         partial.replace(target)
-    for old in sorted(backups.glob("fontokmai-*.db.gz"))[:-BACKUP_KEEP]:
-        old.unlink()
+    prune_backups(backups, BACKUP_KEEP if keep is None else keep)
     return f"backup {target.name} {target.stat().st_size // 1024} KB"
+
+
+def prune_backups(backups: Path, keep: int) -> str | None:
+    """Only the newest `keep` daily backups stay (at least one)."""
+    old = sorted(backups.glob("fontokmai-*.db.gz"))[:-max(keep, 1)]
+    for path in old:
+        path.unlink()
+    return f"{len(old)} old backup(s) deleted" if old else None
+
+
+def prune_uploads(uploads: Path, now: datetime, days: int) -> str | None:
+    """Copies of the Bangkok uploads (YYYYMMDDTHHMMSS.tgz, written by update-bkk.sh) older than `days` go."""
+    cutoff = (now - timedelta(days=days)).astimezone(ICT).strftime("%Y%m%dT%H%M%S")
+    old = [path for path in uploads.glob("*.tgz") if path.stem < cutoff] if uploads.is_dir() else []
+    for path in old:
+        path.unlink()
+    return f"{len(old)} Bangkok upload copies older than {days} days deleted" if old else None
+
+
+def tree_bytes(folder: Path) -> int:
+    return sum(path.stat().st_size for path in folder.rglob("*") if path.is_file()) if folder.exists() else 0
 
 
 def restore_db(backup: Path, db: Path, above_epoch: int = 0) -> int:
@@ -292,14 +320,14 @@ def _carried(doomed: list[tuple[str, Path]]) -> list[dict[str, Any]]:
     return [newest[path] for path in sorted(newest)]
 
 
-def prune_archive(root: Path, now: datetime) -> str | None:
+def prune_archive(root: Path, now: datetime, days: int | None = None) -> str | None:
     """Days older than ARCHIVE_DAYS go, then the oldest days while the whole archive (its bookkeeping included) is
     over ARCHIVE_MAX_BYTES, today too if a smaller cap asks for it. The newest version of each file among what goes
     is carried to the oldest day that stays, so no round that stays names a version the archive no longer has; when
     no day stays, versions/last.json forgets them, and the next round keeps the files again."""
     if not root.exists():
         return None
-    cutoff = _day(now - timedelta(days=ARCHIVE_DAYS))
+    cutoff = _day(now - timedelta(days=ARCHIVE_DAYS if days is None else days))
     files = _day_files(root)
     doomed = [(day, path) for day, path in files if day < cutoff]
     kept = [(day, path) for day, path in files if day >= cutoff]
@@ -346,10 +374,21 @@ def housekeeping(db: Path, out: Path, now: datetime, summary: dict[str, Any],
     backups = state / "backups"
     daily = not (backups / f"fontokmai-{_day(now).replace('-', '')}.db.gz").exists()
     root = state / "archive" / "eval"
+    # as the shared disk fills (or fontokmai's own files grow past their budget), keep less, oldest going first
+    used = 1 - disk.free / disk.total if disk.total else 0.0
+    tier = next((t for t in PRESSURE_TIERS if used >= t[0]), None)
+    own = tree_bytes(state)
+    if tier is None and own > DATA_BUDGET:
+        tier = PRESSURE_TIERS[-1]
+    archive_days, backup_keep, upload_days = tier[1:] if tier else (ARCHIVE_DAYS, BACKUP_KEEP, DXS_UPLOADS_DAYS)
+    if tier:
+        report["pressure"] = (f"disk {used:.0%} used, fontokmai {own / 1024**2:.0f} MB: keeping {archive_days} archive "
+                              f"day(s), {backup_keep} backup(s), {upload_days} days of Bangkok uploads")
     notes = [
         prune_cap(db, now) if daily else None,
-        backup_db(db, backups, now) if daily else None,
-        prune_archive(root, now),  # first, so that the round below is measured against what stays
+        backup_db(db, backups, now, keep=backup_keep) if daily else prune_backups(backups, backup_keep),
+        prune_uploads(state / "archive" / "dxs", now, upload_days),
+        prune_archive(root, now, archive_days),  # first, so that the round below is measured against what stays
         None if reserve else archive_round(root, out, now, summary, archived_at or datetime.now(UTC)),
     ]
     if reserve:
