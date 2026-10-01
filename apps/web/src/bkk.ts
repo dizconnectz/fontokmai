@@ -2,7 +2,8 @@ import type { CanalLevels, CanalStation } from '../../../contracts/v1/ts/bkk_wat
 import type { RainGauge, RainGauges } from '../../../contracts/v1/ts/bkk_rain';
 import type { RoadFloodingDaily, RoadFloodingReport } from '../../../contracts/v1/ts/bkk_flooding';
 import type { SituationReport } from '../../../contracts/v1/ts/bkk_news';
-import type { Dam, DamReport } from '../../../contracts/v1/ts/dams';
+import type { Dam, DamFigures, DamReport } from '../../../contracts/v1/ts/dams';
+import { dateTime } from './alerts';
 import type { WeatherStation, WeatherToday } from '../../../contracts/v1/ts/weather_today';
 import { agoText } from './floods';
 import { dayRainWords } from './forecast';
@@ -282,6 +283,34 @@ export function damMissingText(dam: Dam): string | null {
     dam.outflow_mcm === null ? 'การระบายน้ำ' : null,
   ].filter(Boolean);
   return missing.length ? `ยังไม่มีข้อมูล: ${missing.join(' / ')}` : null;
+}
+
+/** The earlier figures a dam the report leaves blank is shown with; null when the report has its own, or none. */
+export function carriedFrom(dam: Dam): DamFigures | null {
+  return !hasDamReadings(dam) && dam.last_known ? dam.last_known : null;
+}
+
+/**
+ * What a dam card and pin show: the report's own figures, or, when the report leaves the dam blank, its last known
+ * figures (user 2026-10-01: keep the latest figures, with their date and time), which always go with
+ * `carriedText` so they are never read as today's.
+ */
+export function shownDam(dam: Dam): Dam {
+  const last = carriedFrom(dam);
+  return last
+    ? {
+        ...dam,
+        percent: last.percent,
+        volume_mcm: last.volume_mcm,
+        inflow_mcm: last.inflow_mcm,
+        outflow_mcm: last.outflow_mcm,
+      }
+    : dam;
+}
+
+/** "ตัวเลขล่าสุดที่มี: รายงานวันที่ 30 ก.ย. 2569 · ดึงเมื่อ 30 ก.ย. 17:14 น. (รายงานวันนี้ยังไม่มีตัวเลข)" */
+export function carriedText(figures: DamFigures): string {
+  return `ตัวเลขล่าสุดที่มี: รายงานวันที่ ${thaiDay(figures.report_date)} · ดึงเมื่อ ${dateTime(figures.fetched_at)} (รายงานวันนี้ยังไม่มีตัวเลข)`;
 }
 
 /**

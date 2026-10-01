@@ -11,6 +11,18 @@ export type Id = string;
  */
 export type InflowMcm = number | null;
 /**
+ * When this site fetched that report
+ */
+export type FetchedAt = string;
+export type InflowMcm1 = number | null;
+export type OutflowMcm = number | null;
+export type Percent = number | null;
+/**
+ * Day of the department's report these figures are from
+ */
+export type ReportDate = string;
+export type VolumeMcm = number | null;
+/**
  * [lon, lat] from OpenStreetMap; null when not found
  */
 export type Location = [number, number] | null;
@@ -22,12 +34,12 @@ export type NameTh = string;
 /**
  * Release of the day, million cubic metres
  */
-export type OutflowMcm = number | null;
+export type OutflowMcm1 = number | null;
 export type OwnerTh = string | null;
 /**
  * volume as a percentage of storage
  */
-export type Percent = number | null;
+export type Percent1 = number | null;
 /**
  * Release on previous_report_date of the file, million cubic metres; null when there is no earlier report or the dam had no figure then. Release up a lot (the site's trial rule, /method): at least 1 million m³ a day more and at least half as much again
  */
@@ -40,27 +52,27 @@ export type StorageMcm = number | null;
 /**
  * Water in the reservoir on the report day, million cubic metres
  */
-export type VolumeMcm = number | null;
+export type VolumeMcm1 = number | null;
 export type Dams = Dam[];
-export type FetchedAt = string;
+export type FetchedAt1 = string;
 export type LocationCreditTh = string;
 export type NotesTh = string[];
 /**
  * Day of the report the releases are compared with: the last one this site published before report_date, at most 3 days before it (GetDam gives only the latest day; the Bangkok update does not run every day). Null when there is none
  */
 export type PreviousReportDate = string | null;
-export type ReportDate = string;
+export type ReportDate1 = string;
 export type SchemaVersion = "1";
 export type SourceUrl = string;
 
 export interface DamReport {
   credit_th: CreditTh;
   dams: Dams;
-  fetched_at: FetchedAt;
+  fetched_at: FetchedAt1;
   location_credit_th: LocationCreditTh;
   notes_th: NotesTh;
   previous_report_date?: PreviousReportDate;
-  report_date: ReportDate;
+  report_date: ReportDate1;
   schema_version?: SchemaVersion;
   source_url: SourceUrl;
 }
@@ -68,14 +80,26 @@ export interface Dam {
   downstream_th?: DownstreamTh;
   id: Id;
   inflow_mcm: InflowMcm;
+  /**
+   * Only when this report has none of percent, volume_mcm, inflow_mcm and outflow_mcm for the dam: its latest figures from an earlier report this site published, at most 7 days before report_date, with their own day and fetch time. Shown dated, never as this report's (user 2026-10-01: the department's report of a day can be blank for most dams until later in the day)
+   */
+  last_known?: DamFigures | null;
   location: Location;
   location_kind: LocationKind;
   name_th: NameTh;
-  outflow_mcm: OutflowMcm;
+  outflow_mcm: OutflowMcm1;
   owner_th: OwnerTh;
-  percent: Percent;
+  percent: Percent1;
   previous_outflow_mcm?: PreviousOutflowMcm;
   region_th: RegionTh;
   storage_mcm: StorageMcm;
+  volume_mcm: VolumeMcm1;
+}
+export interface DamFigures {
+  fetched_at: FetchedAt;
+  inflow_mcm: InflowMcm1;
+  outflow_mcm: OutflowMcm;
+  percent: Percent;
+  report_date: ReportDate;
   volume_mcm: VolumeMcm;
 }

@@ -77,11 +77,14 @@ import {
   amount,
   CHAO_PHRAYA_DAMS,
   damColor,
+  carriedFrom,
+  carriedText,
   damMissingText,
   damReadingLines,
   damWords,
   hasDamReadings,
   isTodaysReport,
+  shownDam,
   releaseChange,
   releaseWords,
   levelWords,
@@ -542,23 +545,26 @@ function DamLine({
 }) {
   // a bar filled to how full the reservoir is, in the department's colour for that class, with marks where the
   // classes change (30, 50, 80 %): read at a glance, the words and figures say the same for a screen reader
-  const fill = dam.percent === null ? 0 : Math.max(0, Math.min(dam.percent, 100));
+  // a dam the report leaves blank shows its last known figures, with their day and fetch time (user 2026-10-01)
+  const shown = shownDam(dam);
+  const carried = carriedFrom(dam);
+  const fill = shown.percent === null ? 0 : Math.max(0, Math.min(shown.percent, 100));
   const change = previousDay ? releaseChange(dam) : null;
-  const missing = damMissingText(dam);
+  const missing = carried ? null : damMissingText(dam);
   const text = (
     <span className="dam-line">
       <span className="dam-head">
         <span>
           <strong>{dam.name_th}</strong>
-          {dam.percent !== null && ` · ${damWords(dam.percent)}`}
+          {shown.percent !== null && ` · ${damWords(shown.percent)}`}
         </span>
-        {dam.percent !== null && <b className="dam-percent">{amount(dam.percent)}%</b>}
+        {shown.percent !== null && <b className="dam-percent">{amount(shown.percent)}%</b>}
       </span>
-      {dam.percent !== null && (
-        <span className={`dam-bar ${dam.percent > 100 ? 'over' : ''}`} aria-hidden="true">
+      {shown.percent !== null && (
+        <span className={`dam-bar ${shown.percent > 100 ? 'over' : ''}`} aria-hidden="true">
           <span
             className="dam-fill"
-            style={{ width: `${fill}%`, background: damColor(dam.percent) }}
+            style={{ width: `${fill}%`, background: damColor(shown.percent) }}
           />
           <i style={{ left: '30%' }} />
           <i style={{ left: '50%' }} />
@@ -566,9 +572,10 @@ function DamLine({
         </span>
       )}
       {dam.region_th && <small>{dam.region_th}</small>}
-      {damReadingLines(dam).map((reading) => (
+      {damReadingLines(shown).map((reading) => (
         <small key={reading}>{reading}</small>
       ))}
+      {carried && <small className="dam-carried">{carriedText(carried)}</small>}
       {missing && <small className="quiet">{missing}</small>}
       {!dam.location && <small>ไม่มีหมุดบนแผนที่</small>}
       {/* the release against the report before (GetDam gives one day: the day before is what the site had) */}
@@ -583,7 +590,7 @@ function DamLine({
       {/* where the water goes, for a dam with little room left or releasing a lot more: places to follow, not a
           flood forecast */}
       {dam.downstream_th &&
-        ((dam.percent !== null && dam.percent >= 80) || (change !== null && change.big)) && (
+        ((shown.percent !== null && shown.percent >= 80) || (change !== null && change.big)) && (
           <small className="dam-downstream">{dam.downstream_th}</small>
         )}
     </span>
@@ -612,17 +619,21 @@ function ChaoPhrayaDams({
   /** show the dam on the map; the side panel stays */
   onDam: (location: number[]) => void;
 }) {
-  const available = dams.dams.filter(hasDamReadings);
-  const missing = dams.dams.filter((dam) => !hasDamReadings(dam));
+  // a dam with its last known figures is shown, dated; only a dam with neither is "missing"
+  const shows = (dam: Dam) => hasDamReadings(dam) || carriedFrom(dam) !== null;
+  const available = dams.dams.filter(shows);
+  const missing = dams.dams.filter((dam) => !shows(dam));
+  const ofToday = dams.dams.filter(hasDamReadings).length;
+  const carriedCount = available.length - ofToday;
   const main = CHAO_PHRAYA_DAMS.flatMap((id) => available.filter((dam) => dam.id === id));
   const missingMain = CHAO_PHRAYA_DAMS.filter((id) => !main.some((dam) => dam.id === id)).length;
   const rest = available
     .filter((dam) => !CHAO_PHRAYA_DAMS.includes(dam.id))
-    .sort((a, b) => (b.percent ?? -1) - (a.percent ?? -1));
+    .sort((a, b) => (shownDam(b).percent ?? -1) - (shownDam(a).percent ?? -1));
   // over storage capacity, or releasing a lot more than the report before, is worth seeing without opening the
   // list, wherever the dam is
   const previousDay = dams.previous_report_date ?? null;
-  const full = rest.filter((dam) => dam.percent !== null && dam.percent > 100);
+  const full = rest.filter((dam) => (shownDam(dam).percent ?? 0) > 100);
   const releasing = previousDay
     ? rest.filter((dam) => !full.includes(dam) && releaseChange(dam)?.big)
     : [];
@@ -634,9 +645,11 @@ function ChaoPhrayaDams({
         <DamIcon size={18} /> เขื่อนใหญ่
       </h2>
       <p className="quiet" data-testid="dams-coverage">
-        {available.length > 0
-          ? `มีตัวเลขในรายงานนี้ ${available.length} จาก ${dams.dams.length} แห่ง`
+        {ofToday > 0
+          ? `มีตัวเลขในรายงานนี้ ${ofToday} จาก ${dams.dams.length} แห่ง`
           : 'ยังไม่มีตัวเลขเขื่อนในรายงานนี้'}
+        {carriedCount > 0 &&
+          ` · อีก ${carriedCount} แห่งแสดงตัวเลขล่าสุดที่มี พร้อมวันที่และเวลาที่ได้มา`}
       </p>
       {(main.length > 0 || missingMain > 0) && (
         <>
@@ -712,7 +725,7 @@ function ChaoPhrayaDams({
       <small className="source-note">
         ข้อมูลวันที่ {thaiDay(dams.report_date)} · ที่มา: {shortCredit(dams.credit_th)} ·
         แตะชื่อเพื่อดูบนแผนที่
-        {available.some((dam) => dam.percent !== null) &&
+        {available.some((dam) => shownDam(dam).percent !== null) &&
           ' · น้ำเกิน 80% แปลว่าเหลือที่รับน้ำน้อย ไม่ใช่การพยากรณ์ว่าจะท่วม'}
         {previousDay &&
           available.some((dam) => releaseChange(dam)) &&

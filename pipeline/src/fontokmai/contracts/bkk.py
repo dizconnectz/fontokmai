@@ -152,6 +152,15 @@ class SituationReport(ContractModel):
     notes_th: list[str]
 
 
+class DamFigures(ContractModel):
+    report_date: date = Field(description="Day of the department's report these figures are from")
+    fetched_at: AwareDatetime = Field(description="When this site fetched that report")
+    percent: float | None
+    volume_mcm: float | None
+    inflow_mcm: float | None
+    outflow_mcm: float | None
+
+
 class Dam(ContractModel):
     id: str
     name_th: str
@@ -173,6 +182,11 @@ class Dam(ContractModel):
         "Provinces the dam's river runs through, down to the sea or out of Thailand, e.g. ท้ายน้ำ: นครนายก → "
         "ปราจีนบุรี → ฉะเชิงเทรา · ออกทะเลที่ อ.บางปะกง จ.ฉะเชิงเทรา (HydroRIVERS river network); places to follow "
         "when the dam releases water, not a flood forecast. Null when the dam has no place or river"))
+    last_known: DamFigures | None = Field(default=None, description=(
+        "Only when this report has none of percent, volume_mcm, inflow_mcm and outflow_mcm for the dam: its latest"
+        " figures from an earlier report this site published, at most 7 days before report_date, with their own"
+        " day and fetch time. Shown dated, never as this report's (user 2026-10-01: the department's report of a"
+        " day can be blank for most dams until later in the day)"))
 
 
 class DamReport(ContractModel):

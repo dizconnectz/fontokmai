@@ -32,6 +32,18 @@
           "description": "Inflow of the day, million cubic metres",
           "title": "Inflow Mcm"
         },
+        "last_known": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DamFigures"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Only when this report has none of percent, volume_mcm, inflow_mcm and outflow_mcm for the dam: its latest figures from an earlier report this site published, at most 7 days before report_date, with their own day and fetch time. Shown dated, never as this report's (user 2026-10-01: the department's report of a day can be blank for most dams until later in the day)"
+        },
         "location": {
           "anyOf": [
             {
@@ -167,6 +179,77 @@
         "outflow_mcm"
       ],
       "title": "Dam",
+      "type": "object"
+    },
+    "DamFigures": {
+      "additionalProperties": false,
+      "properties": {
+        "fetched_at": {
+          "description": "When this site fetched that report",
+          "format": "date-time",
+          "title": "Fetched At",
+          "type": "string"
+        },
+        "inflow_mcm": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Inflow Mcm"
+        },
+        "outflow_mcm": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Outflow Mcm"
+        },
+        "percent": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Percent"
+        },
+        "report_date": {
+          "description": "Day of the department's report these figures are from",
+          "format": "date",
+          "title": "Report Date",
+          "type": "string"
+        },
+        "volume_mcm": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Volume Mcm"
+        }
+      },
+      "required": [
+        "report_date",
+        "fetched_at",
+        "percent",
+        "volume_mcm",
+        "inflow_mcm",
+        "outflow_mcm"
+      ],
+      "title": "DamFigures",
       "type": "object"
     }
   },

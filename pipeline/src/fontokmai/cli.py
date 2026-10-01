@@ -296,7 +296,9 @@ def main(argv: list[str] | None = None) -> int:
         written = {}
         extras, problems = bma_dxs.collect_extras(bma_dxs.load_account(args.account), datetime.now(UTC))
         if bma_dxs.DAMS_PATH in extras:  # GetDam answers only today: the day before comes from what the site has
-            extras[bma_dxs.DAMS_PATH] = bma_dxs.with_previous(extras[bma_dxs.DAMS_PATH], bma_dxs.published_dams())
+            published = bma_dxs.published_dams()
+            extras[bma_dxs.DAMS_PATH] = bma_dxs.with_last_known(
+                bma_dxs.with_previous(extras[bma_dxs.DAMS_PATH], published), published)
         for rel, model in ((bma_dxs.WATER_PATH, fetched.water), (bma_dxs.RAIN_PATH, fetched.rain),
                            (bma_dxs.FLOODING_PATH, fetched.flooding), *extras.items()):
             if model is not None:

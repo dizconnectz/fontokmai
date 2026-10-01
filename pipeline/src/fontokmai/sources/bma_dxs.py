@@ -26,6 +26,7 @@ from fontokmai.contracts.bkk import (
     CanalLevels,
     CanalStation,
     Dam,
+    DamFigures,
     DamReport,
     RainGauge,
     RainGauges,
@@ -519,6 +520,37 @@ PREVIOUS_MAX_DAYS = 3  # an older report is not "the one before" (the Bangkok up
 # release up a lot, a trial rule of this site (not the department's), on /method and in contract section 18
 RELEASE_UP_MIN_MCM = 1.0
 RELEASE_UP_RATIO = 1.5
+
+
+LAST_KNOWN_DAYS = 7  # older figures are not shown in place of a blank report
+
+
+def has_figures(dam: Dam) -> bool:
+    """The report gives the dam at least one figure of its own day (capacity is not one; zero is)."""
+    return any(value is not None for value in (dam.percent, dam.volume_mcm, dam.inflow_mcm, dam.outflow_mcm))
+
+
+def with_last_known(report: DamReport, published: DamReport | None) -> DamReport:
+    """A dam that this report leaves blank keeps its latest figures from the file the site publishes now, dated
+    with their own report day and fetch time; figures already carried keep their first day, up to LAST_KNOWN_DAYS."""
+    if published is None:
+        return report
+    before = {dam.id: dam for dam in published.dams}
+    dams = []
+    for dam in report.dams:
+        old = before.get(dam.id)
+        last = None
+        if not has_figures(dam) and old is not None:
+            if has_figures(old):
+                last = DamFigures(report_date=published.report_date, fetched_at=published.fetched_at,
+                                  percent=old.percent, volume_mcm=old.volume_mcm, inflow_mcm=old.inflow_mcm,
+                                  outflow_mcm=old.outflow_mcm)
+            else:
+                last = old.last_known
+            if last is not None and not 0 <= (report.report_date - last.report_date).days <= LAST_KNOWN_DAYS:
+                last = None
+        dams.append(dam.model_copy(update={"last_known": last}) if last is not None else dam)
+    return report.model_copy(update={"dams": dams})
 
 
 def release_up(dam: Dam) -> bool:

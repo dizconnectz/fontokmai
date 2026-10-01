@@ -19,9 +19,12 @@ import { bankFeatures, bankState, type BankObservation } from './overflow';
 import {
   amount,
   damPin,
+  carriedFrom,
+  carriedText,
   damMissingText,
   damReadingLines,
   damWords,
+  shownDam,
   DAY_RAIN_CLASSES,
   DAM_CLASSES,
   lastQuarterText,
@@ -413,14 +416,17 @@ function releaseLine(dam: Dam, file: DamReport): HTMLElement[] {
 function damPopup(dam: Dam, file: DamReport, now: number): HTMLElement {
   const root = document.createElement('div');
   root.className = 'camera-popup';
-  const missing = damMissingText(dam);
+  const shown = shownDam(dam);
+  const carried = carriedFrom(dam);
+  const missing = carried ? null : damMissingText(dam);
   root.append(
     line(dam.name_th, 'strong'),
     line([dam.region_th, dam.owner_th].filter(Boolean).join(' · ')),
-    ...(dam.percent !== null
-      ? [line(`${damWords(dam.percent)} · ${amount(dam.percent)}% ของความจุ`, 'b')]
+    ...(shown.percent !== null
+      ? [line(`${damWords(shown.percent)} · ${amount(shown.percent)}% ของความจุ`, 'b')]
       : []),
-    ...damReadingLines(dam).map((reading) => line(reading)),
+    ...damReadingLines(shown).map((reading) => line(reading)),
+    ...(carried ? [line(carriedText(carried), 'small')] : []),
     ...(missing ? [line(missing)] : []),
     ...releaseLine(dam, file),
     line(`ข้อมูลวันที่ ${thaiDay(file.report_date)}`),
@@ -1113,7 +1119,7 @@ export default function MapView(props: Props) {
       features: [
         ...dams.flatMap((dam) => {
           if (!dam.location) return [];
-          const pin = damPin(dam);
+          const pin = damPin(shownDam(dam)); // a blank dam keeps the class of its last known figures
           return [
             {
               type: 'Feature' as const,

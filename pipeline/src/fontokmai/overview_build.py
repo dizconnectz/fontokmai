@@ -27,7 +27,7 @@ from fontokmai.contracts.overview import Overview, OverviewInput, OverviewItem, 
 from fontokmai.contracts.places import Place, PlaceGazetteer
 from fontokmai.contracts.radar import RadarFeed
 from fontokmai.downstream import downstream_table, downstream_th
-from fontokmai.sources.bma_dxs import release_up
+from fontokmai.sources.bma_dxs import has_figures, release_up
 from fontokmai.sources.tmd_radar import rain_samples
 
 OVERVIEW_PATH = "summary/overview.json"
@@ -451,11 +451,17 @@ def build_overview(files: dict[str, bytes], now: datetime, gazetteer: Gazetteer 
         below = downstream_table()
         for dam in dams.dams:
             reasons: list[tuple[int, OverviewReason]] = []
-            if dam.percent is not None and dam.percent > 100:
+            # a dam the day's report leaves blank speaks with its last known figures, if they are as recent (M26)
+            percent, day, at = dam.percent, dams.report_date, reported
+            last = dam.last_known
+            if not has_figures(dam) and last and 0 <= (today - last.report_date).days <= DAMS_REPORT_DAYS:
+                percent, day = last.percent, last.report_date
+                at = datetime.combine(day, time.min, tzinfo=ICT)
+            if percent is not None and percent > 100:
                 reasons.append((2, OverviewReason(
-                    kind="dam_full", text_th=f"น้ำเกินความจุเก็บกัก {dam.percent:.1f}% (รายงาน "
-                                             f"{_thai_day(dams.report_date)}) ติดตามการระบายน้ำ",
-                    day=None, source_th="กรมชลประทาน", at=reported)))
+                    kind="dam_full", text_th=f"น้ำเกินความจุเก็บกัก {percent:.1f}% (รายงาน "
+                                             f"{_thai_day(day)}) ติดตามการระบายน้ำ",
+                    day=None, source_th="กรมชลประทาน", at=at)))
             if release_up(dam) and dams.previous_report_date:
                 reasons.append((3, OverviewReason(
                     kind="dam_release_up",

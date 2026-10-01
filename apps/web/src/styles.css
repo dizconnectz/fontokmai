@@ -1225,6 +1225,10 @@ details > ul {
 .dam-downstream {
   color: var(--text);
 }
+/* figures of an earlier report, shown because today's is blank: the date and time go with them */
+.dam-carried {
+  color: var(--warn-ink);
+}
 /* a release a lot bigger than the report before: the words say it, the colour only helps */
 .dam-release.big {
   color: var(--warn-ink);

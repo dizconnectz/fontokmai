@@ -786,6 +786,48 @@ test('a pumping station says how many of its pumps run, and a station without th
   await expect(page.locator('.maplibregl-popup')).not.toContainText('เครื่องสูบน้ำ');
 });
 
+test('a dam the report leaves blank shows its last known figures with their day and time', async ({
+  page,
+}) => {
+  await prepare(page);
+  const manifest = read('active', 'manifest');
+  manifest.files.push({ path: 'water/dams.json', sha256: 'f'.repeat(64), size: 1, revision: 1 });
+  await page.route('**/examples/active/manifest.json?*', (route) =>
+    route.fulfill({ json: manifest }),
+  );
+  const data = JSON.parse(
+    readFileSync(new URL('../../../contracts/v1/examples/bkk/dams.json', import.meta.url), 'utf8'),
+  );
+  data.fetched_at = manifest.generated_at;
+  // the report of the day is blank for Bhumibol (1 Oct 2026); its figures of the day before stay, dated (user)
+  const [bhumibol] = data.dams;
+  Object.assign(bhumibol, {
+    percent: null,
+    volume_mcm: null,
+    inflow_mcm: null,
+    outflow_mcm: null,
+    last_known: {
+      report_date: '2026-09-25',
+      fetched_at: '2026-09-25T17:14:00+07:00',
+      percent: 65.37,
+      volume_mcm: 8800,
+      inflow_mcm: 30.5,
+      outflow_mcm: 2,
+    },
+  });
+  await page.route('**/water/dams.json?*', (route) => route.fulfill({ json: data }));
+  await page.goto('/');
+  const dams = page.getByTestId('dams');
+  const line = dams.locator('.dam-line').filter({ hasText: 'เขื่อนภูมิพล' });
+  await expect(line.locator('.dam-percent')).toHaveText('65.37%');
+  await expect(line.locator('.dam-carried')).toHaveText(
+    'ตัวเลขล่าสุดที่มี: รายงานวันที่ 25 ก.ย. 2569 · ดึงเมื่อ 25 ก.ย. 17:14 น. (รายงานวันนี้ยังไม่มีตัวเลข)',
+  );
+  await expect(page.getByTestId('dams-coverage')).toContainText('อีก 1 แห่งแสดงตัวเลขล่าสุดที่มี');
+  // Bhumibol is shown, dated: only the two main dams the example file does not list at all are missing
+  await expect(page.getByTestId('dams-main-missing')).toContainText('เขื่อนหลัก 2 แห่ง');
+});
+
 test('the side panel has no card that only repeats the radar time or how to use the map', async ({
   page,
 }) => {

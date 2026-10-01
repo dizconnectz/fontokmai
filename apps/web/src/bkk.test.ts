@@ -3,7 +3,10 @@ import { describe, expect, it } from 'vitest';
 import {
   amount,
   bangkokDistrict,
+  carriedFrom,
+  carriedText,
   damPin,
+  shownDam,
   damWords,
   damMissingText,
   damReadingLines,
@@ -80,6 +83,48 @@ describe('dam readings when the source omits the daily figures', () => {
       'ระบาย 0 ล้าน ลบ.ม./วัน',
     ]);
     expect(damMissingText({ ...partial, percent: 0, inflow_mcm: 0 })).toBeNull();
+  });
+});
+
+describe('a dam the report leaves blank keeps its last known figures, dated', () => {
+  const last = {
+    report_date: '2026-09-30',
+    fetched_at: '2026-09-30T17:14:00+07:00',
+    percent: 106.8,
+    volume_mcm: 930.8,
+    inflow_mcm: 40.1,
+    outflow_mcm: 25.2,
+  };
+  const dam = (percent: number | null, lastKnown: typeof last | null) => ({
+    id: '100301',
+    name_th: 'เขื่อนป่าสักชลสิทธิ์',
+    region_th: null,
+    owner_th: null,
+    location: null,
+    location_kind: null,
+    storage_mcm: 871.5,
+    volume_mcm: null,
+    percent,
+    inflow_mcm: null,
+    outflow_mcm: null,
+    last_known: lastKnown,
+  });
+
+  it('shows the earlier figures only when the report has none of its own', () => {
+    expect(carriedFrom(dam(null, last))).toEqual(last);
+    expect(shownDam(dam(null, last))).toMatchObject({ percent: 106.8, outflow_mcm: 25.2 });
+    expect(damPin(shownDam(dam(null, last)))).toBe('pin-dam-full');
+    // today's own figure wins; without earlier figures nothing is invented
+    expect(carriedFrom(dam(98, last))).toBeNull();
+    expect(shownDam(dam(98, last)).percent).toBe(98);
+    expect(carriedFrom(dam(null, null))).toBeNull();
+    expect(shownDam(dam(null, null)).percent).toBeNull();
+  });
+
+  it('says the day of the report and when it was fetched', () => {
+    expect(carriedText(last)).toBe(
+      'ตัวเลขล่าสุดที่มี: รายงานวันที่ 30 ก.ย. 2569 · ดึงเมื่อ 30 ก.ย. 17:14 น. (รายงานวันนี้ยังไม่มีตัวเลข)',
+    );
   });
 });
 
