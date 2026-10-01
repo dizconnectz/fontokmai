@@ -2,7 +2,7 @@ import type { Level } from './alerts';
 import { shownDam, releaseChange, type DamReport } from './bkk';
 import { isOngoing } from './floods';
 import { openSection } from './Fold';
-import { liveItems, type Overview } from './overview';
+import { shownItems, type Overview } from './overview';
 import type { Alert, LiveFloods } from './data';
 
 /**
@@ -104,8 +104,9 @@ export function statusCounts({
 }): StatusCounts {
   const previousDay = dams?.previous_report_date ?? null;
   return {
-    watchNow: summary ? liveItems(summary, 'now', now).length : 0,
-    watchNext: summary ? liveItems(summary, 'next', now).length : 0,
+    // as the summary card lists them: nothing from a file too old to list
+    watchNow: summary ? shownItems(summary, 'now', now).length : 0,
+    watchNext: summary ? shownItems(summary, 'next', now).length : 0,
     floods: floods ? floods.reports.filter((report) => isOngoing(report, now)).length : null,
     damsFull: (dams?.dams ?? []).filter((dam) => (shownDam(dam).percent ?? 0) > 100).length,
     damsReleasing: previousDay

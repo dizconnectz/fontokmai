@@ -1,0 +1,117 @@
+{
+  "$defs": {
+    "AreaOutline": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "description": "DOPA code as in ref/places.json: 2 digits = province, 4 = district (the เขต of Bangkok included)",
+          "title": "Code",
+          "type": "string"
+        },
+        "outline": {
+          "$ref": "#/$defs/GeoMultiPolygon",
+          "description": "[lon, lat] in WGS84: polygons of an outer ring and its holes. Simplified (see geometry_version), so a point near the line may fall on the wrong side: draw it, do not test with it"
+        }
+      },
+      "required": [
+        "code",
+        "outline"
+      ],
+      "title": "AreaOutline",
+      "type": "object"
+    },
+    "GeoMultiPolygon": {
+      "additionalProperties": false,
+      "properties": {
+        "coordinates": {
+          "items": {
+            "items": {
+              "items": {
+                "items": {
+                  "type": "number"
+                },
+                "maxItems": 2,
+                "minItems": 2,
+                "type": "array"
+              },
+              "minItems": 4,
+              "type": "array"
+            },
+            "type": "array"
+          },
+          "title": "Coordinates",
+          "type": "array"
+        },
+        "type": {
+          "const": "MultiPolygon",
+          "default": "MultiPolygon",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "coordinates"
+      ],
+      "title": "GeoMultiPolygon",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "areas": {
+      "description": "Provinces, then districts, each sorted by code",
+      "items": {
+        "$ref": "#/$defs/AreaOutline"
+      },
+      "title": "Areas",
+      "type": "array"
+    },
+    "credit_th": {
+      "title": "Credit Th",
+      "type": "string"
+    },
+    "geometry_version": {
+      "description": "Source release and how far it was simplified",
+      "title": "Geometry Version",
+      "type": "string"
+    },
+    "license": {
+      "title": "License",
+      "type": "string"
+    },
+    "notes_th": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Notes Th",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1",
+      "default": "1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_url": {
+      "title": "Source Url",
+      "type": "string"
+    },
+    "updated": {
+      "description": "Date of the source data",
+      "format": "date",
+      "title": "Updated",
+      "type": "string"
+    }
+  },
+  "required": [
+    "geometry_version",
+    "updated",
+    "credit_th",
+    "license",
+    "source_url",
+    "areas",
+    "notes_th"
+  ],
+  "title": "Boundaries",
+  "type": "object"
+}

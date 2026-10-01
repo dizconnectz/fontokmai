@@ -17,6 +17,8 @@ import {
   validWeatherToday,
   validRivers,
   validOverview,
+  validBoundaries,
+  type Boundaries,
   type CanalLevels,
   type CctvRegistry,
   type DamReport,
@@ -50,7 +52,8 @@ type RefName =
   | 'dams'
   | 'weather'
   | 'rivers'
-  | 'overview';
+  | 'overview'
+  | 'boundaries';
 // Files of the manifest outside the snapshot generation. Cameras and the forecast (timeline, ~50 KB gzip)
 // load at once; the others on first need.
 const REF_FILES: Record<RefName, { path: string; valid: (value: unknown) => boolean }> = {
@@ -70,6 +73,8 @@ const REF_FILES: Record<RefName, { path: string; valid: (value: unknown) => bool
   rivers: { path: 'forecast/rivers.json', valid: validRivers },
   // the places to watch, rebuilt every round from the other files (not official)
   overview: { path: 'summary/overview.json', valid: validOverview },
+  // outlines of provinces and districts (~270 KB gzip), on first need: the summary has places to outline
+  boundaries: { path: 'ref/boundaries.json', valid: validBoundaries },
 };
 const IDLE: RefSlot<never> = { value: null, state: 'idle' };
 
@@ -92,6 +97,7 @@ export function useData() {
   const [weather, setWeather] = useState<RefSlot<WeatherToday>>(IDLE);
   const [rivers, setRivers] = useState<RefSlot<RiverForecast>>(IDLE);
   const [overview, setOverview] = useState<RefSlot<SummaryOverview>>(IDLE);
+  const [boundaries, setBoundaries] = useState<RefSlot<Boundaries>>(IDLE);
   const current = useRef<Snapshot | null>(null);
   const settings = useRef<RuntimeConfig | null>(null);
   const flight = useRef<AbortController | null>(null);
@@ -160,6 +166,9 @@ export function useData() {
       overview: new RefSync(REF_FILES.overview.path, loader('overview'), (slot) =>
         setOverview(slot as RefSlot<SummaryOverview>),
       ),
+      boundaries: new RefSync(REF_FILES.boundaries.path, loader('boundaries'), (slot) =>
+        setBoundaries(slot as RefSlot<Boundaries>),
+      ),
     };
   }
 
@@ -176,6 +185,7 @@ export function useData() {
   );
   const loadRoads = useCallback(() => want('roads'), [want]);
   const loadPlaces = useCallback(() => want('places'), [want]);
+  const loadBoundaries = useCallback(() => want('boundaries'), [want]);
 
   const refresh = useCallback(async () => {
     if (flight.current) return;
@@ -266,5 +276,7 @@ export function useData() {
     weather: weather.value,
     rivers: rivers.value,
     overview: overview.value,
+    boundaries: boundaries.value,
+    loadBoundaries,
   };
 }

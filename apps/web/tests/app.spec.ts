@@ -31,6 +31,15 @@ async function prepare(page: Page, scenario = 'active') {
       contentType: 'application/json',
     }),
   );
+  // Outlines of the pilot area: the cut of the shipped file (Bangkok and the three provinces around it)
+  await page.route('**/ref/boundaries.json?*', (route) =>
+    route.fulfill({
+      body: readFileSync(
+        new URL('../../../contracts/v1/examples/boundaries/boundaries.json', import.meta.url),
+      ),
+      contentType: 'application/json',
+    }),
+  );
   // The camera registry the producer ships
   await page.route('**/ref/cctv.json?*', (route) =>
     route.fulfill({
@@ -1057,6 +1066,39 @@ test('the summary of places to watch comes first, then flood reports, then the o
   await summary.getByRole('button', { name: /เขตห้วยขวาง/ }).click();
   await expect(summary).toBeVisible();
   await expect(page).not.toHaveURL(/pin=/);
+});
+
+test('the summary’s places are outlined on the map, apart from the alert zones', async ({
+  page,
+}) => {
+  await prepare(page);
+  const overview = read('overview', 'overview');
+  overview.generated_at = read('active', 'manifest').generated_at;
+  await page.route('**/summary/overview.json?*', (route) => route.fulfill({ json: overview }));
+  await page.goto('/');
+  const surface = page.getByTestId('map-surface');
+  await expect(surface).toHaveAttribute('aria-busy', 'false', { timeout: 15_000 });
+  // the two districts to watch now, and the provinces to prepare for that the outlines file has
+  await expect(surface).toHaveAttribute('data-watch', '1030 1017 11 12 13');
+  const key = page.locator('.legend-watch');
+  await expect(key).toContainText('ต้องระวังตอนนี้');
+  await expect(key).toContainText('เตรียมรับมือ');
+  await expect(key).toContainText('เกณฑ์ของเว็บ ไม่ใช่ประกาศ');
+  // a layer of its own, which the reader can switch off
+  await page.getByRole('button', { name: 'ชั้นข้อมูล' }).click();
+  const toggle = page.getByRole('button', { name: 'กรอบพื้นที่ที่ต้องระวัง' });
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+  await toggle.click();
+  await expect(surface).toHaveAttribute('data-watch', '');
+  await expect(key).toHaveCount(0);
+  // a province card fits the map to its outlined districts
+  await toggle.click();
+  await expect(surface).toHaveAttribute('data-watch', '1030 1017 11 12 13');
+  await page
+    .getByTestId('summary')
+    .getByRole('button', { name: /กรุงเทพมหานคร · 2 เขต/ })
+    .click();
+  await expect(surface).not.toHaveAttribute('data-zoom', '5');
 });
 
 test('the Bangkok layers have no switch until their files are published', async ({ page }) => {

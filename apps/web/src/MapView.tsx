@@ -63,6 +63,7 @@ import {
   type RiverPoint,
 } from './rivers';
 import { MAP_IMAGE_RATIO, mapImage } from './mapIcons';
+import { WATCH_COLOR, type WatchShapes } from './overview';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 
@@ -76,6 +77,8 @@ export interface Layers {
   dams: boolean;
   weather: boolean;
   rivers: boolean;
+  /** outlines of the places the summary lists */
+  watch: boolean;
 }
 export type LngLat = [number, number];
 export interface Focus {
@@ -106,6 +109,8 @@ interface Props {
   weather: WeatherToday | null;
   /** the GloFAS river trend, or null while the timeline shows the forecast */
   rivers: RiverForecast | null;
+  /** outlines of the summary's places (empty when the layer is off) */
+  watch: WatchShapes;
   layers: Layers;
   pin: LngLat | null;
   /** short name shown on the pin, e.g. ต.คลองหนึ่ง */
@@ -221,6 +226,36 @@ function addOverlays(instance: LibreMap) {
         ['==', ['get', 'status'], 'pending'],
         ['literal', [2, 2]],
         ['literal', [1, 0]],
+      ],
+    },
+  });
+  // the summary's places: over the alert zones and the rain, under the pins; the places to watch now on top
+  instance.addSource('watch', { type: 'geojson', data: empty });
+  const nowFirst = ['case', ['==', ['get', 'when'], 'now'], 1, 0] as unknown as number;
+  instance.addLayer({
+    id: 'watch-casing',
+    type: 'line',
+    source: 'watch',
+    layout: { 'line-join': 'round', 'line-sort-key': nowFirst },
+    paint: {
+      'line-color': '#ffffff',
+      'line-opacity': 0.9,
+      'line-width': ['interpolate', ['linear'], ['zoom'], 5, 2.6, 9, 4, 12, 5.4],
+    },
+  });
+  instance.addLayer({
+    id: 'watch-line',
+    type: 'line',
+    source: 'watch',
+    layout: { 'line-join': 'round', 'line-sort-key': nowFirst },
+    paint: {
+      'line-color': ['case', ['==', ['get', 'when'], 'now'], WATCH_COLOR.now, WATCH_COLOR.next],
+      'line-width': ['interpolate', ['linear'], ['zoom'], 5, 1.2, 9, 2, 12, 2.8],
+      'line-dasharray': [
+        'case',
+        ['==', ['get', 'when'], 'now'],
+        ['literal', [1, 0]],
+        ['literal', [2.5, 1.5]],
       ],
     },
   });
@@ -984,7 +1019,20 @@ export default function MapView(props: Props) {
     (map.current.getSource('alerts') as GeoJSONSource | undefined)?.setData(collection);
   }, [props.alerts, props.selectedAlertId, props.now, props.layers.alerts, ready, styleVersion]);
 
-  // Radar frame as an image overlay under the camera dots
+  // Outlines of the summary's places; the casing follows the basemap so the line stands out on both
+  useEffect(() => {
+    const instance = map.current;
+    if (!ready || !instance) return;
+    (instance.getSource('watch') as GeoJSONSource | undefined)?.setData(props.watch);
+    if (instance.getLayer('watch-casing'))
+      instance.setPaintProperty(
+        'watch-casing',
+        'line-color',
+        props.theme === 'dark' ? '#10181f' : '#ffffff',
+      );
+  }, [props.watch, props.theme, ready, styleVersion]);
+
+  // Radar frame as an image overlay under the outlines and the pins
   useEffect(() => {
     const instance = map.current;
     if (!ready || !instance) return;
@@ -1006,7 +1054,7 @@ export default function MapView(props: Props) {
           source: 'radar',
           paint: { 'raster-opacity': props.radarOpacity, 'raster-resampling': 'linear' },
         },
-        'camera-cluster',
+        'watch-casing',
       );
     } else {
       source.updateImage({ url, coordinates });
@@ -1039,7 +1087,9 @@ export default function MapView(props: Props) {
         .layers.find(
           (layer) =>
             (layer.type === 'line' || layer.type === 'symbol') &&
-            !['alert-line', 'radar', ...POINT_LAYERS].includes(layer.id),
+            !['alert-line', 'watch-casing', 'watch-line', 'radar', ...POINT_LAYERS].includes(
+              layer.id,
+            ),
         );
       instance.addLayer(
         {
@@ -1364,6 +1414,7 @@ export default function MapView(props: Props) {
       className="map-surface"
       data-testid="map-surface"
       data-zoom={zoom}
+      data-watch={props.watch.features.map((feature) => feature.properties.code).join(' ')}
       aria-busy={!ready || rendering}
     >
       <div ref={element} className="map-canvas" />

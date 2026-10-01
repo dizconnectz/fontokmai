@@ -11,6 +11,7 @@ import {
   Droplets,
   Info,
   Layers as LayersIcon,
+  SquareDashed,
   Waves,
   RefreshCw,
   ShieldAlert,
@@ -43,6 +44,7 @@ import {
   roadKey as roadNameKey,
 } from './bkk';
 import type { Focus, Layers, LngLat } from './MapView';
+import { outlineBounds, WATCH_COLOR, watchAreas, watchShapes } from './overview';
 
 const MapView = lazy(() => import('./MapView'));
 // "/" in development, "/fontokmai/" on GitHub Pages (WEB_BASE at build time)
@@ -100,6 +102,8 @@ export default function App() {
     weather,
     rivers,
     overview,
+    boundaries,
+    loadBoundaries,
   } = data;
   const [layers, setLayers] = useState<Layers>({
     alerts: true,
@@ -111,6 +115,7 @@ export default function App() {
     dams: true,
     weather: true,
     rivers: true,
+    watch: true,
   });
   // the time the map shows: null = now (the latest radar frame); otherwise a radar or forecast time
   const [selectedTime, setSelectedTime] = useState<number | null>(null);
@@ -225,6 +230,19 @@ export default function App() {
         (layers.dams && !!dams) ||
         (layers.rivers && !!rivers) ||
         (layers.weather && !!weather)));
+  // outlines of the summary's places; the file of outlines loads once there is something to outline
+  const areas = useMemo(
+    () => (layers.watch ? watchAreas(overview, now) : []),
+    [layers.watch, overview, now],
+  );
+  const outlining = areas.length > 0;
+  useEffect(() => {
+    if (outlining) void loadBoundaries();
+  }, [outlining, loadBoundaries]);
+  // the clock ticks every 15 s: the map's outlines change only when the places do
+  const areaKey = areas.map((area) => `${area.when}:${area.code}`).join(' ');
+  const watch = useMemo(() => watchShapes(areas, boundaries), [areaKey, boundaries]);
+  const watchKey = watch.features.length > 0;
   const forecastLayer = useMemo(
     () => (step.kind === 'forecast' && forecast ? forecastAreas(forecast, step.hour) : null),
     [step, forecast],
@@ -419,6 +437,7 @@ export default function App() {
               dams={step.kind === 'forecast' ? null : dams}
               weather={step.kind === 'forecast' ? null : weather}
               rivers={step.kind === 'forecast' ? null : rivers}
+              watch={watch}
               layers={layers}
               pin={pin}
               pinLabel={pinTitle}
@@ -508,6 +527,11 @@ export default function App() {
                 <TrendingUp size={16} /> แนวโน้มน้ำแม่น้ำ
               </button>
             )}
+            {overview && (
+              <button aria-pressed={layers.watch} onClick={() => toggle('watch')}>
+                <SquareDashed size={16} /> กรอบพื้นที่ที่ต้องระวัง
+              </button>
+            )}
             {layers.radar && (
               <label className="slider">
                 <span>ความทึบชั้นฝน {Math.round(radarOpacity * 100)}%</span>
@@ -524,8 +548,21 @@ export default function App() {
           </div>
         </div>
 
-        {(colourKey || pinKey || bankKey) && (
+        {(colourKey || pinKey || bankKey || watchKey) && (
           <div className={`map-legend ${legendOpen ? 'open' : ''}`} aria-label="คำอธิบายสี">
+            {watchKey && (
+              <div className="legend-row legend-watch" aria-label="กรอบพื้นที่จากการ์ดสรุป">
+                <span>
+                  <i className="legend-outline" style={{ borderColor: WATCH_COLOR.now }} />{' '}
+                  ต้องระวังตอนนี้
+                </span>
+                <span>
+                  <i className="legend-outline next" style={{ borderColor: WATCH_COLOR.next }} />{' '}
+                  เตรียมรับมือ
+                </span>
+                <small>เกณฑ์ของเว็บ ไม่ใช่ประกาศ</small>
+              </div>
+            )}
             {bankKey && (
               <div className="legend-row bank-key" aria-label="สีระดับน้ำเทียบตลิ่ง">
                 <span>ตลิ่ง:</span>
@@ -847,12 +884,14 @@ export default function App() {
                   window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               onPlaces={(items) => {
-                // the districts of a province together: the box around them, a little wider
+                // the districts of a province together: their outlines whole, or the box around their places
                 const xs = items.map((item) => item.location[0]);
                 const ys = items.map((item) => item.location[1]);
+                const codes = items.flatMap((item) => (item.area_code ? [item.area_code] : []));
+                const outlined = codes.length === items.length && outlineBounds(codes, boundaries);
                 setFocus({
                   key: `summary-province:${items[0].place_th}:${Date.now()}`,
-                  bounds: [
+                  bounds: outlined || [
                     [Math.min(...xs) - 0.08, Math.min(...ys) - 0.08],
                     [Math.max(...xs) + 0.08, Math.max(...ys) + 0.08],
                   ],

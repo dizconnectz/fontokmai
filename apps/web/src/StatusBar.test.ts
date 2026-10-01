@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { statusChips, type StatusCounts } from './StatusBar';
+import { readFileSync } from 'node:fs';
+import { statusChips, statusCounts, type StatusCounts } from './StatusBar';
+import type { Overview } from './overview';
 
 const quiet: StatusCounts = {
   watchNow: 0,
@@ -43,5 +45,29 @@ describe('the status bar says the whole picture in one line (user, 2026-10-01)',
     ]);
     // a minor or moderate alert is a warning, not a danger
     expect(statusChips({ ...quiet, alerts: 1, worst: 'moderate' })[0].tone).toBe('warn');
+  });
+
+  it('counts the places as the summary card lists them, none from a file too old to list', () => {
+    const summary = JSON.parse(
+      readFileSync(
+        new URL('../../../contracts/v1/examples/overview/overview.json', import.meta.url),
+        'utf8',
+      ),
+    ) as Overview;
+    const counts = (now: number) =>
+      statusCounts({
+        summary,
+        floods: null,
+        dams: null,
+        alerts: [],
+        trusted: true,
+        worst: null,
+        now,
+      });
+    const at = Date.parse('2026-09-26T17:30:00+07:00');
+    expect([counts(at).watchNow, counts(at).watchNext]).toEqual([2, 6]);
+    // more than three hours after the file was made, the card lists nothing and the bar says nothing
+    const late = counts(at + 3 * 3_600_000 + 60_000);
+    expect([late.watchNow, late.watchNext]).toEqual([0, 0]);
   });
 });

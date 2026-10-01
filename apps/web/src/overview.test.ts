@@ -7,11 +7,15 @@ import {
   officialFor,
   officialLine,
   oldInputs,
+  outlineBounds,
   placeParts,
   reasonLine,
+  shownItems,
+  watchAreas,
+  watchShapes,
   type Overview,
 } from './overview';
-import type { Alert } from './data';
+import type { Alert, Boundaries } from './data';
 
 // the producer's example: the other examples summed up at 17:30 on 26 Sep (contract section 21)
 const overview = JSON.parse(
@@ -21,6 +25,13 @@ const overview = JSON.parse(
   ),
 ) as Overview;
 const AT = Date.parse('2026-09-26T17:30:00+07:00');
+// the producer's outlines cut to the pilot area: Bangkok, Samut Prakan, Nonthaburi and Pathum Thani
+const boundaries = JSON.parse(
+  readFileSync(
+    new URL('../../../contracts/v1/examples/boundaries/boundaries.json', import.meta.url),
+    'utf8',
+  ),
+) as Boundaries;
 const DAY = 86_400_000;
 
 describe('the summary of places to watch', () => {
@@ -133,5 +144,71 @@ describe('the places to watch now go by province (user, 2026-10-01)', () => {
       ['จ.กระบี่', ['อ.ปลายพระยา', 'อ.เขาพนม']],
       ['จ.พังงา', ['อ.ทับปุด', 'อ.ตะกั่วป่า']],
     ]);
+  });
+});
+
+describe('the summary’s places outlined on the map (user, 2026-10-01)', () => {
+  it('outlines the districts to watch now and the provinces to prepare for, as the lists show them', () => {
+    expect(watchAreas(overview, AT).map((area) => `${area.when}:${area.code}`)).toEqual([
+      'now:1030',
+      'now:1017',
+      'next:11',
+      'next:19',
+      'next:12',
+      'next:13',
+      'next:14',
+      'next:74',
+    ]);
+    // the flood reports of Huai Khwang held until 18:19: after that it is off the list, and off the map
+    expect(watchAreas(overview, AT + 3_600_000).filter((area) => area.when === 'now')).toEqual([
+      { code: '1030', when: 'now', place: 'เขตจตุจักร กรุงเทพมหานคร' },
+    ]);
+  });
+
+  it('outlines nothing from a file too old to list, nor an item without an area', () => {
+    const tooOld = Date.parse(overview.generated_at) + 3 * 3_600_000 + 60_000;
+    expect(shownItems(overview, 'now', tooOld)).toEqual([]);
+    expect(watchAreas(overview, tooOld)).toEqual([]);
+    expect(watchAreas(null, AT)).toEqual([]);
+    // a river point or a dam has no area; a file made before area_code has none at all
+    const river = {
+      ...overview.items[2],
+      place_th: 'แม่น้ำบางปะกง ที่ฉะเชิงเทรา',
+      area_code: null,
+    };
+    const before = overview.items.map((item) => {
+      const copy = { ...item };
+      delete copy.area_code;
+      return copy;
+    });
+    expect(watchAreas({ ...overview, items: [river] }, AT)).toEqual([]);
+    expect(watchAreas({ ...overview, items: before }, AT)).toEqual([]);
+  });
+
+  it('draws the outlines the file has, and nothing before it loads', () => {
+    const areas = watchAreas(overview, AT);
+    const shapes = watchShapes(areas, boundaries);
+    // Saraburi, Ayutthaya and Samut Sakhon are outside the cut file: left out, the others drawn
+    expect(shapes.features.map((feature) => feature.properties.code)).toEqual([
+      '1030',
+      '1017',
+      '11',
+      '12',
+      '13',
+    ]);
+    expect(shapes.features[0].geometry.type).toBe('MultiPolygon');
+    expect(shapes.features[0].properties).toEqual(areas[0]);
+    expect(watchShapes(areas, null).features).toEqual([]);
+  });
+
+  it('fits the map to whole outlines, or says it cannot', () => {
+    const [[west, south], [east, north]] = outlineBounds(['1030', '1017'], boundaries)!;
+    // Chatuchak and Huai Khwang, north of the centre of Bangkok
+    expect(west).toBeGreaterThan(100.5);
+    expect(east).toBeLessThan(100.65);
+    expect(south).toBeGreaterThan(13.74);
+    expect(north).toBeLessThan(13.88);
+    expect(outlineBounds(['1030', '1999'], boundaries)).toBeNull();
+    expect(outlineBounds(['1030'], null)).toBeNull();
   });
 });

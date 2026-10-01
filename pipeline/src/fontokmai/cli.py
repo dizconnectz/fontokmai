@@ -14,6 +14,7 @@ from typing import Any
 from fontokmai.contracts.export import export_schemas
 from fontokmai.examples import (
     write_bkk_examples,
+    write_boundaries_example,
     write_examples,
     write_forecast_example,
     write_live_floods_example,
@@ -236,6 +237,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "contract-examples":
         written = write_examples(args.out, real=args.real_fixtures, synthetic=args.synthetic_fixtures)
         written += write_places_example(args.out)
+        written += write_boundaries_example(args.out)
         if args.road_flood_fixtures:
             written += write_road_flood_example(args.out, args.road_flood_fixtures)
         if args.forecast_fixtures:

@@ -170,6 +170,7 @@ def write_road_flood_example(out: Path, fixtures: Path) -> list[Path]:
 
 
 PLACES_EXAMPLE_PROVINCES = ("10", "13")  # Bangkok and Pathum Thani
+BOUNDARIES_EXAMPLE_PROVINCES = ("10", "11", "12", "13")  # the pilot area (D15): Bangkok and the three around it
 # 12 lattice points around Bangkok and Pathum Thani (lon 100.25-100.75, lat 13.5-14.25), answer recorded
 FORECAST_FETCHED_AT = "2026-09-26T11:50:00+07:00"
 
@@ -189,6 +190,23 @@ def write_places_example(out: Path) -> list[Path]:
     target.mkdir(parents=True, exist_ok=True)
     path = target / "places.json"
     path.write_text(subset.model_dump_json(indent=2) + "\n", encoding="utf-8", newline="\n")
+    return [path]
+
+
+def write_boundaries_example(out: Path) -> list[Path]:
+    """contracts/v1/examples/boundaries: the shipped outlines cut to the pilot area, small enough to read and test."""
+    from importlib import resources
+
+    from fontokmai.contracts.boundaries import Boundaries
+
+    shipped = Boundaries.model_validate_json(
+        resources.files("fontokmai.ref_data").joinpath("boundaries.json").read_bytes())
+    subset = shipped.model_copy(update={
+        "areas": [area for area in shipped.areas if area.code[:2] in BOUNDARIES_EXAMPLE_PROVINCES]})
+    target = out / "boundaries"
+    target.mkdir(parents=True, exist_ok=True)
+    path = target / "boundaries.json"
+    path.write_text(subset.model_dump_json() + "\n", encoding="utf-8", newline="\n")
     return [path]
 
 

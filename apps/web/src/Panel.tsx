@@ -114,7 +114,6 @@ import { situationSummary, situationTimeLabel } from './situation';
 import { BANK_COLORS, bankState, type BankObservation } from './overflow';
 import {
   groupByProvince,
-  liveItems,
   officialFor,
   officialLine,
   oldInputs,
@@ -123,6 +122,7 @@ import {
   OVERVIEW_TOP,
   placeParts,
   reasonLine,
+  shownItems,
   type Overview as SummaryOverview,
   type OverviewItem,
 } from './overview';
@@ -788,7 +788,7 @@ function WatchSummary({
       empty: 'ยังไม่พบฝนหนักหรือน้ำขึ้นมากตามเกณฑ์',
     },
   ].map((list) => {
-    const items = tooOld ? [] : liveItems(overview, list.when, now);
+    const items = shownItems(overview, list.when, now);
     // the places to watch now go by province; the ones to prepare for are provinces, rivers and dams already
     const groups =
       list.when === 'now'

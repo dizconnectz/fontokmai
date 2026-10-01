@@ -177,6 +177,7 @@ class _Spot:
     points: list[list[float]] = field(default_factory=list)
     roads: list[str] = field(default_factory=list)
     detail: str | None = None  # a line of its own instead of the roads (a dam: where its water goes)
+    area: str | None = None  # the district or province outlined on the map
 
     def item(self) -> OverviewItem:
         # on the "now" list what is happening leads, and a forecast taken along comes last
@@ -191,13 +192,14 @@ class _Spot:
         return OverviewItem(
             when=self.when, place_th=self.place_th,
             detail_th=self.detail or (f"แถว {', '.join(roads)}" if roads else None),
-            province_code=self.province, location=centre, zoom=self.zoom,
+            province_code=self.province, area_code=self.area, location=centre, zoom=self.zoom,
             score=scores[0] * 10 + sum(scores[1:]), reasons=[reason for _, reason in ordered])
 
 
 def _district_spot(spots: dict[str, _Spot], district: Place) -> _Spot:
     if district.code not in spots:
-        spots[district.code] = _Spot("now", district.label, district.code[:2], list(district.location), 12)
+        spots[district.code] = _Spot("now", district.label, district.code[:2], list(district.location), 12,
+                                     area=district.code)
     return spots[district.code]
 
 
@@ -413,7 +415,7 @@ def build_overview(files: dict[str, bytes], now: datetime, gazetteer: Gazetteer 
         left = [pair for pair in reasons if pair[1].kind != "rain_forecast" or (province, pair[1].day) not in attached]
         if left and province in g.places:
             place = g.places[province]
-            nexts.append(_Spot("next", place.label, province, list(place.location), 8, left))
+            nexts.append(_Spot("next", place.label, province, list(place.location), 8, left, area=province))
 
     # ---------- next: rivers the model sees rising a lot (GloFAS) ----------
     rivers = _load(files, "forecast/rivers.json", RiverForecast)

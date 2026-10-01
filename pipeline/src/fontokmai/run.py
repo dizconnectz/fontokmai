@@ -10,6 +10,7 @@ from pathlib import Path
 from pydantic import BaseModel, ValidationError
 
 from fontokmai.contracts.alerts import Alert, AlertsFeed
+from fontokmai.contracts.boundaries import Boundaries
 from fontokmai.contracts.cctv import CctvRegistry
 from fontokmai.contracts.common import SourceStatus
 from fontokmai.contracts.forecast import RainForecast, RiverForecast
@@ -34,10 +35,11 @@ SNAPSHOT_INTERVAL = timedelta(minutes=15)
 REF_MODELS: dict[str, type[BaseModel]] = {"ref/road_flood_history.json": RoadFloodHistory,
                                           "ref/cctv.json": CctvRegistry,
                                           "ref/places.json": PlaceGazetteer,
+                                          "ref/boundaries.json": Boundaries,
                                           "forecast/rain.json": RainForecast,
                                           "forecast/rivers.json": RiverForecast}
 # curated files shipped with the package and copied into every snapshot
-STATIC_REFS = {"ref/cctv.json": "cctv.json", "ref/places.json": "places.json"}
+STATIC_REFS = {"ref/cctv.json": "cctv.json", "ref/places.json": "places.json", "ref/boundaries.json": "boundaries.json"}
 LAST_SUCCESS_KEY = "tmd_cap.last_success_at"
 RADAR_SUCCESS_KEY = "tmd_radar.last_success_at"
 FLOODS_SUCCESS_KEY = "longdo_floods.last_success_at"

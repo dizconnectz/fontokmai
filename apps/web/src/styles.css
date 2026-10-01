@@ -835,6 +835,21 @@ svg {
 .district-chip:hover {
   background: var(--hover);
 }
+/* the summary's places outlined on the map: a line, not a filled zone like an alert */
+.legend-watch {
+  align-items: center;
+}
+.legend-outline {
+  display: inline-block;
+  width: 16px;
+  height: 11px;
+  border: 2px solid;
+  border-radius: 2px;
+  vertical-align: -1px;
+}
+.legend-outline.next {
+  border-style: dashed;
+}
 .heading-ok {
   color: var(--ok-ink);
 }

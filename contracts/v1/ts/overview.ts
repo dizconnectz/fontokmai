@@ -12,6 +12,10 @@ export type NameTh = string;
 export type Status = "fresh" | "stale" | "missing";
 export type Inputs = OverviewInput[];
 /**
+ * DOPA code of the area the web outlines on the map from ref/boundaries.json (added 2026-10-01): the district (4 digits) of a place to watch now, the province (2 digits) of a forecast; null for a river point or a dam
+ */
+export type AreaCode = string | null;
+/**
  * Where in the place, e.g. แถว ถ.พหลโยธิน, ถ.รังสิต-นครนายก
  */
 export type DetailTh = string | null;
@@ -96,6 +100,7 @@ export interface OverviewInput {
   status: Status;
 }
 export interface OverviewItem {
+  area_code?: AreaCode;
   detail_th: DetailTh;
   location: Location;
   place_th: PlaceTh;

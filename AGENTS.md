@@ -45,7 +45,7 @@
 ### A5. งานที่กำลังทำ (Active claims)
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
-| Claude | 2026-10-01 17:20 | `apps/web/src/{Panel,App,StatusBar,Fold,styles}` + new files, `apps/web/tests/app.spec.ts`, consumer specs ที่ต้องกางส่วนที่พับ | ภาพรวมเว็บ: แถบสรุป + พับส่วน (ผู้ใช้เลือก 1–6) | overview-ux |
+| Claude | 2026-10-01 17:20 | `apps/web/src/{Panel,App,StatusBar,Fold,MapView,useData,data,styles}` + new files, `apps/web/{tests,public/sources}`, consumer specs ที่ต้องกางส่วนที่พับ, `pipeline/src/fontokmai/{contracts/overview,contracts/boundaries,overview_build,run,examples,ref_data/*boundaries*}`, `contracts/v1`, `docs/{sources,design}`, `NOTICE` | ภาพรวมเว็บ (ผู้ใช้เลือก 1–6): แถบสรุป+พับส่วน ✓ · รวมตามจังหวัด ✓ · กรอบอำเภอบนแผนที่ · แนวโน้ม+ที่ของฉัน | overview-ux |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md`)
 

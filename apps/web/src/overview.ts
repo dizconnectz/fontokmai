@@ -1,5 +1,7 @@
+import type { FeatureCollection, MultiPolygon } from 'geojson';
 import type { Overview } from '../../../contracts/v1/ts/overview';
 import type { Alert } from '../../../contracts/v1/ts/alerts';
+import type { Boundaries } from '../../../contracts/v1/ts/boundaries';
 import { displayStatus } from './data';
 import { worstLevel, type Level } from './alerts';
 
@@ -82,6 +84,77 @@ export function liveItems(overview: Overview, when: 'now' | 'next', now: number)
         (reason) => reasonLine(reason, now) !== null && (when === 'next' || !reason.day),
       ),
   );
+}
+
+/** The items a list shows at `now`: none when the file is too old to list (the summary card says so). */
+export function shownItems(overview: Overview, when: 'now' | 'next', now: number): OverviewItem[] {
+  return now - Date.parse(overview.generated_at) > OVERVIEW_TOO_OLD_MS
+    ? []
+    : liveItems(overview, when, now);
+}
+
+export interface WatchArea {
+  /** DOPA code: a district to watch now (4 digits), a province to prepare for (2) */
+  code: string;
+  when: 'now' | 'next';
+  place: string;
+}
+/**
+ * The areas the map outlines (user 2026-10-01: see at a glance where the problems are): the places the summary
+ * lists at `now` that have an area, a river point or a dam has none. A file made before `area_code` gives none.
+ */
+export function watchAreas(overview: Overview | null, now: number): WatchArea[] {
+  if (!overview) return [];
+  return (['now', 'next'] as const).flatMap((when) =>
+    shownItems(overview, when, now).flatMap((item) =>
+      item.area_code ? [{ code: item.area_code, when, place: item.place_th }] : [],
+    ),
+  );
+}
+export type WatchShapes = FeatureCollection<MultiPolygon, WatchArea>;
+/**
+ * The summary's places on the map, the web's own rules and not an announcement: a line only, never a fill like an
+ * alert zone, red for a district to watch now, orange dashed for a province to prepare for.
+ */
+export const WATCH_COLOR = { now: '#d32f2f', next: '#ef6c00' } as const;
+/** The outlines of the areas found in ref/boundaries.json; an area without one is left out. */
+export function watchShapes(areas: WatchArea[], boundaries: Boundaries | null): WatchShapes {
+  const outlines = new Map(boundaries?.areas.map((area) => [area.code, area.outline]) ?? []);
+  return {
+    type: 'FeatureCollection',
+    features: areas.flatMap((area) => {
+      const outline = outlines.get(area.code);
+      return outline
+        ? [
+            {
+              type: 'Feature' as const,
+              geometry: { type: 'MultiPolygon' as const, coordinates: outline.coordinates },
+              properties: area,
+            },
+          ]
+        : [];
+    }),
+  };
+}
+/** The box around the outlines of these codes, or null when one of them has no outline. */
+export function outlineBounds(
+  codes: string[],
+  boundaries: Boundaries | null,
+): [[number, number], [number, number]] | null {
+  const outlines = new Map(boundaries?.areas.map((area) => [area.code, area.outline]) ?? []);
+  const points = [];
+  for (const code of codes) {
+    const outline = outlines.get(code);
+    if (!outline) return null;
+    for (const polygon of outline.coordinates) points.push(...polygon[0]);
+  }
+  if (!points.length) return null;
+  const xs = points.map((point) => point[0]);
+  const ys = points.map((point) => point[1]);
+  return [
+    [Math.min(...xs), Math.min(...ys)],
+    [Math.max(...xs), Math.max(...ys)],
+  ];
 }
 
 /** "อ.ทับปุด จ.พังงา" → ["อ.ทับปุด", "จ.พังงา"]; "เขตจตุจักร กรุงเทพมหานคร" → ["เขตจตุจักร", "กรุงเทพมหานคร"] */

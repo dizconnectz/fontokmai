@@ -42,6 +42,9 @@ class OverviewItem(ContractModel):
     detail_th: str | None = Field(description="Where in the place, e.g. แถว ถ.พหลโยธิน, ถ.รังสิต-นครนายก")
     province_code: str | None = Field(description=(
         "DOPA province code (2 digits), so the web can mark items under an official alert (TH-<code>)"))
+    area_code: str | None = Field(default=None, description=(
+        "DOPA code of the area the web outlines on the map from ref/boundaries.json (added 2026-10-01): the district"
+        " (4 digits) of a place to watch now, the province (2 digits) of a forecast; null for a river point or a dam"))
     location: Position = Field(description="[lon, lat] the map goes to: the reports' centre, a district or province")
     zoom: float = Field(ge=3, le=17)
     score: int = Field(ge=0, description="Higher first within `when`; the rules of v0 on /method")

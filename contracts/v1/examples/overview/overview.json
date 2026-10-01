@@ -8,6 +8,7 @@
       "place_th": "เขตจตุจักร กรุงเทพมหานคร",
       "detail_th": "แถว ถ.ทดสอบหนึ่ง",
       "province_code": "10",
+      "area_code": "1030",
       "location": [
         100.565,
         13.826
@@ -38,6 +39,7 @@
       "place_th": "เขตห้วยขวาง กรุงเทพมหานคร",
       "detail_th": "แถว ซอยทดสอบ 1",
       "province_code": "10",
+      "area_code": "1017",
       "location": [
         100.58033,
         13.80033
@@ -68,6 +70,7 @@
       "place_th": "จ.สมุทรปราการ",
       "detail_th": null,
       "province_code": "11",
+      "area_code": "11",
       "location": [
         100.6586,
         13.6182
@@ -98,6 +101,7 @@
       "place_th": "จ.สระบุรี",
       "detail_th": null,
       "province_code": "19",
+      "area_code": "19",
       "location": [
         100.891,
         14.5582
@@ -120,6 +124,7 @@
       "place_th": "จ.นนทบุรี",
       "detail_th": null,
       "province_code": "12",
+      "area_code": "12",
       "location": [
         100.4318,
         13.8922
@@ -142,6 +147,7 @@
       "place_th": "จ.ปทุมธานี",
       "detail_th": null,
       "province_code": "13",
+      "area_code": "13",
       "location": [
         100.6296,
         14.0481
@@ -164,6 +170,7 @@
       "place_th": "จ.พระนครศรีอยุธยา",
       "detail_th": null,
       "province_code": "14",
+      "area_code": "14",
       "location": [
         100.5319,
         14.3738
@@ -186,6 +193,7 @@
       "place_th": "จ.สมุทรสาคร",
       "detail_th": null,
       "province_code": "74",
+      "area_code": "74",
       "location": [
         100.2175,
         13.5867

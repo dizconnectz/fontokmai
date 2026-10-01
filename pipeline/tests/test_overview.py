@@ -66,6 +66,7 @@ def test_flood_reports_in_one_district_make_a_place_to_watch_with_its_roads_and_
     overview = build_overview({"live/floods.json": _dump(_floods(reports))}, NOW, G)
     [item] = overview.items
     assert item.when == "now" and item.place_th == "อ.ธัญบุรี จ.ปทุมธานี" and item.province_code == "13"
+    assert item.area_code == "1303"  # the district outlined on the map (ref/boundaries.json)
     assert [r.text_th for r in item.reasons] == ["น้ำท่วมหลายจุด (รายงาน 3 จุด)"]
     assert item.detail_th == "แถว ถ.พหลโยธิน, ถ.รังสิต-นครนายก"
     assert item.location == [pytest.approx(100.632, abs=1e-3), pytest.approx(13.987, abs=1e-3)]
@@ -124,7 +125,7 @@ def test_forecast_names_provinces_and_days_and_follows_a_place_already_watched()
     assert thanyaburi.reasons[1].day == NOW.date()
     assert thanyaburi.reasons[1].text_th.startswith("ฝนหนัก") and "สูงสุดราว 48 มม." in thanyaburi.reasons[1].text_th
     kanchanaburi = next(i for i in overview.items if i.place_th == "จ.กาญจนบุรี")
-    assert kanchanaburi.when == "next" and kanchanaburi.zoom == 8
+    assert kanchanaburi.when == "next" and kanchanaburi.zoom == 8 and kanchanaburi.area_code == "71"
     assert kanchanaburi.reasons[0].day == date(2026, 9, 29)
     text = kanchanaburi.reasons[0].text_th
     assert text.startswith("ฝนหนักมาก") and "สูงสุดราว 120 มม." in text
@@ -166,8 +167,9 @@ def test_rivers_rising_a_lot_and_dams_over_capacity_are_to_prepare_for():
     assert "แม่น้ำเจ้าพระยา ที่กรุงเทพฯ" not in places  # +19 %: rising, not a lot
     bang_pakong = places["แม่น้ำบางปะกง ที่ฉะเชิงเทรา"]
     assert bang_pakong.reasons[0].text_th == "น้ำเพิ่มขึ้นมาก สูงสุดราว +118% (ค่าแบบจำลอง)"
-    assert bang_pakong.province_code == "24"
+    assert bang_pakong.province_code == "24" and bang_pakong.area_code is None  # a point on a river
     dam = places[full.name_th]
+    assert dam.area_code is None
     assert dam.reasons[0].text_th == "น้ำเกินความจุเก็บกัก 104.2% (รายงาน 26 ก.ย.) ติดตามการระบายน้ำ"
     assert dam.reasons[0].at == datetime.fromisoformat("2026-09-26T00:00:00+07:00")  # the report day, not the download
     # where its water goes, from the river network: places to follow (user, 2026-09-28)
