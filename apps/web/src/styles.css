@@ -988,20 +988,6 @@ details > p,
 details > ul {
   margin-top: 6px;
 }
-.pin-hint {
-  grid-template-columns: auto 1fr;
-  align-items: start;
-  background: var(--surface-2);
-}
-.pin-hint p {
-  display: grid;
-  gap: 2px;
-  font-size: 0.9rem;
-  color: var(--muted);
-}
-.pin-hint strong {
-  color: var(--ink);
-}
 .pin-card {
   display: grid;
   gap: 10px;

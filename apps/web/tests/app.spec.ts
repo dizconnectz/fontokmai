@@ -786,6 +786,18 @@ test('a pumping station says how many of its pumps run, and a station without th
   await expect(page.locator('.maplibregl-popup')).not.toContainText('เครื่องสูบน้ำ');
 });
 
+test('the side panel has no card that only repeats the radar time or how to use the map', async ({
+  page,
+}) => {
+  // they took room and said nothing new (user, 2026-10-01): the radar time is on the timeline, the map is the map
+  await prepare(page);
+  await page.goto('/');
+  const panel = page.locator('#panel');
+  await expect(panel.getByRole('heading', { level: 2 }).first()).toBeVisible();
+  await expect(panel.getByRole('heading', { name: 'ฝนตอนนี้', exact: true })).toHaveCount(0);
+  await expect(panel).not.toContainText('แตะที่ใดก็ได้บนแผนที่');
+});
+
 test('the department situation text and the Chao Phraya dams show, with a note once a day old', async ({
   page,
 }) => {

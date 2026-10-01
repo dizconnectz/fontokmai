@@ -34,7 +34,6 @@ import {
   staleAfter,
   type Alert,
   type Camera,
-  type RadarFeed,
   type LiveFloods,
   type RainForecast,
   type RoadFloodHistory,
@@ -299,31 +298,6 @@ export function AlertDetails({
           </a>
         )}
       </div>
-    </section>
-  );
-}
-
-function RadarNow({ radar, now }: { radar: RadarFeed | null | undefined; now: number }) {
-  const age = radarAgeMinutes(radar, now);
-  const latest = radar?.frames.at(-1);
-  return (
-    <section className="panel-section" aria-labelledby="rain-now-heading">
-      <h2 id="rain-now-heading">
-        <CloudRain size={18} /> ฝนตอนนี้
-      </h2>
-      {!latest ? (
-        <p className="missing-value">ยังไม่มีข้อมูลเรดาร์</p>
-      ) : (
-        <>
-          <p>ภาพเรดาร์ล่าสุด {shortTime(latest.time, now)} · ดูสีฝนบนแผนที่ (สีฟ้าเบา → แดงหนัก)</p>
-          {age !== null && age > RADAR_STALE_MIN && (
-            <p className="inline-warning">
-              <Info size={15} /> ภาพเรดาร์ไม่อัปเดต {age} นาที
-            </p>
-          )}
-          <small className="source-note">เรดาร์: {radar!.credit_th}</small>
-        </>
-      )}
     </section>
   );
 }
@@ -1063,15 +1037,6 @@ export function Overview({
       </section>
       {flooding && <RoadFloodingToday flooding={flooding} now={now} onRoad={onRoadName} />}
       {news && <SituationCard news={news} now={now} />}
-      <RadarNow radar={snapshot?.radar} now={now} />
-      <section className="panel-section pin-hint">
-        <MapPin size={20} />
-        <p>
-          <strong>แตะที่ใดก็ได้บนแผนที่เพื่อปักหมุด</strong>
-          หรือพิมพ์ชื่อตำบล อำเภอ หรือสถานที่ในช่องค้นหาด้านบน แล้วดูประกาศ ฝน น้ำท่วมแถวนั้น
-          และกล้องใกล้ๆ ของจุดนั้น
-        </p>
-      </section>
     </>
   );
 }
