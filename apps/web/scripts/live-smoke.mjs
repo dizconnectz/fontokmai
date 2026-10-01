@@ -1,4 +1,4 @@
-import { chromium, devices } from '@playwright/test';
+import { chromium, devices, expect } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 
@@ -27,9 +27,9 @@ try {
     await page.goto(origin);
     const manifest = await (await manifestRequest).json();
     await page.waitForFunction(() => document.querySelector('.source-times small'));
-    const mapReady = await page
-      .locator('.map-reset')
-      .waitFor({ timeout: 30_000 })
+    const surface = page.getByTestId('map-surface');
+    const mapReady = await expect(surface)
+      .toHaveAttribute('aria-busy', 'false', { timeout: 30_000 })
       .then(
         () => true,
         () => false,
@@ -55,7 +55,7 @@ try {
       true,
     );
     await page.screenshot({ path: `test-results/live/${name}.png`, fullPage: true });
-    await page.locator('.map-panel').screenshot({ path: `test-results/live/${name}-map.png` });
+    await surface.screenshot({ path: `test-results/live/${name}-map.png` });
     console.log(
       JSON.stringify(
         {

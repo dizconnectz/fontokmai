@@ -179,10 +179,15 @@ def _load(path: Path) -> Any:
         return {}
 
 
+def _json_bytes(value: Any) -> bytes:
+    """The exact bytes of the bookkeeping files, including a platform-independent newline."""
+    return (json.dumps(value, ensure_ascii=False) + "\n").encode("utf-8")
+
+
 def _save(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     partial = path.with_name(path.name + ".part")
-    partial.write_text(json.dumps(value, ensure_ascii=False) + "\n", encoding="utf-8")
+    partial.write_bytes(_json_bytes(value))
     partial.replace(path)
 
 
@@ -198,8 +203,8 @@ def _day_files(root: Path) -> list[tuple[str, Path]]:
 
 def archive_round(root: Path, out: Path, now: datetime, summary: dict[str, Any], archived_at: datetime) -> str:
     """One round into the archive: the round line, new versions of VERSIONED and the flood reports' changes. All of
-    it is made first and written only if the day's share of the archive has room for it; otherwise nothing of the
-    round is written, and the note says so (the missing round is a gap in rounds/)."""
+    it is made first and written only if both the day's share and the whole archive have room for it, including
+    replacement bookkeeping files; otherwise nothing of the round is written and its absence is logged."""
     day = _day(now)
     manifest = _load(out / "manifest.json")
     files = {f["path"]: f for f in manifest.get("files", []) if isinstance(f, dict) and "path" in f}
@@ -254,11 +259,23 @@ def archive_round(root: Path, out: Path, now: datetime, summary: dict[str, Any],
     used = sum(path.stat().st_size for d, path in _day_files(root) if d == day)
     if used + sum(len(member) for member in members.values()) > day_budget():
         return f"archive: today's share ({day_budget() / 1024**2:.1f} MB) is used up, this round is not in it"
+    updates = {last_path: last}
+    if floods:
+        updates[open_path] = now_open
+    # Pruning before this round only bounds the old files. Reserve space for all pending bytes as well (M36),
+    # counting replacements as a delta, not a second copy. Do not advance last/open when rejecting a round.
+    growth = sum(len(member) for member in members.values()) + sum(
+        len(_json_bytes(value)) - (path.stat().st_size if path.exists() else 0)
+        for path, value in updates.items()
+    )
+    projected = archive_bytes(root) + growth
+    if projected > ARCHIVE_MAX_BYTES:
+        return (f"archive: total budget ({ARCHIVE_MAX_BYTES} bytes) would be exceeded "
+                f"({projected} bytes), this round is not in it")
     for path, member in members.items():
         _append(path, member)
-    _save(last_path, last)
-    if floods:
-        _save(open_path, now_open)
+    for path, value in updates.items():
+        _save(path, value)
     return f"archive +{len(versions)} version(s) +{len(rows)} flood line(s)"
 
 
