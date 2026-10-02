@@ -1005,6 +1005,11 @@ test('a dam releasing a lot more than the report before says so, with where its 
   await expect(line('เขื่อนภูมิพล').locator('.dam-release.big')).toHaveText(
     '↑ ระบายเพิ่มมาก จาก 1.5 (25 ก.ย.)',
   );
+  // in red, as something to watch (user, 2026-10-02)
+  await expect(line('เขื่อนภูมิพล').locator('.dam-release.big')).toHaveCSS('font-weight', '700');
+  await expect(page.getByTestId('status-bar').locator('.status-chip.danger')).toContainText([
+    'เขื่อนระบายเพิ่มมาก',
+  ]);
   await expect(line('เขื่อนภูมิพล').locator('.dam-downstream')).toContainText('ท้ายน้ำ: ตาก');
   await expect(line('เขื่อนป่าสักชลสิทธิ์').locator('.dam-release')).toHaveText(
     'ระบายเท่ากับ 25 ก.ย.',
@@ -1074,10 +1079,11 @@ test('the rivers by the system’s 7-day forecast: stretches on the map, a card 
   await page.getByRole('button', { name: 'แนวโน้มน้ำแม่น้ำ' }).click();
   await expect(surface).toHaveAttribute('data-rivers', '');
   await expect(key).toHaveCount(0);
-  // nothing forecast to rise: the card says so, the status bar says nothing about rivers
+  // nothing forecast to rise: no card and nothing in the status bar (user, 2026-10-02); the thin lines stay
   for (const point of rivers.points) point.median = point.median.map(() => 100);
   await page.goto('/');
-  await expect(card).toContainText('ยังไม่มีแม่น้ำสายหลักที่คาดว่าน้ำจะเพิ่ม');
+  await expect(surface).toHaveAttribute('data-rivers', /cp-bangkok:steady/);
+  await expect(card).toHaveCount(0);
   await expect(page.getByTestId('status-bar')).not.toContainText('แม่น้ำ');
 });
 
@@ -1269,7 +1275,12 @@ test('one place can be saved as "my place" and opened again from the map or the 
   });
   const card = page.locator('.favorite-card');
   await expect(card).toContainText('ที่ของฉัน · แขวงสีกัน'); // named after the nearest subdistrict
+  // the saved place stays on the map as a star pin (user, 2026-10-02); it goes while the pin stands on it
+  const star = page.locator('.favorite-pin');
+  await expect(star).toHaveCount(1);
+  await expect(star).toHaveAttribute('aria-label', 'ที่ของฉัน แขวงสีกัน');
   await page.getByRole('button', { name: /^ไปที่ของฉัน/ }).click();
+  await expect(star).toHaveCount(0);
   await expect(page.getByTestId('pin-card')).toBeVisible();
   await expect(page).toHaveURL(/pin=13\.90000(?:,|%2C)100\.60000/);
   // and it can be taken off again

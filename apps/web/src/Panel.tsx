@@ -1026,6 +1026,8 @@ function RiverOutlookCard({
 }) {
   const rows = riverSummary(rivers, now);
   const rising = rows.filter((row) => row.rising.length > 0);
+  // nothing to worry about: no card (user 2026-10-02); the thin lines on the map still show the forecast
+  if (!rising.length) return null;
   const old = now - Date.parse(rivers.fetched_at) > RIVERS_STALE_MS;
   const source = safeLink(rivers.source_url);
   return (

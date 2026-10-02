@@ -1350,10 +1350,50 @@ details > ul {
 .dam-carried {
   color: var(--warn-ink);
 }
-/* a release a lot bigger than the report before: the words say it, the colour only helps */
+/* a release a lot bigger than the report before: red, as something to watch (user 2026-10-02); the words say it */
 .dam-release.big {
+  justify-self: start;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--extreme-bg);
+  color: var(--extreme-ink);
+  font-weight: 700;
+}
+.dam-release.up:not(.big) {
   color: var(--warn-ink);
-  font-weight: 600;
+}
+.release-alarm {
+  color: #c62828;
+  font-weight: 700;
+}
+/* the saved place: a gold star pin that stays on the map */
+.favorite-pin {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.favorite-pin-head {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  margin-bottom: 6px;
+  border: 2.5px solid #fff;
+  border-radius: 50% 50% 50% 0;
+  background: #f2b705;
+  transform: rotate(-45deg);
+  box-shadow: 0 3px 8px rgb(0 0 0 / 30%);
+}
+.favorite-pin-head svg {
+  width: 14px;
+  height: 14px;
+  fill: #fff;
+  transform: rotate(45deg);
 }
 .dam-bar.over {
   outline: 2px solid #e53935;

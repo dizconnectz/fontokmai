@@ -477,6 +477,7 @@ export default function App() {
               focus={focus}
               onPin={(point) => setPin(point)}
               favoriteLabel={favorite?.label ?? null}
+              favoriteLocation={favorite && !pinIsFavorite ? favorite.location : null}
               onFavorite={openFavorite}
               theme={theme}
               onList={() => panel.current?.focus()}

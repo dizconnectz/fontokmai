@@ -79,7 +79,8 @@ export function statusChips(counts: StatusCounts): Chip[] {
     chips.push({
       key: 'dams-release',
       text: `เขื่อนระบายเพิ่มมาก ${counts.damsReleasing} แห่ง`,
-      tone: 'warn',
+      // a release up a lot is something to watch, in red (user 2026-10-02)
+      tone: 'danger',
       target: 'dams',
     });
   if (counts.riversRising)

@@ -124,6 +124,8 @@ interface Props {
   theme: 'light' | 'dark';
   /** name of the saved place, or null when none is saved */
   favoriteLabel: string | null;
+  /** where the saved place is: a star pin stays there (user 2026-10-02); null when none, or the pin is on it */
+  favoriteLocation: LngLat | null;
   onFavorite: () => void;
   onList: () => void;
   /** a report chosen in the list: fly there and open its popup, without touching the side panel */
@@ -420,6 +422,23 @@ function addOverlays(instance: LibreMap) {
   // the severe points of each kind, never in a bubble, above everything else
   for (const [kind, source] of SEVERE_KINDS) {
     instance.addSource(`${source}-top`, { type: 'geojson', data: empty });
+    // a dam releasing a lot more than the report before: a red ring under its pin (user 2026-10-02: show that it
+    // is alarming)
+    if (kind === 'dam')
+      instance.addLayer({
+        id: 'dam-alarm',
+        type: 'circle',
+        source: `${source}-top`,
+        filter: ['==', ['get', 'alarm'], true],
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 13, 10, 18],
+          'circle-color': '#e53935',
+          'circle-opacity': 0.22,
+          'circle-stroke-color': '#e53935',
+          'circle-stroke-width': 2.5,
+          'circle-translate': [0, -14],
+        },
+      });
     instance.addLayer({
       id: `${kind}-top`,
       type: 'symbol',
@@ -549,9 +568,15 @@ function releaseLine(dam: Dam, file: DamReport): HTMLElement[] {
   const change = file.previous_report_date ? releaseChange(dam) : null;
   if (!change || !file.previous_report_date) return [];
   const arrow = change.direction === 'up' ? '↑ ' : change.direction === 'down' ? '↓ ' : '';
-  return [
-    line(`${arrow}${releaseWords(change, file.previous_report_date)}`, change.big ? 'b' : 'small'),
-  ];
+  const words = line(
+    `${arrow}${releaseWords(change, file.previous_report_date)}`,
+    change.big ? 'b' : 'small',
+  );
+  if (change.big) {
+    words.className = 'release-alarm';
+    words.textContent = `⚠ ${words.textContent} · ต้องระวัง`;
+  }
+  return [words];
 }
 
 function damPopup(dam: Dam, file: DamReport, now: number): HTMLElement {
@@ -786,6 +811,7 @@ export default function MapView(props: Props) {
   const element = useRef<HTMLDivElement>(null);
   const map = useRef<LibreMap | null>(null);
   const pinMarker = useRef<Marker | null>(null);
+  const favoriteMarker = useRef<Marker | null>(null);
   const pinTag = useRef<HTMLSpanElement | null>(null);
   const popup = useRef<Popup | null>(null);
   const popupKind = useRef<PointKind | null>(null);
@@ -1063,6 +1089,17 @@ export default function MapView(props: Props) {
           marker.append(tag, head);
           pinTag.current = tag;
           pinMarker.current = new maplibre.Marker({ element: marker, anchor: 'bottom' });
+          // the saved place: a star pin that stays, and opens the place when tapped
+          const star = document.createElement('button');
+          star.type = 'button';
+          star.className = 'favorite-pin';
+          star.innerHTML =
+            '<span class="favorite-pin-head"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.8 5.7 6.3.9-4.6 4.4 1.1 6.2L12 17.1 6.4 20l1.1-6.2L2.9 9.4l6.3-.9z"/></svg></span>';
+          star.addEventListener('click', (event) => {
+            event.stopPropagation();
+            latest.current.onFavorite();
+          });
+          favoriteMarker.current = new maplibre.Marker({ element: star, anchor: 'bottom' });
           if (!disposed) setReady(true);
         });
       } catch {
@@ -1300,9 +1337,8 @@ export default function MapView(props: Props) {
         ...dams.flatMap((dam) => {
           if (!dam.location) return [];
           const pin = damPin(shownDam(dam)); // a blank dam keeps the class of its last known figures
-          const severe =
-            pin === 'pin-dam-full' ||
-            (!!props.dams?.previous_report_date && !!releaseChange(dam)?.big);
+          const alarm = !!props.dams?.previous_report_date && !!releaseChange(dam)?.big;
+          const severe = pin === 'pin-dam-full' || alarm;
           return [
             {
               type: 'Feature' as const,
@@ -1311,6 +1347,7 @@ export default function MapView(props: Props) {
                 code: dam.id,
                 pin,
                 severe,
+                alarm,
                 rank: DAM_CLASSES.findIndex((c) => c.pin === pin),
               },
             },
@@ -1496,6 +1533,21 @@ export default function MapView(props: Props) {
       pinTag.current.hidden = !props.pinLabel;
     }
   }, [props.pin, props.pinLabel, ready]);
+
+  // The saved place stays on the map as a star pin
+  useEffect(() => {
+    const instance = map.current;
+    const marker = favoriteMarker.current;
+    if (!ready || !instance || !marker) return;
+    if (!props.favoriteLocation) {
+      marker.remove();
+      return;
+    }
+    marker.setLngLat(props.favoriteLocation).addTo(instance);
+    const name = `ที่ของฉัน ${props.favoriteLabel ?? ''}`.trim();
+    marker.getElement().setAttribute('aria-label', name);
+    marker.getElement().title = name;
+  }, [props.favoriteLocation?.[0], props.favoriteLocation?.[1], props.favoriteLabel, ready]);
 
   // Fit to the selected alert once per selection. The alert list is rebuilt every clock tick and
   // every refresh, and must never pull the map back while someone is zoomed in looking around.

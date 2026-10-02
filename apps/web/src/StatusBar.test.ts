@@ -29,7 +29,7 @@ describe('the status bar says the whole picture in one line (user, 2026-10-01)',
       ['เตรียมรับมือ 3 แห่ง', 'warn', 'summary'],
       ['น้ำท่วม 5 จุด', 'danger', 'floods-now'],
       ['เขื่อนเกินความจุ 2 แห่ง', 'warn', 'dams'],
-      ['เขื่อนระบายเพิ่มมาก 1 แห่ง', 'warn', 'dams'],
+      ['เขื่อนระบายเพิ่มมาก 1 แห่ง', 'danger', 'dams'],
       ['ประกาศกรมอุตุฯ 2 ฉบับ', 'danger', 'alerts'],
     ]);
   });
