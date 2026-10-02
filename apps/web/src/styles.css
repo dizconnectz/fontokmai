@@ -1995,6 +1995,22 @@ details > ul {
   gap: 1px;
   font-size: 0.9rem;
 }
+/* a release up a lot (red), a dam over its storage or a river rising a lot (orange) stand out */
+.summary-reasons .reason-line {
+  justify-self: start;
+  margin: 1px 0;
+  padding: 1px 7px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+.summary-reasons .reason-line.danger {
+  background: var(--extreme-bg);
+  color: var(--extreme-ink);
+}
+.summary-reasons .reason-line.warn {
+  background: var(--severe-bg);
+  color: var(--severe-ink);
+}
 .level-chip {
   padding: 1px 8px;
   border-radius: 999px;

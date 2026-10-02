@@ -10,6 +10,7 @@ import {
   oldInputs,
   outlineBounds,
   placeParts,
+  REASON_TONE,
   reasonLine,
   shownItems,
   watchAreas,
@@ -236,5 +237,15 @@ describe('what changed since about an hour before (user, 2026-10-01)', () => {
     expect(changeSince(file, 'now', AT + 3_600_000)).toMatchObject({ added: [], passed: 2 });
     // a file too old to list says nothing about change either
     expect(changeSince(file, 'now', Date.parse(overview.generated_at) + 4 * 3_600_000)).toBeNull();
+  });
+});
+
+describe('the reasons to prepare for that stand out (user, 2026-10-02)', () => {
+  it('colours a release up a lot red, a dam over its storage and a river rising a lot orange', () => {
+    expect(REASON_TONE.dam_release_up).toBe('danger');
+    expect(REASON_TONE.dam_full).toBe('warn');
+    expect(REASON_TONE.river_rising).toBe('warn');
+    // a forecast keeps its plain words
+    expect(REASON_TONE.rain_forecast).toBeUndefined();
   });
 });

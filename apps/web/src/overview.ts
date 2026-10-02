@@ -86,6 +86,17 @@ export function liveItems(overview: Overview, when: 'now' | 'next', now: number)
   );
 }
 
+/**
+ * The reasons to prepare for that stand out in colour (user 2026-10-02: the dam lines were plain text): a release up
+ * a lot in red, a dam over its storage and a river rising a lot in orange, as the dams card and the status bar show
+ * them. The words say it; the colour only helps.
+ */
+export const REASON_TONE: Partial<Record<OverviewReason['kind'], 'danger' | 'warn'>> = {
+  dam_release_up: 'danger',
+  dam_full: 'warn',
+  river_rising: 'warn',
+};
+
 /** The items a list shows at `now`: none when the file is too old to list (the summary card says so). */
 export function shownItems(overview: Overview, when: 'now' | 'next', now: number): OverviewItem[] {
   return now - Date.parse(overview.generated_at) > OVERVIEW_TOO_OLD_MS

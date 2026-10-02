@@ -1146,10 +1146,39 @@ test('the summary of places to watch comes first, then flood reports, then the o
   expect(manifest.files.map((f: { path: string }) => f.path)).toContain('summary/overview.json');
   const overview = read('overview', 'overview');
   overview.generated_at = manifest.generated_at;
+  // a dam to prepare for, first of its list: its reasons stand out in colour (user, 2026-10-02)
+  const dam = (kind: string, text_th: string) => ({
+    kind,
+    text_th,
+    day: null,
+    source_th: 'กรมชลประทาน',
+    at: manifest.generated_at,
+  });
+  overview.items.splice(2, 0, {
+    when: 'next',
+    place_th: 'เขื่อนทดสอบ',
+    detail_th: 'ท้ายน้ำ: ทดสอบ',
+    province_code: null,
+    area_code: null,
+    location: [100.9, 14.8],
+    zoom: 10,
+    score: 32,
+    reasons: [
+      dam(
+        'dam_release_up',
+        'ระบายน้ำเพิ่มจาก 1 เป็น 3 ล้าน ลบ.ม./วัน (รายงาน 25 ก.ย. เทียบ 24 ก.ย.)',
+      ),
+      dam('dam_full', 'น้ำเกินความจุเก็บกัก 104.2% (รายงาน 25 ก.ย.) ติดตามการระบายน้ำ'),
+    ],
+  });
   await page.route('**/summary/overview.json?*', (route) => route.fulfill({ json: overview }));
   await page.goto('/');
   const summary = page.getByTestId('summary');
   await expect(summary).toContainText('ภาพรวม: จุดที่ต้องระวัง');
+  await expect(summary.locator('.reason-line.danger')).toHaveText(
+    '⚠ ระบายน้ำเพิ่มจาก 1 เป็น 3 ล้าน ลบ.ม./วัน (รายงาน 25 ก.ย. เทียบ 24 ก.ย.)',
+  );
+  await expect(summary.locator('.reason-line.warn')).toContainText('น้ำเกินความจุเก็บกัก 104.2%');
   await expect(summary).toContainText('ไม่ใช่ประกาศทางการ');
   // the two districts of Bangkok are one card, the districts as chips (user, 2026-10-01)
   await expect(summary).toContainText('กรุงเทพมหานคร · 2 เขต');

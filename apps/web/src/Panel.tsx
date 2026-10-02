@@ -126,6 +126,7 @@ import {
   OVERVIEW_TOO_OLD_MS,
   OVERVIEW_TOP,
   placeParts,
+  REASON_TONE,
   reasonLine,
   shownItems,
   type Overview as SummaryOverview,
@@ -794,8 +795,8 @@ function WatchSummary({
     const alert = officialFor(item, alerts, now);
     // one line per reason, the three that matter most (they come ordered)
     const lines = item.reasons
-      .map((reason) => reasonLine(reason, now))
-      .filter((line): line is string => line !== null)
+      .map((reason) => ({ text: reasonLine(reason, now), tone: REASON_TONE[reason.kind] }))
+      .filter((line): line is { text: string; tone: 'danger' | 'warn' | undefined } => !!line.text)
       .slice(0, 3);
     return (
       <li key={`${item.when}:${item.place_th}`}>
@@ -812,7 +813,9 @@ function WatchSummary({
           {item.detail_th && <small>{item.detail_th}</small>}
           <span className="summary-reasons">
             {lines.map((line) => (
-              <span key={line}>{line}</span>
+              <span key={line.text} className={line.tone ? `reason-line ${line.tone}` : undefined}>
+                {line.tone === 'danger' ? `⚠ ${line.text}` : line.text}
+              </span>
             ))}
           </span>
         </button>
