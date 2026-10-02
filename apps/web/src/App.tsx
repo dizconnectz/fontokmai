@@ -22,7 +22,6 @@ import {
   X,
 } from 'lucide-react';
 import { formatTime, isStale, radarAgeMinutes, staleAfter, visibleAlerts } from './data';
-import { Fold } from './Fold';
 import { useData } from './useData';
 import MapBoundary from './MapBoundary';
 import { AlertDetails, Hotlines, Overview, PinCard, RoadCard } from './Panel';
@@ -34,7 +33,7 @@ import { distanceM } from './roads';
 import Timeline, { type TimeStep } from './Timeline';
 import { FORECAST_LEVELS, forecastAreas, RAIN_LEGEND } from './forecast';
 import { RIVER_CLASSES } from './rivers';
-import { dateTime, feedTrust, LEVEL_FILL, LEVEL_LABEL, worstLevel, type Level } from './alerts';
+import { feedTrust, LEVEL_FILL, LEVEL_LABEL, worstLevel, type Level } from './alerts';
 import { nearestSubdistrict, type FoundPlace } from './places';
 import {
   DAM_CLASSES,
@@ -45,6 +44,7 @@ import {
 } from './bkk';
 import type { Focus, Layers, LngLat } from './MapView';
 import { outlineBounds, WATCH_COLOR, watchAreas, watchShapes } from './overview';
+import { favoriteLine } from './favoriteLine';
 
 const MapView = lazy(() => import('./MapView'));
 // "/" in development, "/fontokmai/" on GitHub Pages (WEB_BASE at build time)
@@ -54,6 +54,7 @@ import { BANK_COLORS } from './overflow';
 const disclaimer =
   'fontokmai ไม่ได้เกี่ยวข้องหรือได้รับการสนับสนุนจากกรมอุตุนิยมวิทยาหรือหน่วยงานเจ้าของข้อมูล';
 const LEGEND_LEVELS: Level[] = ['extreme', 'severe', 'moderate'];
+const NO_AREAS: ReturnType<typeof watchAreas> = [];
 // a forecast is refreshed every 6 hours; older than 12 hours means two refreshes failed
 const FORECAST_STALE_MS = 12 * 3_600_000;
 
@@ -207,10 +208,6 @@ export default function App() {
   const rainLegend = snapshot?.radar?.legend ?? RAIN_LEGEND;
   // the files of Bangkok's DXS arrive when someone in Thailand sends them (D31), not every round: their newest time
   // is the one way to see that an update arrived
-  const dxsAt = [water, rain, flooding, news, dams, weather]
-    .map((file) => (file ? Date.parse(file.fetched_at) : NaN))
-    .filter((time) => !Number.isNaN(time))
-    .reduce((newest, time) => Math.max(newest, time), 0);
   // an empty legend means the producer could not match the frame to TMD's colour bar: no scale is drawn
   const keyColours =
     step.kind === 'forecast'
@@ -231,10 +228,8 @@ export default function App() {
         (layers.rivers && !!rivers) ||
         (layers.weather && !!weather)));
   // outlines of the summary's places; the file of outlines loads once there is something to outline
-  const areas = useMemo(
-    () => (layers.watch ? watchAreas(overview, now) : []),
-    [layers.watch, overview, now],
-  );
+  const summaryAreas = useMemo(() => watchAreas(overview, now), [overview, now]);
+  const areas = layers.watch ? summaryAreas : NO_AREAS;
   const outlining = areas.length > 0;
   useEffect(() => {
     if (outlining) void loadBoundaries();
@@ -243,6 +238,26 @@ export default function App() {
   const areaKey = areas.map((area) => `${area.when}:${area.code}`).join(' ');
   const watch = useMemo(() => watchShapes(areas, boundaries), [areaKey, boundaries]);
   const watchKey = watch.features.length > 0;
+  // the saved place in one line on top; naming its district needs the DOPA places, loaded once a place is saved
+  useEffect(() => {
+    if (favorite) void loadPlaces();
+  }, [favorite, loadPlaces]);
+  const favoriteSummary = useMemo(
+    () =>
+      favorite
+        ? favoriteLine({
+            point: favorite.location,
+            alerts,
+            trust: feedTrust(snapshot, now),
+            places,
+            areas: summaryAreas,
+            floods,
+            forecast,
+            now,
+          })
+        : [],
+    [favorite, alerts, snapshot, now, places, summaryAreas, floods, forecast],
+  );
   const forecastLayer = useMemo(
     () => (step.kind === 'forecast' && forecast ? forecastAreas(forecast, step.hour) : null),
     [step, forecast],
@@ -755,7 +770,7 @@ export default function App() {
             <Info size={16} />
             <div>
               <strong>แหล่งข้อมูลส่งข้อมูลไม่ครบ</strong>
-              <span>กำลังแสดงข้อมูลที่เก็บไว้ พร้อมเวลาที่ดึงสำเร็จครั้งล่าสุดด้านล่าง</span>
+              <span>กำลังแสดงข้อมูลที่เก็บไว้ · แต่ละส่วนบอกเวลาข้อมูลของตัวเอง</span>
             </div>
           </div>
         )}
@@ -763,6 +778,7 @@ export default function App() {
         {favorite && (
           <FavoriteForecast
             favorite={favorite}
+            line={favoriteSummary}
             forecast={forecast}
             state={forecastState}
             now={now}
@@ -918,74 +934,6 @@ export default function App() {
         )}
 
         <Hotlines />
-
-        <Fold
-          id="data-status"
-          headingId="data-status-heading"
-          className="data-status"
-          heading="สถานะข้อมูล"
-        >
-          <div className="source-times">
-            {snapshot?.manifest.source_status.map((source) => (
-              <div key={source.source_id}>
-                <span>
-                  {source.source_id === 'tmd_cap'
-                    ? 'ประกาศกรมอุตุฯ'
-                    : source.source_id === 'tmd_radar'
-                      ? 'เรดาร์กรมอุตุฯ'
-                      : source.source_id === 'longdo_floods'
-                        ? 'รายงานน้ำท่วม (Longdo)'
-                        : source.source_id === 'bma_dxs'
-                          ? 'น้ำและฝน กทม. (DXS)'
-                          : source.source_id}
-                  :{' '}
-                  {source.status === 'ok'
-                    ? 'ดึงสำเร็จในรอบข้อมูลนี้'
-                    : source.status === 'degraded'
-                      ? 'ดึงได้บางฉบับ'
-                      : 'ดึงข้อมูลไม่สำเร็จ'}
-                </span>
-                <small>
-                  สำเร็จล่าสุด {formatTime(source.last_success_at)}
-                  {source.last_success_at ? ' น.' : ''}
-                </small>
-              </div>
-            )) ?? <span>ยังไม่มีข้อมูล</span>}
-            {dxsAt > 0 &&
-              !snapshot?.manifest.source_status.some(
-                (source) => source.source_id === 'bma_dxs',
-              ) && (
-                <div data-testid="dxs-status">
-                  <span>น้ำและฝน กทม. เขื่อน สถานีอุตุฯ (DXS): ข้อมูล ณ {dateTime(dxsAt)}</span>
-                  <small>อัปเดตเป็นครั้งๆ ไม่ใช่ทุก 15 นาที</small>
-                </div>
-              )}
-          </div>
-          {snapshot?.feed && (
-            <details className="history-details">
-              <summary>ประกาศที่สิ้นสุดในชุดข้อมูล ({snapshot.feed.tombstones.length})</summary>
-              <p>
-                รายการสิ้นสุดจากต้นทาง ไม่แสดงเป็นประกาศที่มีผล · ตั้งแต่{' '}
-                {formatTime(snapshot.feed.history_since)} น.
-              </p>
-              <ul>
-                {snapshot.feed.tombstones.map((item) => (
-                  <li key={item.event_id}>
-                    <code>{item.event_id}</code>
-                    <span>
-                      {item.lifecycle_status === 'cancelled' ? 'ยกเลิก' : 'หมดอายุ'} ·{' '}
-                      {formatTime(item.ended_at)} น.
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </details>
-          )}
-          <p className="quiet">
-            เว็บตรวจข้อมูลทุก 1 นาทีเมื่อเปิดแท็บ · เวลาไทย (UTC+7) ·
-            ความครบของไฟล์ไม่ใช่การรับรองความแม่น
-          </p>
-        </Fold>
 
         <footer className="panel-footer">
           <p>

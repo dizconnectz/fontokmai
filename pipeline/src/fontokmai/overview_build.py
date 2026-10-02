@@ -11,6 +11,7 @@ Official alerts are not copied: the web shows alerts.json apart.
 
 from __future__ import annotations
 
+import json
 import math
 import re
 from collections import defaultdict
@@ -23,7 +24,7 @@ from pydantic import BaseModel, ValidationError
 from fontokmai.contracts.bkk import DamReport, RainGauges, RoadFloodingDaily
 from fontokmai.contracts.forecast import RainForecast, RiverForecast
 from fontokmai.contracts.live_floods import LiveFloods
-from fontokmai.contracts.overview import Overview, OverviewInput, OverviewItem, OverviewReason
+from fontokmai.contracts.overview import Overview, OverviewEarlier, OverviewInput, OverviewItem, OverviewReason
 from fontokmai.contracts.places import Place, PlaceGazetteer
 from fontokmai.contracts.radar import RadarFeed
 from fontokmai.downstream import downstream_table, downstream_th
@@ -31,6 +32,9 @@ from fontokmai.sources.bma_dxs import has_figures, release_up
 from fontokmai.sources.tmd_radar import rain_samples
 
 OVERVIEW_PATH = "summary/overview.json"
+RECENT_KEY = "overview.recent"  # state meta: the lists of the last rounds, for "an hour ago"
+EARLIER_WINDOW = (timedelta(minutes=45), timedelta(minutes=75))
+RECENT_KEEP = timedelta(minutes=90)
 ICT = timezone(timedelta(hours=7))
 SKEW = timedelta(minutes=5)  # a time further in the future than this is not trusted
 
@@ -480,3 +484,31 @@ def build_overview(files: dict[str, bytes], now: datetime, gazetteer: Gazetteer 
     next_items = sorted((s.item() for s in nexts),
                         key=lambda i: (-i.score, min((r.day or date.max) for r in i.reasons), i.place_th))[:MAX_NEXT]
     return Overview(generated_at=now, items=now_items + next_items, inputs=inputs, notes_th=NOTES_TH)
+
+
+def with_earlier(overview: Overview, recent: str | None) -> tuple[Overview, str]:
+    """The overview with the lists of about an hour before, and the rounds to keep for the next one (user 2026-10-01:
+    say what is new). `recent` is what the last round returned; anything unreadable in it is dropped."""
+    now = overview.generated_at
+    kept: list[dict] = []
+    try:
+        rounds = json.loads(recent) if recent else []
+    except ValueError:
+        rounds = []
+    for entry in rounds if isinstance(rounds, list) else []:
+        try:
+            at = datetime.fromisoformat(entry["at"])
+            lists = [[str(place) for place in entry[when]] for when in ("now", "next")]
+        except (KeyError, TypeError, ValueError):
+            continue
+        if at.tzinfo is not None and timedelta(0) < now - at <= RECENT_KEEP:
+            kept.append({"at": at.isoformat(), "now": lists[0], "next": lists[1]})
+    hour = timedelta(hours=1)
+    near = [entry for entry in kept
+            if EARLIER_WINDOW[0] <= now - datetime.fromisoformat(entry["at"]) <= EARLIER_WINDOW[1]]
+    best = min(near, key=lambda entry: abs(now - datetime.fromisoformat(entry["at"]) - hour), default=None)
+    earlier = OverviewEarlier(generated_at=best["at"], now=best["now"], next=best["next"]) if best else None
+    kept.append({"at": now.isoformat(), "now": [i.place_th for i in overview.items if i.when == "now"],
+                 "next": [i.place_th for i in overview.items if i.when == "next"]})
+    return overview.model_copy(update={"earlier": earlier}), json.dumps(kept, ensure_ascii=False)
+

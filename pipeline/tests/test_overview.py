@@ -1,3 +1,4 @@
+import json
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
@@ -9,7 +10,7 @@ from fontokmai.contracts.forecast import ForecastLattice, RainForecast
 from fontokmai.contracts.live_floods import LiveFloods
 from fontokmai.contracts.manifest import Manifest
 from fontokmai.contracts.overview import Overview
-from fontokmai.overview_build import OVERVIEW_PATH, Gazetteer, _road, build_overview
+from fontokmai.overview_build import OVERVIEW_PATH, Gazetteer, _road, build_overview, with_earlier
 from fontokmai.run import run_cap_snapshot
 from fontokmai.sources.tmd_cap.fetch import fixture_fetcher
 from fontokmai.sources.tmd_radar import LEGEND, _feed
@@ -221,6 +222,41 @@ def test_every_round_publishes_the_overview_and_a_broken_one_never_stops_the_ale
                               now=now + timedelta(minutes=15), writer="t", owner_epoch=1)
     assert result.overview_error == "RuntimeError: rules broke"
     assert "alerts.json" in [f.path for f in result.manifest.files]
+
+
+def test_the_overview_carries_the_lists_of_about_an_hour_before():
+    """User 2026-10-01: say what is new since an hour ago. The rounds are kept in the state, 90 minutes of them."""
+    reports = [_report(n, RANGSIT, timedelta(minutes=10)) for n in (1, 2)]
+    overview = build_overview({"live/floods.json": _dump(_floods(reports))}, NOW, G)
+    first, recent = with_earlier(overview, None)
+    assert first.earlier is None
+    assert json.loads(recent) == [{"at": NOW.isoformat(), "now": ["อ.ธัญบุรี จ.ปทุมธานี"], "next": []}]
+
+    def kept(minutes: int) -> dict:
+        return {"at": (NOW - timedelta(minutes=minutes)).isoformat(), "now": [f"{minutes} นาที"], "next": ["จ.ตาก"]}
+    later, recent = with_earlier(overview, json.dumps([kept(m) for m in (95, 70, 55, 30, 15)]))
+    # of the rounds 45 to 75 minutes before, the one nearest an hour
+    assert later.earlier.generated_at == NOW - timedelta(minutes=55)
+    assert later.earlier.now == ["55 นาที"] and later.earlier.next == ["จ.ตาก"]
+    # a round older than 90 minutes is let go; this one is kept for the next
+    assert [entry["now"] for entry in json.loads(recent)] == [
+        ["70 นาที"], ["55 นาที"], ["30 นาที"], ["15 นาที"], ["อ.ธัญบุรี จ.ปทุมธานี"]]
+    # half an hour or 80 minutes is not "an hour ago"; a round from the future or unreadable is dropped
+    odd = [kept(30), kept(80), kept(-60), {"at": "yesterday"}, {"now": []}, "x", {"at": "2026-09-27T15:30:00"}]
+    alone, recent = with_earlier(overview, json.dumps(odd))
+    assert alone.earlier is None and len(json.loads(recent)) == 3
+    for broken in ("not json", '{"at": 1}', "[1, 2]"):
+        assert with_earlier(overview, broken)[0].earlier is None
+
+
+def test_a_round_compares_its_lists_with_the_round_an_hour_before(tmp_path):
+    out = tmp_path / "v1"
+    start = datetime.fromisoformat("2026-09-25T18:20:00+07:00")
+    for minutes in (0, 30, 60):
+        run_cap_snapshot(db=tmp_path / "s.db", out=out, fetch=fixture_fetcher(FIXTURES),
+                         now=start + timedelta(minutes=minutes), writer="t", owner_epoch=1)
+        overview = Overview.model_validate_json((out / OVERVIEW_PATH).read_bytes())
+        assert (overview.earlier and overview.earlier.generated_at) == (start if minutes == 60 else None)
 
 
 def test_road_names_are_short_and_keep_the_kind_of_road():

@@ -1,5 +1,39 @@
 {
   "$defs": {
+    "OverviewEarlier": {
+      "additionalProperties": false,
+      "properties": {
+        "generated_at": {
+          "description": "The round compared with: of the rounds 45 to 75 minutes before this one, the one nearest an hour",
+          "format": "date-time",
+          "title": "Generated At",
+          "type": "string"
+        },
+        "next": {
+          "description": "place_th of the places to prepare for in that round",
+          "items": {
+            "type": "string"
+          },
+          "title": "Next",
+          "type": "array"
+        },
+        "now": {
+          "description": "place_th of the places to watch now in that round",
+          "items": {
+            "type": "string"
+          },
+          "title": "Now",
+          "type": "array"
+        }
+      },
+      "required": [
+        "generated_at",
+        "now",
+        "next"
+      ],
+      "title": "OverviewEarlier",
+      "type": "object"
+    },
     "OverviewInput": {
       "additionalProperties": false,
       "properties": {
@@ -213,6 +247,18 @@
   },
   "additionalProperties": false,
   "properties": {
+    "earlier": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/OverviewEarlier"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "The lists of about an hour before (added 2026-10-01), so the web can say what is new and what has passed; null when no round of that age was kept"
+    },
     "generated_at": {
       "format": "date-time",
       "title": "Generated At",

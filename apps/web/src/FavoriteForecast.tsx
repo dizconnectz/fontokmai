@@ -2,7 +2,8 @@ import { useMemo } from 'react';
 import { Info, Star } from 'lucide-react';
 import { formatTime, safeLink, type RainForecast } from './data';
 import type { Favorite } from './favorite';
-import { dayRainWords, daysAt } from './forecast';
+import type { LinePart } from './favoriteLine';
+import { dayRainClass, dayRainWords, daysAt } from './forecast';
 import type { RefState } from './refSync';
 import './FavoriteForecast.css';
 
@@ -19,12 +20,15 @@ const DATE_LABEL = new Intl.DateTimeFormat('th-TH', {
 /** The saved location stays independent of the selected pin and the map's timeline. */
 export default function FavoriteForecast({
   favorite,
+  line,
   forecast,
   state,
   now,
   onOpen,
 }: {
   favorite: Favorite;
+  /** the place in one line: alert, the summary's lists, flood reports near it, today's rain */
+  line: LinePart[];
   forecast: RainForecast | null;
   state: RefState;
   now: number;
@@ -51,7 +55,17 @@ export default function FavoriteForecast({
         <Star size={17} aria-hidden="true" />
         <span>
           <strong>ที่ของฉัน · {favorite.label}</strong>
-          <small>ดูจุดนี้บนแผนที่</small>
+          {line.length ? (
+            <span className="favorite-line" data-testid="favorite-line">
+              {line.map((part) => (
+                <span key={part.text} className={`line-part ${part.tone}`}>
+                  {part.text}
+                </span>
+              ))}
+            </span>
+          ) : (
+            <small>ดูจุดนี้บนแผนที่</small>
+          )}
         </span>
       </button>
       <h2 id="favorite-forecast-heading">ฝน 7 วัน</h2>
@@ -96,7 +110,12 @@ export default function FavoriteForecast({
                         : DATE_LABEL.format(new Date(`${date}T12:00:00+07:00`))}
                   </time>
                 </th>
-                <td>{dayRainWords(day?.rainMm ?? null)}</td>
+                <td>
+                  {/* the TMD class in its colour, the same as the stations' pins (user 2026-10-02) */}
+                  <span className={`rain-word rain-class-${dayRainClass(day?.rainMm ?? null)}`}>
+                    {dayRainWords(day?.rainMm ?? null)}
+                  </span>
+                </td>
                 <td>
                   {day?.rainMm == null ? (
                     <span aria-label="ไม่มีข้อมูลปริมาณฝน">—</span>

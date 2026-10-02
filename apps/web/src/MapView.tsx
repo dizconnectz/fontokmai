@@ -200,6 +200,38 @@ async function loadBasemap(
     return null;
   }
 }
+/** The picture of a pin of each kind (its feature carries `pin`, or `approximate`/`ongoing` for two kinds). */
+function pinIcon(kind: string): unknown {
+  return kind === 'camera'
+    ? ['case', ['==', ['get', 'approximate'], true], 'pin-camera-approx', 'pin-camera']
+    : kind === 'flood'
+      ? ['case', ['==', ['get', 'ongoing'], true], 'pin-flood', 'pin-flood-ended']
+      : ['get', 'pin'];
+}
+/**
+ * Kinds whose severe points never go into a bubble (user 2026-10-02: on the first view of the country a severe one
+ * had to be zoomed into to be seen): an ongoing flood report, a dam over capacity or releasing a lot more, a river
+ * the model sees rising a lot, heavy rain at a TMD station or a Bangkok gauge. The ordinary ones still group.
+ */
+const SEVERE_KINDS = [
+  ['weather', 'weather'],
+  ['dam', 'dams'],
+  ['river', 'rivers'],
+  ['rain', 'rain'],
+  ['flood', 'floods'],
+] as const;
+/** Points into their source, the severe ones (`severe` true) into its unclustered twin above every bubble. */
+function setPoints(instance: LibreMap, source: string, collection: FeatureCollection<Point>) {
+  const severe = collection.features.filter((feature) => feature.properties?.severe === true);
+  (instance.getSource(source) as GeoJSONSource | undefined)?.setData({
+    type: 'FeatureCollection',
+    features: collection.features.filter((feature) => feature.properties?.severe !== true),
+  });
+  (instance.getSource(`${source}-top`) as GeoJSONSource | undefined)?.setData({
+    type: 'FeatureCollection',
+    features: severe,
+  });
+}
 /** Our sources and layers; added on load and again after the basemap changes with the theme. */
 function addOverlays(instance: LibreMap) {
   const empty: FeatureCollection = { type: 'FeatureCollection', features: [] };
@@ -294,12 +326,7 @@ function addOverlays(instance: LibreMap) {
       source,
       filter: ['!', ['has', 'point_count']],
       layout: {
-        'icon-image':
-          kind === 'camera'
-            ? ['case', ['==', ['get', 'approximate'], true], 'pin-camera-approx', 'pin-camera']
-            : kind === 'flood'
-              ? ['case', ['==', ['get', 'ongoing'], true], 'pin-flood', 'pin-flood-ended']
-              : ['get', 'pin'],
+        'icon-image': pinIcon(kind) as string,
         // the picture has 2 px under the tip
         'icon-offset': [0, 2],
         'icon-anchor': 'bottom',
@@ -330,6 +357,23 @@ function addOverlays(instance: LibreMap) {
       'circle-stroke-width': 2,
     },
   });
+  // the severe points of each kind, never in a bubble, above everything else
+  for (const [kind, source] of SEVERE_KINDS) {
+    instance.addSource(`${source}-top`, { type: 'geojson', data: empty });
+    instance.addLayer({
+      id: `${kind}-top`,
+      type: 'symbol',
+      source: `${source}-top`,
+      layout: {
+        'icon-image': pinIcon(kind) as string,
+        'icon-offset': [0, 2],
+        'icon-anchor': 'bottom',
+        'icon-allow-overlap': true,
+        'icon-ignore-placement': true,
+        'symbol-sort-key': ['coalesce', ['get', 'rank'], 0],
+      },
+    });
+  }
 }
 // popups open above the pin head, or below the tip when there is no room above
 const PIN_POPUP_OFFSET: Record<PositionAnchor, [number, number]> = {
@@ -361,6 +405,7 @@ const POINT_LAYERS = [
   'flood-pin',
   'bank-reach',
   'bank-point',
+  ...SEVERE_KINDS.map(([kind]) => `${kind}-top`),
 ];
 type PointKind = 'flood' | 'camera' | 'water' | 'rain' | 'dam' | 'weather' | 'river' | 'bank';
 
@@ -820,7 +865,8 @@ export default function MapView(props: Props) {
                   { layers },
                 )[0]
               : undefined;
-            const layer = hit?.layer.id;
+            // a severe pin (never in a bubble) opens like the others of its kind
+            const layer = hit?.layer.id.replace(/-top$/, '-pin');
             if (layer === 'bank-reach' || layer === 'bank-point') {
               const item = latest.current.water?.bank_observations?.find(
                 (v) => v.id === hit?.properties.id,
@@ -1151,12 +1197,13 @@ export default function MapView(props: Props) {
               properties: {
                 id: report.id,
                 ongoing: isOngoing(report, props.now),
+                severe: isOngoing(report, props.now),
                 rank: isOngoing(report, props.now) ? 1 : 0,
               },
             }))
         : [],
     };
-    (map.current.getSource('floods') as GeoJSONSource | undefined)?.setData(collection);
+    setPoints(map.current, 'floods', collection);
     if (!collection.features.length && popupKind.current === 'flood') popup.current?.remove();
   }, [props.floods, props.layers.floods, props.now, ready, styleVersion]);
 
@@ -1170,11 +1217,19 @@ export default function MapView(props: Props) {
         ...dams.flatMap((dam) => {
           if (!dam.location) return [];
           const pin = damPin(shownDam(dam)); // a blank dam keeps the class of its last known figures
+          const severe =
+            pin === 'pin-dam-full' ||
+            (!!props.dams?.previous_report_date && !!releaseChange(dam)?.big);
           return [
             {
               type: 'Feature' as const,
               geometry: { type: 'Point' as const, coordinates: dam.location },
-              properties: { code: dam.id, pin, rank: DAM_CLASSES.findIndex((c) => c.pin === pin) },
+              properties: {
+                code: dam.id,
+                pin,
+                severe,
+                rank: DAM_CLASSES.findIndex((c) => c.pin === pin),
+              },
             },
           ];
         }),
@@ -1188,7 +1243,7 @@ export default function MapView(props: Props) {
           : []),
       ],
     };
-    (map.current.getSource('dams') as GeoJSONSource | undefined)?.setData(collection);
+    setPoints(map.current, 'dams', collection);
     if (!collection.features.length && popupKind.current === 'dam') popup.current?.remove();
   }, [props.dams, props.layers.dams, ready, styleVersion]);
 
@@ -1239,12 +1294,13 @@ export default function MapView(props: Props) {
           properties: {
             code: point.id,
             pin,
+            severe: pin === RIVER_CLASSES[0].pin,
             rank: RIVER_CLASSES.length - RIVER_CLASSES.findIndex((c) => c.pin === pin),
           },
         };
       }),
     };
-    (map.current.getSource('rivers') as GeoJSONSource | undefined)?.setData(collection);
+    setPoints(map.current, 'rivers', collection);
     if (!collection.features.length && popupKind.current === 'river') popup.current?.remove();
   }, [props.rivers, props.layers.rivers, props.now, ready, styleVersion]);
 
@@ -1264,13 +1320,14 @@ export default function MapView(props: Props) {
             properties: {
               code: station.wmo,
               pin,
+              severe: DAY_RAIN_CLASSES.findIndex((c) => c.pin === pin) >= 3,
               rank: DAY_RAIN_CLASSES.findIndex((c) => c.pin === pin),
             },
           },
         ];
       }),
     };
-    (map.current.getSource('weather') as GeoJSONSource | undefined)?.setData(collection);
+    setPoints(map.current, 'weather', collection);
     if (!collection.features.length && popupKind.current === 'weather') popup.current?.remove();
   }, [props.weather, props.layers.weather, ready, styleVersion]);
 
@@ -1315,13 +1372,14 @@ export default function MapView(props: Props) {
             properties: {
               code: gauge.code,
               pin,
+              severe: RAIN_HOUR_CLASSES.findIndex((item) => item.pin === pin) >= 4,
               rank: RAIN_HOUR_CLASSES.findIndex((item) => item.pin === pin),
             },
           },
         ];
       }),
     };
-    (map.current.getSource('rain') as GeoJSONSource | undefined)?.setData(collection);
+    setPoints(map.current, 'rain', collection);
     if (!collection.features.length && popupKind.current === 'rain') popup.current?.remove();
   }, [props.rain, props.layers.rain, props.now, ready, styleVersion]);
 

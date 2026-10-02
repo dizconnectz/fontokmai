@@ -850,6 +850,23 @@ svg {
 .legend-outline.next {
   border-style: dashed;
 }
+/* what changed since the round about an hour before */
+.summary-change {
+  margin: -4px 0 6px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.new-chip {
+  display: inline-block;
+  margin-left: 5px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--severe-bg);
+  color: var(--severe-ink);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
 .heading-ok {
   color: var(--ok-ink);
 }
@@ -1199,17 +1216,6 @@ details > ul {
   position: absolute;
   top: -2px;
   font-weight: 500;
-}
-.data-status .source-times {
-  display: grid;
-  gap: 6px;
-  font-size: 0.86rem;
-}
-.data-status .source-times div {
-  display: grid;
-}
-.data-status small {
-  color: var(--muted);
 }
 .history-details ul {
   display: grid;

@@ -56,7 +56,7 @@ import {
 } from './alerts';
 import { inMultiPolygon, rainWords } from './geo';
 import type { FoundPlace, Place } from './places';
-import { dayRainWords, daysAt, forecastAt } from './forecast';
+import { dayRainClass, dayRainWords, daysAt, forecastAt } from './forecast';
 import {
   floodsNear,
   FLOOD_RADIUS_M,
@@ -76,6 +76,7 @@ import {
   isRecent,
   amount,
   CHAO_PHRAYA_DAMS,
+  DAY_RAIN_CLASSES,
   damColor,
   carriedFrom,
   carriedText,
@@ -108,11 +109,12 @@ import {
   type SituationReport,
 } from './bkk';
 import { useRadarAt } from './radarAt';
-import { Fold } from './Fold';
+import { Fold, Section } from './Fold';
 import { StatusBar, statusCounts } from './StatusBar';
 import { situationSummary, situationTimeLabel } from './situation';
 import { BANK_COLORS, bankState, type BankObservation } from './overflow';
 import {
+  changeSince,
   groupByProvince,
   officialFor,
   officialLine,
@@ -426,22 +428,9 @@ function RoadFloodingToday({
       </button>
     </li>
   );
-  // another day's report is not the situation now: folded, with its date
-  if (!isTodaysReport(flooding, now))
-    return (
-      <section className="panel-section" data-testid="road-flooding-old">
-        <details className="history-details">
-          <summary>
-            <Route size={15} /> รายงานถนนท่วม กทม. ของวันที่ {thaiDay(flooding.report_date)}{' '}
-            (ข้อมูลเก่า ไม่ใช่วันนี้)
-          </summary>
-          <p className="inline-warning">
-            <Info size={15} /> {oldNote(flooding.fetched_at, now)}
-          </p>
-          <ul className="flood-list">{flooding.reports.map(item)}</ul>
-        </details>
-      </section>
-    );
+  // shown only when today's report names roads (user 2026-10-02: an empty or another day's report says nothing);
+  // the summary and the pin card still use it
+  if (!isTodaysReport(flooding, now) || !flooding.reports.length) return null;
   return (
     <Fold
       id="road-flooding"
@@ -459,9 +448,6 @@ function RoadFloodingToday({
         </>
       }
     >
-      {flooding.reports.length === 0 && (
-        <p className="quiet">วันนี้ยังไม่มีรายงานน้ำท่วมขังบนถนนสายหลัก · ถนนอื่นยังท่วมได้</p>
-      )}
       {wet.length > 0 && <ul className="flood-list">{wet.slice(0, ROAD_LIST_LIMIT).map(item)}</ul>}
       {wet.length > ROAD_LIST_LIMIT && (
         <details className="history-details">
@@ -660,7 +646,7 @@ function ChaoPhrayaDams({
   const overFull = available.filter((dam) => (shownDam(dam).percent ?? 0) > 100).length;
   const note = oldNote(dams.fetched_at, now);
   return (
-    <Fold
+    <Section
       id="dams"
       headingId="dams-heading"
       testId="dams"
@@ -758,7 +744,7 @@ function ChaoPhrayaDams({
           available.some((dam) => releaseChange(dam)) &&
           ` · ระบายเพิ่มมาก = เพิ่มอย่างน้อย 1 ล้าน ลบ.ม./วัน และอย่างน้อยครึ่งหนึ่งจากรายงาน ${thaiDay(previousDay)} (เกณฑ์ทดลองของเว็บ)`}
       </small>
-    </Fold>
+    </Section>
   );
 }
 
@@ -794,9 +780,13 @@ function WatchSummary({
       list.when === 'now'
         ? groupByProvince(items)
         : items.map((item) => ({ province: item.place_th, items: [item] }));
-    return { ...list, items, groups };
+    // what is new since the round about an hour before (user 2026-10-01)
+    const change = changeSince(overview, list.when, now);
+    return { ...list, items, groups, change, added: new Set(change?.added ?? []) };
   });
   const more = lists.some((list) => list.groups.length > OVERVIEW_TOP);
+  const isNew = (item: OverviewItem) =>
+    lists.some((list) => list.when === item.when && list.added.has(item.place_th));
   const placeButton = (item: OverviewItem) => {
     const alert = officialFor(item, alerts, now);
     // one line per reason, the three that matter most (they come ordered)
@@ -809,6 +799,7 @@ function WatchSummary({
         <button className="summary-item" onClick={() => onPlace(item)}>
           <span className="summary-place">
             <strong>{item.place_th}</strong>
+            {isNew(item) && <span className="new-chip">ใหม่</span>}
             {alert && (
               <span className={`level-chip level-${alert.level}`}>
                 {alert.pending ? 'ประกาศล่วงหน้า' : 'มีประกาศ'} {LEVEL_LABEL[alert.level]}
@@ -857,6 +848,19 @@ function WatchSummary({
               list.groups.length < list.items.length &&
               ` ใน ${list.groups.length} จังหวัด`}
           </h3>
+          {list.change && (
+            <p className="summary-change">
+              เทียบกับรอบ {reportTime(list.change.at, now)}:{' '}
+              {list.change.added.length || list.change.passed
+                ? [
+                    list.change.added.length && `ใหม่ ${list.change.added.length} แห่ง`,
+                    list.change.passed && `พ้นเกณฑ์แล้ว ${list.change.passed} แห่ง`,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')
+                : 'เท่าเดิม'}
+            </p>
+          )}
           {list.items.length === 0 ? (
             <p className="quiet">
               {tooOld ? 'ไม่มีข้อมูลที่ใหม่พอ' : `${list.empty} (ไม่ได้แปลว่าปลอดภัย)`}
@@ -909,6 +913,7 @@ function WatchSummary({
                           onClick={() => onPlace(item)}
                         >
                           {placeParts(item.place_th)[0]}
+                          {isNew(item) && <span className="new-chip">ใหม่</span>}
                         </button>
                       ))}
                     </span>
@@ -952,7 +957,7 @@ function FloodsNow({
   const ongoing = floods ? floods.reports.filter((r) => isOngoing(r, now)).length : 0;
   const old = floods ? now - Date.parse(floods.fetched_at) > FLOODS_STALE_MS : false;
   return (
-    <Fold
+    <Section
       id="floods-now"
       headingId="floods-now-heading"
       headingClass={ongoing ? 'heading-rain' : undefined}
@@ -1000,7 +1005,7 @@ function FloodsNow({
           แตะรายการเพื่อดูบนแผนที่ หรือแตะหมุดสีน้ำเงินบนแผนที่
         </small>
       )}
-    </Fold>
+    </Section>
   );
 }
 
@@ -1521,7 +1526,10 @@ export function PinCard({
                   <span className="day-words">{dayRainWords(day.rainMm)}</span>
                   <span className="day-bar" aria-hidden="true">
                     <i
-                      style={{ width: `${Math.min(100, ((day.rainMm ?? 0) / wettest) * 100)}%` }}
+                      style={{
+                        width: `${Math.min(100, ((day.rainMm ?? 0) / wettest) * 100)}%`,
+                        background: DAY_RAIN_CLASSES[dayRainClass(day.rainMm) ?? 0].color,
+                      }}
                     />
                   </span>
                   <span className="day-numbers">

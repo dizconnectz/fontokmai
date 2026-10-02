@@ -2,7 +2,7 @@ import type { Level } from './alerts';
 import { shownDam, releaseChange, type DamReport } from './bkk';
 import { isOngoing } from './floods';
 import { openSection } from './Fold';
-import { shownItems, type Overview } from './overview';
+import { changeSince, shownItems, type Overview } from './overview';
 import type { Alert, LiveFloods } from './data';
 
 /**
@@ -23,6 +23,9 @@ export interface Chip {
 export interface StatusCounts {
   watchNow: number;
   watchNext: number;
+  /** change since the round about an hour before; null without one */
+  watchNowDelta?: number | null;
+  watchNextDelta?: number | null;
   /** flood reports still in their time; null when the file is not there */
   floods: number | null;
   damsFull: number;
@@ -32,19 +35,25 @@ export interface StatusCounts {
   worst: Level | null;
 }
 
+/** " · เพิ่ม 3 ใน 1 ชม." / " · ลด 2 ใน 1 ชม.": the change since the round about an hour before */
+function trend(delta: number | null | undefined): string {
+  if (!delta) return '';
+  return ` · ${delta > 0 ? 'เพิ่ม' : 'ลด'} ${Math.abs(delta)} ใน 1 ชม.`;
+}
+
 export function statusChips(counts: StatusCounts): Chip[] {
   const chips: Chip[] = [];
   if (counts.watchNow)
     chips.push({
       key: 'now',
-      text: `ต้องระวังตอนนี้ ${counts.watchNow} แห่ง`,
+      text: `ต้องระวังตอนนี้ ${counts.watchNow} แห่ง${trend(counts.watchNowDelta)}`,
       tone: 'danger',
       target: 'summary',
     });
   if (counts.watchNext)
     chips.push({
       key: 'next',
-      text: `เตรียมรับมือ ${counts.watchNext} แห่ง`,
+      text: `เตรียมรับมือ ${counts.watchNext} แห่ง${trend(counts.watchNextDelta)}`,
       tone: 'warn',
       target: 'summary',
     });
@@ -107,6 +116,8 @@ export function statusCounts({
     // as the summary card lists them: nothing from a file too old to list
     watchNow: summary ? shownItems(summary, 'now', now).length : 0,
     watchNext: summary ? shownItems(summary, 'next', now).length : 0,
+    watchNowDelta: summary ? (changeSince(summary, 'now', now)?.delta ?? null) : null,
+    watchNextDelta: summary ? (changeSince(summary, 'next', now)?.delta ?? null) : null,
     floods: floods ? floods.reports.filter((report) => isOngoing(report, now)).length : null,
     damsFull: (dams?.dams ?? []).filter((dam) => (shownDam(dam).percent ?? 0) > 100).length,
     damsReleasing: previousDay

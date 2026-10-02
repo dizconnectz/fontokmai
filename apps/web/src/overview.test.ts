@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
+  changeSince,
   dayWord,
   groupByProvince,
   liveItems,
@@ -210,5 +211,30 @@ describe('the summary’s places outlined on the map (user, 2026-10-01)', () => 
     expect(north).toBeLessThan(13.88);
     expect(outlineBounds(['1030', '1999'], boundaries)).toBeNull();
     expect(outlineBounds(['1030'], null)).toBeNull();
+  });
+});
+
+describe('what changed since about an hour before (user, 2026-10-01)', () => {
+  it('says the new places and how many passed, from the lists the producer kept', () => {
+    // nothing kept: nothing said
+    expect(changeSince(overview, 'now', AT)).toBeNull();
+    const earlier = {
+      generated_at: '2026-09-26T16:33:00+07:00',
+      now: ['เขตจตุจักร กรุงเทพมหานคร', 'อ.ธัญบุรี จ.ปทุมธานี', 'อ.คลองหลวง จ.ปทุมธานี'],
+      next: ['จ.สมุทรปราการ'],
+    };
+    const file = { ...overview, earlier };
+    expect(changeSince(file, 'now', AT)).toEqual({
+      at: '2026-09-26T16:33:00+07:00',
+      added: ['เขตห้วยขวาง กรุงเทพมหานคร'],
+      passed: 2,
+      delta: -1,
+    });
+    expect(changeSince(file, 'next', AT)?.added).toHaveLength(5);
+    expect(changeSince(file, 'next', AT)?.delta).toBe(5);
+    // the flood reports of Huai Khwang held until 18:19: once they pass, it is not counted as new
+    expect(changeSince(file, 'now', AT + 3_600_000)).toMatchObject({ added: [], passed: 2 });
+    // a file too old to list says nothing about change either
+    expect(changeSince(file, 'now', Date.parse(overview.generated_at) + 4 * 3_600_000)).toBeNull();
   });
 });

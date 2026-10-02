@@ -93,6 +93,37 @@ export function shownItems(overview: Overview, when: 'now' | 'next', now: number
     : liveItems(overview, when, now);
 }
 
+export interface ListChange {
+  /** time of the round compared with, about an hour before the file */
+  at: string;
+  /** places shown now that the list of that round did not have */
+  added: string[];
+  /** places of that round that are no longer shown */
+  passed: number;
+  /** shown now minus listed then */
+  delta: number;
+}
+/**
+ * What changed in a list since the round about an hour before (user 2026-10-01): null when the producer kept no
+ * such round, or when the file is too old to list anything.
+ */
+export function changeSince(
+  overview: Overview,
+  when: 'now' | 'next',
+  now: number,
+): ListChange | null {
+  const earlier = overview.earlier;
+  if (!earlier || now - Date.parse(overview.generated_at) > OVERVIEW_TOO_OLD_MS) return null;
+  const shown = shownItems(overview, when, now).map((item) => item.place_th);
+  const before = new Set(earlier[when]);
+  return {
+    at: earlier.generated_at,
+    added: shown.filter((place) => !before.has(place)),
+    passed: [...before].filter((place) => !shown.includes(place)).length,
+    delta: shown.length - before.size,
+  };
+}
+
 export interface WatchArea {
   /** DOPA code: a district to watch now (4 digits), a province to prepare for (2) */
   code: string;

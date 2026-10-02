@@ -1,6 +1,18 @@
 /* Generated from contracts/v1/schema/overview.schema.json by scripts/gen-ts-types.sh. Do not edit by hand. */
 
+/**
+ * The round compared with: of the rounds 45 to 75 minutes before this one, the one nearest an hour
+ */
 export type GeneratedAt = string;
+/**
+ * place_th of the places to prepare for in that round
+ */
+export type Next = string[];
+/**
+ * place_th of the places to watch now in that round
+ */
+export type Now = string[];
+export type GeneratedAt1 = string;
 /**
  * When the input was fetched, null when missing
  */
@@ -87,12 +99,21 @@ export type Rules = "v0";
 export type SchemaVersion = "1";
 
 export interface Overview {
-  generated_at: GeneratedAt;
+  /**
+   * The lists of about an hour before (added 2026-10-01), so the web can say what is new and what has passed; null when no round of that age was kept
+   */
+  earlier?: OverviewEarlier | null;
+  generated_at: GeneratedAt1;
   inputs: Inputs;
   items: Items;
   notes_th: NotesTh;
   rules?: Rules;
   schema_version?: SchemaVersion;
+}
+export interface OverviewEarlier {
+  generated_at: GeneratedAt;
+  next: Next;
+  now: Now;
 }
 export interface OverviewInput {
   at: At;

@@ -70,4 +70,16 @@ describe('the status bar says the whole picture in one line (user, 2026-10-01)',
     const late = counts(at + 3 * 3_600_000 + 60_000);
     expect([late.watchNow, late.watchNext]).toEqual([0, 0]);
   });
+
+  it('says how the places changed in the last hour, in words, and nothing without the round before', () => {
+    const chips = (watchNowDelta: number | null, watchNextDelta: number | null) =>
+      statusChips({ ...quiet, watchNow: 12, watchNext: 4, watchNowDelta, watchNextDelta })
+        .slice(0, 2)
+        .map((chip) => chip.text);
+    expect(chips(3, -1)).toEqual([
+      'ต้องระวังตอนนี้ 12 แห่ง · เพิ่ม 3 ใน 1 ชม.',
+      'เตรียมรับมือ 4 แห่ง · ลด 1 ใน 1 ชม.',
+    ]);
+    expect(chips(0, null)).toEqual(['ต้องระวังตอนนี้ 12 แห่ง', 'เตรียมรับมือ 4 แห่ง']);
+  });
 });

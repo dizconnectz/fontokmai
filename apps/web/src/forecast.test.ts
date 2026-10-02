@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
+  dayRainClass,
   dayRainWords,
   daysAt,
   forecastAreas,
@@ -52,6 +53,11 @@ describe('rain forecast on the lattice', () => {
     expect(dayRainWords(35.1)).toBe('ฝนหนัก');
     expect(dayRainWords(90.1)).toBe('ฝนหนักมาก');
     expect(dayRainWords(null)).toBe('ไม่มีข้อมูล');
+    // the class gives the colour of the word (user 2026-10-02): the same bounds as the words
+    expect([0, 0.1, 10, 10.1, 35, 35.1, 90, 90.1].map(dayRainClass)).toEqual([
+      0, 1, 1, 2, 2, 3, 3, 4,
+    ]);
+    expect(dayRainClass(null)).toBeNull();
   });
 });
 

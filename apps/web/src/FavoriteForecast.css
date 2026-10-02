@@ -42,12 +42,69 @@
 .favorite-forecast td:nth-child(n + 3) {
   text-align: right;
 }
-.favorite-forecast .favorite-rain-day td:nth-child(2) {
-  color: var(--rain-ink);
+/* a day's rain word in the colour of its TMD class (the stations' pins, bkk DAY_RAIN_CLASSES) */
+.favorite-forecast .rain-word {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
   font-weight: 600;
+  white-space: nowrap;
+}
+.favorite-forecast .rain-class-null,
+.favorite-forecast .rain-class-0 {
+  padding: 0;
+  color: var(--muted);
+  font-weight: 400;
+}
+.favorite-forecast .rain-class-1 {
+  background: #29b6f6;
+  color: #062a3a;
+}
+.favorite-forecast .rain-class-2 {
+  background: #1e6fd9;
+  color: #ffffff;
+}
+.favorite-forecast .rain-class-3 {
+  background: #6a3fc1;
+  color: #ffffff;
+}
+.favorite-forecast .rain-class-4 {
+  background: #c2185b;
+  color: #ffffff;
 }
 .favorite-forecast .source-note {
   display: block;
   margin-top: 10px;
   overflow-wrap: anywhere;
+}
+/* the saved place in one line (user 2026-10-01): alert, the summary's lists, flood reports near it, today's rain */
+.favorite-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.favorite-line .line-part {
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.6;
+}
+.favorite-line .danger {
+  background: var(--extreme-bg);
+  color: var(--extreme-ink);
+}
+.favorite-line .warn {
+  background: var(--severe-bg);
+  color: var(--severe-ink);
+}
+.favorite-line .ok {
+  background: var(--ok-bg);
+  color: var(--ok-ink);
+}
+.favorite-line .muted {
+  background: var(--surface-2, var(--hover));
+  color: var(--muted);
+  font-weight: 400;
 }

@@ -7,8 +7,9 @@ import { readFileSync } from "node:fs";
 
 // the side panel's sections fold to their heading line (Claude, 2026-10-01): open one before reading its list
 async function unfold(page, id) {
+  await page.locator(`#${id}`).waitFor();
   const fold = page.locator(`#${id} > details`);
-  if (!(await fold.evaluate((element) => element.open)))
+  if ((await fold.count()) && !(await fold.evaluate((element) => element.open)))
     await page.locator(`#${id} > details > summary`).click();
 }
 

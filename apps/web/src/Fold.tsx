@@ -43,12 +43,47 @@ export function Fold({
   );
 }
 
-/** Open a folded section and bring it into view, its heading focused (the status bar's chips). */
+/** A side-panel section that always shows its content (user 2026-10-02: flood reports and dams stay open). */
+export function Section({
+  id,
+  headingId,
+  heading,
+  headingClass,
+  className,
+  testId,
+  children,
+}: {
+  id: string;
+  headingId: string;
+  heading: ReactNode;
+  headingClass?: string;
+  className?: string;
+  testId?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section
+      id={id}
+      className={`panel-section${className ? ` ${className}` : ''}`}
+      aria-labelledby={headingId}
+      data-testid={testId}
+    >
+      <h2 id={headingId} className={headingClass} tabIndex={-1}>
+        {heading}
+      </h2>
+      <div className="fold-body">{children}</div>
+    </section>
+  );
+}
+
+/** Open a section (its own fold, never a fold inside it) and bring it into view, its heading focused. */
 export function openSection(id: string): void {
   const section = document.getElementById(id);
   if (!section) return;
-  const details = section.querySelector('details');
+  const details = section.querySelector<HTMLDetailsElement>(':scope > details');
   if (details) details.open = true;
   section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  section.querySelector('summary')?.focus({ preventScroll: true });
+  section
+    .querySelector<HTMLElement>(':scope > details > summary, :scope > h2')
+    ?.focus({ preventScroll: true });
 }

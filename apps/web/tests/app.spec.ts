@@ -4,8 +4,12 @@ import { readFileSync } from 'node:fs';
 
 /** Sections of the side panel fold to their heading line (user, 2026-10-01): open one before using its list. */
 async function unfold(page: Page, id: string) {
+  await page.locator(`#${id}`).waitFor();
   const fold = page.locator(`#${id} > details`);
-  if (!(await fold.evaluate((element) => (element as HTMLDetailsElement).open)))
+  if (
+    (await fold.count()) &&
+    !(await fold.evaluate((element) => (element as HTMLDetailsElement).open))
+  )
     await page.locator(`#${id} > details > summary`).click();
 }
 
@@ -109,7 +113,7 @@ test('official alerts show their severity and a one-line summary, then open in f
   await expect(page.getByTestId('alert-card')).toHaveCount(3);
 });
 
-test('no active alert is never shown as a safe area, and ended alerts stay in the history', async ({
+test('no active alert is never shown as a safe area, and an ended alert is not shown as one in effect', async ({
   page,
 }) => {
   await prepare(page, 'out-of-order');
@@ -119,9 +123,8 @@ test('no active alert is never shown as a safe area, and ended alerts stay in th
     page.getByText('ไม่มีข้อมูลหรือไม่พบประกาศ ไม่ได้แปลว่าพื้นที่ปลอดภัย'),
   ).toBeVisible();
   await expect(page.getByTestId('alert-card')).toHaveCount(0);
-  await unfold(page, 'data-status');
-  await page.getByText('ประกาศที่สิ้นสุดในชุดข้อมูล (1)', { exact: true }).click();
-  await expect(page.locator('.history-details li')).toContainText('ยกเลิก');
+  // the data status block with the ended alerts is no longer on the page (user, 2026-10-02)
+  await expect(page.getByRole('heading', { name: 'สถานะข้อมูล' })).toHaveCount(0);
 });
 
 test('stale detection works from the browser clock even while the publisher is frozen', async ({
@@ -138,13 +141,14 @@ test('stale detection works from the browser clock even while the publisher is f
   await expect(page.getByText('ไม่พบประกาศที่มีผลในชุดนี้')).toBeVisible();
 });
 
-test('partial source keeps known alerts with last-success time', async ({ page }) => {
+test('partial source keeps known alerts and says the data is incomplete', async ({ page }) => {
   await prepare(page, 'source-failed');
   await page.goto('/');
   await expect(page.getByTestId('alert-card')).toHaveCount(3);
   await expect(page.getByText('แหล่งข้อมูลส่งข้อมูลไม่ครบ')).toBeVisible();
-  await expect(page.locator('.source-times')).toContainText('18:05');
-  await expect(page.locator('.source-times')).toContainText('ดึงข้อมูลไม่สำเร็จ');
+  // the data status block is gone (user, 2026-10-02): every section says the time of its own data
+  await expect(page.getByText('แต่ละส่วนบอกเวลาข้อมูลของตัวเอง')).toBeVisible();
+  await expect(page.locator('.source-times')).toHaveCount(0);
 });
 
 test('pending and estimated expiry have explicit labels', async ({ page }) => {
@@ -739,8 +743,6 @@ test('Bangkok rain gauges and canal levels show as measured values near a pin', 
     'ส.คลองเตย · น้ำในคลองสูงกว่าระดับน้ำทะเล 1.78 ม.',
   );
   await expect(here.getByTestId('water-here').locator('li')).toHaveCount(1);
-  // the data status says when the Bangkok files were fetched: they arrive now and then, not every round
-  await expect(page.getByTestId('dxs-status')).toContainText(/ข้อมูล ณ \d{1,2} \S+ \d\d:\d\d น\./);
   await expect(here).toContainText('ไม่ใช่ความลึกน้ำท่วมบนถนน');
   await page.getByRole('button', { name: 'ชั้นข้อมูล' }).click();
   await expect(page.getByRole('button', { name: 'ระดับน้ำคลอง กทม.' })).toHaveAttribute(
@@ -847,7 +849,7 @@ test('a dam the report leaves blank shows its last known figures with their day 
   await expect(page.getByTestId('dams-main-missing')).toContainText('เขื่อนหลัก 2 แห่ง');
 });
 
-test('a status bar says the whole picture and opens the folded section it names', async ({
+test('a status bar says the whole picture and takes the reader to the section it names', async ({
   page,
 }) => {
   await prepare(page);
@@ -863,16 +865,19 @@ test('a status bar says the whole picture and opens the folded section it names'
   data.dams[2].percent = 104.2;
   await page.route('**/water/dams.json?*', (route) => route.fulfill({ json: data }));
   await page.goto('/');
-  // the panel reads at a glance (user, 2026-10-01): one line on top, the sections folded to their heading
+  // the panel reads at a glance (user, 2026-10-01): one line on top; the flood reports and the dams stay open
+  // (user, 2026-10-02), the other sections fold to their heading
   const bar = page.getByTestId('status-bar');
   await expect(bar).toBeVisible();
-  await expect(page.locator('#dams > details')).not.toHaveAttribute('open');
+  await expect(page.locator('#dams > details')).toHaveCount(0);
+  await expect(page.locator('#floods-now > details')).toHaveCount(0);
+  await expect(page.locator('#hotlines > details')).not.toHaveAttribute('open');
   await expect(page.getByRole('heading', { name: /เขื่อนใหญ่ · เกินความจุ 1 แห่ง/ })).toBeVisible();
-  await bar.getByRole('button', { name: 'เขื่อนเกินความจุ 1 แห่ง' }).click();
-  await expect(page.locator('#dams > details')).toHaveAttribute('open');
   await expect(
     page.getByTestId('dams').locator('.dam-line').filter({ hasText: 'เขื่อนป่าสักชลสิทธิ์' }),
   ).toBeVisible();
+  await bar.getByRole('button', { name: 'เขื่อนเกินความจุ 1 แห่ง' }).click();
+  await expect(page.locator('#dams-heading')).toBeFocused();
 });
 
 test('the side panel has no card that only repeats the radar time or how to use the map', async ({
@@ -1099,6 +1104,48 @@ test('the summary’s places are outlined on the map, apart from the alert zones
     .getByRole('button', { name: /กรุงเทพมหานคร · 2 เขต/ })
     .click();
   await expect(surface).not.toHaveAttribute('data-zoom', '5');
+});
+
+test('the summary says what changed in the last hour, and the saved place has a line of its own', async ({
+  page,
+}) => {
+  await prepare(page);
+  const manifest = read('active', 'manifest');
+  const overview = read('overview', 'overview');
+  overview.generated_at = manifest.generated_at;
+  // the producer kept the lists of the round an hour before: Huai Khwang is new, two places have passed
+  overview.earlier = {
+    generated_at: new Date(Date.parse(manifest.generated_at) - 3_600_000).toISOString(),
+    now: ['เขตจตุจักร กรุงเทพมหานคร', 'อ.ธัญบุรี จ.ปทุมธานี', 'อ.คลองหลวง จ.ปทุมธานี'],
+    next: overview.items
+      .filter((item: { when: string }) => item.when === 'next')
+      .map((item: { place_th: string }) => item.place_th),
+  };
+  await page.route('**/summary/overview.json?*', (route) => route.fulfill({ json: overview }));
+  // a place saved in this browser, in Chatuchak
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      'fontokmai.favorite.v1',
+      JSON.stringify({ location: [100.565, 13.826], label: 'แขวงลาดยาว' }),
+    ),
+  );
+  await page.goto('/');
+  await expect(page.getByTestId('status-bar')).toContainText(
+    'ต้องระวังตอนนี้ 2 แห่ง · ลด 1 ใน 1 ชม.',
+  );
+  const summary = page.getByTestId('summary');
+  await expect(summary.locator('.summary-change').first()).toContainText(
+    'ใหม่ 1 แห่ง · พ้นเกณฑ์แล้ว 2 แห่ง',
+  );
+  await expect(summary.locator('.summary-change').nth(1)).toContainText('เท่าเดิม');
+  await expect(summary.locator('.district-chip', { hasText: 'เขตห้วยขวาง' })).toContainText('ใหม่');
+  await expect(summary.locator('.district-chip', { hasText: 'เขตจตุจักร' })).not.toContainText(
+    'ใหม่',
+  );
+  // the saved place: the alert over Bangkok, its district on the list to watch now
+  const line = page.getByTestId('favorite-line');
+  await expect(line).toContainText('เขตจตุจักร ต้องระวังตอนนี้');
+  await expect(line.locator('.line-part').first()).toHaveText(/ประกาศ/);
 });
 
 test('the Bangkok layers have no switch until their files are published', async ({ page }) => {

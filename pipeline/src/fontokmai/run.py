@@ -19,7 +19,7 @@ from fontokmai.contracts.places import PlaceGazetteer
 from fontokmai.contracts.radar import RadarFeed
 from fontokmai.contracts.road_flood import RoadFloodHistory
 from fontokmai.feeds.alerts import LIVE_STATUSES, AlertCandidate, assemble_alerts_feed
-from fontokmai.overview_build import OVERVIEW_PATH, build_overview
+from fontokmai.overview_build import OVERVIEW_PATH, RECENT_KEY, build_overview, with_earlier
 from fontokmai.publish.snapshot import atomic_write, write_snapshot
 from fontokmai.sources import bma_dxs
 from fontokmai.sources.open_data import longdo_live
@@ -180,7 +180,9 @@ def run_cap_snapshot(*, db: Path, out: Path, fetch: Fetcher, now: datetime, writ
         # the summary of places to watch reads the files of this very round; it never stops the alerts
         overview_error = None
         try:
-            files[OVERVIEW_PATH] = build_overview(files, now).model_dump_json().encode("utf-8")
+            overview, recent = with_earlier(build_overview(files, now), store.get_meta(RECENT_KEY))
+            files[OVERVIEW_PATH] = overview.model_dump_json().encode("utf-8")
+            store.set_meta(RECENT_KEY, recent)
         except Exception as exc:  # noqa: BLE001 - reported in the round log; the web shows the summary missing
             overview_error = f"{type(exc).__name__}: {exc}"[:300]
         manifest = write_snapshot(out, files, store,

@@ -6,8 +6,9 @@ import { readFileSync } from "node:fs";
 
 // the side panel's sections fold to their heading line (Claude, 2026-10-01): open one before reading its list
 async function unfold(page, id) {
+  await page.locator(`#${id}`).waitFor();
   const fold = page.locator(`#${id} > details`);
-  if (!(await fold.evaluate((element) => element.open)))
+  if ((await fold.count()) && !(await fold.evaluate((element) => element.open)))
     await page.locator(`#${id} > details > summary`).click();
 }
 
@@ -314,11 +315,6 @@ test("report clock and DXS file clock are distinct from the fresh manifest clock
   await prepare(page, { "bkk/water.json": water, "live/floods.json": floods });
   await page.goto("/");
   await unfold(page, "floods-now");
-  await unfold(page, "data-status");
-  await expect(page.getByTestId("dxs-status")).toContainText("11:40");
-  await expect(page.getByTestId("dxs-status")).toContainText(
-    "ไม่ใช่ทุก 15 นาที",
-  );
   await expect(
     page.getByRole("button", { name: /รายงานตรวจเวลา/ }),
   ).toContainText("วันนี้ 11:30 น. (30 นาทีก่อน)");

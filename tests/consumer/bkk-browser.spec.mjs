@@ -6,8 +6,9 @@ import { readFileSync } from "node:fs";
 
 // the side panel's sections fold to their heading line (Claude, 2026-10-01): open one before reading its list
 async function unfold(page, id) {
+  await page.locator(`#${id}`).waitFor();
   const fold = page.locator(`#${id} > details`);
-  if (!(await fold.evaluate((element) => element.open)))
+  if ((await fold.count()) && !(await fold.evaluate((element) => element.open)))
     await page.locator(`#${id} > details > summary`).click();
 }
 
@@ -88,19 +89,19 @@ test("DXS manual relay is displayed without a source status, with MSL and dated 
   await expect(card).toContainText(/ไม่ใช่ข้อมูลเรียลไทม์.*26.*2569/);
 });
 
-test("another day's road report is collapsed behind its Thai date", async ({
+test("another day's road report is not shown in the side panel", async ({
   page,
 }) => {
+  // Claude, user 2026-10-02: an empty or another day's report said nothing, so the section shows only roads of
+  // today's report (it was collapsed behind its Thai date before)
   await prepare(page, { "bkk/flooding.json": read("bkk/flooding.json") });
   await page.goto("/");
-  const summary = page.locator("summary").filter({ hasText: /26.*2569/ });
-  await expect(summary).toBeVisible();
-  const details = summary.locator("..");
-  await expect(details).not.toHaveAttribute("open", "");
-  await expect(page.getByText("หน้าตลาดทดสอบ")).not.toBeVisible();
-  await summary.click();
-  await expect(details).toHaveAttribute("open", "");
-  await expect(details).toContainText("ถ.ทดสอบหนึ่ง");
+  await expect(page.getByTestId("status-bar")).toBeVisible();
+  await expect(
+    page.locator("summary").filter({ hasText: /26.*2569/ }),
+  ).toHaveCount(0);
+  await expect(page.getByTestId("road-flooding")).toHaveCount(0);
+  await expect(page.locator("#panel")).not.toContainText("ถ.ทดสอบหนึ่ง");
 });
 
 test("DXS situation text is readable as plain text and is separate from TMD alerts", async ({

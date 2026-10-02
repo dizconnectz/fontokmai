@@ -58,6 +58,13 @@ class OverviewInput(ContractModel):
     at: AwareDatetime | None = Field(description="When the input was fetched, null when missing")
 
 
+class OverviewEarlier(ContractModel):
+    generated_at: AwareDatetime = Field(description=(
+        "The round compared with: of the rounds 45 to 75 minutes before this one, the one nearest an hour"))
+    now: list[str] = Field(description="place_th of the places to watch now in that round")
+    next: list[str] = Field(description="place_th of the places to prepare for in that round")
+
+
 class Overview(ContractModel):
     schema_version: Literal["1"] = SCHEMA_VERSION
     rules: Literal["v0"] = "v0"
@@ -65,3 +72,6 @@ class Overview(ContractModel):
     items: list[OverviewItem] = Field(description="now first (highest score first), then next")
     inputs: list[OverviewInput]
     notes_th: list[str]
+    earlier: OverviewEarlier | None = Field(default=None, description=(
+        "The lists of about an hour before (added 2026-10-01), so the web can say what is new and what has passed;"
+        " null when no round of that age was kept"))

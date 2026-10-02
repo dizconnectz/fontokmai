@@ -92,6 +92,12 @@ export function daysAt(forecast: RainForecast, point: number[]): ForecastDay[] |
   }));
 }
 
+/** TMD class of a day's rain total: 0 none, 1 light, 2 moderate, 3 heavy, 4 very heavy; null without data. */
+export function dayRainClass(mm: number | null): number | null {
+  if (mm === null) return null;
+  return mm < 0.1 ? 0 : mm <= 10 ? 1 : mm <= 35 ? 2 : mm <= 90 ? 3 : 4;
+}
+
 /** TMD words for a day's rain total (24-hour classes of the design, section 12). */
 export function dayRainWords(mm: number | null): string {
   if (mm === null) return 'ไม่มีข้อมูล';
