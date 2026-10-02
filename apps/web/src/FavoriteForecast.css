@@ -78,13 +78,15 @@
   overflow-wrap: anywhere;
 }
 /* the saved place in one line (user 2026-10-01): alert, the summary's lists, flood reports near it, today's rain */
-.favorite-line {
+/* one wrapping line, not the grid of the card's other spans */
+.favorite-card .favorite-line {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
   margin-top: 4px;
 }
-.favorite-line .line-part {
+.favorite-card .favorite-line .line-part {
+  display: inline-block;
   padding: 1px 8px;
   border-radius: 999px;
   font-size: 0.78rem;
