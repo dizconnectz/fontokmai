@@ -91,10 +91,10 @@ def test_a_series_of_the_wrong_length_breaks_the_contract():
 
 def test_refresh_runs_once_a_day_within_the_shared_open_meteo_budget(tmp_path):
     out, db = tmp_path / "out", tmp_path / "state.db"
-    assert refresh_river_forecast(out, db, NOW, opener=_opener()) == "built 14 rivers x 37 days"
+    assert refresh_river_forecast(out, db, NOW, opener=_opener(), points=POINTS) == "built 14 rivers x 37 days"
     assert RiverForecast.model_validate_json((out / RIVERS_PATH).read_bytes()).fetched_at == NOW
     assert rivers_fresh(out, NOW + timedelta(hours=19))
-    assert refresh_river_forecast(out, db, NOW + timedelta(hours=19), opener=_opener()) is None
+    assert refresh_river_forecast(out, db, NOW + timedelta(hours=19), opener=_opener(), points=POINTS) is None
     with StateStore(db) as store:
         assert budget(store).used(NOW) == 42
         assert store.get_meta(CALLS_KEY)  # the same count the rain forecast spends from
@@ -102,13 +102,14 @@ def test_refresh_runs_once_a_day_within_the_shared_open_meteo_budget(tmp_path):
     later = NOW + timedelta(hours=21)
     with StateStore(db) as store:
         budget(store, 100).spend(later, 50)
-    assert refresh_river_forecast(out, db, later, opener=_opener(), limit=100).startswith(
+    assert refresh_river_forecast(out, db, later, opener=_opener(), points=POINTS, limit=100).startswith(
         "waiting for the Open-Meteo budget: 92 of 100")
 
 
 def test_a_failed_refresh_waits_before_trying_again(tmp_path):
     out, db = tmp_path / "out", tmp_path / "state.db"
     broken = fixture_opener({})
-    assert refresh_river_forecast(out, db, NOW, opener=broken).startswith("error: OpenDataError")
-    assert refresh_river_forecast(out, db, NOW + timedelta(hours=1), opener=_opener()) == "waiting to retry"
-    assert refresh_river_forecast(out, db, NOW + timedelta(hours=2), opener=_opener()) == "built 14 rivers x 37 days"
+    assert refresh_river_forecast(out, db, NOW, opener=broken, points=POINTS).startswith("error: OpenDataError")
+    later = (NOW + timedelta(hours=1), NOW + timedelta(hours=2))
+    assert refresh_river_forecast(out, db, later[0], opener=_opener(), points=POINTS) == "waiting to retry"
+    assert refresh_river_forecast(out, db, later[1], opener=_opener(), points=POINTS) == "built 14 rivers x 37 days"

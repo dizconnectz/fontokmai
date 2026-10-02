@@ -24,6 +24,11 @@ class GeoMultiPolygon(ContractModel):
     coordinates: list[list[LinearRing]]
 
 
+class GeoMultiLineString(ContractModel):
+    type: Literal["MultiLineString"] = "MultiLineString"
+    coordinates: list[Annotated[list[Position], Field(min_length=2)]]
+
+
 class SourceStatus(ContractModel):
     source_id: str
     status: Literal["ok", "degraded", "failed"]

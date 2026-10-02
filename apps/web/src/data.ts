@@ -17,6 +17,7 @@ import bkkNewsSchema from '../../../contracts/v1/schema/bkk_news.schema.json';
 import damsSchema from '../../../contracts/v1/schema/dams.schema.json';
 import weatherTodaySchema from '../../../contracts/v1/schema/weather_today.schema.json';
 import boundariesSchema from '../../../contracts/v1/schema/boundaries.schema.json';
+import riverLinesSchema from '../../../contracts/v1/schema/river_lines.schema.json';
 import type { Manifest } from '../../../contracts/v1/ts/manifest';
 import type { Alert, AlertsFeed } from '../../../contracts/v1/ts/alerts';
 import type { RadarFeed } from '../../../contracts/v1/ts/radar';
@@ -34,6 +35,7 @@ import type { SituationReport } from '../../../contracts/v1/ts/bkk_news';
 import type { DamReport } from '../../../contracts/v1/ts/dams';
 import type { WeatherToday } from '../../../contracts/v1/ts/weather_today';
 import type { Boundaries } from '../../../contracts/v1/ts/boundaries';
+import type { RiverLines } from '../../../contracts/v1/ts/river_lines';
 
 export type {
   Alert,
@@ -48,6 +50,7 @@ export type {
   RadarFeed,
   RainForecast,
   RiverForecast,
+  RiverLines,
   SummaryOverview,
   RainGauges,
   RoadFloodHistory,
@@ -111,6 +114,7 @@ export const validWeatherToday = ajv.compile<WeatherToday>(
   allowAdditions(weatherTodaySchema) as object,
 );
 export const validBoundaries = ajv.compile<Boundaries>(allowAdditions(boundariesSchema) as object);
+export const validRiverLines = ajv.compile<RiverLines>(allowAdditions(riverLinesSchema) as object);
 
 /** radar.json belongs to the snapshot generation, like alerts.json. */
 export function validateRadar(manifest: Manifest, radar: unknown): RadarFeed {

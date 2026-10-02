@@ -19,6 +19,7 @@ from fontokmai.examples import (
     write_forecast_example,
     write_live_floods_example,
     write_places_example,
+    write_river_lines_example,
     write_road_flood_example,
 )
 from fontokmai.forecast_build import budget as forecast_budget
@@ -34,6 +35,7 @@ from fontokmai.publish.git_pages import publish_snapshot
 from fontokmai.road_flood_build import build_road_flood_history, fixture_files, is_fresh
 from fontokmai.run import SnapshotResult, run_cap_snapshot
 from fontokmai.schedule import run_forever
+from fontokmai.sources.glofas import all_points as glofas_points
 from fontokmai.sources.open_data.http import fixture_opener, open_url
 from fontokmai.sources.open_data.longdo_live import FEED_URL as LONGDO_FEED_URL
 from fontokmai.sources.tmd_cap.fetch import LiveFetcher, fixture_fetcher
@@ -238,6 +240,7 @@ def main(argv: list[str] | None = None) -> int:
         written = write_examples(args.out, real=args.real_fixtures, synthetic=args.synthetic_fixtures)
         written += write_places_example(args.out)
         written += write_boundaries_example(args.out)
+        written += write_river_lines_example(args.out)
         if args.road_flood_fixtures:
             written += write_road_flood_example(args.out, args.road_flood_fixtures)
         if args.forecast_fixtures:
@@ -285,9 +288,10 @@ def main(argv: list[str] | None = None) -> int:
             from fontokmai.state import StateStore
             with StateStore(args.db) as store:
                 calls = forecast_budget(store)
-                rivers = build_river_forecast(args.out, now, spend=lambda n: calls.spend(now, n))
+                rivers = build_river_forecast(args.out, now, points=glofas_points(),
+                                              spend=lambda n: calls.spend(now, n))
         else:
-            rivers = build_river_forecast(args.out, now)
+            rivers = build_river_forecast(args.out, now, points=glofas_points())
         print(json.dumps({"points": len(rivers.points), "days": len(rivers.days),
                           "first_day": rivers.days[0].isoformat()}, ensure_ascii=False))
         return 0

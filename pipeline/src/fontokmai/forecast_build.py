@@ -107,7 +107,7 @@ def refresh_river_forecast(out_dir: Path, db: Path, now: datetime, *, opener: Op
     """The scheduled daily refresh of the river trend; it spends from the same Open-Meteo budget as the rain."""
     if rivers_fresh(out_dir, now):
         return None
-    points = points if points is not None else glofas.load_points()
+    points = points if points is not None else glofas.all_points()
     with StateStore(db) as store:
         last = store.get_meta(RIVERS_ATTEMPT_KEY)
         if last and now - datetime.fromisoformat(last) < RETRY:

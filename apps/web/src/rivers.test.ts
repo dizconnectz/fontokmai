@@ -5,9 +5,11 @@ import {
   riverChart,
   riverOutlook,
   riverPin,
+  riverStretches,
   riverWords,
   type RiverForecast,
 } from './rivers';
+import type { RiverLines } from './data';
 
 // the producer's example from a recorded GloFAS answer, fetched at 11:42 on 27 Sep (contract section 20)
 const rivers = JSON.parse(
@@ -62,5 +64,36 @@ describe('the GloFAS river trend', () => {
     const numbers = `${chart.past}${chart.ahead}${chart.band}`.match(/-?\d+(\.\d+)?/g)!.map(Number);
     expect(Math.min(...numbers)).toBeGreaterThanOrEqual(0);
     expect(Math.max(...numbers)).toBeLessThanOrEqual(230);
+  });
+});
+
+describe('stretches of river forecast to rise (user, 2026-10-02)', () => {
+  // the producer's stretches of the six stations around Bangkok
+  const lines = JSON.parse(
+    readFileSync(
+      new URL('../../../contracts/v1/examples/river-lines/river_lines.json', import.meta.url),
+      'utf8',
+    ),
+  ) as RiverLines;
+  it('draws a stretch orange or red as its point rises, and leaves the others out', () => {
+    const shapes = riverStretches(lines, rivers, AT);
+    const drawn = Object.fromEntries(shapes.features.map((f) => [f.properties.code, f.properties]));
+    expect(drawn['cp-bangkok']).toMatchObject({ trend: 'rising', color: RIVER_CLASSES[1].color });
+    expect(drawn['bangpakong-chachoengsao']).toMatchObject({
+      trend: 'rising_fast',
+      color: RIVER_CLASSES[0].color,
+    });
+    // every stretch drawn is of a point rising; every point rising has its stretch drawn
+    for (const stretch of lines.stretches) {
+      const trend = riverOutlook(rivers, point(stretch.point_id), AT)?.trend;
+      expect(stretch.point_id in drawn).toBe(trend === 'rising' || trend === 'rising_fast');
+    }
+    expect(shapes.features[0].geometry.type).toBe('MultiLineString');
+  });
+  it('draws nothing for a point the file does not have, or a day the file does not reach', () => {
+    expect(riverStretches(lines, { ...rivers, points: [] }, AT).features).toEqual([]);
+    expect(riverStretches(lines, rivers, Date.parse('2026-12-01T12:00:00+07:00')).features).toEqual(
+      [],
+    );
   });
 });

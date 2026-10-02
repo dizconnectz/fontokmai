@@ -17,6 +17,7 @@ from fontokmai.contracts.forecast import RainForecast, RiverForecast
 from fontokmai.contracts.manifest import Manifest
 from fontokmai.contracts.places import PlaceGazetteer
 from fontokmai.contracts.radar import RadarFeed
+from fontokmai.contracts.river_lines import RiverLines
 from fontokmai.contracts.road_flood import RoadFloodHistory
 from fontokmai.feeds.alerts import LIVE_STATUSES, AlertCandidate, assemble_alerts_feed
 from fontokmai.overview_build import OVERVIEW_PATH, RECENT_KEY, build_overview, with_earlier
@@ -36,10 +37,12 @@ REF_MODELS: dict[str, type[BaseModel]] = {"ref/road_flood_history.json": RoadFlo
                                           "ref/cctv.json": CctvRegistry,
                                           "ref/places.json": PlaceGazetteer,
                                           "ref/boundaries.json": Boundaries,
+                                          "ref/river_lines.json": RiverLines,
                                           "forecast/rain.json": RainForecast,
                                           "forecast/rivers.json": RiverForecast}
 # curated files shipped with the package and copied into every snapshot
-STATIC_REFS = {"ref/cctv.json": "cctv.json", "ref/places.json": "places.json", "ref/boundaries.json": "boundaries.json"}
+STATIC_REFS = {"ref/cctv.json": "cctv.json", "ref/places.json": "places.json", "ref/boundaries.json": "boundaries.json",
+               "ref/river_lines.json": "river_lines.json"}
 LAST_SUCCESS_KEY = "tmd_cap.last_success_at"
 RADAR_SUCCESS_KEY = "tmd_radar.last_success_at"
 FLOODS_SUCCESS_KEY = "longdo_floods.last_success_at"

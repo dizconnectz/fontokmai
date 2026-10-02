@@ -37,9 +37,20 @@ NOTES_TH = [
 
 
 def load_points() -> list[dict[str, Any]]:
-    """The river points shipped with the package: id, name_th, river_th and location [lon, lat]."""
+    """The river stations shipped with the package: id, name_th, river_th and location [lon, lat]."""
     data = json.loads(resources.files("fontokmai.ref_data").joinpath("river_points.json").read_bytes())
     return data["points"]
+
+
+def load_reaches() -> list[dict[str, Any]]:
+    """The reach points between the stations (ref_data/river_reaches.json, build_river_lines.py), kind "reach"."""
+    data = json.loads(resources.files("fontokmai.ref_data").joinpath("river_reaches.json").read_bytes())
+    return data["points"]
+
+
+def all_points() -> list[dict[str, Any]]:
+    """What the daily fetch asks for: the stations, then the reach points that colour the river stretches."""
+    return load_points() + load_reaches()
 
 
 def calls(points: int) -> int:
@@ -76,7 +87,8 @@ def build_forecast(answers: list[dict[str, Any]], points: list[dict[str, Any]], 
             name_th=NAME_TH, credit_th=CREDIT_TH, source_url=PAGE_URL, fetched_at=now,
             days=[date.fromisoformat(d) for d in days],
             points=[RiverPoint(
-                id=point["id"], name_th=point["name_th"], river_th=point["river_th"], location=point["location"],
+                id=point["id"], kind=point.get("kind", "station"), name_th=point["name_th"],
+                river_th=point["river_th"], location=point["location"],
                 discharge=[_flow(v) for v in answer["daily"]["river_discharge"]],
                 median=[_flow(v) for v in answer["daily"]["river_discharge_median"]],
                 p25=[_flow(v) for v in answer["daily"]["river_discharge_p25"]],

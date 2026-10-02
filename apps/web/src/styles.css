@@ -850,6 +850,14 @@ svg {
 .legend-outline.next {
   border-style: dashed;
 }
+/* a stretch of river forecast to rise */
+.legend-line {
+  display: inline-block;
+  width: 18px;
+  height: 4px;
+  border-radius: 2px;
+  vertical-align: 3px;
+}
 /* what changed since the round about an hour before */
 .summary-change {
   margin: -4px 0 6px;

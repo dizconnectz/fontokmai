@@ -428,6 +428,8 @@ def build_overview(files: dict[str, bytes], now: datetime, gazetteer: Gazetteer 
     if rivers and state.status == "fresh" and today in rivers.days:
         at = rivers.days.index(today)
         for point in rivers.points:
+            if point.kind != "station":  # a reach point colours its stretch of river on the map, not the list
+                continue
             base = point.median[at] if point.median[at] is not None else point.discharge[at]
             week = point.median[at + 1:at + 1 + RIVER_AHEAD]
             # as the web: a trend needs every day of the week ahead (Codex M18)

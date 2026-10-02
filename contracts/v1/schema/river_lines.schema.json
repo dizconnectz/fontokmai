@@ -1,0 +1,120 @@
+{
+  "$defs": {
+    "GeoMultiLineString": {
+      "additionalProperties": false,
+      "properties": {
+        "coordinates": {
+          "items": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "minItems": 2,
+            "type": "array"
+          },
+          "title": "Coordinates",
+          "type": "array"
+        },
+        "type": {
+          "const": "MultiLineString",
+          "default": "MultiLineString",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "coordinates"
+      ],
+      "title": "GeoMultiLineString",
+      "type": "object"
+    },
+    "RiverStretch": {
+      "additionalProperties": false,
+      "properties": {
+        "line": {
+          "$ref": "#/$defs/GeoMultiLineString",
+          "description": "[lon, lat] in WGS84, simplified for drawing"
+        },
+        "point_id": {
+          "description": "id of the point of forecast/rivers.json nearest to this stretch on the same river: the web colours the stretch by that point's 7-day trend",
+          "title": "Point Id",
+          "type": "string"
+        },
+        "river_th": {
+          "description": "e.g. แม่น้ำเจ้าพระยา",
+          "title": "River Th",
+          "type": "string"
+        }
+      },
+      "required": [
+        "point_id",
+        "river_th",
+        "line"
+      ],
+      "title": "RiverStretch",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "credit_th": {
+      "title": "Credit Th",
+      "type": "string"
+    },
+    "geometry_version": {
+      "description": "Source extract and how far it was simplified",
+      "title": "Geometry Version",
+      "type": "string"
+    },
+    "license": {
+      "title": "License",
+      "type": "string"
+    },
+    "notes_th": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Notes Th",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1",
+      "default": "1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_url": {
+      "title": "Source Url",
+      "type": "string"
+    },
+    "stretches": {
+      "description": "By river, then by point id",
+      "items": {
+        "$ref": "#/$defs/RiverStretch"
+      },
+      "title": "Stretches",
+      "type": "array"
+    },
+    "updated": {
+      "description": "Date of the OpenStreetMap extract",
+      "format": "date",
+      "title": "Updated",
+      "type": "string"
+    }
+  },
+  "required": [
+    "geometry_version",
+    "updated",
+    "credit_th",
+    "license",
+    "source_url",
+    "stretches",
+    "notes_th"
+  ],
+  "title": "RiverLines",
+  "type": "object"
+}

@@ -20,6 +20,10 @@ export type Discharge = (number | null)[];
  */
 export type Id = string;
 /**
+ * station = a point chosen by hand, a pin on the map and on the summary's list; reach = a point about every 50 km between them (added 2026-10-02) that only colours its stretch of ref/river_lines.json
+ */
+export type Kind = "station" | "reach";
+/**
  * [lon, lat] asked of the model, chosen once so that its 0.05° GloFAS cell lies on the main stream
  *
  * @minItems 2
@@ -62,6 +66,7 @@ export interface RiverForecast {
 export interface RiverPoint {
   discharge: Discharge;
   id: Id;
+  kind?: Kind;
   location: Location;
   median: Median;
   name_th: NameTh1;

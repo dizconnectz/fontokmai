@@ -32,7 +32,7 @@ import FavoriteForecast from './FavoriteForecast';
 import { distanceM } from './roads';
 import Timeline, { type TimeStep } from './Timeline';
 import { FORECAST_LEVELS, forecastAreas, RAIN_LEGEND } from './forecast';
-import { RIVER_CLASSES } from './rivers';
+import { RIVER_CLASSES, riverOutlook, riverStretches } from './rivers';
 import { feedTrust, LEVEL_FILL, LEVEL_LABEL, worstLevel, type Level } from './alerts';
 import { nearestSubdistrict, type FoundPlace } from './places';
 import {
@@ -105,6 +105,8 @@ export default function App() {
     overview,
     boundaries,
     loadBoundaries,
+    riverLines,
+    loadRiverLines,
   } = data;
   const [layers, setLayers] = useState<Layers>({
     alerts: true,
@@ -238,6 +240,24 @@ export default function App() {
   const areaKey = areas.map((area) => `${area.when}:${area.code}`).join(' ');
   const watch = useMemo(() => watchShapes(areas, boundaries), [areaKey, boundaries]);
   const watchKey = watch.features.length > 0;
+  // stretches of river forecast to rise: the lines load once a point of the model rises (user 2026-10-02)
+  const riverRising =
+    layers.rivers &&
+    !!rivers &&
+    step.kind !== 'forecast' &&
+    rivers.points.some((point) => {
+      const trend = riverOutlook(rivers, point, now)?.trend;
+      return trend === 'rising' || trend === 'rising_fast';
+    });
+  useEffect(() => {
+    if (riverRising) void loadRiverLines();
+  }, [riverRising, loadRiverLines]);
+  const riverShapes = useMemo(
+    () => (riverRising && rivers && riverLines ? riverStretches(riverLines, rivers, now) : null),
+    // the trend changes with the day, not with every tick of the clock
+    [riverRising, rivers, riverLines, new Date(now).toDateString()],
+  );
+  const riverKey = !!riverShapes?.features.length;
   // the saved place in one line on top; naming its district needs the DOPA places, loaded once a place is saved
   useEffect(() => {
     if (favorite) void loadPlaces();
@@ -453,6 +473,7 @@ export default function App() {
               weather={step.kind === 'forecast' ? null : weather}
               rivers={step.kind === 'forecast' ? null : rivers}
               watch={watch}
+              riverStretches={riverShapes}
               layers={layers}
               pin={pin}
               pinLabel={pinTitle}
@@ -563,7 +584,7 @@ export default function App() {
           </div>
         </div>
 
-        {(colourKey || pinKey || bankKey || watchKey) && (
+        {(colourKey || pinKey || bankKey || watchKey || riverKey) && (
           <div className={`map-legend ${legendOpen ? 'open' : ''}`} aria-label="คำอธิบายสี">
             {watchKey && (
               <div className="legend-row legend-watch" aria-label="กรอบพื้นที่จากการ์ดสรุป">
@@ -576,6 +597,20 @@ export default function App() {
                   เตรียมรับมือ
                 </span>
                 <small>เกณฑ์ของเว็บ ไม่ใช่ประกาศ</small>
+              </div>
+            )}
+            {riverKey && (
+              <div className="legend-row legend-rivers" aria-label="เส้นแม่น้ำตามพยากรณ์ 7 วัน">
+                <span>แม่น้ำ 7 วัน:</span>
+                <span>
+                  <i className="legend-line" style={{ background: RIVER_CLASSES[1].color }} />{' '}
+                  {RIVER_CLASSES[1].label}
+                </span>
+                <span>
+                  <i className="legend-line" style={{ background: RIVER_CLASSES[0].color }} />{' '}
+                  {RIVER_CLASSES[0].label}
+                </span>
+                <small>แบบจำลอง · ทดลอง</small>
               </div>
             )}
             {bankKey && (

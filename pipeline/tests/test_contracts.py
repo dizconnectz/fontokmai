@@ -24,7 +24,7 @@ def test_export_schemas_writes_one_file_per_contract(tmp_path):
         "bkk_water.schema.json", "boundaries.schema.json", "cctv.schema.json", "dams.schema.json",
         "forecast.schema.json", "forecast_rivers.schema.json",
         "live_floods.schema.json", "manifest.schema.json", "overview.schema.json", "places.schema.json",
-        "radar.schema.json",
+        "radar.schema.json", "river_lines.schema.json",
         "road_flood_history.schema.json", "weather_today.schema.json"]
     schema = json.loads((tmp_path / "alerts.schema.json").read_text(encoding="utf-8"))
     assert schema["title"] == "AlertsFeed"

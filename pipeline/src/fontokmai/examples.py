@@ -210,6 +210,27 @@ def write_boundaries_example(out: Path) -> list[Path]:
     return [path]
 
 
+RIVER_LINES_EXAMPLE = ("cp-bangsai", "cp-pathumthani", "cp-bangkok", "pasak-thaluea", "thachin-suphanburi",
+                       "bangpakong-chachoengsao")  # the stations around Bangkok
+
+
+def write_river_lines_example(out: Path) -> list[Path]:
+    """contracts/v1/examples/river-lines: the stretches of the stations around Bangkok, cut from the shipped file."""
+    from importlib import resources
+
+    from fontokmai.contracts.river_lines import RiverLines
+
+    shipped = RiverLines.model_validate_json(
+        resources.files("fontokmai.ref_data").joinpath("river_lines.json").read_bytes())
+    subset = shipped.model_copy(update={
+        "stretches": [s for s in shipped.stretches if s.point_id in RIVER_LINES_EXAMPLE]})
+    target = out / "river-lines"
+    target.mkdir(parents=True, exist_ok=True)
+    path = target / "river_lines.json"
+    path.write_text(subset.model_dump_json() + "\n", encoding="utf-8", newline="\n")
+    return [path]
+
+
 def forecast_fixture_run(out: Path, fixtures: Path, now: datetime) -> Any:
     """Build forecast/rain.json for the example lattice from a recorded Open-Meteo answer."""
     from fontokmai.contracts.forecast import ForecastLattice

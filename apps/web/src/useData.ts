@@ -18,7 +18,9 @@ import {
   validRivers,
   validOverview,
   validBoundaries,
+  validRiverLines,
   type Boundaries,
+  type RiverLines,
   type CanalLevels,
   type CctvRegistry,
   type DamReport,
@@ -53,7 +55,8 @@ type RefName =
   | 'weather'
   | 'rivers'
   | 'overview'
-  | 'boundaries';
+  | 'boundaries'
+  | 'riverLines';
 // Files of the manifest outside the snapshot generation. Cameras and the forecast (timeline, ~50 KB gzip)
 // load at once; the others on first need.
 const REF_FILES: Record<RefName, { path: string; valid: (value: unknown) => boolean }> = {
@@ -75,6 +78,8 @@ const REF_FILES: Record<RefName, { path: string; valid: (value: unknown) => bool
   overview: { path: 'summary/overview.json', valid: validOverview },
   // outlines of provinces and districts (~270 KB gzip), on first need: the summary has places to outline
   boundaries: { path: 'ref/boundaries.json', valid: validBoundaries },
+  // the main rivers cut into stretches (~65 KB gzip), on first need: a river forecast to rise
+  riverLines: { path: 'ref/river_lines.json', valid: validRiverLines },
 };
 const IDLE: RefSlot<never> = { value: null, state: 'idle' };
 
@@ -98,6 +103,7 @@ export function useData() {
   const [rivers, setRivers] = useState<RefSlot<RiverForecast>>(IDLE);
   const [overview, setOverview] = useState<RefSlot<SummaryOverview>>(IDLE);
   const [boundaries, setBoundaries] = useState<RefSlot<Boundaries>>(IDLE);
+  const [riverLines, setRiverLines] = useState<RefSlot<RiverLines>>(IDLE);
   const current = useRef<Snapshot | null>(null);
   const settings = useRef<RuntimeConfig | null>(null);
   const flight = useRef<AbortController | null>(null);
@@ -169,6 +175,9 @@ export function useData() {
       boundaries: new RefSync(REF_FILES.boundaries.path, loader('boundaries'), (slot) =>
         setBoundaries(slot as RefSlot<Boundaries>),
       ),
+      riverLines: new RefSync(REF_FILES.riverLines.path, loader('riverLines'), (slot) =>
+        setRiverLines(slot as RefSlot<RiverLines>),
+      ),
     };
   }
 
@@ -186,6 +195,7 @@ export function useData() {
   const loadRoads = useCallback(() => want('roads'), [want]);
   const loadPlaces = useCallback(() => want('places'), [want]);
   const loadBoundaries = useCallback(() => want('boundaries'), [want]);
+  const loadRiverLines = useCallback(() => want('riverLines'), [want]);
 
   const refresh = useCallback(async () => {
     if (flight.current) return;
@@ -278,5 +288,7 @@ export function useData() {
     overview: overview.value,
     boundaries: boundaries.value,
     loadBoundaries,
+    riverLines: riverLines.value,
+    loadRiverLines,
   };
 }

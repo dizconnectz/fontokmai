@@ -1,4 +1,6 @@
+import type { FeatureCollection, MultiLineString } from 'geojson';
 import type { RiverForecast } from '../../../contracts/v1/ts/forecast_rivers';
+import type { RiverLines } from '../../../contracts/v1/ts/river_lines';
 
 // The GloFAS river trend (contract section 20). The model's discharge can be far from what is measured on the
 // river, so the site never shows its m³/s: only whether the next 7 days are forecast above or below today.
@@ -84,6 +86,41 @@ export function riverOutlook(
   return trend === 'falling'
     ? { trend, change: down, day: low.day, today }
     : { trend, change: up, day: peak.day, today };
+}
+
+export type RiverStretches = FeatureCollection<
+  MultiLineString,
+  { code: string; trend: 'rising_fast' | 'rising'; color: string }
+>;
+/**
+ * The stretches of river whose point the model sees rising in the next 7 days (user 2026-10-02: rivers orange or red
+ * where the water will rise), coloured as the pins; a stretch whose point is steady, falling or unknown is not drawn.
+ */
+export function riverStretches(
+  lines: RiverLines,
+  file: RiverForecast,
+  now: number,
+): RiverStretches {
+  const points = new Map(file.points.map((point) => [point.id, point]));
+  return {
+    type: 'FeatureCollection',
+    features: lines.stretches.flatMap((stretch) => {
+      const point = points.get(stretch.point_id);
+      const trend = point ? riverOutlook(file, point, now)?.trend : undefined;
+      if (trend !== 'rising_fast' && trend !== 'rising') return [];
+      return [
+        {
+          type: 'Feature' as const,
+          geometry: { type: 'MultiLineString' as const, coordinates: stretch.line.coordinates },
+          properties: {
+            code: stretch.point_id,
+            trend,
+            color: RIVER_CLASSES.find((item) => item.trend === trend)!.color,
+          },
+        },
+      ];
+    }),
+  };
 }
 
 /** Pin picture of a river point by its trend; grey when the trend cannot be told. */

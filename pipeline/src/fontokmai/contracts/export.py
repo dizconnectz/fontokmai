@@ -24,6 +24,7 @@ from fontokmai.contracts.manifest import Manifest
 from fontokmai.contracts.overview import Overview
 from fontokmai.contracts.places import PlaceGazetteer
 from fontokmai.contracts.radar import RadarFeed
+from fontokmai.contracts.river_lines import RiverLines
 from fontokmai.contracts.road_flood import RoadFloodHistory
 
 SCHEMAS: dict[str, type[BaseModel]] = {
@@ -42,6 +43,7 @@ SCHEMAS: dict[str, type[BaseModel]] = {
     "overview.schema.json": Overview,
     "places.schema.json": PlaceGazetteer,
     "radar.schema.json": RadarFeed,
+    "river_lines.schema.json": RiverLines,
     "road_flood_history.schema.json": RoadFloodHistory,
     "weather_today.schema.json": WeatherToday,
 }

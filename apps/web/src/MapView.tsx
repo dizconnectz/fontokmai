@@ -64,6 +64,7 @@ import {
 } from './rivers';
 import { MAP_IMAGE_RATIO, mapImage } from './mapIcons';
 import { WATCH_COLOR, type WatchShapes } from './overview';
+import type { RiverStretches } from './rivers';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 
@@ -111,6 +112,8 @@ interface Props {
   rivers: RiverForecast | null;
   /** outlines of the summary's places (empty when the layer is off) */
   watch: WatchShapes;
+  /** stretches of river the model sees rising, or null (layer off, or the timeline on the forecast) */
+  riverStretches: RiverStretches | null;
   layers: Layers;
   pin: LngLat | null;
   /** short name shown on the pin, e.g. ต.คลองหนึ่ง */
@@ -261,6 +264,33 @@ function addOverlays(instance: LibreMap) {
       ],
     },
   });
+  // stretches of river forecast to rise (model, 7 days): over the rain, under the outlines and the pins
+  instance.addSource('river-lines', { type: 'geojson', data: empty });
+  instance.addLayer({
+    id: 'river-line-casing',
+    type: 'line',
+    source: 'river-lines',
+    layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: {
+      'line-color': '#ffffff',
+      'line-opacity': 0.85,
+      'line-width': ['interpolate', ['linear'], ['zoom'], 5, 3, 9, 5.5, 13, 8],
+    },
+  });
+  instance.addLayer({
+    id: 'river-line',
+    type: 'line',
+    source: 'river-lines',
+    layout: {
+      'line-join': 'round',
+      'line-cap': 'round',
+      'line-sort-key': ['case', ['==', ['get', 'trend'], 'rising_fast'], 1, 0] as unknown as number,
+    },
+    paint: {
+      'line-color': ['get', 'color'],
+      'line-width': ['interpolate', ['linear'], ['zoom'], 5, 1.6, 9, 3, 13, 5],
+    },
+  });
   // the summary's places: over the alert zones and the rain, under the pins; the places to watch now on top
   instance.addSource('watch', { type: 'geojson', data: empty });
   const nowFirst = ['case', ['==', ['get', 'when'], 'now'], 1, 0] as unknown as number;
@@ -405,6 +435,7 @@ const POINT_LAYERS = [
   'flood-pin',
   'bank-reach',
   'bank-point',
+  'river-line',
   ...SEVERE_KINDS.map(([kind]) => `${kind}-top`),
 ];
 type PointKind = 'flood' | 'camera' | 'water' | 'rain' | 'dam' | 'weather' | 'river' | 'bank';
@@ -866,7 +897,9 @@ export default function MapView(props: Props) {
                 )[0]
               : undefined;
             // a severe pin (never in a bubble) opens like the others of its kind
-            const layer = hit?.layer.id.replace(/-top$/, '-pin');
+            const layer = hit?.layer.id
+              .replace(/-top$/, '-pin')
+              .replace(/^river-line$/, 'river-pin');
             if (layer === 'bank-reach' || layer === 'bank-point') {
               const item = latest.current.water?.bank_observations?.find(
                 (v) => v.id === hit?.properties.id,
@@ -1065,6 +1098,21 @@ export default function MapView(props: Props) {
     (map.current.getSource('alerts') as GeoJSONSource | undefined)?.setData(collection);
   }, [props.alerts, props.selectedAlertId, props.now, props.layers.alerts, ready, styleVersion]);
 
+  // Stretches of river the model sees rising; the casing follows the basemap like the outlines'
+  useEffect(() => {
+    const instance = map.current;
+    if (!ready || !instance) return;
+    (instance.getSource('river-lines') as GeoJSONSource | undefined)?.setData(
+      props.riverStretches ?? { type: 'FeatureCollection', features: [] },
+    );
+    if (instance.getLayer('river-line-casing'))
+      instance.setPaintProperty(
+        'river-line-casing',
+        'line-color',
+        props.theme === 'dark' ? '#10181f' : '#ffffff',
+      );
+  }, [props.riverStretches, props.theme, ready, styleVersion]);
+
   // Outlines of the summary's places; the casing follows the basemap so the line stands out on both
   useEffect(() => {
     const instance = map.current;
@@ -1100,7 +1148,7 @@ export default function MapView(props: Props) {
           source: 'radar',
           paint: { 'raster-opacity': props.radarOpacity, 'raster-resampling': 'linear' },
         },
-        'watch-casing',
+        'river-line-casing',
       );
     } else {
       source.updateImage({ url, coordinates });
@@ -1133,9 +1181,14 @@ export default function MapView(props: Props) {
         .layers.find(
           (layer) =>
             (layer.type === 'line' || layer.type === 'symbol') &&
-            !['alert-line', 'watch-casing', 'watch-line', 'radar', ...POINT_LAYERS].includes(
-              layer.id,
-            ),
+            ![
+              'alert-line',
+              'river-line-casing',
+              'watch-casing',
+              'watch-line',
+              'radar',
+              ...POINT_LAYERS,
+            ].includes(layer.id),
         );
       instance.addLayer(
         {
@@ -1286,19 +1339,21 @@ export default function MapView(props: Props) {
     const file = props.layers.rivers ? props.rivers : null;
     const collection: FeatureCollection<Point> = {
       type: 'FeatureCollection',
-      features: (file?.points ?? []).map((point) => {
-        const pin = riverPin(file!, point, props.now);
-        return {
-          type: 'Feature' as const,
-          geometry: { type: 'Point' as const, coordinates: point.location },
-          properties: {
-            code: point.id,
-            pin,
-            severe: pin === RIVER_CLASSES[0].pin,
-            rank: RIVER_CLASSES.length - RIVER_CLASSES.findIndex((c) => c.pin === pin),
-          },
-        };
-      }),
+      features: (file?.points ?? [])
+        .filter((point) => point.kind !== 'reach')
+        .map((point) => {
+          const pin = riverPin(file!, point, props.now);
+          return {
+            type: 'Feature' as const,
+            geometry: { type: 'Point' as const, coordinates: point.location },
+            properties: {
+              code: point.id,
+              pin,
+              severe: pin === RIVER_CLASSES[0].pin,
+              rank: RIVER_CLASSES.length - RIVER_CLASSES.findIndex((c) => c.pin === pin),
+            },
+          };
+        }),
     };
     setPoints(map.current, 'rivers', collection);
     if (!collection.features.length && popupKind.current === 'river') popup.current?.remove();
@@ -1473,6 +1528,9 @@ export default function MapView(props: Props) {
       data-testid="map-surface"
       data-zoom={zoom}
       data-watch={props.watch.features.map((feature) => feature.properties.code).join(' ')}
+      data-rivers={(props.riverStretches?.features ?? [])
+        .map((feature) => `${feature.properties.code}:${feature.properties.trend}`)
+        .join(' ')}
       aria-busy={!ready || rendering}
     >
       <div ref={element} className="map-canvas" />

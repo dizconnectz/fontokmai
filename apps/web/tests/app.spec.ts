@@ -44,6 +44,15 @@ async function prepare(page: Page, scenario = 'active') {
       contentType: 'application/json',
     }),
   );
+  // The producer's stretches of river around Bangkok
+  await page.route('**/ref/river_lines.json?*', (route) =>
+    route.fulfill({
+      body: readFileSync(
+        new URL('../../../contracts/v1/examples/river-lines/river_lines.json', import.meta.url),
+      ),
+      contentType: 'application/json',
+    }),
+  );
   // The camera registry the producer ships
   await page.route('**/ref/cctv.json?*', (route) =>
     route.fulfill({
@@ -993,6 +1002,43 @@ test('a dam releasing a lot more than the report before says so, with where its 
   await expect(page.getByTestId('dams')).toContainText('เขื่อนภูมิพล');
   await expect(page.locator('.dam-release')).toHaveCount(0);
   await expect(page.getByTestId('dams-releasing')).toHaveCount(0);
+});
+
+test('stretches of river forecast to rise are drawn orange or red, as a layer of the river trend', async ({
+  page,
+}) => {
+  await prepare(page);
+  const manifest = read('active', 'manifest');
+  manifest.files.push({
+    path: 'forecast/rivers.json',
+    sha256: 'd'.repeat(64),
+    size: 1,
+    revision: 1,
+  });
+  await page.route('**/examples/active/manifest.json?*', (route) =>
+    route.fulfill({ json: manifest }),
+  );
+  // the producer's example moved two days back, so that its day of fetch is the day of this snapshot
+  const rivers = read('forecast', 'rivers');
+  const back = (day: string) =>
+    new Date(Date.parse(`${day}T00:00:00Z`) - 2 * 86_400_000).toISOString().slice(0, 10);
+  rivers.days = rivers.days.map(back);
+  rivers.fetched_at = '2026-09-25T11:42:00+07:00';
+  await page.route('**/forecast/rivers.json?*', (route) => route.fulfill({ json: rivers }));
+  await page.goto('/');
+  const surface = page.getByTestId('map-surface');
+  await expect(surface).toHaveAttribute('aria-busy', 'false', { timeout: 15_000 });
+  // the Chao Phraya at Bangkok rises, the Bang Pakong rises a lot (user, 2026-10-02)
+  await expect(surface).toHaveAttribute('data-rivers', /cp-bangkok:rising(?!_)/);
+  await expect(surface).toHaveAttribute('data-rivers', /bangpakong-chachoengsao:rising_fast/);
+  const key = page.locator('.legend-rivers');
+  await expect(key).toContainText('เพิ่มขึ้นมาก');
+  await expect(key).toContainText('แบบจำลอง · ทดลอง');
+  // the river layer switch takes the stretches with the pins
+  await page.getByRole('button', { name: 'ชั้นข้อมูล' }).click();
+  await page.getByRole('button', { name: 'แนวโน้มน้ำแม่น้ำ' }).click();
+  await expect(surface).toHaveAttribute('data-rivers', '');
+  await expect(key).toHaveCount(0);
 });
 
 test('the river trend is a pin with a plain-word popup and never the model number', async ({

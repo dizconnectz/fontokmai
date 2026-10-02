@@ -55,6 +55,9 @@ Flow = float | None
 
 class RiverPoint(ContractModel):
     id: str = Field(description="Stable id of the point, e.g. cp-bangkok")
+    kind: Literal["station", "reach"] = Field(default="station", description=(
+        "station = a point chosen by hand, a pin on the map and on the summary's list; reach = a point about every"
+        " 50 km between them (added 2026-10-02) that only colours its stretch of ref/river_lines.json"))
     name_th: str = Field(description="Where on which river, e.g. เจ้าพระยา ที่กรุงเทพฯ")
     river_th: str
     location: Position = Field(description=(
