@@ -221,6 +221,24 @@ export function oldNote(fetchedAt: string, now: number): string | null {
   return null;
 }
 
+/** The dams file the server fetches by itself every 2 hours (RID, 2026-10-02) is late only after this. */
+export const DAMS_AUTO_STALE_MS = 6 * 3_600_000;
+/**
+ * The age note of the dams file: one fetched by the server itself (`automatic`) is late after 6 hours, not after
+ * the 45 minutes of a file the Bangkok update brings by hand; either is "not real time" after a day.
+ */
+export function damsOldNote(
+  dams: { fetched_at: string; automatic?: boolean },
+  now: number,
+): string | null {
+  if (!dams.automatic) return oldNote(dams.fetched_at, now);
+  const age = now - Date.parse(dams.fetched_at);
+  if (age > NOT_REAL_TIME_MS) return oldNote(dams.fetched_at, now);
+  if (age > DAMS_AUTO_STALE_MS)
+    return `ไม่ได้อัปเดตตามรอบ · ดึงล่าสุด ${reportTime(dams.fetched_at, now)}`;
+  return null;
+}
+
 // ---------- large dams (contract section 18) and TMD stations (section 19) ----------
 export type { Dam, DamReport, SituationReport, WeatherStation, WeatherToday };
 

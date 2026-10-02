@@ -20,6 +20,7 @@ import {
   lastQuarterText,
   measuredText,
   oldNote,
+  damsOldNote,
   levelText,
   levelWords,
   mmText,
@@ -302,5 +303,22 @@ describe('Bangkok canal levels and rain gauges', () => {
     expect(weatherPin(broken)).toBe('pin-wx-none');
     expect(amount(8437.68)).toBe('8,437.68');
     expect(amount(null)).toBe('–');
+  });
+});
+
+describe('the dams file fetched by the server itself (user, 2026-10-02)', () => {
+  const fetched = '2026-10-02T10:00:00+07:00';
+  const at = (hours: number) => Date.parse(fetched) + hours * 3_600_000;
+  it('is late only after 6 hours, and not real time after a day', () => {
+    const automatic = { fetched_at: fetched, automatic: true };
+    expect(damsOldNote(automatic, at(3))).toBeNull();
+    expect(damsOldNote(automatic, at(7))).toBe('ไม่ได้อัปเดตตามรอบ · ดึงล่าสุด 10:00 น.');
+    expect(damsOldNote(automatic, at(25))).toMatch(/^ข้อมูลนี้ไม่ใช่ข้อมูลเรียลไทม์/);
+  });
+  it('keeps the rule of the Bangkok update run by hand', () => {
+    expect(damsOldNote({ fetched_at: fetched }, at(1))).toBe(oldNote(fetched, at(1)));
+    expect(damsOldNote({ fetched_at: fetched, automatic: false }, at(1))).toMatch(
+      /ไม่ได้อัปเดตอัตโนมัติ$/,
+    );
   });
 });

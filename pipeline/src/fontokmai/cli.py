@@ -35,6 +35,7 @@ from fontokmai.publish.git_pages import publish_snapshot
 from fontokmai.road_flood_build import build_road_flood_history, fixture_files, is_fresh
 from fontokmai.run import SnapshotResult, run_cap_snapshot
 from fontokmai.schedule import run_forever
+from fontokmai.sources import rid_dams
 from fontokmai.sources.glofas import all_points as glofas_points
 from fontokmai.sources.open_data.http import fixture_opener, open_url
 from fontokmai.sources.open_data.longdo_live import FEED_URL as LONGDO_FEED_URL
@@ -177,6 +178,10 @@ def _scheduled_job(args: argparse.Namespace) -> Callable[[datetime], dict[str, A
         """The GloFAS river trend once a day, from the same Open-Meteo budget."""
         return refresh_river_forecast(args.out, args.db, now) if args.forecast else None
 
+    def refresh_dams(now: datetime) -> str | None:
+        """The large dams from RID's open API every 2 hours (user 2026-10-02: not waiting for the Bangkok update)."""
+        return rid_dams.refresh(args.out, args.db, now) if args.forecast else None
+
     def job(now: datetime) -> dict[str, Any]:
         road_flood = refresh_road_flood(now)
         fetch = LiveFetcher()
@@ -208,6 +213,9 @@ def _scheduled_job(args: argparse.Namespace) -> Callable[[datetime], dict[str, A
             rivers = refresh_rivers(now)
             if rivers:
                 summary["rivers"] = rivers
+            dams = refresh_dams(now)
+            if dams:
+                summary["dams"] = dams
         # last, and whether or not publishing worked: the daily backup, the retention and the archive for checking
         # accuracy (P0-B2); what it did goes in the round log, and a failure here never fails the round
         try:

@@ -194,9 +194,12 @@ class DamReport(ContractModel):
     fetched_at: AwareDatetime
     report_date: date
     previous_report_date: date | None = Field(default=None, description=(
-        "Day of the report the releases are compared with: the last one this site published before report_date,"
-        " at most 3 days before it (GetDam gives only the latest day; the Bangkok update does not run every day)."
-        " Null when there is none"))
+        "Day of the report the releases are compared with, at most 3 days before report_date: from RID's history,"
+        " the latest earlier day with figures for most dams (automatic); from DXS, which gives only the latest day,"
+        " the last one this site published (by hand). Null when there is none"))
+    automatic: bool = Field(default=False, description=(
+        "True when the server fetches this file by itself every 2 hours from RID's open API (added 2026-10-02);"
+        " False when it comes with the Bangkok update run by hand (DXS, D31). The web judges its age by this"))
     source_url: str
     credit_th: str
     location_credit_th: str

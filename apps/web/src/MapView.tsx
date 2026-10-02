@@ -31,7 +31,7 @@ import {
   levelWords,
   measuredText,
   mmText,
-  oldNote,
+  damsOldNote,
   releaseChange,
   releaseWords,
   RAIN_HOUR_CLASSES,
@@ -555,8 +555,8 @@ const district = (name: string | null) =>
   !name ? '' : name.startsWith('เขต') ? name : `เขต${name}`;
 
 /** "not updated by itself" or "not real time, data of <date>" for a file fetched a while ago */
-function note(fetchedAt: string, now: number): HTMLElement[] {
-  const text = oldNote(fetchedAt, now);
+function note(fetchedAt: string, now: number, automatic = false): HTMLElement[] {
+  const text = damsOldNote({ fetched_at: fetchedAt, automatic }, now);
   if (!text) return [];
   const element = line(text, 'small');
   element.className = 'popup-old';
@@ -596,7 +596,7 @@ function damPopup(dam: Dam, file: DamReport, now: number): HTMLElement {
     ...(missing ? [line(missing)] : []),
     ...releaseLine(dam, file),
     line(`${carried ? 'รายงานรอบนี้วันที่' : 'ข้อมูลวันที่'} ${thaiDay(file.report_date)}`),
-    ...note(file.fetched_at, now),
+    ...note(file.fetched_at, now, file.automatic ?? false),
     ...(dam.location_kind === 'reservoir' ? [line('หมุดอยู่กลางอ่างเก็บน้ำ', 'small')] : []),
     sourceLink(file.source_url, file.credit_th),
   );

@@ -93,6 +93,7 @@ import {
   levelWords,
   measuredText,
   oldNote,
+  damsOldNote,
   nearest,
   rainAmountWords,
   RAIN_RADIUS_M,
@@ -646,7 +647,7 @@ function ChaoPhrayaDams({
     : [];
   const others = rest.filter((dam) => !full.includes(dam) && !releasing.includes(dam));
   const overFull = available.filter((dam) => (shownDam(dam).percent ?? 0) > 100).length;
-  const note = oldNote(dams.fetched_at, now);
+  const note = damsOldNote(dams, now);
   return (
     <Section
       id="dams"
