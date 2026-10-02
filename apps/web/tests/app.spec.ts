@@ -1004,7 +1004,7 @@ test('a dam releasing a lot more than the report before says so, with where its 
   await expect(page.getByTestId('dams-releasing')).toHaveCount(0);
 });
 
-test('stretches of river forecast to rise are drawn orange or red, as a layer of the river trend', async ({
+test('the rivers by the system’s 7-day forecast: stretches on the map, a card and a chip', async ({
   page,
 }) => {
   await prepare(page);
@@ -1025,20 +1025,44 @@ test('stretches of river forecast to rise are drawn orange or red, as a layer of
   rivers.days = rivers.days.map(back);
   rivers.fetched_at = '2026-09-25T11:42:00+07:00';
   await page.route('**/forecast/rivers.json?*', (route) => route.fulfill({ json: rivers }));
+  // all of the shipped stretches: those of the reach points stay out, as the example has the stations only
+  await page.route('**/ref/river_lines.json?*', (route) =>
+    route.fulfill({
+      body: readFileSync(
+        new URL('../../../pipeline/src/fontokmai/ref_data/river_lines.json', import.meta.url),
+      ),
+      contentType: 'application/json',
+    }),
+  );
   await page.goto('/');
   const surface = page.getByTestId('map-surface');
   await expect(surface).toHaveAttribute('aria-busy', 'false', { timeout: 15_000 });
   // the Chao Phraya at Bangkok rises, the Bang Pakong rises a lot (user, 2026-10-02)
   await expect(surface).toHaveAttribute('data-rivers', /cp-bangkok:rising(?!_)/);
   await expect(surface).toHaveAttribute('data-rivers', /bangpakong-chachoengsao:rising_fast/);
+  // the falling and steady stretches are drawn too, thin, so the lines show where the forecast is
+  await expect(surface).toHaveAttribute('data-rivers', /mekong-nongkhai:falling/);
   const key = page.locator('.legend-rivers');
   await expect(key).toContainText('เพิ่มขึ้นมาก');
-  await expect(key).toContainText('แบบจำลอง · ทดลอง');
+  await expect(key).toContainText('พยากรณ์ของระบบ (แบบจำลอง)');
+  // a card says which rivers will rise and that it is the system's forecast; the status bar counts them
+  const card = page.getByTestId('rivers');
+  await expect(card.getByRole('heading')).toHaveText(
+    'แม่น้ำสายหลัก 7 วันข้างหน้า · น้ำจะเพิ่ม 7 สาย',
+  );
+  await expect(card).toContainText('แม่น้ำบางปะกง');
+  await expect(card).toContainText('พยากรณ์ของระบบจากแบบจำลอง GloFAS');
+  await expect(page.getByTestId('status-bar')).toContainText('แม่น้ำจะเพิ่ม 7 สาย');
   // the river layer switch takes the stretches with the pins
   await page.getByRole('button', { name: 'ชั้นข้อมูล' }).click();
   await page.getByRole('button', { name: 'แนวโน้มน้ำแม่น้ำ' }).click();
   await expect(surface).toHaveAttribute('data-rivers', '');
   await expect(key).toHaveCount(0);
+  // nothing forecast to rise: the card says so, the status bar says nothing about rivers
+  for (const point of rivers.points) point.median = point.median.map(() => 100);
+  await page.goto('/');
+  await expect(card).toContainText('ยังไม่มีแม่น้ำสายหลักที่คาดว่าน้ำจะเพิ่ม');
+  await expect(page.getByTestId('status-bar')).not.toContainText('แม่น้ำ');
 });
 
 test('the river trend is a pin with a plain-word popup and never the model number', async ({

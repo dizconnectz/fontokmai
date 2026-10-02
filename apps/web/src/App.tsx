@@ -32,7 +32,7 @@ import FavoriteForecast from './FavoriteForecast';
 import { distanceM } from './roads';
 import Timeline, { type TimeStep } from './Timeline';
 import { FORECAST_LEVELS, forecastAreas, RAIN_LEGEND } from './forecast';
-import { RIVER_CLASSES, riverOutlook, riverStretches } from './rivers';
+import { RIVER_CLASSES, riverStretches } from './rivers';
 import { feedTrust, LEVEL_FILL, LEVEL_LABEL, worstLevel, type Level } from './alerts';
 import { nearestSubdistrict, type FoundPlace } from './places';
 import {
@@ -240,22 +240,16 @@ export default function App() {
   const areaKey = areas.map((area) => `${area.when}:${area.code}`).join(' ');
   const watch = useMemo(() => watchShapes(areas, boundaries), [areaKey, boundaries]);
   const watchKey = watch.features.length > 0;
-  // stretches of river forecast to rise: the lines load once a point of the model rises (user 2026-10-02)
-  const riverRising =
-    layers.rivers &&
-    !!rivers &&
-    step.kind !== 'forecast' &&
-    rivers.points.some((point) => {
-      const trend = riverOutlook(rivers, point, now)?.trend;
-      return trend === 'rising' || trend === 'rising_fast';
-    });
+  // the river stretches by the system's 7-day forecast (user 2026-10-02): bold orange or red where the water rises,
+  // thin elsewhere so that the lines show where the forecast is
+  const riverShown = layers.rivers && !!rivers && step.kind !== 'forecast';
   useEffect(() => {
-    if (riverRising) void loadRiverLines();
-  }, [riverRising, loadRiverLines]);
+    if (riverShown) void loadRiverLines();
+  }, [riverShown, loadRiverLines]);
   const riverShapes = useMemo(
-    () => (riverRising && rivers && riverLines ? riverStretches(riverLines, rivers, now) : null),
+    () => (riverShown && rivers && riverLines ? riverStretches(riverLines, rivers, now) : null),
     // the trend changes with the day, not with every tick of the clock
-    [riverRising, rivers, riverLines, new Date(now).toDateString()],
+    [riverShown, rivers, riverLines, new Date(now).toDateString()],
   );
   const riverKey = !!riverShapes?.features.length;
   // the saved place in one line on top; naming its district needs the DOPA places, loaded once a place is saved
@@ -602,15 +596,16 @@ export default function App() {
             {riverKey && (
               <div className="legend-row legend-rivers" aria-label="เส้นแม่น้ำตามพยากรณ์ 7 วัน">
                 <span>แม่น้ำ 7 วัน:</span>
-                <span>
-                  <i className="legend-line" style={{ background: RIVER_CLASSES[1].color }} />{' '}
-                  {RIVER_CLASSES[1].label}
-                </span>
-                <span>
-                  <i className="legend-line" style={{ background: RIVER_CLASSES[0].color }} />{' '}
-                  {RIVER_CLASSES[0].label}
-                </span>
-                <small>แบบจำลอง · ทดลอง</small>
+                {RIVER_CLASSES.map((item) => (
+                  <span key={item.trend}>
+                    <i
+                      className={`legend-line ${item.trend.startsWith('rising') ? '' : 'thin'}`}
+                      style={{ background: item.color }}
+                    />{' '}
+                    {item.label}
+                  </span>
+                ))}
+                <small>พยากรณ์ของระบบ (แบบจำลอง)</small>
               </div>
             )}
             {bankKey && (
@@ -897,6 +892,24 @@ export default function App() {
               }}
               news={news}
               dams={dams}
+              rivers={step.kind === 'forecast' ? null : rivers}
+              onRiver={(points) => {
+                // the stretches of a river forecast to rise: the box around their points, a little wider
+                const xs = points.map((p) => p[0]);
+                const ys = points.map((p) => p[1]);
+                setSelectedTime(null);
+                setLayers((current) => (current.rivers ? current : { ...current, rivers: true }));
+                setFocus({
+                  key: `river:${points.join(';')}:${Date.now()}`,
+                  bounds: [
+                    [Math.min(...xs) - 0.25, Math.min(...ys) - 0.25],
+                    [Math.max(...xs) + 0.25, Math.max(...ys) + 0.25],
+                  ],
+                  maxZoom: 10,
+                });
+                if (typeof matchMedia === 'function' && matchMedia('(max-width: 899px)').matches)
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
               water={water}
               onBank={(item) => {
                 const coords =

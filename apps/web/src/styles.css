@@ -858,6 +858,10 @@ svg {
   border-radius: 2px;
   vertical-align: 3px;
 }
+.legend-line.thin {
+  height: 2px;
+  opacity: 0.7;
+}
 /* what changed since the round about an hour before */
 .summary-change {
   margin: -4px 0 6px;

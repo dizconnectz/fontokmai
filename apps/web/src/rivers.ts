@@ -90,11 +90,12 @@ export function riverOutlook(
 
 export type RiverStretches = FeatureCollection<
   MultiLineString,
-  { code: string; trend: 'rising_fast' | 'rising'; color: string }
+  { code: string; trend: Trend; color: string; rising: boolean }
 >;
 /**
- * The stretches of river whose point the model sees rising in the next 7 days (user 2026-10-02: rivers orange or red
- * where the water will rise), coloured as the pins; a stretch whose point is steady, falling or unknown is not drawn.
+ * The stretches of river coloured as the pins by their point's trend of the next 7 days (user 2026-10-02: rivers
+ * orange or red where the water will rise, and the lines seen where the forecast is); one whose trend cannot be told
+ * is not drawn.
  */
 export function riverStretches(
   lines: RiverLines,
@@ -107,7 +108,7 @@ export function riverStretches(
     features: lines.stretches.flatMap((stretch) => {
       const point = points.get(stretch.point_id);
       const trend = point ? riverOutlook(file, point, now)?.trend : undefined;
-      if (trend !== 'rising_fast' && trend !== 'rising') return [];
+      if (!trend) return [];
       return [
         {
           type: 'Feature' as const,
@@ -116,11 +117,50 @@ export function riverStretches(
             code: stretch.point_id,
             trend,
             color: RIVER_CLASSES.find((item) => item.trend === trend)!.color,
+            rising: trend === 'rising' || trend === 'rising_fast',
           },
         },
       ];
     }),
   };
+}
+
+const STRENGTH: Record<Trend, number> = { rising_fast: 3, rising: 2, steady: 1, falling: 0 };
+export interface RiverRow {
+  river: string;
+  /** the strongest trend of its points; null when none can be told */
+  trend: Trend | null;
+  /** its points forecast to rise, the strongest first */
+  rising: { point: RiverPoint; outlook: RiverOutlook }[];
+  points: number;
+}
+/**
+ * The rivers in one list for the card (user 2026-10-02): those forecast to rise first, the strongest point of each
+ * named with its words; the others say steady or falling.
+ */
+export function riverSummary(file: RiverForecast, now: number): RiverRow[] {
+  const rows = new Map<string, RiverRow>();
+  for (const point of file.points) {
+    const row = rows.get(point.river_th) ?? {
+      river: point.river_th,
+      trend: null,
+      rising: [],
+      points: 0,
+    };
+    const outlook = riverOutlook(file, point, now);
+    row.points += 1;
+    if (outlook && (row.trend === null || STRENGTH[outlook.trend] > STRENGTH[row.trend]))
+      row.trend = outlook.trend;
+    if (outlook && (outlook.trend === 'rising' || outlook.trend === 'rising_fast'))
+      row.rising.push({ point, outlook });
+    rows.set(point.river_th, row);
+  }
+  for (const row of rows.values()) row.rising.sort((a, b) => b.outlook.change - a.outlook.change);
+  return [...rows.values()].sort(
+    (a, b) =>
+      (b.trend ? STRENGTH[b.trend] : -1) - (a.trend ? STRENGTH[a.trend] : -1) ||
+      a.river.localeCompare(b.river, 'th'),
+  );
 }
 
 /** Pin picture of a river point by its trend; grey when the trend cannot be told. */

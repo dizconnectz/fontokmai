@@ -270,11 +270,13 @@ function addOverlays(instance: LibreMap) {
     id: 'river-line-casing',
     type: 'line',
     source: 'river-lines',
+    // only the stretches forecast to rise stand out; the others are thin, to show where the forecast is
+    filter: ['==', ['get', 'rising'], true],
     layout: { 'line-join': 'round', 'line-cap': 'round' },
     paint: {
       'line-color': '#ffffff',
       'line-opacity': 0.85,
-      'line-width': ['interpolate', ['linear'], ['zoom'], 5, 3, 9, 5.5, 13, 8],
+      'line-width': ['interpolate', ['linear'], ['zoom'], 5, 4, 9, 6, 13, 8],
     },
   });
   instance.addLayer({
@@ -284,11 +286,30 @@ function addOverlays(instance: LibreMap) {
     layout: {
       'line-join': 'round',
       'line-cap': 'round',
-      'line-sort-key': ['case', ['==', ['get', 'trend'], 'rising_fast'], 1, 0] as unknown as number,
+      'line-sort-key': [
+        'match',
+        ['get', 'trend'],
+        'rising_fast',
+        2,
+        'rising',
+        1,
+        0,
+      ] as unknown as number,
     },
     paint: {
       'line-color': ['get', 'color'],
-      'line-width': ['interpolate', ['linear'], ['zoom'], 5, 1.6, 9, 3, 13, 5],
+      'line-opacity': ['case', ['==', ['get', 'rising'], true], 1, 0.6],
+      'line-width': [
+        'interpolate',
+        ['linear'],
+        ['zoom'],
+        5,
+        ['case', ['==', ['get', 'rising'], true], 2.4, 1.2],
+        9,
+        ['case', ['==', ['get', 'rising'], true], 3.4, 1.8],
+        13,
+        ['case', ['==', ['get', 'rising'], true], 5, 2.4],
+      ],
     },
   });
   // the summary's places: over the alert zones and the rain, under the pins; the places to watch now on top

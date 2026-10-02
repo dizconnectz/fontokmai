@@ -83,4 +83,16 @@ describe('the status bar says the whole picture in one line (user, 2026-10-01)',
     ]);
     expect(chips(0, null)).toEqual(['ต้องระวังตอนนี้ 12 แห่ง', 'เตรียมรับมือ 4 แห่ง']);
   });
+
+  it('names the main rivers the system’s forecast sees rising, red when one rises a lot', () => {
+    const chip = (riversRising: number, riversFast: boolean) =>
+      statusChips({ ...quiet, riversRising, riversFast }).find((c) => c.key === 'rivers');
+    expect(chip(2, false)).toMatchObject({
+      text: 'แม่น้ำจะเพิ่ม 2 สาย',
+      tone: 'warn',
+      target: 'rivers',
+    });
+    expect(chip(1, true)?.tone).toBe('danger');
+    expect(chip(0, false)).toBeUndefined();
+  });
 });

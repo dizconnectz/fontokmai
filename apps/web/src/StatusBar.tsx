@@ -3,6 +3,7 @@ import { shownDam, releaseChange, type DamReport } from './bkk';
 import { isOngoing } from './floods';
 import { openSection } from './Fold';
 import { changeSince, shownItems, type Overview } from './overview';
+import { riverSummary, type RiverForecast } from './rivers';
 import type { Alert, LiveFloods } from './data';
 
 /**
@@ -30,6 +31,9 @@ export interface StatusCounts {
   floods: number | null;
   damsFull: number;
   damsReleasing: number;
+  /** main rivers the system's forecast sees rising in 7 days, and whether one rises a lot */
+  riversRising?: number;
+  riversFast?: boolean;
   /** alerts in effect; null when the alert feed cannot be trusted (old or missing) */
   alerts: number | null;
   worst: Level | null;
@@ -78,6 +82,13 @@ export function statusChips(counts: StatusCounts): Chip[] {
       tone: 'warn',
       target: 'dams',
     });
+  if (counts.riversRising)
+    chips.push({
+      key: 'rivers',
+      text: `แม่น้ำจะเพิ่ม ${counts.riversRising} สาย`,
+      tone: counts.riversFast ? 'danger' : 'warn',
+      target: 'rivers',
+    });
   if (counts.alerts)
     chips.push({
       key: 'alerts',
@@ -99,6 +110,7 @@ export function statusCounts({
   summary,
   floods,
   dams,
+  rivers = null,
   alerts,
   trusted,
   worst,
@@ -107,12 +119,14 @@ export function statusCounts({
   summary: Overview | null;
   floods: LiveFloods | null;
   dams: DamReport | null;
+  rivers?: RiverForecast | null;
   alerts: Alert[];
   trusted: boolean;
   worst: Level | null;
   now: number;
 }): StatusCounts {
   const previousDay = dams?.previous_report_date ?? null;
+  const risingRivers = rivers ? riverSummary(rivers, now).filter((row) => row.rising.length) : [];
   return {
     // as the summary card lists them: nothing from a file too old to list
     watchNow: summary ? shownItems(summary, 'now', now).length : 0,
@@ -124,6 +138,8 @@ export function statusCounts({
     damsReleasing: previousDay
       ? (dams?.dams ?? []).filter((dam) => releaseChange(dam)?.big).length
       : 0,
+    riversRising: risingRivers.length,
+    riversFast: risingRivers.some((row) => row.trend === 'rising_fast'),
     alerts: alerts.length ? alerts.length : trusted ? 0 : null,
     worst,
   };

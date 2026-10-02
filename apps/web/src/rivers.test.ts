@@ -6,6 +6,7 @@ import {
   riverOutlook,
   riverPin,
   riverStretches,
+  riverSummary,
   riverWords,
   type RiverForecast,
 } from './rivers';
@@ -67,33 +68,47 @@ describe('the GloFAS river trend', () => {
   });
 });
 
-describe('stretches of river forecast to rise (user, 2026-10-02)', () => {
-  // the producer's stretches of the six stations around Bangkok
+describe('stretches of river by the system’s 7-day forecast (user, 2026-10-02)', () => {
+  // all of the producer's stretches; the example file has the 14 stations only
   const lines = JSON.parse(
     readFileSync(
-      new URL('../../../contracts/v1/examples/river-lines/river_lines.json', import.meta.url),
+      new URL('../../../pipeline/src/fontokmai/ref_data/river_lines.json', import.meta.url),
       'utf8',
     ),
   ) as RiverLines;
-  it('draws a stretch orange or red as its point rises, and leaves the others out', () => {
+  it('draws every stretch whose point has a trend, bold when it rises', () => {
     const shapes = riverStretches(lines, rivers, AT);
     const drawn = Object.fromEntries(shapes.features.map((f) => [f.properties.code, f.properties]));
-    expect(drawn['cp-bangkok']).toMatchObject({ trend: 'rising', color: RIVER_CLASSES[1].color });
-    expect(drawn['bangpakong-chachoengsao']).toMatchObject({
-      trend: 'rising_fast',
-      color: RIVER_CLASSES[0].color,
+    expect(drawn['cp-bangkok']).toMatchObject({
+      trend: 'rising',
+      color: RIVER_CLASSES[1].color,
+      rising: true,
     });
-    // every stretch drawn is of a point rising; every point rising has its stretch drawn
-    for (const stretch of lines.stretches) {
-      const trend = riverOutlook(rivers, point(stretch.point_id), AT)?.trend;
-      expect(stretch.point_id in drawn).toBe(trend === 'rising' || trend === 'rising_fast');
-    }
+    expect(drawn['bangpakong-chachoengsao']).toMatchObject({ trend: 'rising_fast', rising: true });
+    // steady and falling show where the forecast is, thin
+    expect(drawn['yom-sukhothai']).toMatchObject({ trend: 'steady', rising: false });
+    expect(drawn['mekong-nongkhai']).toMatchObject({ trend: 'falling', rising: false });
+    // a stretch whose point the file does not have (a reach point here) is not drawn
+    expect(Object.keys(drawn).every((code) => rivers.points.some((p) => p.id === code))).toBe(true);
     expect(shapes.features[0].geometry.type).toBe('MultiLineString');
   });
-  it('draws nothing for a point the file does not have, or a day the file does not reach', () => {
-    expect(riverStretches(lines, { ...rivers, points: [] }, AT).features).toEqual([]);
+  it('draws nothing for a day the file does not reach', () => {
     expect(riverStretches(lines, rivers, Date.parse('2026-12-01T12:00:00+07:00')).features).toEqual(
       [],
     );
+  });
+  it('lists the rivers forecast to rise first, each with its strongest stretch', () => {
+    const rows = riverSummary(rivers, AT);
+    expect(rows.map((row) => row.river).slice(0, 3)).toContain('แม่น้ำบางปะกง');
+    const bangPakong = rows.find((row) => row.river === 'แม่น้ำบางปะกง')!;
+    expect(bangPakong.trend).toBe('rising_fast');
+    expect(bangPakong.rising[0].point.id).toBe('bangpakong-chachoengsao');
+    const strengths = rows.map((row) => row.trend);
+    // rising a lot, then rising, then steady, then falling
+    expect(strengths.indexOf('falling')).toBeGreaterThan(strengths.lastIndexOf('rising'));
+    expect(rows.find((row) => row.river === 'แม่น้ำโขง')).toMatchObject({
+      trend: 'falling',
+      rising: [],
+    });
   });
 });

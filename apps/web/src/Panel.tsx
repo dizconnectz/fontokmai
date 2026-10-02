@@ -23,9 +23,11 @@ import {
   ShieldAlert,
   ShieldCheck,
   Sun,
+  TrendingUp,
   Waves,
   X,
 } from 'lucide-react';
+import { riverSummary, riverWords, RIVERS_STALE_MS, type RiverForecast } from './rivers';
 import {
   displayStatus,
   formatTime,
@@ -1009,6 +1011,79 @@ function FloodsNow({
   );
 }
 
+/**
+ * The main rivers in the next 7 days, from the system's forecast (user 2026-10-02: say where the lines are and that
+ * they are the system's forecast): those forecast to rise with their strongest stretch, or that none is.
+ */
+function RiverOutlookCard({
+  rivers,
+  now,
+  onRiver,
+}: {
+  rivers: RiverForecast;
+  now: number;
+  onRiver: (points: number[][]) => void;
+}) {
+  const rows = riverSummary(rivers, now);
+  const rising = rows.filter((row) => row.rising.length > 0);
+  const old = now - Date.parse(rivers.fetched_at) > RIVERS_STALE_MS;
+  const source = safeLink(rivers.source_url);
+  return (
+    <Section
+      id="rivers"
+      headingId="rivers-heading"
+      testId="rivers"
+      headingClass={rising.length ? 'heading-rain' : undefined}
+      heading={
+        <>
+          <TrendingUp size={18} /> แม่น้ำสายหลัก 7 วันข้างหน้า
+          {rising.length > 0 && ` · น้ำจะเพิ่ม ${rising.length} สาย`}
+        </>
+      }
+    >
+      {old && (
+        <p className="inline-warning">
+          <Info size={15} /> พยากรณ์ไม่อัปเดต · แสดงข้อมูลครั้งก่อน
+        </p>
+      )}
+      {rising.length ? (
+        <ul className="flood-list">
+          {rising.map((row) => (
+            <li key={row.river}>
+              <button
+                className="road-button"
+                onClick={() => onRiver(row.rising.map((item) => item.point.location))}
+              >
+                <span className="flood-line">
+                  <strong>{row.river}</strong>
+                  <span>
+                    {riverWords(row.rising[0].outlook)} · {row.rising.length} ช่วง
+                  </span>
+                  <small>มากสุด{row.rising[0].point.name_th.replace(/^\S+\s+/, '')}</small>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="quiet">
+          ยังไม่มีแม่น้ำสายหลักที่คาดว่าน้ำจะเพิ่ม · ทรงตัวหรือลดลงทั้ง {rows.length} สาย
+        </p>
+      )}
+      <small className="source-note">
+        พยากรณ์ของระบบจากแบบจำลอง GloFAS (ทดลอง) จุดคำนวณราวทุก 50 กม. · ไม่ใช่ประกาศ
+        และไม่ใช่ระดับน้ำที่วัดได้ · ฝนหนักเฉพาะที่ยังทำให้น้ำท่วมได้ · เส้นบนแผนที่: ส้ม/แดง =
+        น้ำจะเพิ่ม · อัปเดต {reportTime(rivers.fetched_at, now)} ·{' '}
+        {source && (
+          <a href={source} target="_blank" rel="noopener noreferrer">
+            ที่มา ↗
+          </a>
+        )}
+      </small>
+    </Section>
+  );
+}
+
 export function Overview({
   snapshot,
   alerts,
@@ -1021,6 +1096,8 @@ export function Overview({
   onRoadName,
   news,
   dams,
+  rivers,
+  onRiver,
   water,
   onBank,
   onDam,
@@ -1041,6 +1118,9 @@ export function Overview({
   onRoadName: (name: string) => void;
   news: SituationReport | null;
   dams: DamReport | null;
+  /** the GloFAS river forecast, or null (not published, or the timeline on the forecast) */
+  rivers: RiverForecast | null;
+  onRiver: (points: number[][]) => void;
   water: CanalLevels | null;
   onBank: (item: BankObservation) => void;
   onDam: (location: number[]) => void;
@@ -1055,7 +1135,9 @@ export function Overview({
   const trusted = feedTrust(snapshot, now) === 'ok';
   return (
     <>
-      <StatusBar counts={statusCounts({ summary, floods, dams, alerts, trusted, worst, now })} />
+      <StatusBar
+        counts={statusCounts({ summary, floods, dams, rivers, alerts, trusted, worst, now })}
+      />
       {summary && (
         <WatchSummary
           overview={summary}
@@ -1074,6 +1156,7 @@ export function Overview({
       />
       {/* how full the dams are comes before the alerts: the user reads it at a glance (2026-09-28) */}
       {dams && <ChaoPhrayaDams dams={dams} now={now} onDam={onDam} />}
+      {rivers && <RiverOutlookCard rivers={rivers} now={now} onRiver={onRiver} />}
       {!!water?.bank_observations?.length && (
         <section
           className="panel-section"
