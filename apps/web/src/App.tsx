@@ -145,6 +145,8 @@ export default function App() {
       : null;
   });
   const [layersOpen, setLayersOpen] = useState(false);
+  // the map zoomed out so far that only the severe points show (MapView's DETAIL_ZOOM)
+  const [overviewZoom, setOverviewZoom] = useState(true);
   // a flood report chosen in the list opens on the map only; the list stays where it is
   const [openFlood, setOpenFlood] = useState<{ id: string; key: string } | null>(null);
   const [floodPopupId, setFloodPopupId] = useState<string | null>(null);
@@ -468,6 +470,7 @@ export default function App() {
               rivers={step.kind === 'forecast' ? null : rivers}
               watch={watch}
               riverStretches={riverShapes}
+              onOverview={setOverviewZoom}
               layers={layers}
               pin={pin}
               pinLabel={pinTitle}
@@ -659,6 +662,11 @@ export default function App() {
               </div>
             )}
             <div id="legend-pins" className="legend-pins" hidden={!legendOpen}>
+              {overviewZoom && (
+                <div className="legend-row legend-note" data-testid="overview-hint">
+                  <small>ภาพรวมแสดงเฉพาะจุดสำคัญ · ซูมเข้าเพื่อดูหมุดทั้งหมด</small>
+                </div>
+              )}
               {layers.floods && step.kind !== 'forecast' && (
                 <div className="legend-row">
                   <span>

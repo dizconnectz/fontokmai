@@ -130,6 +130,8 @@ interface Props {
   openFlood: { id: string; key: string } | null;
   /** id of the report whose popup is open, or null */
   onFloodPopup: (id: string | null) => void;
+  /** true while the map is zoomed out so far that only the severe points show */
+  onOverview?: (overview: boolean) => void;
 }
 const THAILAND: { center: LngLat; zoom: number } = { center: [101, 13.2], zoom: 5 };
 // strong at country scale, light when zoomed in so streets stay readable
@@ -216,6 +218,11 @@ function pinIcon(kind: string): unknown {
  * had to be zoomed into to be seen): an ongoing flood report, a dam over capacity or releasing a lot more, a river
  * the model sees rising a lot, heavy rain at a TMD station or a Bangkok gauge. The ordinary ones still group.
  */
+/**
+ * Below this zoom (the first view of the country) only the severe points show, out of their bubbles; the others,
+ * the grey ones too, from here on (user 2026-10-02: the overview showed too much).
+ */
+const DETAIL_ZOOM = 8;
 const SEVERE_KINDS = [
   ['weather', 'weather'],
   ['dam', 'dams'],
@@ -362,6 +369,7 @@ function addOverlays(instance: LibreMap) {
     });
     instance.addLayer({
       id: `${kind}-cluster`,
+      minzoom: DETAIL_ZOOM,
       type: 'symbol',
       source,
       filter: ['has', 'point_count'],
@@ -373,6 +381,7 @@ function addOverlays(instance: LibreMap) {
     });
     instance.addLayer({
       id: `${kind}-pin`,
+      minzoom: DETAIL_ZOOM,
       type: 'symbol',
       source,
       filter: ['!', ['has', 'point_count']],
@@ -1522,6 +1531,11 @@ export default function MapView(props: Props) {
       duration: 600,
     });
   }, [props.focus, ready]);
+
+  // the key says why few pins show on the first view
+  useEffect(() => {
+    latest.current.onOverview?.(zoom < DETAIL_ZOOM);
+  }, [zoom]);
 
   const pinCenter = () => {
     const center = map.current?.getCenter();

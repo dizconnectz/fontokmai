@@ -4,6 +4,24 @@ import {
 } from "../../apps/web/node_modules/@playwright/test/index.mjs";
 import { readFileSync } from "node:fs";
 
+// Claude, user 2026-10-02: ordinary pins show from zoom 8 (the first view shows only severe ones): zoom in first
+async function zoomForPins(page) {
+  const surface = page.getByTestId("map-surface");
+  await expect(surface).toHaveAttribute("aria-busy", "false", {
+    timeout: 15000,
+  });
+  // a place chosen in the panel flies there in 600 ms: let it land before reading the zoom
+  await page.waitForTimeout(700);
+  for (let step = 0; step < 6; step++) {
+    const zoom = Number(await surface.getAttribute("data-zoom"));
+    if (zoom >= 8) return;
+    await page.getByRole("button", { name: "ขยายแผนที่" }).click();
+    await expect
+      .poll(async () => Number(await surface.getAttribute("data-zoom")))
+      .toBeGreaterThan(zoom);
+  }
+}
+
 // the side panel's sections fold to their heading line (Claude, 2026-10-01): open one before reading its list
 async function unfold(page, id) {
   await page.locator(`#${id}`).waitFor();
@@ -78,6 +96,7 @@ async function openRiver(page) {
   await page.goto("/");
   const canvas = page.locator(".maplibregl-canvas");
   await expect(canvas).toBeVisible();
+  await zoomForPins(page);
   const box = await canvas.boundingBox();
   const x = box.x + box.width / 2;
   const y = box.y + box.height / 2 - 12;

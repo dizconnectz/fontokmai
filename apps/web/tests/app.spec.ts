@@ -80,7 +80,23 @@ async function prepare(page: Page, scenario = 'active') {
   );
 }
 /** Tap the one pin at the centre of the first view; a pin stands on its tip, so aim at its head. */
+/** Ordinary pins show from zoom 8 (user, 2026-10-02: the first view shows only severe ones): zoom in first. */
+async function zoomForPins(page: Page) {
+  const surface = page.getByTestId('map-surface');
+  await expect(surface).toHaveAttribute('aria-busy', 'false', { timeout: 15_000 });
+  // a place chosen in the panel flies there in 600 ms: let it land before reading the zoom
+  await page.waitForTimeout(700);
+  for (let step = 0; step < 6; step++) {
+    const zoom = Number(await surface.getAttribute('data-zoom'));
+    if (zoom >= 8) return;
+    await page.getByRole('button', { name: 'ขยายแผนที่' }).click();
+    await expect
+      .poll(async () => Number(await surface.getAttribute('data-zoom')))
+      .toBeGreaterThan(zoom);
+  }
+}
 async function tapCentrePin(page: Page) {
+  await zoomForPins(page);
   const canvas = page.locator('.maplibregl-canvas');
   const box = (await canvas.boundingBox())!;
   const x = box.x + box.width / 2;
