@@ -107,7 +107,13 @@ test("another day's road report is not shown in the side panel", async ({
 test("DXS situation text is readable as plain text and is separate from TMD alerts", async ({
   page,
 }) => {
-  await prepare(page, { "bkk/news.json": read("bkk/news.json") });
+  // Claude, user 2026-10-02: the card shows only a bulletin of today that names rain
+  const news = read("bkk/news.json");
+  news.text_th = news.text_th.replace(
+    "วันที่ 26 กันยายน 2569 เวลา 17.00 น.",
+    "วันที่ 27 กันยายน 2569 เวลา 15.00 น.",
+  );
+  await prepare(page, { "bkk/news.json": news });
   await page.goto("/");
   await unfold(page, "situation");
   await page

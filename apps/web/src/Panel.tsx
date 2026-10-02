@@ -111,7 +111,7 @@ import {
 import { useRadarAt } from './radarAt';
 import { Fold, Section } from './Fold';
 import { StatusBar, statusCounts } from './StatusBar';
-import { situationSummary, situationTimeLabel } from './situation';
+import { situationSummary, situationTimeLabel, situationWorthShowing } from './situation';
 import { BANK_COLORS, bankState, type BankObservation } from './overflow';
 import {
   changeSince,
@@ -1129,43 +1129,49 @@ export function Overview({
           </ul>
         </section>
       )}
-      <section id="alerts" className="panel-section" aria-labelledby="alerts-heading">
-        <h2
-          id="alerts-heading"
-          className={worst ? `heading-level-${worst}` : trusted ? 'heading-ok' : 'heading-unknown'}
-        >
-          {worst ? (
-            <ShieldAlert size={19} />
-          ) : trusted ? (
-            <ShieldCheck size={19} />
-          ) : (
-            <CircleHelp size={19} />
-          )}
-          {!snapshot?.feed
-            ? 'ประกาศเตือนภัย'
-            : alerts.length
-              ? `ประกาศเตือนภัยที่มีผล ${alerts.length} ฉบับ`
-              : trusted
-                ? 'ไม่มีประกาศเตือนภัยที่มีผลตอนนี้'
-                : 'ไม่พบประกาศที่มีผลในข้อมูลล่าสุดที่มี'}
-        </h2>
-        <div className="alert-list" aria-live="polite" aria-busy={loading && !snapshot}>
-          {!snapshot && loading && <p className="missing-value">กำลังโหลดประกาศ…</p>}
-          {!(loading && !snapshot) && alerts.length === 0 && (
-            <div className="empty-list">
-              <strong>
-                {!snapshot?.feed ? 'ยังไม่มีข้อมูลประกาศ' : 'ไม่พบประกาศที่มีผลในชุดนี้'}
-              </strong>
-              <p>ไม่มีข้อมูลหรือไม่พบประกาศ ไม่ได้แปลว่าพื้นที่ปลอดภัย</p>
-            </div>
-          )}
-          {alerts.map((alert) => (
-            <AlertCard key={alert.event_id} alert={alert} now={now} onSelect={onSelectAlert} />
-          ))}
-        </div>
-      </section>
+      {/* no alert in effect, from a feed that can be trusted: the status bar says so and the card is not shown
+          (user 2026-10-02); an old or missing feed keeps the card, which says it cannot tell */}
+      {!(snapshot?.feed && trusted && alerts.length === 0) && (
+        <section id="alerts" className="panel-section" aria-labelledby="alerts-heading">
+          <h2
+            id="alerts-heading"
+            className={
+              worst ? `heading-level-${worst}` : trusted ? 'heading-ok' : 'heading-unknown'
+            }
+          >
+            {worst ? (
+              <ShieldAlert size={19} />
+            ) : trusted ? (
+              <ShieldCheck size={19} />
+            ) : (
+              <CircleHelp size={19} />
+            )}
+            {!snapshot?.feed
+              ? 'ประกาศเตือนภัย'
+              : alerts.length
+                ? `ประกาศเตือนภัยที่มีผล ${alerts.length} ฉบับ`
+                : trusted
+                  ? 'ไม่มีประกาศเตือนภัยที่มีผลตอนนี้'
+                  : 'ไม่พบประกาศที่มีผลในข้อมูลล่าสุดที่มี'}
+          </h2>
+          <div className="alert-list" aria-live="polite" aria-busy={loading && !snapshot}>
+            {!snapshot && loading && <p className="missing-value">กำลังโหลดประกาศ…</p>}
+            {!(loading && !snapshot) && alerts.length === 0 && (
+              <div className="empty-list">
+                <strong>
+                  {!snapshot?.feed ? 'ยังไม่มีข้อมูลประกาศ' : 'ไม่พบประกาศที่มีผลในชุดนี้'}
+                </strong>
+                <p>ไม่มีข้อมูลหรือไม่พบประกาศ ไม่ได้แปลว่าพื้นที่ปลอดภัย</p>
+              </div>
+            )}
+            {alerts.map((alert) => (
+              <AlertCard key={alert.event_id} alert={alert} now={now} onSelect={onSelectAlert} />
+            ))}
+          </div>
+        </section>
+      )}
       {flooding && <RoadFloodingToday flooding={flooding} now={now} onRoad={onRoadName} />}
-      {news && <SituationCard news={news} now={now} />}
+      {news && situationWorthShowing(news.text_th, now) && <SituationCard news={news} now={now} />}
     </>
   );
 }

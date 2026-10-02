@@ -14,6 +14,7 @@ const MONTHS = [
   'ธันวาคม',
 ];
 const REPORT_OLD_MS = 60 * 60_000;
+const DAY = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' });
 
 export function situationTime(text: string): string | null {
   const normalized = text.replace(/[๐-๙]/g, (n) => String(n.charCodeAt(0) - 0x0e50));
@@ -66,6 +67,17 @@ export function situationSummary(text: string, now: number) {
     )
     .filter(Boolean);
   return { time, warning, rain };
+}
+
+/**
+ * The card has something to say (user 2026-10-02: a card without data is not shown): a report of today, not ahead
+ * of the clock, that names rain. "ไม่พบกลุ่มฝน" is no rain; a report without a readable time is not shown either.
+ */
+export function situationWorthShowing(text: string, now: number): boolean {
+  const { time, rain } = situationSummary(text, now);
+  if (!time || Date.parse(time) > now || DAY.format(Date.parse(time)) !== DAY.format(now))
+    return false;
+  return rain.some((line) => !/ไม่พบกลุ่มฝน/.test(line));
 }
 
 export function situationTimeLabel(time: string): string {

@@ -16,8 +16,8 @@ export interface Chip {
   key: string;
   text: string;
   tone: Tone;
-  /** id of the section the chip opens */
-  target: string;
+  /** id of the section the chip opens; null for a chip that only says something */
+  target: string | null;
 }
 
 export interface StatusCounts {
@@ -88,8 +88,9 @@ export function statusChips(counts: StatusCounts): Chip[] {
   // nothing found is said as such, never as "safe"
   if (!chips.length)
     chips.push({ key: 'calm', text: 'ยังไม่พบจุดที่ต้องระวัง', tone: 'ok', target: 'summary' });
+  // no alert card is shown then (user 2026-10-02): nothing to open
   if (counts.alerts === 0)
-    chips.push({ key: 'no-alerts', text: 'ไม่มีประกาศกรมอุตุฯ', tone: 'ok', target: 'alerts' });
+    chips.push({ key: 'no-alerts', text: 'ไม่มีประกาศกรมอุตุฯ', tone: 'ok', target: null });
   return chips;
 }
 
@@ -131,15 +132,21 @@ export function statusCounts({
 export function StatusBar({ counts }: { counts: StatusCounts }) {
   return (
     <nav className="status-bar" aria-label="สรุปสถานการณ์" data-testid="status-bar">
-      {statusChips(counts).map((chip) => (
-        <button
-          key={chip.key}
-          className={`status-chip ${chip.tone}`}
-          onClick={() => openSection(chip.target)}
-        >
-          {chip.text}
-        </button>
-      ))}
+      {statusChips(counts).map((chip) =>
+        chip.target ? (
+          <button
+            key={chip.key}
+            className={`status-chip ${chip.tone}`}
+            onClick={() => openSection(chip.target!)}
+          >
+            {chip.text}
+          </button>
+        ) : (
+          <span key={chip.key} className={`status-chip ${chip.tone}`}>
+            {chip.text}
+          </span>
+        ),
+      )}
     </nav>
   );
 }

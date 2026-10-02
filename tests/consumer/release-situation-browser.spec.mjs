@@ -72,7 +72,7 @@ test("dam card states the baseline date and measured daily release without a gue
   await expect(card).not.toContainText(/ถึงกรุงเทพ.*ชั่วโมง/);
 });
 
-test("M35: refetching yesterday's situation must not remove its past-report warning", async ({
+test("M35: refetching yesterday's situation never shows it as now", async ({
   page,
 }) => {
   const news = read("bkk/news.json");
@@ -86,11 +86,9 @@ test("M35: refetching yesterday's situation must not remove its past-report warn
   });
   await prepare(page, { "bkk/news.json": news });
   await page.goto("/");
-  const card = page.getByTestId("situation");
-  await expect(card).toBeVisible();
-  await expect(card).toContainText(
-    /รายงานย้อนหลัง|ไม่ใช่สถานการณ์ปัจจุบัน|ไม่ใช่ข้อมูลเรียลไทม์/,
-  );
+  // Claude, user 2026-10-02: another day's bulletin (and one without rain) is not shown at all
+  await expect(page.getByTestId("status-bar")).toBeVisible();
+  await expect(page.getByTestId("situation")).toHaveCount(0);
 });
 
 for (const viewport of [
@@ -103,15 +101,16 @@ for (const viewport of [
     await page.setViewportSize(viewport);
     const news = read("bkk/news.json");
     news.fetched_at = NOW;
+    // Claude, user 2026-10-02: only a bulletin that names rain shows
     news.text_th =
-      "วันที่ 30 กันยายน 2569 เวลา 10.00 น. /พื้นที่ กทม.ไม่พบกลุ่มฝน / อุณหภูมิที่สำนักการระบายน้ำ 31 องศาเซลเซียส ความชื้นสัมพัทธ์ 69%";
+      "วันที่ 30 กันยายน 2569 เวลา 10.00 น. /พื้นที่ กทม. มีฝนเล็กน้อยบริเวณเขตดอนเมือง / อุณหภูมิที่สำนักการระบายน้ำ 31 องศาเซลเซียส ความชื้นสัมพัทธ์ 69%";
     await prepare(page, { "bkk/news.json": news });
     await page.goto("/");
     await unfold(page, "situation");
     const card = page.getByTestId("situation");
     const bullets = card.locator("ul");
     await expect(bullets.locator("li")).toHaveCount(2);
-    await expect(bullets).toContainText("ไม่พบกลุ่มฝนในพื้นที่ กทม.");
+    await expect(bullets).toContainText("มีฝนเล็กน้อยบริเวณเขตดอนเมือง");
     await expect(bullets).toContainText("30 ก.ย. 2569");
     await expect(bullets).toContainText("10:00");
     await expect(bullets).not.toContainText(/อุณหภูมิ|ความชื้น/);
@@ -141,7 +140,7 @@ test("unknown report time is not silently replaced with fetch or edit time", asy
   news.text_th = "ฝนเล็กน้อยบางพื้นที่";
   await prepare(page, { "bkk/news.json": news });
   await page.goto("/");
-  const card = page.getByTestId("situation");
-  await expect(card).toContainText("ยังระบุเวลารายงานไม่ได้");
-  await expect(card.locator("ul")).toContainText("เวลารายงาน: ไม่ทราบ");
+  // Claude, user 2026-10-02: a bulletin whose time cannot be read is not shown, rather than shown as now
+  await expect(page.getByTestId("status-bar")).toBeVisible();
+  await expect(page.getByTestId("situation")).toHaveCount(0);
 });

@@ -35,9 +35,10 @@ describe('the status bar says the whole picture in one line (user, 2026-10-01)',
   });
 
   it('says nothing was found, never that it is safe, and no alert only when the feed is trusted', () => {
-    expect(statusChips(quiet).map((chip) => chip.text)).toEqual([
-      'ยังไม่พบจุดที่ต้องระวัง',
-      'ไม่มีประกาศกรมอุตุฯ',
+    expect(statusChips(quiet).map((chip) => [chip.text, chip.target])).toEqual([
+      ['ยังไม่พบจุดที่ต้องระวัง', 'summary'],
+      // no alert card is shown then (user, 2026-10-02): the chip opens nothing
+      ['ไม่มีประกาศกรมอุตุฯ', null],
     ]);
     // an old or missing alert feed says nothing about alerts
     expect(statusChips({ ...quiet, alerts: null, floods: null }).map((chip) => chip.text)).toEqual([

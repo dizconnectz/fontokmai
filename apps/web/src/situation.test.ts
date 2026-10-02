@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { situationSummary, situationTime } from './situation';
+import { situationSummary, situationTime, situationWorthShowing } from './situation';
 
 const report =
   'วันที่ 30 กันยายน 2569 เวลา 10.00 น. /พื้นที่ กทม.ไม่พบกลุ่มฝน / อุณหภูมิที่สำนักการระบายน้ำ 31 องศาเซลเซียส ความชื้นสัมพัทธ์ 69%';
@@ -27,5 +27,26 @@ describe('situation report, not fetch time', () => {
     expect(situationTime(report.replace('10.00', '24.00'))).toBeNull();
     expect(situationTime(report + '\n' + report)).toBeNull();
     expect(situationTime('วันที่ ๓๐ กันยายน ๒๕๖๙ เวลา ๑๐.๐๐ น.')).toBe('2026-09-30T03:00:00.000Z');
+  });
+});
+
+describe('the Bangkok rain card shows only what it has to say (user, 2026-10-02)', () => {
+  const at = Date.parse('2026-10-02T11:00:00+07:00');
+  it('shows a report of today that names rain, even an hour or two old', () => {
+    expect(
+      situationWorthShowing('วันที่ 2 ตุลาคม 2569 เวลา 09.00 น. /ฝนตกเล็กน้อยเขตบางเขน', at),
+    ).toBe(true);
+  });
+  it('hides no rain, another day, a time ahead of the clock and an unreadable time', () => {
+    const no =
+      'วันที่ 2 ตุลาคม 2569 เวลา 09.00 น. /พื้นที่ กทม.ไม่พบกลุ่มฝน / อุณหภูมิ 31 องศาเซลเซียส';
+    expect(situationWorthShowing(no, at)).toBe(false);
+    expect(
+      situationWorthShowing('วันที่ 1 ตุลาคม 2569 เวลา 17.00 น. /ฝนตกหนักเขตดอนเมือง', at),
+    ).toBe(false);
+    expect(
+      situationWorthShowing('วันที่ 2 ตุลาคม 2569 เวลา 12.00 น. /ฝนตกหนักเขตดอนเมือง', at),
+    ).toBe(false);
+    expect(situationWorthShowing('ฝนเล็กน้อยบางพื้นที่', at)).toBe(false);
   });
 });

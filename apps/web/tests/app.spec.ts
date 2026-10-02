@@ -118,10 +118,10 @@ test('no active alert is never shown as a safe area, and an ended alert is not s
 }) => {
   await prepare(page, 'out-of-order');
   await page.goto('/');
-  await expect(page.getByText('ไม่พบประกาศที่มีผลในชุดนี้')).toBeVisible();
-  await expect(
-    page.getByText('ไม่มีข้อมูลหรือไม่พบประกาศ ไม่ได้แปลว่าพื้นที่ปลอดภัย'),
-  ).toBeVisible();
+  // a trusted feed with no alert in effect: one plain chip says so, and no card (user, 2026-10-02); never "safe"
+  await expect(page.getByTestId('status-bar')).toContainText('ไม่มีประกาศกรมอุตุฯ');
+  await expect(page.locator('#alerts')).toHaveCount(0);
+  await expect(page.locator('#panel')).not.toContainText('ปลอดภัย');
   await expect(page.getByTestId('alert-card')).toHaveCount(0);
   // the data status block with the ended alerts is no longer on the page (user, 2026-10-02)
   await expect(page.getByRole('heading', { name: 'สถานะข้อมูล' })).toHaveCount(0);
@@ -911,7 +911,13 @@ test('the department situation text and the Chao Phraya dams show, with a note o
     data.fetched_at = new Date(fetchedAt).toISOString();
     return data;
   };
-  await page.route('**/bkk/news.json?*', (route) => route.fulfill({ json: example('news.json') }));
+  // a bulletin of the snapshot's own day that names rain: the card shows (an empty one does not, user 2026-10-02)
+  const news = example('news.json');
+  news.text_th = news.text_th.replace(
+    'วันที่ 26 กันยายน 2569 เวลา 17.00 น.',
+    'วันที่ 25 กันยายน 2569 เวลา 18.00 น.',
+  );
+  await page.route('**/bkk/news.json?*', (route) => route.fulfill({ json: news }));
   await page.route('**/water/dams.json?*', (route) =>
     route.fulfill({ json: example('dams.json') }),
   );
@@ -943,7 +949,7 @@ test('the department situation text and the Chao Phraya dams show, with a note o
   // The dam file ages by fetch time; the bulletin keeps its own explicit report time.
   fetchedAt = at - 2 * 24 * 3_600_000;
   await page.goto('/');
-  await expect(page.getByTestId('situation').locator('ul')).toContainText('26 ก.ย. 2569');
+  await expect(page.getByTestId('situation').locator('ul')).toContainText('25 ก.ย. 2569');
   await expect(page.getByTestId('dams')).toContainText('ข้อมูลนี้ไม่ใช่ข้อมูลเรียลไทม์');
 });
 
