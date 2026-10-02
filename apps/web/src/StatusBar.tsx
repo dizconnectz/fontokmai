@@ -3,7 +3,7 @@ import { shownDam, releaseChange, type DamReport } from './bkk';
 import { isOngoing } from './floods';
 import { openSection } from './Fold';
 import { changeSince, shownItems, type Overview } from './overview';
-import { riverSummary, type RiverForecast } from './rivers';
+import type { RiverRow } from './rivers';
 import type { Alert, LiveFloods } from './data';
 
 /**
@@ -111,7 +111,7 @@ export function statusCounts({
   summary,
   floods,
   dams,
-  rivers = null,
+  riverRows = null,
   alerts,
   trusted,
   worst,
@@ -120,14 +120,15 @@ export function statusCounts({
   summary: Overview | null;
   floods: LiveFloods | null;
   dams: DamReport | null;
-  rivers?: RiverForecast | null;
+  /** the rivers card's rows (riverSummary), worked out once for both */
+  riverRows?: RiverRow[] | null;
   alerts: Alert[];
   trusted: boolean;
   worst: Level | null;
   now: number;
 }): StatusCounts {
   const previousDay = dams?.previous_report_date ?? null;
-  const risingRivers = rivers ? riverSummary(rivers, now).filter((row) => row.rising.length) : [];
+  const risingRivers = (riverRows ?? []).filter((row) => row.rising.length);
   return {
     // as the summary card lists them: nothing from a file too old to list
     watchNow: summary ? shownItems(summary, 'now', now).length : 0,

@@ -84,13 +84,20 @@ def collect(now: datetime, *, opener: Opener = open_url) -> DamReport:
     """Today's report, compared with an earlier day and with its blank dams filled from the days before."""
     report = parse(read_json(opener, API_URL), now)
     days: dict[date, DamReport | None] = {}
+    # the earlier days are asked one by one: once one does not answer, the others are not asked, so that a server
+    # that hangs costs one timeout and not seven (each runs to the open-data timeout, and the round waits for them)
+    unreachable = False
 
     def day_report(day: date) -> DamReport | None:
+        nonlocal unreachable
         if day not in days:
+            if unreachable:
+                return None
             try:
                 older = parse(read_json(opener, f"{API_URL}/{day.isoformat()}"), now)
                 days[day] = older if older.report_date == day else None
             except OpenDataError:
+                unreachable = True
                 days[day] = None
         return days[day]
 

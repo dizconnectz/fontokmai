@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Crosshair, Expand, LocateFixed, MapPin, Map as MapIcon, Star } from 'lucide-react';
 import type {
   GeoJSONSource,
@@ -1589,6 +1589,19 @@ export default function MapView(props: Props) {
     latest.current.onOverview?.(zoom < DETAIL_ZOOM);
   }, [zoom]);
 
+  // for the tests: which outlines and stretches the map has, made when they change and not on every render
+  const watchCodes = useMemo(
+    () => props.watch.features.map((feature) => feature.properties.code).join(' '),
+    [props.watch],
+  );
+  const riverCodes = useMemo(
+    () =>
+      (props.riverStretches?.features ?? [])
+        .map((feature) => `${feature.properties.code}:${feature.properties.trend}`)
+        .join(' '),
+    [props.riverStretches],
+  );
+
   const pinCenter = () => {
     const center = map.current?.getCenter();
     if (center) props.onPin([center.lng, center.lat]);
@@ -1614,10 +1627,8 @@ export default function MapView(props: Props) {
       className="map-surface"
       data-testid="map-surface"
       data-zoom={zoom}
-      data-watch={props.watch.features.map((feature) => feature.properties.code).join(' ')}
-      data-rivers={(props.riverStretches?.features ?? [])
-        .map((feature) => `${feature.properties.code}:${feature.properties.trend}`)
-        .join(' ')}
+      data-watch={watchCodes}
+      data-rivers={riverCodes}
       aria-busy={!ready || rendering}
     >
       <div ref={element} className="map-canvas" />

@@ -87,3 +87,16 @@ def test_fontokmai_over_its_own_budget_keeps_less_even_on_a_roomy_disk(tmp_path,
     report = _run(db, out, monkeypatch, 0.50)
     assert "keeping 30 archive day(s), 3 backup(s), 90 days of Bangkok uploads" in report["pressure"]
     assert _kept(db)[1:] == (3, 3)
+
+
+def test_the_own_files_are_counted_once_a_day(tmp_path, monkeypatch):
+    """Walking every file of the state folder is for the daily round (the one that makes the backup) only."""
+    db, out = _state(tmp_path)
+    walks = []
+    real = housekeeping.tree_bytes
+    monkeypatch.setattr(housekeeping, "tree_bytes", lambda folder: walks.append(folder) or real(folder))
+    _run(db, out, monkeypatch, 0.50)
+    assert len(walks) == 1  # today's backup made, and the files counted with it
+    report = _run(db, out, monkeypatch, 0.81)
+    assert len(walks) == 1  # a later round of the day: no walk, the disk's own figures still apply
+    assert report["pressure"].startswith("disk 81% used: keeping 30 archive day(s)")

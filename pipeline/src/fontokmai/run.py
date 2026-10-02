@@ -182,16 +182,19 @@ def run_cap_snapshot(*, db: Path, out: Path, fetch: Fetcher, now: datetime, writ
                     files[rel] = content
         # the summary of places to watch reads the files of this very round; it never stops the alerts
         overview_error = None
+        recent = None
         try:
             overview, recent = with_earlier(build_overview(files, now), store.get_meta(RECENT_KEY))
             files[OVERVIEW_PATH] = overview.model_dump_json().encode("utf-8")
-            store.set_meta(RECENT_KEY, recent)
         except Exception as exc:  # noqa: BLE001 - reported in the round log; the web shows the summary missing
             overview_error = f"{type(exc).__name__}: {exc}"[:300]
         manifest = write_snapshot(out, files, store,
                                   generation_id=generation_id, now=now, writer=writer,
                                   owner_epoch=owner_epoch, recovery_epoch=recovery_epoch,
                                   due=SNAPSHOT_INTERVAL, source_status=statuses)
+        # "an hour ago" compares with lists that were written out, never with a round whose snapshot failed
+        if recent is not None:
+            store.set_meta(RECENT_KEY, recent)
         if radar is not None:
             prune_frames(out, radar.feed)
     return SnapshotResult(manifest=manifest, feed=feed, status=status, radar=radar.feed if radar else None,

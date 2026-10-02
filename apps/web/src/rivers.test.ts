@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   RIVER_CLASSES,
+  riverDay,
   riverChart,
   riverOutlook,
   riverPin,
@@ -110,5 +111,13 @@ describe('stretches of river by the system’s 7-day forecast (user, 2026-10-02)
       trend: 'falling',
       rising: [],
     });
+  });
+});
+
+describe('riverDay', () => {
+  it('is the day in Thailand, whatever the clock of the browser', () => {
+    // 17:30 UTC is already the next day in Thailand (UTC+7)
+    expect(riverDay(Date.parse('2026-10-02T17:30:00Z'))).toBe('2026-10-03');
+    expect(riverDay(Date.parse('2026-10-02T16:59:00Z'))).toBe('2026-10-02');
   });
 });

@@ -27,7 +27,14 @@ import {
   Waves,
   X,
 } from 'lucide-react';
-import { riverSummary, riverWords, RIVERS_STALE_MS, type RiverForecast } from './rivers';
+import {
+  riverDay,
+  riverSummary,
+  riverWords,
+  RIVERS_STALE_MS,
+  type RiverForecast,
+  type RiverRow,
+} from './rivers';
 import {
   displayStatus,
   formatTime,
@@ -1021,14 +1028,16 @@ function FloodsNow({
  */
 function RiverOutlookCard({
   rivers,
+  rows,
   now,
   onRiver,
 }: {
   rivers: RiverForecast;
+  /** riverSummary of `rivers` */
+  rows: RiverRow[];
   now: number;
   onRiver: (points: number[][]) => void;
 }) {
-  const rows = riverSummary(rivers, now);
   const rising = rows.filter((row) => row.rising.length > 0);
   // nothing to worry about: no card (user 2026-10-02); the thin lines on the map still show the forecast
   if (!rising.length) return null;
@@ -1139,10 +1148,13 @@ export function Overview({
 }) {
   const worst = worstLevel(alerts);
   const trusted = feedTrust(snapshot, now) === 'ok';
+  // read by the status bar and the rivers card; the trends change with the day, not with every tick of the clock
+  const day = riverDay(now);
+  const riverRows = useMemo(() => (rivers ? riverSummary(rivers, now) : null), [rivers, day]);
   return (
     <>
       <StatusBar
-        counts={statusCounts({ summary, floods, dams, rivers, alerts, trusted, worst, now })}
+        counts={statusCounts({ summary, floods, dams, riverRows, alerts, trusted, worst, now })}
       />
       {summary && (
         <WatchSummary
@@ -1162,7 +1174,9 @@ export function Overview({
       />
       {/* how full the dams are comes before the alerts: the user reads it at a glance (2026-09-28) */}
       {dams && <ChaoPhrayaDams dams={dams} now={now} onDam={onDam} />}
-      {rivers && <RiverOutlookCard rivers={rivers} now={now} onRiver={onRiver} />}
+      {rivers && riverRows && (
+        <RiverOutlookCard rivers={rivers} rows={riverRows} now={now} onRiver={onRiver} />
+      )}
       {!!water?.bank_observations?.length && (
         <section
           className="panel-section"

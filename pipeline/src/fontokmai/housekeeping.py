@@ -377,12 +377,15 @@ def housekeeping(db: Path, out: Path, now: datetime, summary: dict[str, Any],
     # as the shared disk fills (or fontokmai's own files grow past their budget), keep less, oldest going first
     used = 1 - disk.free / disk.total if disk.total else 0.0
     tier = next((t for t in PRESSURE_TIERS if used >= t[0]), None)
-    own = tree_bytes(state)
-    if tier is None and own > DATA_BUDGET:
+    # fontokmai's own files are counted once a day, with the backup: the walk stats every file of the state folder,
+    # and they grow by a few MB a day at most (the rounds in between only ever delete)
+    own = tree_bytes(state) if daily else None
+    if tier is None and own is not None and own > DATA_BUDGET:
         tier = PRESSURE_TIERS[-1]
     archive_days, backup_keep, upload_days = tier[1:] if tier else (ARCHIVE_DAYS, BACKUP_KEEP, DXS_UPLOADS_DAYS)
     if tier:
-        report["pressure"] = (f"disk {used:.0%} used, fontokmai {own / 1024**2:.0f} MB: keeping {archive_days} archive "
+        size = f", fontokmai {own / 1024**2:.0f} MB" if own is not None else ""
+        report["pressure"] = (f"disk {used:.0%} used{size}: keeping {archive_days} archive "
                               f"day(s), {backup_keep} backup(s), {upload_days} days of Bangkok uploads")
     notes = [
         prune_cap(db, now) if daily else None,

@@ -39,6 +39,8 @@ const AHEAD_DAYS = 7;
 const EDGE = 1e-9;
 
 const DAY = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' });
+/** The day in Thailand that the trends are read from: what is worked out from them changes with it, not the clock. */
+export const riverDay = (now: number): string => DAY.format(now);
 const SHORT_DAY = new Intl.DateTimeFormat('th-TH', {
   timeZone: 'Asia/Bangkok',
   day: 'numeric',

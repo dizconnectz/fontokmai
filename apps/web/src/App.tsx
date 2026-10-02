@@ -32,7 +32,7 @@ import FavoriteForecast from './FavoriteForecast';
 import { distanceM } from './roads';
 import Timeline, { type TimeStep } from './Timeline';
 import { FORECAST_LEVELS, forecastAreas, RAIN_LEGEND } from './forecast';
-import { RIVER_CLASSES, riverStretches } from './rivers';
+import { RIVER_CLASSES, riverDay, riverStretches } from './rivers';
 import { feedTrust, LEVEL_FILL, LEVEL_LABEL, worstLevel, type Level } from './alerts';
 import { nearestSubdistrict, type FoundPlace } from './places';
 import {
@@ -250,8 +250,8 @@ export default function App() {
   }, [riverShown, loadRiverLines]);
   const riverShapes = useMemo(
     () => (riverShown && rivers && riverLines ? riverStretches(riverLines, rivers, now) : null),
-    // the trend changes with the day, not with every tick of the clock
-    [riverShown, rivers, riverLines, new Date(now).toDateString()],
+    // the trend changes with the day in Thailand (riverOutlook's), not with every tick of the clock
+    [riverShown, rivers, riverLines, riverDay(now)],
   );
   const riverKey = !!riverShapes?.features.length;
   // the saved place in one line on top; naming its district needs the DOPA places, loaded once a place is saved

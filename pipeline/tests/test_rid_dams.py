@@ -70,3 +70,18 @@ def test_the_refresh_runs_every_two_hours_and_never_replaces_a_later_day(tmp_pat
     # RID down: a line for the log, the file stays
     assert rid_dams.refresh(out, db, NOW + timedelta(hours=4), opener=fixture_opener({})).startswith("error:")
     assert DamReport.model_validate_json((out / DAMS_PATH).read_bytes()).report_date == date(2026, 10, 3)
+
+
+def test_a_history_that_does_not_answer_is_asked_once():
+    """Each request runs to the open-data timeout: once an earlier day fails, the others are not asked."""
+    asked = []
+    today = fixture_opener({rid_dams.API_URL: FIXTURES / "dam_2026-10-02.json"})
+
+    def opener(url):
+        asked.append(url)
+        return today(url)  # the history URLs have no fixture: they fail like a server that does not answer
+
+    report = rid_dams.collect(NOW, opener=opener)
+    assert len(asked) == 2  # today's report and one earlier day
+    assert report.previous_report_date is None
+    assert all(dam.last_known is None for dam in report.dams)
