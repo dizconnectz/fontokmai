@@ -1596,6 +1596,109 @@ details > ul {
   font-weight: 600;
 }
 
+/* A phone needs more map, not a taller time card. Keep the dates and a generous touch target around a slim
+   track; the measured --timeline-space moves the key and zoom controls down with the shorter bar. */
+@media (max-width: 899px) {
+  .timeline {
+    --timeline-thumb: var(--brand);
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    gap: 4px;
+    padding: 4px 8px 4px 4px;
+    border-radius: 10px;
+  }
+  .timeline.is-forecast {
+    --timeline-thumb: var(--forecast-ink);
+  }
+  .timeline-play {
+    width: 44px;
+    height: 44px;
+    background: radial-gradient(circle, var(--brand) 16px, transparent 17px);
+  }
+  .timeline-label {
+    gap: 4px;
+    min-height: 18px;
+    font-size: 0.75rem;
+    line-height: 18px;
+  }
+  .timeline-label .pill {
+    flex-shrink: 0;
+    padding: 1px 5px;
+    font-size: 0.625rem;
+    line-height: 16px;
+  }
+  .timeline-now {
+    flex-shrink: 0;
+    min-width: 44px;
+    height: 24px;
+    padding: 0 6px;
+  }
+  .timeline-note {
+    gap: 4px;
+    font-size: 0.6875rem;
+    line-height: 14px;
+  }
+  .timeline-track {
+    padding-bottom: 0;
+  }
+  .timeline-track input {
+    appearance: none;
+    display: block;
+    height: 28px;
+    margin: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+  .timeline-track input::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 999px;
+    background: linear-gradient(
+      90deg,
+      var(--observed-track) 0 var(--now),
+      var(--forecast-bg) var(--now) 100%
+    );
+    transform: translateY(-6px);
+  }
+  .timeline-track input::-moz-range-track {
+    height: 4px;
+    border-radius: 999px;
+    background: linear-gradient(
+      90deg,
+      var(--observed-track) 0 var(--now),
+      var(--forecast-bg) var(--now) 100%
+    );
+    transform: translateY(-6px);
+  }
+  .timeline-track input::-webkit-slider-thumb {
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    margin-top: -5px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--timeline-thumb);
+  }
+  .timeline-track input::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--timeline-thumb);
+    transform: translateY(-6px);
+  }
+  .timeline-marks {
+    height: 12px;
+    font-size: 0.625rem;
+    line-height: 12px;
+    pointer-events: none;
+  }
+  .timeline-marks span::before {
+    top: -4px;
+    height: 3px;
+  }
+}
+
 /* ---------- 7-day forecast of a pin ---------- */
 .forecast-days {
   display: grid;
