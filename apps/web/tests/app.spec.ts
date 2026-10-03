@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page, type Route } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 
@@ -150,6 +150,58 @@ test('a summary that could not be read is never said as nothing found in green (
   await page.goto('/');
   await expect(bar).toContainText('ประกาศกรมอุตุฯ 3 ฉบับ');
   await expect(bar).not.toContainText('ยังประเมินไม่ได้');
+});
+
+test('the page hardly shifts while the files arrive one by one (CLS at most 0.1, Codex M41)', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const shifts: { t: number; v: number }[] = [];
+    (window as unknown as { __shifts: typeof shifts }).__shifts = shifts;
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries() as (PerformanceEntry & {
+        value: number;
+        hadRecentInput: boolean;
+      })[])
+        if (!entry.hadRecentInput) shifts.push({ t: entry.startTime, v: entry.value });
+    }).observe({ type: 'layout-shift', buffered: true });
+  });
+  await prepare(page);
+  const manifest = read('active', 'manifest');
+  for (const path of ['live/floods.json', 'water/dams.json', 'forecast/rivers.json'])
+    manifest.files.push({ path, sha256: 'a'.repeat(64), size: 1, revision: 1 });
+  const overview = read('overview', 'overview');
+  overview.generated_at = manifest.generated_at;
+  const later = (ms: number, json: unknown) => async (route: Route) => {
+    await new Promise((resolve) => setTimeout(resolve, ms));
+    await route.fulfill({ json });
+  };
+  await page.route('**/examples/active/manifest.json?*', later(300, manifest));
+  await page.route('**/summary/overview.json?*', later(1200, overview));
+  await page.route('**/live/floods.json?*', later(1600, read('live-floods', 'floods')));
+  await page.route('**/water/dams.json?*', later(2000, read('bkk', 'dams')));
+  await page.route('**/forecast/rivers.json?*', later(2400, read('forecast', 'rivers')));
+  await page.goto('/');
+  await expect(page.getByTestId('dams')).toBeVisible({ timeout: 15_000 });
+  await page.waitForTimeout(1500);
+  // session windows as Chrome counts them: a gap of 1 s ends one, and none is longer than 5 s
+  const shifts = await page.evaluate(
+    () => (window as unknown as { __shifts: { t: number; v: number }[] }).__shifts,
+  );
+  let worst = 0;
+  let sum = 0;
+  let start = 0;
+  let last = -Infinity;
+  for (const shift of shifts) {
+    if (shift.t - last > 1000 || shift.t - start > 5000) {
+      sum = 0;
+      start = shift.t;
+    }
+    sum += shift.v;
+    last = shift.t;
+    worst = Math.max(worst, sum);
+  }
+  expect(worst).toBeLessThanOrEqual(0.1);
 });
 
 test('official alerts show their severity and a one-line summary, then open in full', async ({

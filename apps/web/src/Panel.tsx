@@ -1258,6 +1258,21 @@ export function Overview({
           onPlaces={onPlaces}
         />
       )}
+      {/* the summary's place is kept from the first paint while it loads, so the cards under it do not jump when it
+          comes (Codex M41); every round publishes it, and a round without it gives the place back */}
+      {!summary && (summaryState === 'idle' || summaryState === 'loading') && (
+        <section
+          id="summary"
+          className="panel-section summary-card summary-waiting"
+          aria-labelledby="summary-heading"
+          aria-busy="true"
+        >
+          <h2 id="summary-heading">
+            <ListChecks size={18} /> ภาพรวม: จุดที่ต้องระวัง
+          </h2>
+          <p className="quiet">กำลังโหลดสรุป…</p>
+        </section>
+      )}
       <FloodsNow
         floods={floods}
         floodsState={floodsState}

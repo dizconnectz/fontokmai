@@ -2186,3 +2186,7 @@ details > ul {
 .status-chip.unknown {
   color: var(--muted);
 }
+/* the summary's place while it loads: about the height of a card of a few places (Codex M41) */
+.summary-waiting {
+  min-height: 16rem;
+}
