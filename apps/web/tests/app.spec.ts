@@ -1586,7 +1586,7 @@ test('the summary of places to watch comes first, then flood reports, then the o
   await expect(summary).toContainText('ต้องระวังตอนนี้ 2 แห่ง');
   await expect(summary.locator('.district-chip')).toHaveText(['เขตจตุจักร', 'เขตห้วยขวาง']);
   await expect(summary).toContainText('ถนนน้ำท่วมขัง 1 สาย ยังไม่แห้ง');
-  await expect(summary).toContainText('น้ำท่วมหลายจุด (รายงาน 3 จุด)');
+  await expect(summary).toContainText('มีรายงานน้ำท่วม 2 จุด');
   await expect(summary).toContainText(
     'อีก 2 วัน (วันอาทิตย์): ฝนหนักเกือบทั้งจังหวัด สูงสุดราว 50 มม.',
   );

@@ -75,6 +75,16 @@ def test_flood_reports_in_one_district_make_a_place_to_watch_with_its_roads_and_
     assert next(i for i in overview.inputs if i.name_th.startswith("รายงานน้ำท่วม")).status == "fresh"
 
 
+def test_m44_reports_inside_khlong_luang_are_khlong_luangs_whatever_subdistrict_point_is_nearest():
+    """Codex M44: [100.68, 14.04] is nearer a subdistrict point of Thanyaburi but inside Khlong Luang."""
+    reports = [_report(1, [100.68, 14.04], timedelta(minutes=20)), _report(2, [100.681, 14.041], timedelta(minutes=5))]
+    [item] = build_overview({"live/floods.json": _dump(_floods(reports))}, NOW, G).items
+    assert (item.place_th, item.area_code) == ("อ.คลองหลวง จ.ปทุมธานี", "1302")
+    # at sea, a report is in no district and makes no place
+    sea = [_report(n, [100.5, 11.5], timedelta(minutes=5)) for n in range(3)]
+    assert build_overview({"live/floods.json": _dump(_floods(sea))}, NOW, G).items == []
+
+
 def test_old_or_missing_inputs_add_nothing_and_say_so():
     reports = [_report(n, RANGSIT, timedelta(minutes=5)) for n in range(4)]
     stale = build_overview({"live/floods.json": _dump(_floods(reports, fetched=NOW - timedelta(hours=1)))}, NOW, G)

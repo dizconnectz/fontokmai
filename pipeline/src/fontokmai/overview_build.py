@@ -21,6 +21,7 @@ from importlib import resources
 
 from pydantic import BaseModel, ValidationError
 
+from fontokmai.areas import DistrictIndex, district_index
 from fontokmai.contracts.bkk import DamReport, RainGauges, RoadFloodingDaily
 from fontokmai.contracts.forecast import RainForecast, RiverForecast
 from fontokmai.contracts.live_floods import LiveFloods
@@ -88,10 +89,12 @@ NOTES_TH = [
 
 @dataclass
 class Gazetteer:
-    """DOPA places for naming a point: the nearest subdistrict gives its district and province."""
+    """DOPA places for naming a point: the district outlines say which district it is in (Codex M44); a stand-in
+    without outlines (a test's) falls back to the district of the nearest subdistrict point."""
 
     places: dict[str, Place]
     cells: dict[tuple[int, int], list[Place]]
+    districts: DistrictIndex | None = None
 
     @classmethod
     def load(cls) -> Gazetteer:
@@ -102,7 +105,7 @@ class Gazetteer:
             if place.kind == "subdistrict":
                 lon, lat = place.location
                 cells[(math.floor(lon / CELL), math.floor(lat / CELL))].append(place)
-        return cls({p.code: p for p in data.places}, dict(cells))
+        return cls({p.code: p for p in data.places}, dict(cells), district_index())
 
     def nearest(self, location: list[float]) -> Place | None:
         """The subdistrict whose point is nearest, within about 20 km; None outside Thailand."""
@@ -117,6 +120,22 @@ class Gazetteer:
                     if d < best_d:
                         best, best_d = place, d
         return best
+
+    def district_at(self, location: list[float]) -> Place | None:
+        """The district a point is in, by the outlines (policy in areas.py); None when unsure or outside."""
+        if self.districts is not None:
+            code = self.districts.district(location[0], location[1])
+            return self.places.get(code) if code else None
+        sub = self.nearest(location)
+        return self.places.get(sub.code[:4]) if sub else None
+
+    def province_at(self, location: list[float]) -> str | None:
+        """A river point's or a dam's province: by the outlines, else (on a border river) the nearest subdistrict"""
+        district = self.district_at(location)
+        if district:
+            return district.code[:2]
+        sub = self.nearest(location)
+        return sub.code[:2] if sub else None
 
     def bangkok_district(self, name: str | None) -> Place | None:
         bare = (name or "").removeprefix("เขต").strip()
@@ -216,9 +235,8 @@ def build_overview(files: dict[str, bytes], now: datetime, gazetteer: Gazetteer 
     inputs: list[OverviewInput] = []
     spots: dict[str, _Spot] = {}
 
-    def district_of(location: list[float]) -> Place | None:
-        sub = g.nearest(location)
-        return g.places.get(sub.code[:4]) if sub else None
+    # the district of a point by the outlines, never the nearest subdistrict point (Codex M44)
+    district_of, province_of = g.district_at, g.province_at
 
     # ---------- now: flood reports clustering in a district (Longdo Traffic, D33) ----------
     floods = _load(files, "live/floods.json", LiveFloods)
@@ -439,8 +457,7 @@ def build_overview(files: dict[str, bytes], now: datetime, gazetteer: Gazetteer 
             peak, day = max(later, key=lambda pair: pair[0])
             change = peak / base - 1
             if change >= RIVER_FAST - 1e-9:
-                sub = g.nearest(point.location)
-                nexts.append(_Spot("next", f"แม่น้ำ{point.name_th}", sub.code[:2] if sub else None,
+                nexts.append(_Spot("next", f"แม่น้ำ{point.name_th}", province_of(point.location),
                                    list(point.location), 9, [(5 + (change >= 0.6), OverviewReason(
                                        kind="river_rising",
                                        text_th=f"น้ำเพิ่มขึ้นมาก สูงสุดราว +{change * 100:.0f}% (ค่าแบบจำลอง)",
@@ -477,9 +494,8 @@ def build_overview(files: dict[str, bytes], now: datetime, gazetteer: Gazetteer 
                             f"(รายงาน {_thai_day(dams.report_date)} เทียบ {_thai_day(dams.previous_report_date)})",
                     day=None, source_th="กรมชลประทาน", at=reported)))
             if reasons and dam.location:
-                sub = g.nearest(dam.location)
                 # where its water goes, from the river network (HydroSHEDS): places to follow, not a flood forecast
-                nexts.append(_Spot("next", dam.name_th, sub.code[:2] if sub else None, list(dam.location), 10,
+                nexts.append(_Spot("next", dam.name_th, province_of(dam.location), list(dam.location), 10,
                                    detail=downstream_th(g.places, below.get(dam.id)), reasons=reasons))
 
     now_items = sorted((s.item() for s in spots.values()), key=lambda i: (-i.score, i.place_th))[:MAX_NOW]

@@ -59,7 +59,7 @@ describe('the summary of places to watch', () => {
       'เขตห้วยขวาง กรุงเทพมหานคร',
     ]);
     expect(now[1].reasons.map((reason) => reasonLine(reason, AT))).toEqual([
-      'น้ำท่วมหลายจุด (รายงาน 3 จุด)',
+      'มีรายงานน้ำท่วม 2 จุด',
       'พรุ่งนี้: ฝนหนักเกือบทั่ว กทม. สูงสุดราว 50 มม.',
     ]);
     const next = liveItems(overview, 'next', AT);
