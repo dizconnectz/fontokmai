@@ -146,6 +146,12 @@ export function pointName(point: FlowPoint): string {
   return point.code ? `${point.name_th} (${point.code})` : point.name_th;
 }
 
+/** A point's name in its site's popup: only its station code when the site is named after it (no name twice) */
+export function pointLabel(point: FlowPoint, site: FlowSite): string {
+  if (site.name_th.startsWith(point.name_th)) return point.code ? `สถานี ${point.code}` : '';
+  return pointName(point);
+}
+
 /** The points of a site, in its order: the river and the barrage first, the gates after them. */
 export function sitePoints(
   file: RidFlows,

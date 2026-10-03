@@ -9,6 +9,7 @@ import {
   factorText,
   flowFeatures,
   gapLines,
+  pointLabel,
   flowText,
   sitePin,
   sitePoints,
@@ -83,6 +84,10 @@ describe("RID's daily figures on the map (D35)", () => {
     expect(flowText(point('c35'))).toBe(
       'รายงานไม่มีตัวเลขน้ำของจุดนี้ · ลำน้ำรับได้ 1,159 ลบ.ม./วิ · กรมชลฯ จัดว่าท่วม',
     );
+    // a site named after its one station says only the station's code under its name
+    expect(pointLabel(point('c35'), site('ayutthaya'))).toBe('สถานี C.35');
+    expect(pointLabel(point('c29b'), site('samkhok'))).toBe('สถานี C.29B');
+    expect(pointLabel(point('rama6'), site('rama6'))).toBe('น้ำผ่านเขื่อนพระรามหก');
     const { main, gates } = sitePoints(flows, site('chao-phraya-dam'));
     expect(main.map((p) => p.id)).toEqual(['c13']);
     expect(gates).toHaveLength(9);

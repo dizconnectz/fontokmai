@@ -87,7 +87,7 @@ import {
   gapLines,
   flowsOld,
   flowText,
-  pointName,
+  pointLabel,
   sitePoints,
   type CanalShapes,
   type FlowPoint,
@@ -807,12 +807,13 @@ function pageLink(path: string, text: string): HTMLElement {
   link.textContent = text;
   return link;
 }
-function pointList(points: FlowPoint[]): HTMLElement {
+function pointList(points: FlowPoint[], site: FlowSite): HTMLElement {
   const list = document.createElement('ul');
   list.className = 'flow-points';
   for (const point of points) {
     const item = document.createElement('li');
-    item.append(line(pointName(point), 'b'), line(flowText(point)));
+    const label = pointLabel(point, site);
+    item.append(...(label ? [line(label, 'b')] : []), line(flowText(point)));
     list.append(item);
   }
   return list;
@@ -827,14 +828,14 @@ function flowPopup(site: FlowSite, file: RidFlows, now: number): HTMLElement {
   root.className = 'camera-popup flow-popup';
   const { main, gates } = sitePoints(file, site);
   root.append(line(site.name_th, 'strong'));
-  if (main.length) root.append(pointList(main));
+  if (main.length) root.append(pointList(main, site));
   if (gates.length && main.length + gates.length > 4) {
     const fold = document.createElement('details');
     const summary = document.createElement('summary');
     summary.textContent = `ประตูรับน้ำ ${gates.length} จุด`;
-    fold.append(summary, pointList(gates));
+    fold.append(summary, pointList(gates, site));
     root.append(fold);
-  } else if (gates.length) root.append(pointList(gates));
+  } else if (gates.length) root.append(pointList(gates, site));
   root.append(
     line(`ตัวเลขเวลา 06:00 น. ${thaiDay(file.report_date)} · กรมชลฯ รายงานวันละครั้ง`, 'small'),
   );
