@@ -1,7 +1,7 @@
 # AGENTS.md — fontokmai (ฝนตกไหม): ข้อตกลงทีม สถานะ และการตัดสินใจ
 
-> **สถานะ**: เว็บแบบแผนที่เป็นหลักออนไลน์ที่ `https://dizconnectz.github.io/fontokmai/` (D28, D29): ประกาศกรมอุตุฯ ระบายสีตามระดับ, เรดาร์ฝน, กล้อง CCTV, ปักหมุดดูข้อมูลจุด, ค้นหาสถานที่ (ตำบล/อำเภอ/จังหวัด/สถานที่/ถนน), แถบเลื่อนเวลา (เรดาร์ย้อนหลัง → พยากรณ์ฝน 72 ชม.), ฝน 7 วัน, สายด่วน, รายงานน้ำท่วมตอนนี้ (Longdo/iTIC), ที่ของฉัน, ตัวเฝ้าข้อมูลหยุด (data-watch), ระดับน้ำคลอง/ฝนวัดจริง/ถนนท่วม กทม. + เขื่อนใหญ่ + สถานีอุตุฯ (DXS ดึงเป็นครั้งๆ D31), หน้าเกี่ยวกับ/คำถามที่พบบ่อย + SEO/AEO, แนวโน้มน้ำแม่น้ำ 14 จุด (GloFAS วันละครั้ง), การ์ดสรุปจุดที่ต้องระวังบนสุดของแถบข้าง (`summary/overview.json` กฎ v0 + เรดาร์ + ท้ายน้ำของเขื่อน) พร้อมแถบสรุป แนวโน้ม 1 ชม. และกรอบอำเภอ/จังหวัดบนแผนที่ (`ref/boundaries.json`) · ข้อมูลจาก VPS ทุก 15 นาที · สำรองรายวัน + คลังตรวจความแม่น (P0-B2) · แบบระบบ v6.1
-> อัปเดตล่าสุด: 2026-10-03 14:30 ICT (Codex) · เวลาเป็น ICT (UTC+7) · วันที่แบบ ISO (ค.ศ.)
+> **สถานะ**: เว็บแบบแผนที่เป็นหลักออนไลน์ที่ `https://dizconnectz.github.io/fontokmai/` (D28, D29): ประกาศกรมอุตุฯ ระบายสีตามระดับ, เรดาร์ฝน, กล้อง CCTV, ปักหมุดดูข้อมูลจุด, ค้นหาสถานที่ (ตำบล/อำเภอ/จังหวัด/สถานที่/ถนน), แถบเลื่อนเวลา (เรดาร์ย้อนหลัง → พยากรณ์ฝน 72 ชม.), ฝน 7 วัน + แนวโน้ม ensemble14วัน/18จุด (ทดลอง), สายด่วน, รายงานน้ำท่วมตอนนี้ (Longdo/iTIC), ที่ของฉัน, ตัวเฝ้าข้อมูลหยุด (data-watch), ระดับน้ำคลอง/ฝนวัดจริง/ถนนท่วม กทม. + เขื่อนใหญ่ + สถานีอุตุฯ (DXS ดึงเป็นครั้งๆ D31), หน้าเกี่ยวกับ/คำถามที่พบบ่อย + SEO/AEO, แนวโน้มน้ำแม่น้ำ 14 จุด (GloFAS วันละครั้ง), การ์ดสรุปจุดที่ต้องระวังบนสุดของแถบข้าง (`summary/overview.json` กฎ v0 + เรดาร์ + ท้ายน้ำของเขื่อน) พร้อมแถบสรุป แนวโน้ม 1 ชม. และกรอบอำเภอ/จังหวัดบนแผนที่ (`ref/boundaries.json`) · ข้อมูลจาก VPS ทุก 15 นาที · สำรองรายวัน + คลังตรวจความแม่น (P0-B2) · แบบระบบ v6.1
+> อัปเดตล่าสุด: 2026-10-03 14:49 ICT (Codex) · เวลาเป็น ICT (UTC+7) · วันที่แบบ ISO (ค.ศ.)
 > ไฟล์นี้เป็นช่องทางสื่อสารหลักระหว่าง Claude ↔ Codex ↔ ผู้ใช้ และ **ต้องมีขนาดไม่เกิน 32 KiB (UTF-8)** เพื่อให้ Codex โหลดได้ครบ
 > เอกสารอื่น: แบบระบบ `docs/design/fontokmai-design.md` · แหล่งข้อมูลและสิทธิ์ `docs/sources.md` · ประวัติเต็ม `private/handoffs/` (อยู่ใน private repo ไม่อยู่ใน repo สาธารณะ)
 
@@ -45,9 +45,15 @@
 ### A5. งานที่กำลังทำ (Active claims)
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
-| Codex | 2026-10-03 13:55 | AGENTS.md; pipeline/src/fontokmai/{contracts/outlook.py,contracts/export.py,sources/ensemble.py,outlook_build.py,hydrology.py,ref_data/hydrology.json,run.py,cli.py,housekeeping.py,examples.py}; pipeline/tests/{test_outlook.py,test_hydrology.py,test_contracts.py}; apps/web/src/{data.ts,useData.ts,App.tsx,outlook.ts,RainOutlookCard.tsx,Outlook.css,outlook.test.ts}; apps/web/tests/outlook.spec.ts; contracts/v1/{README.md,schema/outlook.schema.json,ts/outlook.ts,examples/outlook/}; scripts/gen-ts-types.sh; tests/consumer/outlook.test.ts; docs/{design/hydrology-pilot-plan.md,sources.md}; private/handoffs/{2026-10-03-codex-outlook.md,README.md} | ทำพยากรณ์14วัน | outlook |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md`)
+
+#### 2026-10-03 14:49 ICT — ฝน 14 วันขึ้นจริง · ปิดงานระยะแรก (Codex)
+- b30c3cc: collector/สัญญา24/ตัวอย่าง/types/การ์ดพับ18จุด ECMWF51+GFS31 · 12ชม./retry3ชม. แชร์budget8000/24ชม. คลังเดิมมีเพดาน/retention · docs/design/hydrology-pilot-plan.md และ sources§15.4
+- **โค้ด** CIผ่าน: pytest258+consumerPython57, vitest150+consumer64, Playwright135(3จอ)+consumerbrowser64; schema/examples/types/docker/ruff/build/format/safetyผ่าน (runs37106534549/560) · รอบเว็บเดิมที่ล้มแถบสีเป็นงานClaude ซึ่งaafbb84แก้testแล้ว ไม่แก้ทับ
+- **ข้อมูล/ความแม่น** APIจริง18จุด×2โมเดลครบ 4–17ต.ค.; gzip27KB/รอบ เก็บสมาชิกก่อนเหตุไว้สอบเทียบ ยังไม่มีหลักฐานว่าแม่นขึ้น ทะเบียนตลิ่ง/กำลังระบายยังnull; helpersกันรวมซ้ำ/เวลาไม่ตรง+Muskingumยังไม่เปิดสร้างพยากรณ์น้ำจริง
+- **Deploy** Pages37107037751และVPSb30c3ccสำเร็จ รอบ14:33เก็บข้อมูล; ทดสอบรอบเผยแพร่ทีละรอบ14:42ด้วยcontainerfontokmaiชั่วคราวแล้วคืนตัวหลัก → manifest20261003T074219Z-vps/1399cf61ea43 แสดง18จุด/14วันจริงบนdesktop/Pixel7 sha256และค่าการ์ดตรง ไม่มีJSerror/ล้นจอ
+- รายละเอียด/คำสั่งและประวัติ13:09/13:38/14:30: private/handoffs/2026-10-03-codex-outlook.md · ต่อไปเติมtopology/หน้าตัด/ตลิ่ง/ประตูที่สิทธิ์ชัดและbacktestก่อนเปิดคำนวณน้ำล้นจริง
 
 #### 2026-10-03 15:10 ICT — คำอธิบายแผนที่แบบเรียบ · เครดิตแผนที่ย่อเอง · ปิด M43 (Claude)
 - **ผู้ใช้ขอ legend ให้ minimal และเครดิต OpenFreeMap/OSM ย่อตั้งแต่แรก**: คีย์เหลือบรรทัดเดียวทุกจอ (ระดับประกาศ + สเกลฝน + ⓘ) กรอบสรุป/เส้นแม่น้ำ/ตลิ่ง/หมุดย้ายเข้า ⓘ “คำอธิบายแผนที่” (ชื่อเดิม “ความหมายหมุด” → แก้ consumer specs 3 ไฟล์) · เครดิตแผนที่: แนวทาง OSMF (safe harbour) ห้ามซ่อนตั้งแต่แรก แต่ย่อได้หลัง 5 วินาทีหรือเมื่อแตะแผนที่ → ทำแบบนั้น ⓘ เปิดกลับได้
@@ -55,10 +61,6 @@
 - **ซ้อนกับ Codex** (App.tsx จองไว้): แก้แค่บล็อก legend ทดสอบใน worktree แยก commit บน `b30c3cc` (prettier ในเครื่องเตือน `outlook.spec.ts` เพราะบรรทัดแบบ CRLF เท่านั้น CI ผ่าน ไม่ได้แก้ไฟล์นั้น)
 - **โค้ด** vitest 150 · Playwright 98 (chromium รวม outlook) · consumer 64 + browser 64
 
-#### 2026-10-03 14:30 ICT — ฝน ensemble 14 วันระยะแรก (Codex)
-- ผู้ใช้ “ทำเลย”: สัญญา24/collector/schema/types/examples + การ์ดพับ18จุด ECMWF51/GFS31 แยกสมาชิกถ่วงโมเดลเท่ากัน มีป้ายทดลอง/เก่า/ขาด; registryตลิ่ง/กำลังระบายnull และฟังก์ชันกันนับน้ำซ้ำ/เวลาไม่ตรง ยังไม่เปิด flood routingจริง · docs/design/hydrology-pilot-plan.md + sources§15.4
-- โค้ด: Python315ผ่าน; ruff/build/format; vitest150/consumer64; browserใหม่6ผ่าน WCAG · เว็บเดิม82/84 (เทสต์แถบสีล้มจากงานApp/MapView/stylesที่อีกฝ่ายแก้ค้างไว้ ไม่ทับและไม่commitส่วนนั้น) · stageAppเฉพาะการ์ด18บรรทัด
-- ข้อมูล: APIจริงครบ18×2โมเดล/14วัน raw140KB/gzip27KB อยู่ในbudget/retentionเดิม ยังไม่มีผลวัดความแม่น · deploy: รอ CI/Pages/VPS · รายละเอียด/ประวัติ13:09และ13:38ย้ายไป private/handoffs/2026-10-03-codex-outlook.md
 
 ## B. การตัดสินใจ
 ข้อเสนอเดิม D1–D10 จากร่างแรกถูกแทนด้วยตารางนี้เพราะขัดกับ D12 (ดูเหตุผลเดิมได้ใน snapshot)
@@ -112,7 +114,7 @@
 
 15. **ทวนงาน 1–2 ต.ค.** `04ba201`…`b392ff9`: สัญญาข้อ 20 (`kind`), 21 (`area_code`, `earlier`), 22 (`ref/boundaries.json`), 23 (`ref/river_lines.json`) · ที่ของฉันบรรทัดเดียวไม่บอก “ปลอดภัย” · ป้าย “ใหม่”/เพิ่ม-ลด นับจากที่การ์ดแสดง · หมุดร้ายแรงนอกกลุ่ม (popup/คีย์บอร์ด) · consumer specs ที่ Claude แก้ตามคำขอผู้ใช้
 
-16. **ลงมือ 3 ต.ค. ตามผู้ใช้**: ฝน ensemble14วัน/18จุด ECMWF+GFS (สัญญา24), การ์ดพับ/เลือกพื้นที่ และทะเบียนไฮดรอลิก; ยังไม่มีตลิ่ง/พารามิเตอร์ครบ ไม่เปิดคาดน้ำล้น/ไม่รับรองความแม่น · กำลังขึ้นระบบ
+16. **ลงมือ 3 ต.ค. ตามผู้ใช้**: ฝน ensemble14วัน/18จุด ECMWF+GFS (สัญญา24), การ์ดพับ/เลือกพื้นที่ และทะเบียนไฮดรอลิก; ยังไม่มีตลิ่ง/พารามิเตอร์ครบ ไม่เปิดคาดน้ำล้น/ไม่รับรองความแม่น · ขึ้นเว็บ/VPSจริงแล้ว ตรวจทั้งdesktop/Pixel7
 
 ## D. ขั้นต่อไป
 1. (เสร็จ) เว็บแผนที่เป็นหลักพร้อมประกาศ เรดาร์ กล้อง หมุด ค้นถนน และค้นหาสถานที่ (D29)
