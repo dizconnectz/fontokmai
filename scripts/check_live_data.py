@@ -33,6 +33,10 @@ DAMS_OLD = timedelta(hours=6)
 # not yet a problem, two are. The canal outlook it feeds is rebuilt every round, like the overview
 FLOWS_OLD = timedelta(hours=60)
 CANALS_OLD = timedelta(minutes=40)
+# the 14-day ensemble rain (contract section 24): fetched every 12 hours, again 3 hours after a failure; the web labels
+# it old after 24 hours. A model needs 80% of its members on a day to be read (as the web reads it)
+OUTLOOK_OLD = timedelta(hours=27)
+OUTLOOK_SHARE = 0.8
 FLOODS_DOWN = timedelta(minutes=60)
 DXS_DOWN = timedelta(minutes=60)
 # rejected documents are only worth an alert when they could not be read, not when a download failed once
@@ -48,6 +52,9 @@ EXPECTED_FILES = {
     "ref/cctv.json": ("warning", "ทะเบียนกล้อง"),
     "ref/places.json": ("warning", "รายชื่อสถานที่สำหรับค้นหา"),
     "ref/road_flood_history.json": ("warning", "ประวัติน้ำท่วมถนน"),
+    # fetched by the server itself since 2026-10-02 (Codex M46: a file dropped from the round was not noticed)
+    "water/dams.json": ("warning", "เขื่อนใหญ่"),
+    "forecast/outlook.json": ("warning", "แนวโน้มฝน 14 วัน"),
 }
 # files a source must publish once it is part of the round (its status is in the manifest)
 SOURCE_FILES = {
@@ -77,7 +84,7 @@ UNCHECKED: dict = {}  # a document the caller did not fetch: its age is not judg
 def evaluate(manifest: dict, forecast: dict | None, now: datetime, radar: dict | None = None,
              rivers: dict | None = UNCHECKED, overview: dict | None = UNCHECKED,
              dams: dict | None = UNCHECKED, flows: dict | None = UNCHECKED,
-             canals: dict | None = UNCHECKED) -> list[tuple[str, str]]:
+             canals: dict | None = UNCHECKED, outlook: dict | None = UNCHECKED) -> list[tuple[str, str]]:
     """(level, Thai message) for every problem; empty when all is well."""
     problems: list[tuple[str, str]] = []
     generated = _time(manifest.get("generated_at"))
@@ -159,7 +166,37 @@ def evaluate(manifest: dict, forecast: dict | None, now: datetime, radar: dict |
         elif now - observed > FLOWS_OLD:
             problems.append(("warning", f"รายงานน้ำกรมชลประทานไม่อัปเดต (ฉบับล่าสุดเป็นของ {_clock(observed)} น.)"
                                         " · งานอ่านรายงานทุก 2 ชม. อาจหยุด หรือรายงานเปลี่ยนรูปแบบ"))
+    if "forecast/outlook.json" in listed and outlook is not UNCHECKED:
+        problems += outlook_problems(outlook, now)
     return problems
+
+
+def outlook_problems(outlook: dict | None, now: datetime) -> list[tuple[str, str]]:
+    """The 14-day ensemble (Codex M46): unreadable, old, or with models that cannot be read on some or all points.
+    A missing member's rain is null, never 0: it does not count towards a model's members."""
+    fetched = _time((outlook or {}).get("fetched_at"))
+    if outlook is None or fetched is None:
+        return [("warning", "เปิดไฟล์แนวโน้มฝน 14 วันไม่ได้")]
+    if now - fetched > OUTLOOK_OLD:
+        return [("warning", f"แนวโน้มฝน 14 วันไม่อัปเดต (ดึงล่าสุด {_clock(fetched)} น.)")]
+    days = len(outlook.get("days") or [])
+    readable = gaps = 0  # (point, model) pairs readable on every day / not readable on some day or missing
+    for point in outlook.get("points") or []:
+        gaps += len(point.get("missing_models") or [])
+        for model in point.get("models") or []:
+            need = OUTLOOK_SHARE * (model.get("expected_members") or 0)
+            members = model.get("members") or []
+            counts = [sum(1 for m in members if d < len(m.get("rain_mm") or []) and m["rain_mm"][d] is not None)
+                      for d in range(days)]
+            if days and need and all(count >= need for count in counts):
+                readable += 1
+            else:
+                gaps += 1
+    if not readable:
+        return [("warning", "แนวโน้มฝน 14 วันใช้ไม่ได้: ไม่มีจุดใดที่มีสมาชิกพอทุกวัน")]
+    if gaps:
+        return [("warning", f"แนวโน้มฝน 14 วันไม่ครบ: ขาดโมเดลหรือสมาชิกไม่พอ {gaps} ชุด (ใช้ได้ {readable} ชุด)")]
+    return []
 
 
 def report(problems: list[tuple[str, str]], now: datetime) -> str:
@@ -194,7 +231,7 @@ def main(argv: list[str] | None = None) -> int:
         # each listed file once; None when it could not be opened (a file not listed is not judged)
         documents: dict[str, dict | None] = {}
         for path in ("forecast/rain.json", "radar.json", "forecast/rivers.json", "summary/overview.json",
-                     "water/dams.json", "water/flows.json", "summary/canals.json"):
+                     "water/dams.json", "water/flows.json", "summary/canals.json", "forecast/outlook.json"):
             if path in listed:
                 try:
                     documents[path] = _get_json(DATA_BASE + path)
@@ -203,7 +240,7 @@ def main(argv: list[str] | None = None) -> int:
         problems = evaluate(manifest, documents.get("forecast/rain.json"), now, documents.get("radar.json"),
                             documents.get("forecast/rivers.json"), documents.get("summary/overview.json"),
                             documents.get("water/dams.json"), documents.get("water/flows.json"),
-                            documents.get("summary/canals.json"))
+                            documents.get("summary/canals.json"), documents.get("forecast/outlook.json"))
     with open(args.report, "w", encoding="utf-8") as fh:
         fh.write(report(problems, now))
     with open(args.status, "w", encoding="utf-8") as fh:

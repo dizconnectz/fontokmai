@@ -6,7 +6,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from check_live_data import EXPECTED_FILES, evaluate, report  # noqa: E402
+from check_live_data import EXPECTED_FILES, evaluate, outlook_problems, report  # noqa: E402
 
 NOW = datetime(2026, 9, 26, 8, 30, tzinfo=UTC)
 
@@ -139,6 +139,44 @@ class Watch(unittest.TestCase):
         found = evaluate(listed, FRESH_FORECAST, NOW, FRESH_RADAR, flows=None, canals=stale)
         self.assertEqual([text.split(" (")[0] for _, text in found], ["คลองที่อาจล้นไม่อัปเดต",
                                                                        "เปิดไฟล์รายงานน้ำกรมชลประทานไม่ได้"])
+
+    def test_m46_a_dams_file_or_the_14_day_outlook_dropped_from_the_round_is_reported(self):
+        for path in ("water/dams.json", "forecast/outlook.json"):
+            listed = manifest()
+            listed["files"] = [f for f in listed["files"] if f["path"] != path]
+            [(level, text)] = evaluate(listed, FRESH_FORECAST, NOW, FRESH_RADAR)
+            self.assertEqual(level, "warning")
+            self.assertIn(path, text)
+
+    def test_m46_the_14_day_outlook_must_be_fresh_and_readable_on_every_day(self):
+        def model(name, expected, present, nulls=0):
+            members = [{"id": n, "rain_mm": [1.0] * 14} for n in range(present)]
+            for m in members[:nulls]:
+                m["rain_mm"][13] = None  # a missing value is not 0 mm: it is no member that day
+            return {"model": name, "expected_members": expected, "members": members}
+
+        def outlook(*points, age_hours=2):
+            return {"fetched_at": (NOW - timedelta(hours=age_hours)).isoformat(), "days": [str(d) for d in range(14)],
+                    "points": [{"missing_models": missing, "models": models} for models, missing in points]}
+
+        full = ([model("ecmwf", 51, 51), model("gfs", 31, 31)], [])
+        self.assertEqual(outlook_problems(outlook(full, full), NOW), [])
+        self.assertEqual(outlook_problems(None, NOW), [("warning", "เปิดไฟล์แนวโน้มฝน 14 วันไม่ได้")])
+        [(_, old)] = outlook_problems(outlook(full, age_hours=30), NOW)
+        self.assertTrue(old.startswith("แนวโน้มฝน 14 วันไม่อัปเดต"))
+        # one point without GFS, and one model short of members on the last day (nulls): partial
+        partial = ([model("ecmwf", 51, 51)], ["gfs"])
+        short = ([model("ecmwf", 51, 51, nulls=20), model("gfs", 31, 31)], [])
+        [(_, text)] = outlook_problems(outlook(full, partial, short), NOW)
+        self.assertEqual(text, "แนวโน้มฝน 14 วันไม่ครบ: ขาดโมเดลหรือสมาชิกไม่พอ 2 ชุด (ใช้ได้ 4 ชุด)")
+        # nothing readable at all
+        none = ([model("ecmwf", 51, 10)], ["gfs"])
+        [(_, text)] = outlook_problems(outlook(none, none), NOW)
+        self.assertEqual(text, "แนวโน้มฝน 14 วันใช้ไม่ได้: ไม่มีจุดใดที่มีสมาชิกพอทุกวัน")
+        # read in the round's check once listed
+        listed = manifest()
+        problems = evaluate(listed, FRESH_FORECAST, NOW, FRESH_RADAR, outlook=outlook(none))
+        self.assertEqual([text for _, text in problems], ["แนวโน้มฝน 14 วันใช้ไม่ได้: ไม่มีจุดใดที่มีสมาชิกพอทุกวัน"])
 
     def test_the_report_lists_the_problems_and_mentions_no_one(self):
         # the owner asked for no emails (2026-10-01): a mention in a report would send one
