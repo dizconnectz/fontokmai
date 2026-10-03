@@ -45,20 +45,18 @@
 ### A5. งานที่กำลังทำ (Active claims)
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
+| Codex | 2026-10-03 23:15 | `AGENTS.md`, `pipeline/src/fontokmai/canal_outlook.py`, `pipeline/tests/test_canal_outlook.py`, `contracts/v1/README.md`, `docs/design/fontokmai-design.md`, `apps/web/public/method/index.html`, `private/handoffs/2026-10-03-codex-formula-recheck.md`, `private/handoffs/README.md`, `local-notes/recheck-*` | ทวนสูตร/แก้ช่องว่างคะแนนคลอง ทดสอบและpushทีละชุด | formulas |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md`)
+
+#### 2026-10-03 23:19 ICT — ทวนสูตรและทยอยแก้ M52 (Codex)
+- M48/M49 เดิมแก้แล้ว; พบต่อ M52: ขึ้น9.6ซม.ถูกปัดเป็น10ก่อนให้คะแนน และไม่มีคู่ค่าวัดยังassessed=true → canals-v3 ใช้ค่าจริง/คู่เวลาเรียงถูก; testใหม่9กรณี ชุดคลอง17ผ่าน+ruff; สัญญา27/วิธีคิด/designแก้ตรงกัน ไม่เปลี่ยนschema
+- กำลังทวนสูตร/ช่องว่างข้อมูลต่อและpushทีละชุดตามผู้ใช้; รายงาน private/handoffs/2026-10-03-codex-formula-recheck.md (เก็บA6 21:32เดิม) · ความแม่นยังไม่ผ่านbacktest · รอCI/deploy
 
 #### 2026-10-03 23:10 ICT — ประตูน้ำ/คลอง D35 และปิดรีวิว M40–M51 (Claude)
 - D35 9d9a6a8 + M48–M51 34d92e6 + 95103af (ฉบับเต็ม private/handoffs/2026-10-03-claude-gates.md) · M45 60d66e7 เรดาร์ล้มไม่ซ่อนประกาศ · M40 0120995 แถบสรุปไม่เขียวเมื่ออ่านสรุปไม่ได้ · M44 62ef3dd อำเภอจากกรอบ `areas.py` · M46 0b401e1 · M47 76c35bb sha/size (live) · M42 ef7d0b9 · M41 182282a CLS มือถือ 0.127→0.026
 - **ทดสอบ** pytest/ruff, vitest161, consumer64/57, E2E108, consumer browser64 ผ่าน · CI ผ่าน · **Deploy** VPS 76c35bb, Pages · ทวนตามเกณฑ์: private/handoffs/2026-10-03-claude-review-fixes.md (M44 ไม่ตัดจุดใกล้เส้น มีเหตุผล)
 
-#### 2026-10-03 21:32 ICT — รีวิวรวม M44–M51 และสิทธิ์ใช้โค้ด (Codex)
-- ทวน ca1384e+งานคลอง9d9a6a8/เว็บจริง/VPS; วิธีทำซ้ำและเกณฑ์ปิด: private/handoffs/2026-10-03-codex-full-review.md (รวม A6 เดิม) · ไม่แก้ไฟล์ Claude
-- **P1** M44 จุดในคลองหลวงถูกสรุปธัญบุรีเพราะใช้ตำบลใกล้สุด; M45 radarล้มซ่อนalerts; M48 ค่าวัดคลองเก่า3วันแต่ดึงใหม่ยังเพิ่มคะแนน; M50 ข้อมูลคลองขาดทั้งหมดกลับแสดง0คะแนน/ยังไม่ถึงเกณฑ์
-- **P2** M46 data-watchขาดoutlook14วัน/เขื่อนหาย; M47 ไม่ตรวจbody hash; M49 เกณฑ์ฝนคลอง350/900ควร351/901; M51 อ่านสีผังไม่ได้แต่PDF304แล้วไม่retryภาพ
-- M40–M42ยังพบ (สีเขียวเมื่อข้อมูลขาด/CLS0.335กับ0.153/วาดซ้ำ15วินาที); M43ปิด · CI9730824ผ่าน: vitest155+consumer64, E2E153+consumerbrowser64; pytestฐาน258+ชุดคลอง11ผ่าน
-- **ความแม่น** ยังไม่มีbacktest/ตลิ่งครบ ไม่รับรองคาดน้ำล้น · **VPS** ณตรวจทำงานปกติ/backupตรวจผ่าน; ช่องว่างดิสก์/กู้คืน/takeoverในรายงาน; ไม่deployVPS
-- **Deploy** 9730824 Pages37129626930ผ่าน ตรวจAI_USAGEและเครดิตในJSเว็บจริงแล้ว; คงlicenseเดิม ข้อความบล็อกAIภายนอกไม่ได้ · ขั้นต่อไป Claudeแก้M40–M42/M44–M51แล้วทวนตามเกณฑ์
 
 ## B. การตัดสินใจ
 ข้อเสนอเดิม D1–D10 จากร่างแรกถูกแทนด้วยตารางนี้เพราะขัดกับ D12 (ดูเหตุผลเดิมได้ใน snapshot)

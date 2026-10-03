@@ -20,6 +20,7 @@ the file that brought it (M48).
 from __future__ import annotations
 
 import json
+import math
 from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
 from importlib import resources
@@ -34,7 +35,7 @@ from fontokmai.contracts.forecast import RainForecast
 
 CANALS_PATH = "summary/canals.json"
 LINES_PATH = "ref/canals.json"
-RULES = "canals-v2"  # v2 (2026-10-03, Codex M48–M50): TMD's rain classes from 35.1/90.1 mm, levels by reading time
+RULES = "canals-v3"  # v3: unrounded level thresholds and a valid pair required to assess a level trend
 ICT = timezone(timedelta(hours=7))
 FLOWS_MAX_AGE = timedelta(days=2)  # the report is daily
 RAIN_MAX_AGE = timedelta(hours=12)  # refreshed every 6 hours
@@ -169,7 +170,7 @@ def _rain(canal: Any, forecast: RainForecast, cells: dict[str, set[int]], names:
 
 def _levels(canal: Any, levels: CanalLevels, now: datetime) -> list[CanalFactor] | None:
     """A gauge on the canal rising RISE_CM within RISE_WITHIN, by readings of the last LEVELS_MAX_AGE (M48: the time
-    of the reading, never the time of the file); None when no gauge on it has a reading that recent."""
+    of the reading, never the time of the file); None when no gauge has a valid recent pair to judge its trend."""
     read, rises = False, []
     for station in levels.stations:
         at = station.observed_at
@@ -177,12 +178,15 @@ def _levels(canal: Any, levels: CanalLevels, now: datetime) -> list[CanalFactor]
             continue
         if not now - LEVELS_MAX_AGE <= at <= now + CLOCK_SLACK:
             continue
-        read = True
         before, since = station.previous_level_in_m, station.previous_observed_at
         if before is None or since is None or not timedelta(0) < at - since <= RISE_WITHIN:
             continue
-        cm = round((station.level_in_m - before) * 100)
-        if cm >= RISE_CM:
+        if not math.isfinite(station.level_in_m) or not math.isfinite(before):
+            continue
+        read = True
+        cm = (station.level_in_m - before) * 100
+        # Only absorb binary arithmetic noise at exactly 10 cm; do not promote a rounded 9.6 cm rise.
+        if cm >= RISE_CM or math.isclose(cm, RISE_CM, rel_tol=0, abs_tol=1e-9):
             rises.append((cm, station))
     if not read:
         return None
@@ -191,7 +195,8 @@ def _levels(canal: Any, levels: CanalLevels, now: datetime) -> list[CanalFactor]
     cm, station = max(rises, key=lambda item: item[0])
     hours = (station.observed_at - station.previous_observed_at).total_seconds() / 3600
     more = f" (และอีก {len(rises) - 1} สถานี)" if len(rises) > 1 else ""
-    text = (f"ระดับน้ำที่ {station.name_th} สูงขึ้น {cm} ซม. ใน {hours:.1f}".removesuffix(".0")
+    change = f"{cm:.1f}".removesuffix(".0")
+    text = (f"ระดับน้ำที่ {station.name_th} สูงขึ้น {change} ซม. ใน {hours:.1f}".removesuffix(".0")
             + f" ชม. (วัดเมื่อ {_clock(station.observed_at)}){more}")
     return [CanalFactor(kind="level", points=1, text_th=text, source_th="สำนักการระบายน้ำ กทม.",
                         at=station.observed_at)]
@@ -262,7 +267,7 @@ def build_canal_outlook(files: dict[str, bytes], now: datetime) -> CanalOutlook 
                 judged += 1
             else:
                 gaps.append(CanalGap(kind="level", text_th=_gap_text(inputs["levels"]) if levels is None
-                                     else "ไม่มีค่าวัดระดับน้ำบนคลองนี้ใน 6 ชม. ล่าสุด"))
+                                     else "ไม่มีค่าวัดระดับน้ำล่าสุดพร้อมค่าก่อนหน้าที่เทียบกันได้ภายใน 6 ชม."))
         score = sum(factor.points for factor in factors)
         assessed = judged > 0
         level_name = ("warn" if score >= WARN else "watch" if score >= WATCH else None) if assessed else None

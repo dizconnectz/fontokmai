@@ -4,6 +4,8 @@ left out, and a canal without data said to be not assessed (Codex M48–M50)."""
 from datetime import UTC, date, datetime, timedelta
 from importlib import resources
 
+import pytest
+
 from fontokmai.canal_outlook import build_canal_outlook
 from fontokmai.contracts.bkk import CanalLevels, CanalStation
 from fontokmai.contracts.forecast import ForecastLattice, RainForecast
@@ -102,7 +104,8 @@ def test_m48_a_level_counts_by_the_time_of_its_reading_never_by_the_file_that_br
     canals, _ = outlook(flows=flows({}, flooded=["1306"]), levels=old)
     hokwa = canals["hokwa"]
     assert not [f for f in hokwa.factors if f.kind == "level"]
-    assert [g.text_th for g in hokwa.gaps if g.kind == "level"] == ["ไม่มีค่าวัดระดับน้ำบนคลองนี้ใน 6 ชม. ล่าสุด"]
+    assert [g.text_th for g in hokwa.gaps if g.kind == "level"] == [
+        "ไม่มีค่าวัดระดับน้ำล่าสุดพร้อมค่าก่อนหน้าที่เทียบกันได้ภายใน 6 ชม."]
     assert (hokwa.score, hokwa.level) == (1, None)
     # a reading ahead of the clock, a comparison later than the reading, or one too far back count nothing either
     for at, before in ((NOW + timedelta(hours=1), NOW - timedelta(hours=2)), (NOW - timedelta(hours=1), NOW),
@@ -152,3 +155,28 @@ def test_m50_without_its_data_a_canal_is_not_assessed_never_below_the_rules():
     canals, result = outlook(flows=flows({"phranarai": 0}), rain=rain(5), levels=levels(0))
     assert (canals["hokwa"].assessed, canals["hokwa"].gaps, canals["hokwa"].score) == (True, [], 0)
     assert {i.status for i in result.inputs} == {"fresh"}
+
+
+@pytest.mark.parametrize("rise,points", [(9.49, 0), (9.6, 0), (9.99, 0), (10, 1), (10.1, 1)])
+def test_m52_level_threshold_uses_the_unrounded_change(rise, points):
+    canals, _ = outlook(levels=levels(rise))
+    canal = canals["hokwa"]
+    assert canal.assessed and not any(g.kind == "level" for g in canal.gaps)
+    assert sum(f.points for f in canal.factors if f.kind == "level") == points
+
+
+@pytest.mark.parametrize("comparison", ["missing", "same_time", "later", "too_old"])
+def test_m52_a_current_level_without_a_valid_comparison_cannot_establish_a_trend(comparison):
+    water = CanalLevels.model_validate_json(levels(15))
+    station = water.stations[0]
+    before = {
+        "missing": None,
+        "same_time": station.observed_at,
+        "later": NOW,
+        "too_old": station.observed_at - timedelta(hours=7),
+    }[comparison]
+    water = water.model_copy(update={"stations": [station.model_copy(update={"previous_observed_at": before})]})
+    canals, _ = outlook(levels=water.model_dump_json().encode())
+    canal = canals["hokwa"]
+    assert not canal.assessed and canal.score == 0 and canal.level is None
+    assert any(g.kind == "level" for g in canal.gaps)
