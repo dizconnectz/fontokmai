@@ -157,6 +157,10 @@ export function useData() {
         manifest,
         path,
         REF_FILES[name].valid as (value: unknown) => value is { schema_version?: string },
+        fetch,
+        undefined,
+        // live data is checked against the manifest's hashes (M47); the examples are listed with placeholders
+        settings.current!.DATA_MODE === 'live',
       );
     syncs.current = {
       cameras: new RefSync(REF_FILES.cameras.path, loader('cameras'), (slot) =>

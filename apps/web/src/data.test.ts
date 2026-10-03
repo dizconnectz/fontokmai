@@ -5,8 +5,10 @@ import {
   displayStatus,
   formatTime,
   isStale,
+  loadRef,
   loadSnapshot,
   safeLink,
+  sha256Hex,
   staleAfter,
   validateSnapshot,
   visibleAlerts,
@@ -286,6 +288,44 @@ describe('snapshot loading and recovery', () => {
     await expect(
       loadSnapshot(base, previous, responder(next.manifest, next.feed)),
     ).rejects.toMatchObject({ code: 'older' });
+  });
+});
+
+describe('reference files are the bytes the manifest lists (Codex M47)', () => {
+  const valid = (value: unknown): value is { schema_version: string; x: number } =>
+    typeof value === 'object' && value !== null && 'x' in value;
+  const older = JSON.stringify({ schema_version: '1', x: 1 });
+  const newer = JSON.stringify({ schema_version: '1', x: 2 });
+  async function listing(body: string): Promise<Manifest> {
+    const bytes = new TextEncoder().encode(body);
+    return {
+      files: [
+        { path: 'ref/x.json', sha256: await sha256Hex(bytes), size: bytes.byteLength, revision: 2 },
+      ],
+    } as unknown as Manifest;
+  }
+  const serving = (body: string) => vi.fn<typeof fetch>(async () => new Response(body));
+
+  it('takes the file only when its size and SHA-256 are those of the manifest', async () => {
+    const manifest = await listing(newer);
+    // a cache that still serves the old file under the new revision: an error, tried again next time
+    await expect(
+      loadRef(base, manifest, 'ref/x.json', valid, serving(older)),
+    ).rejects.toMatchObject({
+      code: 'mixed',
+    });
+    // the same size but other bytes is caught by the hash
+    await expect(
+      loadRef(base, manifest, 'ref/x.json', valid, serving(newer.replace('2', '3'))),
+    ).rejects.toMatchObject({ code: 'mixed' });
+    await expect(loadRef(base, manifest, 'ref/x.json', valid, serving(newer))).resolves.toEqual({
+      schema_version: '1',
+      x: 2,
+    });
+    // the hand-cut examples of the tests are read without it
+    await expect(
+      loadRef(base, manifest, 'ref/x.json', valid, serving(older), undefined, false),
+    ).resolves.toMatchObject({ x: 1 });
   });
 });
 

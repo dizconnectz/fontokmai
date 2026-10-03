@@ -293,7 +293,32 @@ export async function loadSnapshot(
   throw new DataError('mixed', 'ไฟล์ข้อมูลเป็นคนละชุด');
 }
 
-/** A reference file of the manifest (ref/…), fetched by revision so a changed file is never served stale. */
+async function getBytes(url: string, fetcher: Fetcher, signal?: AbortSignal): Promise<Uint8Array> {
+  try {
+    const response = await fetcher(url, {
+      cache: 'no-store',
+      signal: AbortSignal.any([AbortSignal.timeout(15_000), ...(signal ? [signal] : [])]),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return new Uint8Array(await response.arrayBuffer());
+  } catch (error) {
+    if (signal?.aborted) throw error;
+    throw new DataError('network', 'โหลดข้อมูลไม่สำเร็จ');
+  }
+}
+
+export async function sha256Hex(bytes: Uint8Array<ArrayBuffer>): Promise<string> {
+  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+  return [...digest].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * A reference file of the manifest (ref/…), fetched by revision so a changed file is never served stale. With
+ * `verify` (live data), its bytes must be the size and SHA-256 the manifest lists (Codex M47): a host or a cache that
+ * still serves the old file under the new revision is an error the next refresh tries again, never a version kept as
+ * the new one. This checks that the file is the one of the manifest, not who published the manifest. The examples
+ * of the tests are hand-cut files listed under placeholder hashes: they are read without it.
+ */
 export async function loadRef<T extends { schema_version?: string }>(
   base: string,
   manifest: Manifest,
@@ -301,12 +326,21 @@ export async function loadRef<T extends { schema_version?: string }>(
   valid: (value: unknown) => value is T,
   fetcher: Fetcher = fetch,
   signal?: AbortSignal,
+  verify = true,
 ): Promise<T | null> {
   const file = manifest.files.find((f) => f.path === path);
   if (!file) return null;
   const url = new URL(path, base);
   url.searchParams.set('r', `${file.revision}-${file.sha256.slice(0, 12)}`);
-  const value = await getJson(url.href, fetcher, signal);
+  const bytes = (await getBytes(url.href, fetcher, signal)) as Uint8Array<ArrayBuffer>;
+  if (verify && (bytes.byteLength !== file.size || (await sha256Hex(bytes)) !== file.sha256))
+    throw new DataError('mixed', 'ไฟล์ข้อมูลยังไม่ตรงกับรายการ');
+  let value: unknown;
+  try {
+    value = JSON.parse(new TextDecoder().decode(bytes));
+  } catch {
+    throw new DataError('invalid', 'รูปแบบข้อมูลอ้างอิงไม่รองรับ');
+  }
   if (!valid(value) || value.schema_version !== '1')
     throw new DataError('invalid', 'รูปแบบข้อมูลอ้างอิงไม่รองรับ');
   return value;
