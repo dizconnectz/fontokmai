@@ -6,7 +6,10 @@ unmistakably fontokmai's:
 - a build cache record whose description names fontokmai (the stages of pipeline/Dockerfile are fontokmai-build and
   fontokmai, and each RUN ends with "# fontokmai"), or one built on top of such a record (its Parents);
 - a dangling image whose entrypoint is ["fontokmai"].
-Records that the latest build used (last used within KEEP_SECONDS) stay, so that the next deploy is still quick.
+Records that the latest build used (last used within KEEP_SECONDS) stay, so that the next deploy is still quick, and
+so does every record something that stays is built on: BuildKit removes a record only after every record built on it.
+The layer a RUN leaves is a mutable record; until 2026-10-02 those were skipped, and with them the whole chain under
+each one stayed (45 records, 572 MB, about 60 MB more after each deploy).
 
 Usage: python3 prune_own_cache.py [--dry-run] [--only ID] [--keep-minutes N]
 """
@@ -55,6 +58,29 @@ def own_records() -> list[dict]:
     return [row for row in rows if row["ID"] in ours]
 
 
+def removable(records: list[dict], keep: float, only: str | None = None) -> list[dict]:
+    """The records that can go: reclaimable (no build or image holds them), not used within `keep` seconds, and
+    nothing that stays is built on them."""
+    chosen = {r["ID"]: r for r in records if r.get("Reclaimable") and seconds_ago(r.get("LastUsedAt", "")) > keep
+              and (only is None or r["ID"] == only)}
+    children: dict[str, set[str]] = {}
+    for record in records:
+        for parent in record.get("Parents") or []:
+            children.setdefault(parent, set()).add(record["ID"])
+    dropped = True
+    while dropped:  # a record with a child that stays cannot go, nor can what it is built on
+        dropped = False
+        for record_id in list(chosen):
+            if children.get(record_id, set()) - chosen.keys():
+                del chosen[record_id]
+                dropped = True
+    return list(chosen.values())
+
+
+def megabytes(records: list[dict]) -> float:
+    return sum(size_bytes(r.get("Size")) for r in records) / 1e6
+
+
 def leaves_first(records: list[dict]) -> list[dict]:
     """Records ordered so that one is removed only after every record built on it."""
     left = {r["ID"]: r for r in records}
@@ -82,14 +108,15 @@ def main(argv: list[str]) -> int:
     only = argv[argv.index("--only") + 1] if "--only" in argv else None
     keep = int(argv[argv.index("--keep-minutes") + 1]) * 60 if "--keep-minutes" in argv else KEEP_SECONDS
     records = own_records()
-    old = [r for r in records if r.get("Reclaimable") and not r.get("Mutable")
-           and seconds_ago(r.get("LastUsedAt", "")) > keep and (only is None or r["ID"] == only)]
-    print(f"fontokmai build cache: {len(records)} records ({sum(size_bytes(r.get('Size')) for r in records) / 1e6:.0f}"
-          f" MB), {len(old)} not used in the last {keep // 60} min"
-          f" ({sum(size_bytes(r.get('Size')) for r in old) / 1e6:.0f} MB)" + (" · dry run" if dry else ""))
-    if not dry:
+    old = removable(records, keep, only)
+    print(f"fontokmai build cache: {len(records)} records ({megabytes(records):.0f} MB), {len(old)} can go: not used"
+          f" in the last {keep // 60} min and nothing kept built on them ({megabytes(old):.0f} MB)"
+          + (" · dry run" if dry else ""))
+    if not dry and old:
         for record in leaves_first(old):
             run("docker", "buildx", "prune", "-f", "--filter", f"id={record['ID']}")
+        left = own_records()
+        print(f"fontokmai build cache now: {len(left)} records ({megabytes(left):.0f} MB)")
     images = own_dangling_images()
     print(f"old fontokmai images: {len(images)}")
     if not dry and only is None:

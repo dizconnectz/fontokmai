@@ -353,3 +353,18 @@ def test_restore_db_command(tmp_path, capsys):
     assert (result["cap_documents"], result["recovery_epoch"]) == (2, 4)
     with StateStore(target) as store:
         assert store.get_meta("recovery_epoch") == "4"
+
+
+def test_the_round_line_keeps_what_the_jobs_of_the_round_said(tmp_path):
+    """The container's log is gone at every deploy; the archive keeps a job that stopped working (2026-10-02)."""
+    out, root = tmp_path / "out", tmp_path / "eval"
+    _publish(out, {"radar.json": {"f": 1}})
+    archive_round(root, out, NOW, {"published": "abc123", "alerts": 3, "dams": "error: OpenDataError: timed out",
+                                   "forecast": "built 7 days", "processes": "3/128", "restart": None,
+                                   "overview": {"not": "an error"}}, NOW)
+    archive_round(root, out, NOW + timedelta(minutes=15), {"published": "def456",
+                                                           "overview": "error: ValueError: bad"}, NOW)
+    first, second = read_lines(root / "rounds" / "2026-09-29.jsonl.gz")
+    assert first["jobs"] == {"dams": "error: OpenDataError: timed out", "forecast": "built 7 days",
+                             "processes": "3/128"}
+    assert second["jobs"] == {"overview": "error: ValueError: bad"}

@@ -216,12 +216,6 @@ def _scheduled_job(args: argparse.Namespace) -> Callable[[datetime], dict[str, A
             dams = refresh_dams(now)
             if dams:
                 summary["dams"] = dams
-        # last, and whether or not publishing worked: the daily backup, the retention and the archive for checking
-        # accuracy (P0-B2); what it did goes in the round log, and a failure here never fails the round
-        try:
-            summary["keep"] = housekeeping(args.db, args.out, now, summary)
-        except Exception as exc:  # noqa: BLE001
-            summary["keep"] = {"error": f"{type(exc).__name__}: {exc}"[:300]}
         pressure = process_pressure()
         if pressure:
             summary["processes"] = f"{pressure[0]}/{pressure[1]}"
@@ -229,6 +223,13 @@ def _scheduled_job(args: argparse.Namespace) -> Callable[[datetime], dict[str, A
             summary["restart"] = f"publishing failed {failed_publishes[0]} rounds in a row"
         elif pressure and pressure[0] >= RESTART_AT_PROCESS_SHARE * pressure[1]:
             summary["restart"] = f"{pressure[0]} of the container's {pressure[1]} processes in use"
+        # last, and whether or not publishing worked: the daily backup, the retention and the archive for checking
+        # accuracy (P0-B2), which also keeps what the jobs above said; what it did goes in the round log, and a
+        # failure here never fails the round
+        try:
+            summary["keep"] = housekeeping(args.db, args.out, now, summary)
+        except Exception as exc:  # noqa: BLE001
+            summary["keep"] = {"error": f"{type(exc).__name__}: {exc}"[:300]}
         if failed is not None:
             # the round is logged as failed with its own error; what it did before goes with it (schedule.py)
             failed.round_summary = summary  # type: ignore[attr-defined]

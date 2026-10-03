@@ -229,6 +229,18 @@ def _day_files(root: Path) -> list[tuple[str, Path]]:
     return sorted((path.name[:10], path) for path in root.glob("*/*.jsonl.gz"))
 
 
+# what the jobs of a round said (cli.py): the container's log goes with the container at every deploy, the archive
+# stays, so a job that stopped working shows here (2026-10-02 review)
+JOB_KEYS = ("road_flood_history", "forecast", "rivers", "dams", "processes", "restart")
+
+
+def _jobs(summary: dict[str, Any]) -> dict[str, Any] | None:
+    jobs = {key: summary[key] for key in JOB_KEYS if summary.get(key)}
+    if isinstance(summary.get("overview"), str):  # only an error is said there
+        jobs["overview"] = summary["overview"]
+    return jobs or None
+
+
 def archive_round(root: Path, out: Path, now: datetime, summary: dict[str, Any], archived_at: datetime) -> str:
     """One round into the archive: the round line, new versions of VERSIONED and the flood reports' changes. All of
     it is made first and written only if both the day's share and the whole archive have room for it, including
@@ -239,6 +251,7 @@ def archive_round(root: Path, out: Path, now: datetime, summary: dict[str, Any],
     round_line = {
         "started": now.isoformat(), "archived_at": archived_at.isoformat(),
         "code": os.environ.get("FONTOKMAI_CODE") or None, "published": summary.get("published"),
+        "jobs": _jobs(summary),
         "generation_id": manifest.get("generation_id"), "generated_at": manifest.get("generated_at"),
         "schema_version": manifest.get("schema_version"), "completeness": manifest.get("completeness"),
         "source_status": manifest.get("source_status", []),

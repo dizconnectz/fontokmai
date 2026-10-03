@@ -4,12 +4,14 @@ after failed publishes in a row or near its process limit."""
 
 import json
 import subprocess
-from datetime import UTC, datetime
+import threading
+import time
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 import pytest
 
-from fontokmai import cli
+from fontokmai import cli, schedule
 from fontokmai.health import process_pressure
 from fontokmai.publish import git_pages
 from fontokmai.schedule import RESTART_EXIT, run_forever
@@ -108,3 +110,41 @@ def test_a_container_near_its_process_limit_asks_for_a_restart(tmp_path, monkeyp
     assert summary["restart"] == "103 of the container's 128 processes in use"
     calm = _job(tmp_path, monkeypatch, lambda *a, **k: "0123456789abcdef", pressure=(3, 128))(NOW)
     assert calm["processes"] == "3/128" and "restart" not in calm
+
+
+def test_a_round_that_hangs_is_ended_from_the_watchdog():
+    """A round that never ends never reaches the restart at its end: the watchdog ends it (2026-10-02 review)."""
+    release = threading.Event()
+    stuck = []
+
+    def hung(now):
+        release.wait(5)
+        return {}
+
+    def on_stuck(record, log):
+        stuck.append(record)
+        release.set()  # in production the process ends here (os._exit)
+
+    start = datetime(2026, 10, 1, 3, 47, 59, tzinfo=UTC)
+    run_forever(hung, clock=lambda: start, sleep=lambda s: None, log=lambda line: None, max_rounds=1,
+                round_limit=timedelta(milliseconds=50), on_stuck=on_stuck)
+    assert [record["slot"] for record in stuck] == ["2026-10-01T03:48:00+00:00"]
+
+
+def test_a_round_that_ends_in_time_stops_its_watchdog():
+    stuck = []
+    start = datetime(2026, 10, 1, 3, 47, 59, tzinfo=UTC)
+    run_forever(lambda now: {}, clock=lambda: start, sleep=lambda s: None, log=lambda line: None, max_rounds=2,
+                round_limit=timedelta(milliseconds=50), on_stuck=lambda record, log: stuck.append(record))
+    time.sleep(0.15)
+    assert stuck == []
+
+
+def test_a_stuck_round_is_logged_and_the_process_ends_for_docker_to_start_it_again(monkeypatch):
+    ended = []
+    monkeypatch.setattr(schedule.os, "_exit", ended.append)
+    logged = []
+    schedule.end_stuck_round({"slot": "2026-10-01T03:48:00+00:00", "started": "x"}, logged.append)
+    (record,) = [json.loads(line) for line in logged]
+    assert record["ok"] is False and record["restart"] == "stuck round" and "still running" in record["error"]
+    assert ended == [RESTART_EXIT]

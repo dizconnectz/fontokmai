@@ -107,6 +107,18 @@ class Watch(unittest.TestCase):
         # a file that could not be opened is not fresh either
         self.assertEqual(len(evaluate(manifest(), FRESH_FORECAST, NOW, FRESH_RADAR, None, overview)), 1)
 
+    def test_the_dams_the_server_fetches_itself_must_stay_fresh_but_a_hand_sent_file_is_not_judged(self):
+        listed = manifest()
+        listed["files"].append({"path": "water/dams.json"})
+        auto = {"fetched_at": (NOW - timedelta(hours=7)).isoformat(), "automatic": True}
+        found = evaluate(listed, FRESH_FORECAST, NOW, FRESH_RADAR, dams=auto)
+        self.assertEqual([level for level, text in found if "เขื่อน" in text], ["warning"])
+        fresh = {**auto, "fetched_at": (NOW - timedelta(hours=3)).isoformat()}
+        self.assertEqual(evaluate(listed, FRESH_FORECAST, NOW, FRESH_RADAR, dams=fresh), [])
+        by_hand = {"fetched_at": (NOW - timedelta(days=2)).isoformat()}  # no "automatic": sent with the BKK update
+        self.assertEqual(evaluate(listed, FRESH_FORECAST, NOW, FRESH_RADAR, dams=by_hand), [])
+        self.assertEqual(evaluate(listed, FRESH_FORECAST, NOW, FRESH_RADAR), [])  # not fetched: not judged
+
     def test_the_report_lists_the_problems_and_mentions_no_one(self):
         # the owner asked for no emails (2026-10-01): a mention in a report would send one
         text = report([("critical", "x"), ("warning", "y")], NOW)

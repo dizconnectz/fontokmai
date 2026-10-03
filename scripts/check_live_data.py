@@ -26,6 +26,9 @@ RADAR_OLD = timedelta(minutes=60)
 FORECAST_OLD = timedelta(hours=13)
 RIVERS_OLD = timedelta(hours=37)  # rebuilt once a day; the web labels it after 36 hours
 OVERVIEW_OLD = timedelta(minutes=40)  # rebuilt every round, like the manifest
+# the large dams the server fetches by itself every 2 hours (RID, 2026-10-02); the web says late after 6 hours. A
+# dams file that came with the Bangkok update by hand (no "automatic") is not judged: it arrives when someone sends it
+DAMS_OLD = timedelta(hours=6)
 FLOODS_DOWN = timedelta(minutes=60)
 DXS_DOWN = timedelta(minutes=60)
 # rejected documents are only worth an alert when they could not be read, not when a download failed once
@@ -66,7 +69,8 @@ UNCHECKED: dict = {}  # a document the caller did not fetch: its age is not judg
 
 
 def evaluate(manifest: dict, forecast: dict | None, now: datetime, radar: dict | None = None,
-             rivers: dict | None = UNCHECKED, overview: dict | None = UNCHECKED) -> list[tuple[str, str]]:
+             rivers: dict | None = UNCHECKED, overview: dict | None = UNCHECKED,
+             dams: dict | None = UNCHECKED) -> list[tuple[str, str]]:
     """(level, Thai message) for every problem; empty when all is well."""
     problems: list[tuple[str, str]] = []
     generated = _time(manifest.get("generated_at"))
@@ -131,6 +135,13 @@ def evaluate(manifest: dict, forecast: dict | None, now: datetime, radar: dict |
         made = _time((document or {}).get(field))
         if made is None or now - made > limit:
             problems.append(("warning", f"{name}ไม่อัปเดต" + (f" (ทำล่าสุด {_clock(made)} น.)" if made else "")))
+    if "water/dams.json" in listed and dams is not UNCHECKED:
+        fetched = _time((dams or {}).get("fetched_at"))
+        if dams is None or fetched is None:
+            problems.append(("warning", "เปิดไฟล์เขื่อนไม่ได้"))
+        elif dams.get("automatic") and now - fetched > DAMS_OLD:
+            problems.append(("warning", f"ข้อมูลเขื่อนใหญ่ไม่อัปเดต (ดึงล่าสุด {_clock(fetched)} น.)"
+                                        " · งานดึงจากกรมชลประทานทุก 2 ชม. อาจหยุด"))
     return problems
 
 
@@ -163,8 +174,8 @@ def main(argv: list[str] | None = None) -> int:
         problems = [("critical", f"เปิดข้อมูลไม่ได้เลย: {exc}")]
     else:
         listed = {f.get("path") for f in manifest.get("files", [])}
-        forecast = radar = rivers = overview = None
-        for path in ("forecast/rivers.json", "summary/overview.json"):
+        forecast = radar = rivers = overview = dams = None
+        for path in ("forecast/rivers.json", "summary/overview.json", "water/dams.json"):
             if path in listed:
                 try:
                     document = _get_json(DATA_BASE + path)
@@ -172,8 +183,10 @@ def main(argv: list[str] | None = None) -> int:
                     document = None
                 if path == "forecast/rivers.json":
                     rivers = document
-                else:
+                elif path == "summary/overview.json":
                     overview = document
+                else:
+                    dams = document
         if "forecast/rain.json" in listed:
             try:
                 forecast = _get_json(DATA_BASE + "forecast/rain.json")
@@ -184,7 +197,7 @@ def main(argv: list[str] | None = None) -> int:
                 radar = _get_json(DATA_BASE + "radar.json")
             except (OSError, ValueError):
                 radar = None
-        problems = evaluate(manifest, forecast, now, radar, rivers, overview)
+        problems = evaluate(manifest, forecast, now, radar, rivers, overview, dams)
     with open(args.report, "w", encoding="utf-8") as fh:
         fh.write(report(problems, now))
     with open(args.status, "w", encoding="utf-8") as fh:

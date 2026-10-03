@@ -5,7 +5,9 @@
 name: data-watch
 on:
   schedule:
-    # 5 minutes after each publish slot (:03, :18, :33, :48); GitHub may start a scheduled run late or skip one
+    # 5 minutes after each publish slot (:03, :18, :33, :48). GitHub runs far fewer than asked: 31 runs from
+    # 2026-09-26 to 10-02, every 3 to 8 hours. A coarse view from outside; the round archive on the VPS
+    # (archive/eval/rounds, with what each round's jobs said) is the full record
     - cron: "8,23,38,53 * * * *"
   workflow_dispatch:
 permissions:
