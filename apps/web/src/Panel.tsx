@@ -1193,6 +1193,7 @@ export function Overview({
   onBank,
   onDam,
   summary,
+  summaryState,
   onPlace,
   onPlaces,
   onSelectAlert,
@@ -1220,6 +1221,8 @@ export function Overview({
   onDam: (location: number[]) => void;
   /** the places to watch (summary/overview.json), or null before it is published */
   summary: SummaryOverview | null;
+  /** how the summary file loaded: the status bar never says "nothing found" from one it could not read (M40) */
+  summaryState: RefState;
   onPlace: (item: OverviewItem) => void;
   onPlaces: (items: OverviewItem[]) => void;
   onSelectAlert: (id: string) => void;
@@ -1239,6 +1242,7 @@ export function Overview({
           dams,
           riverRows,
           canals,
+          summaryLoad: summaryState,
           alerts,
           trusted,
           worst,

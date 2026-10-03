@@ -131,6 +131,27 @@ test('the official alerts show when the radar cannot be loaded, and the panel sa
   await expect(page.getByText('ยังไม่มีชุดข้อมูลที่ตรวจสอบครบ')).toHaveCount(0);
 });
 
+test('a summary that could not be read is never said as nothing found in green (M40)', async ({
+  page,
+}) => {
+  await prepare(page);
+  let summary: object | null = null;
+  await page.route('**/summary/overview.json?*', (route) =>
+    summary ? route.fulfill({ json: summary }) : route.abort(),
+  );
+  await page.goto('/');
+  const bar = page.getByTestId('status-bar');
+  await expect(bar).toContainText('โหลดสรุปจุดที่ต้องระวังไม่สำเร็จ · ยังประเมินไม่ได้');
+  await expect(bar).not.toContainText('ยังไม่พบจุดที่ต้องระวัง');
+  await expect(bar.getByRole('button', { name: /ยังประเมินไม่ได้/ })).toHaveCount(0);
+  // a summary that was read, fresh and empty: the bar says what there is, and no longer that it cannot tell
+  const overview = read('overview', 'overview');
+  summary = { ...overview, generated_at: read('active', 'manifest').generated_at, items: [] };
+  await page.goto('/');
+  await expect(bar).toContainText('ประกาศกรมอุตุฯ 3 ฉบับ');
+  await expect(bar).not.toContainText('ยังประเมินไม่ได้');
+});
+
 test('official alerts show their severity and a one-line summary, then open in full', async ({
   page,
 }) => {

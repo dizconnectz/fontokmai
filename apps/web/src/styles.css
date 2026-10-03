@@ -2182,3 +2182,7 @@ details > ul {
   background: var(--hover);
   color: var(--muted);
 }
+/* the summary could not be read or is old: said in grey, never in the green of "nothing found" (Codex M40) */
+.status-chip.unknown {
+  color: var(--muted);
+}

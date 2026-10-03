@@ -1,8 +1,9 @@
 import type { Level } from './alerts';
+import type { RefState } from './refSync';
 import { shownDam, releaseChange, type DamReport } from './bkk';
 import { isOngoing } from './floods';
 import { openSection } from './Fold';
-import { changeSince, shownItems, type Overview } from './overview';
+import { changeSince, OVERVIEW_STALE_MS, shownItems, type Overview } from './overview';
 import type { RiverRow } from './rivers';
 import type { Alert, CanalOutlook, LiveFloods } from './data';
 
@@ -11,7 +12,13 @@ import type { Alert, CanalOutlook, LiveFloods } from './data';
  * prepare for, flood reports, dams over capacity or releasing a lot more, official alerts. Each chip opens its
  * section. Counts only: the sections below say what and where, with sources and times.
  */
-export type Tone = 'danger' | 'warn' | 'ok';
+export type Tone = 'danger' | 'warn' | 'ok' | 'unknown';
+
+/**
+ * What the summary of places to watch can say now (Codex M40): `ok` fresh; `outdated` a newer round failed to load
+ * and the one before is shown; `stale` older than 45 minutes; `loading`, `error` or `missing` when there is none.
+ */
+export type SummaryHealth = 'ok' | 'outdated' | 'stale' | 'loading' | 'error' | 'missing';
 
 export interface Chip {
   key: string;
@@ -40,7 +47,49 @@ export interface StatusCounts {
   /** alerts in effect; null when the alert feed cannot be trusted (old or missing) */
   alerts: number | null;
   worst: Level | null;
+  /** whether "nothing found" can be said (absent: as before, it can) */
+  summary?: SummaryHealth;
 }
+
+/** The health of the summary file as the side panel has it */
+export function summaryHealth(
+  summary: Overview | null,
+  load: RefState | undefined,
+  now: number,
+): SummaryHealth {
+  if (summary) {
+    if (now - Date.parse(summary.generated_at) > OVERVIEW_STALE_MS) return 'stale';
+    return load === 'outdated' ? 'outdated' : 'ok';
+  }
+  if (load === 'idle' || load === 'loading') return 'loading';
+  return load === 'error' ? 'error' : 'missing';
+}
+
+/** "nothing found" is said only from a summary that could be read and is fresh; otherwise why it cannot be said */
+const CALM: Record<SummaryHealth, Omit<Chip, 'key'>> = {
+  ok: { text: 'ยังไม่พบจุดที่ต้องระวัง', tone: 'ok', target: 'summary' },
+  outdated: {
+    text: 'ยังไม่พบจุดที่ต้องระวังในข้อมูลรอบก่อน · กำลังโหลดใหม่',
+    tone: 'unknown',
+    target: 'summary',
+  },
+  stale: {
+    text: 'สรุปจุดที่ต้องระวังไม่อัปเดต · ยังประเมินไม่ได้',
+    tone: 'unknown',
+    target: 'summary',
+  },
+  loading: { text: 'กำลังโหลดสรุปจุดที่ต้องระวัง', tone: 'unknown', target: null },
+  error: {
+    text: 'โหลดสรุปจุดที่ต้องระวังไม่สำเร็จ · ยังประเมินไม่ได้',
+    tone: 'unknown',
+    target: null,
+  },
+  missing: {
+    text: 'ยังไม่มีสรุปจุดที่ต้องระวัง · ยังประเมินไม่ได้',
+    tone: 'unknown',
+    target: null,
+  },
+};
 
 /** " · เพิ่ม 3 ใน 1 ชม." / " · ลด 2 ใน 1 ชม.": the change since the round about an hour before */
 function trend(delta: number | null | undefined): string {
@@ -50,6 +99,10 @@ function trend(delta: number | null | undefined): string {
 
 export function statusChips(counts: StatusCounts): Chip[] {
   const chips: Chip[] = [];
+  // a summary that could not be read, or is old, says so first, where its places would be, even beside other
+  // chips: they cannot stand for it (Codex M40)
+  const health = counts.summary ?? 'ok';
+  if (health !== 'ok' && health !== 'outdated') chips.push({ key: 'summary', ...CALM[health] });
   if (counts.watchNow)
     chips.push({
       key: 'now',
@@ -107,9 +160,8 @@ export function statusChips(counts: StatusCounts): Chip[] {
       tone: counts.worst === 'extreme' || counts.worst === 'severe' ? 'danger' : 'warn',
       target: 'alerts',
     });
-  // nothing found is said as such, never as "safe"
-  if (!chips.length)
-    chips.push({ key: 'calm', text: 'ยังไม่พบจุดที่ต้องระวัง', tone: 'ok', target: 'summary' });
+  // nothing found is said as such, never as "safe", and only from a summary that could be read and is fresh (M40)
+  if (!chips.length) chips.push({ key: 'calm', ...CALM[health] });
   // no alert card is shown then (user 2026-10-02): nothing to open
   if (counts.alerts === 0)
     chips.push({ key: 'no-alerts', text: 'ไม่มีประกาศกรมอุตุฯ', tone: 'ok', target: null });
@@ -123,6 +175,7 @@ export function statusCounts({
   dams,
   riverRows = null,
   canals = null,
+  summaryLoad,
   alerts,
   trusted,
   worst,
@@ -135,6 +188,8 @@ export function statusCounts({
   riverRows?: RiverRow[] | null;
   /** the canals' outlook (D35), as the canals card reads it */
   canals?: CanalOutlook | null;
+  /** how the summary file loaded (RefSync's state); absent: as if it loaded */
+  summaryLoad?: RefState;
   alerts: Alert[];
   trusted: boolean;
   worst: Level | null;
@@ -159,6 +214,7 @@ export function statusCounts({
     canalsWatch: (canals?.canals ?? []).filter((watch) => watch.level === 'watch').length,
     alerts: alerts.length ? alerts.length : trusted ? 0 : null,
     worst,
+    summary: summaryHealth(summary, summaryLoad, now),
   };
 }
 

@@ -114,6 +114,7 @@ export default function App() {
     weather,
     rivers,
     overview,
+    overviewState,
     boundaries,
     loadBoundaries,
     riverLines,
@@ -1060,6 +1061,7 @@ export default function App() {
                   window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               summary={overview}
+              summaryState={overviewState}
               onPlace={(item) => {
                 // a district close, a province or river wider: the half size follows the item's zoom
                 const half = 0.05 * 2 ** (12 - item.zoom);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { statusChips, statusCounts, type StatusCounts } from './StatusBar';
+import { statusChips, statusCounts, summaryHealth, type StatusCounts } from './StatusBar';
 import type { Overview } from './overview';
 
 const quiet: StatusCounts = {
@@ -82,6 +82,77 @@ describe('the status bar says the whole picture in one line (user, 2026-10-01)',
       'เตรียมรับมือ 4 แห่ง · ลด 1 ใน 1 ชม.',
     ]);
     expect(chips(0, null)).toEqual(['ต้องระวังตอนนี้ 12 แห่ง', 'เตรียมรับมือ 4 แห่ง']);
+  });
+
+  it('says "nothing found" in green only from a fresh summary it could read (Codex M40)', () => {
+    const summary = JSON.parse(
+      readFileSync(
+        new URL('../../../contracts/v1/examples/overview/overview.json', import.meta.url),
+        'utf8',
+      ),
+    ) as Overview;
+    const made = Date.parse(summary.generated_at);
+    expect(summaryHealth(summary, 'ready', made + 10 * 60_000)).toBe('ok');
+    expect(summaryHealth(summary, 'outdated', made + 10 * 60_000)).toBe('outdated');
+    expect(summaryHealth(summary, 'ready', made + 50 * 60_000)).toBe('stale');
+    expect(summaryHealth(null, 'loading', made)).toBe('loading');
+    expect(summaryHealth(null, 'idle', made)).toBe('loading');
+    expect(summaryHealth(null, 'error', made)).toBe('error');
+    expect(summaryHealth(null, 'missing', made)).toBe('missing');
+    const calm = (health: StatusCounts['summary']) => {
+      const chip = statusChips({ ...quiet, summary: health })[0];
+      return [chip.text, chip.tone, chip.target];
+    };
+    expect(calm('ok')).toEqual(['ยังไม่พบจุดที่ต้องระวัง', 'ok', 'summary']);
+    expect(calm('outdated')).toEqual([
+      'ยังไม่พบจุดที่ต้องระวังในข้อมูลรอบก่อน · กำลังโหลดใหม่',
+      'unknown',
+      'summary',
+    ]);
+    expect(calm('stale')).toEqual([
+      'สรุปจุดที่ต้องระวังไม่อัปเดต · ยังประเมินไม่ได้',
+      'unknown',
+      'summary',
+    ]);
+    // no summary on the page: the chip opens nothing
+    expect(calm('loading')).toEqual(['กำลังโหลดสรุปจุดที่ต้องระวัง', 'unknown', null]);
+    expect(calm('error')).toEqual([
+      'โหลดสรุปจุดที่ต้องระวังไม่สำเร็จ · ยังประเมินไม่ได้',
+      'unknown',
+      null,
+    ]);
+    expect(calm('missing')).toEqual([
+      'ยังไม่มีสรุปจุดที่ต้องระวัง · ยังประเมินไม่ได้',
+      'unknown',
+      null,
+    ]);
+    // the summary's state comes first even beside what other files found, which cannot stand for it
+    expect(statusChips({ ...quiet, floods: 2, summary: 'error' }).map((chip) => chip.text)).toEqual(
+      [
+        'โหลดสรุปจุดที่ต้องระวังไม่สำเร็จ · ยังประเมินไม่ได้',
+        'น้ำท่วม 2 จุด',
+        'ไม่มีประกาศกรมอุตุฯ',
+      ],
+    );
+    // a round that failed to load keeps the one before: what it found is still said, with no chip of its own
+    expect(statusChips({ ...quiet, watchNow: 2, summary: 'outdated' })[0].text).toBe(
+      'ต้องระวังตอนนี้ 2 แห่ง',
+    );
+    // as the panel counts it
+    const counts = statusCounts({
+      summary: null,
+      summaryLoad: 'error',
+      floods: null,
+      dams: null,
+      alerts: [],
+      trusted: true,
+      worst: null,
+      now: made,
+    });
+    expect(statusChips(counts).map((chip) => chip.text)).toEqual([
+      'โหลดสรุปจุดที่ต้องระวังไม่สำเร็จ · ยังประเมินไม่ได้',
+      'ไม่มีประกาศกรมอุตุฯ',
+    ]);
   });
 
   it('names the main rivers the system’s forecast sees rising, red when one rises a lot', () => {

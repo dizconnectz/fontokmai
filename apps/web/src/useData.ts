@@ -326,6 +326,7 @@ export function useData() {
     outlookState: outlook.state,
     rivers: rivers.value,
     overview: overview.value,
+    overviewState: overview.state,
     boundaries: boundaries.value,
     loadBoundaries,
     riverLines: riverLines.value,
