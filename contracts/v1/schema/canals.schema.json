@@ -1,0 +1,152 @@
+{
+  "$defs": {
+    "CanalLine": {
+      "additionalProperties": false,
+      "properties": {
+        "districts": {
+          "description": "DOPA codes of the districts the canal runs through or along",
+          "items": {
+            "type": "string"
+          },
+          "title": "Districts",
+          "type": "array"
+        },
+        "drains_to": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "id of the river station whose state limits how fast it drains",
+          "title": "Drains To"
+        },
+        "dxs_canals": {
+          "description": "Its name in Bangkok's canal levels (bkk/water.json canal_th)",
+          "items": {
+            "type": "string"
+          },
+          "title": "Dxs Canals",
+          "type": "array"
+        },
+        "fed_by": {
+          "description": "ids of water/flows.json points whose water reaches this canal",
+          "items": {
+            "type": "string"
+          },
+          "title": "Fed By",
+          "type": "array"
+        },
+        "id": {
+          "description": "Stable id, e.g. rangsit",
+          "title": "Id",
+          "type": "string"
+        },
+        "line": {
+          "$ref": "#/$defs/GeoMultiLineString",
+          "description": "[lon, lat] in WGS84, simplified for drawing"
+        },
+        "name_th": {
+          "title": "Name Th",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name_th",
+        "line",
+        "districts",
+        "fed_by",
+        "drains_to",
+        "dxs_canals"
+      ],
+      "title": "CanalLine",
+      "type": "object"
+    },
+    "GeoMultiLineString": {
+      "additionalProperties": false,
+      "properties": {
+        "coordinates": {
+          "items": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "minItems": 2,
+            "type": "array"
+          },
+          "title": "Coordinates",
+          "type": "array"
+        },
+        "type": {
+          "const": "MultiLineString",
+          "default": "MultiLineString",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "coordinates"
+      ],
+      "title": "GeoMultiLineString",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "canals": {
+      "items": {
+        "$ref": "#/$defs/CanalLine"
+      },
+      "title": "Canals",
+      "type": "array"
+    },
+    "credit_th": {
+      "title": "Credit Th",
+      "type": "string"
+    },
+    "license": {
+      "title": "License",
+      "type": "string"
+    },
+    "notes_th": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Notes Th",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1",
+      "default": "1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_url": {
+      "title": "Source Url",
+      "type": "string"
+    },
+    "updated": {
+      "description": "Date of the OpenStreetMap extract",
+      "format": "date",
+      "title": "Updated",
+      "type": "string"
+    }
+  },
+  "required": [
+    "updated",
+    "credit_th",
+    "license",
+    "source_url",
+    "canals",
+    "notes_th"
+  ],
+  "title": "CanalLines",
+  "type": "object"
+}

@@ -9,10 +9,13 @@ from pathlib import Path
 
 from pydantic import BaseModel, ValidationError
 
+from fontokmai.canal_outlook import CANALS_PATH, build_canal_outlook
 from fontokmai.contracts.alerts import Alert, AlertsFeed
 from fontokmai.contracts.boundaries import Boundaries
+from fontokmai.contracts.canals import CanalLines
 from fontokmai.contracts.cctv import CctvRegistry
 from fontokmai.contracts.common import SourceStatus
+from fontokmai.contracts.flows import RidFlows
 from fontokmai.contracts.forecast import RainForecast, RiverForecast
 from fontokmai.contracts.manifest import Manifest
 from fontokmai.contracts.outlook import RainOutlook
@@ -41,10 +44,12 @@ REF_MODELS: dict[str, type[BaseModel]] = {"ref/road_flood_history.json": RoadFlo
                                           "ref/river_lines.json": RiverLines,
                                           "forecast/rain.json": RainForecast,
                                           "forecast/rivers.json": RiverForecast,
-                                          "forecast/outlook.json": RainOutlook}
+                                          "forecast/outlook.json": RainOutlook,
+                                          "ref/canals.json": CanalLines,
+                                          "water/flows.json": RidFlows}
 # curated files shipped with the package and copied into every snapshot
 STATIC_REFS = {"ref/cctv.json": "cctv.json", "ref/places.json": "places.json", "ref/boundaries.json": "boundaries.json",
-               "ref/river_lines.json": "river_lines.json"}
+               "ref/river_lines.json": "river_lines.json", "ref/canals.json": "canals.json"}
 LAST_SUCCESS_KEY = "tmd_cap.last_success_at"
 RADAR_SUCCESS_KEY = "tmd_radar.last_success_at"
 FLOODS_SUCCESS_KEY = "longdo_floods.last_success_at"
@@ -59,6 +64,7 @@ class SnapshotResult:
     status: SourceStatus
     radar: RadarFeed | None = None
     overview_error: str | None = None
+    canals_error: str | None = None
 
 
 def generation_id_for(now: datetime, writer: str) -> str:
@@ -190,6 +196,14 @@ def run_cap_snapshot(*, db: Path, out: Path, fetch: Fetcher, now: datetime, writ
             files[OVERVIEW_PATH] = overview.model_dump_json().encode("utf-8")
         except Exception as exc:  # noqa: BLE001 - reported in the round log; the web shows the summary missing
             overview_error = f"{type(exc).__name__}: {exc}"[:300]
+        # the canals that may overflow, by the trial rules, from the files of this round (D35)
+        canals_error = None
+        try:
+            canals = build_canal_outlook(files, now)
+            if canals is not None:
+                files[CANALS_PATH] = canals.model_dump_json().encode("utf-8")
+        except Exception as exc:  # noqa: BLE001 - reported in the round log; the web leaves the card out
+            canals_error = f"{type(exc).__name__}: {exc}"[:300]
         manifest = write_snapshot(out, files, store,
                                   generation_id=generation_id, now=now, writer=writer,
                                   owner_epoch=owner_epoch, recovery_epoch=recovery_epoch,
@@ -200,4 +214,4 @@ def run_cap_snapshot(*, db: Path, out: Path, fetch: Fetcher, now: datetime, writ
         if radar is not None:
             prune_frames(out, radar.feed)
     return SnapshotResult(manifest=manifest, feed=feed, status=status, radar=radar.feed if radar else None,
-                          overview_error=overview_error)
+                          overview_error=overview_error, canals_error=canals_error)

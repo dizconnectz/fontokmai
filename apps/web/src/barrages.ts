@@ -1,6 +1,7 @@
 // Diversion dams (barrages) on the great rivers, which the department's large-dam list does not carry: they hold no
-// reservoir, so they have no storage figure, and the release through them is not in any file this site may use
-// (docs/sources.md). They are pins and lines that lead to the department's own page (user, 2026-09-29).
+// reservoir, so they have no storage figure. They are pins that lead to the department's own page (user, 2026-09-29)
+// while the site has no figure of theirs: once RID's daily report is read (water/flows.json, D35), its layer shows
+// them with their flows and these pins stay off.
 // Places from OpenStreetMap (© contributors, ODbL 1.0): way 80938821 (waterway=weir) and way 121342565 (waterway=dam).
 
 export interface Barrage {

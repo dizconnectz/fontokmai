@@ -29,6 +29,10 @@ OVERVIEW_OLD = timedelta(minutes=40)  # rebuilt every round, like the manifest
 # the large dams the server fetches by itself every 2 hours (RID, 2026-10-02); the web says late after 6 hours. A
 # dams file that came with the Bangkok update by hand (no "automatic") is not judged: it arrives when someone sends it
 DAMS_OLD = timedelta(hours=6)
+# RID's daily report of 06:00 (D35), read by the server every 2 hours once it is up (about 10:30): a day RID skips is
+# not yet a problem, two are. The canal outlook it feeds is rebuilt every round, like the overview
+FLOWS_OLD = timedelta(hours=60)
+CANALS_OLD = timedelta(minutes=40)
 FLOODS_DOWN = timedelta(minutes=60)
 DXS_DOWN = timedelta(minutes=60)
 # rejected documents are only worth an alert when they could not be read, not when a download failed once
@@ -50,6 +54,8 @@ SOURCE_FILES = {
     "bma_dxs": {"bkk/water.json": "ระดับน้ำคลอง กทม.", "bkk/rain.json": "ฝนวัดจริง กทม.",
                 "bkk/flooding.json": "รายงานถนนท่วม กทม."},
 }
+# files a round must carry once it carries the canals they belong to (D35)
+CANAL_FILES = {"water/flows.json": "รายงานน้ำกรมชลประทาน", "summary/canals.json": "คลองที่อาจล้น"}
 
 
 def _time(value: str | None) -> datetime | None:
@@ -70,7 +76,8 @@ UNCHECKED: dict = {}  # a document the caller did not fetch: its age is not judg
 
 def evaluate(manifest: dict, forecast: dict | None, now: datetime, radar: dict | None = None,
              rivers: dict | None = UNCHECKED, overview: dict | None = UNCHECKED,
-             dams: dict | None = UNCHECKED) -> list[tuple[str, str]]:
+             dams: dict | None = UNCHECKED, flows: dict | None = UNCHECKED,
+             canals: dict | None = UNCHECKED) -> list[tuple[str, str]]:
     """(level, Thai message) for every problem; empty when all is well."""
     problems: list[tuple[str, str]] = []
     generated = _time(manifest.get("generated_at"))
@@ -107,6 +114,8 @@ def evaluate(manifest: dict, forecast: dict | None, now: datetime, radar: dict |
     for source_id, files in SOURCE_FILES.items():
         if source_id in sources:
             expected.update({path: ("warning", name) for path, name in files.items()})
+    if "ref/canals.json" in listed:
+        expected.update({path: ("warning", name) for path, name in CANAL_FILES.items()})
     for path, (level, name) in expected.items():
         if path not in listed:
             problems.append((level, f"ไม่มีไฟล์{name} ({path}) ในชุดข้อมูลล่าสุด"))
@@ -129,7 +138,8 @@ def evaluate(manifest: dict, forecast: dict | None, now: datetime, radar: dict |
                                         + (f" (ดึงล่าสุด {_clock(fetched)} น.)" if fetched else "")))
     for path, document, field, limit, name in (
             ("forecast/rivers.json", rivers, "fetched_at", RIVERS_OLD, "แนวโน้มน้ำแม่น้ำ"),
-            ("summary/overview.json", overview, "generated_at", OVERVIEW_OLD, "สรุปจุดที่ต้องระวัง")):
+            ("summary/overview.json", overview, "generated_at", OVERVIEW_OLD, "สรุปจุดที่ต้องระวัง"),
+            ("summary/canals.json", canals, "generated_at", CANALS_OLD, "คลองที่อาจล้น")):
         if path not in listed or document is UNCHECKED:
             continue
         made = _time((document or {}).get(field))
@@ -142,6 +152,13 @@ def evaluate(manifest: dict, forecast: dict | None, now: datetime, radar: dict |
         elif dams.get("automatic") and now - fetched > DAMS_OLD:
             problems.append(("warning", f"ข้อมูลเขื่อนใหญ่ไม่อัปเดต (ดึงล่าสุด {_clock(fetched)} น.)"
                                         " · งานดึงจากกรมชลประทานทุก 2 ชม. อาจหยุด"))
+    if "water/flows.json" in listed and flows is not UNCHECKED:
+        observed = _time((flows or {}).get("observed_at"))
+        if flows is None or observed is None:
+            problems.append(("warning", "เปิดไฟล์รายงานน้ำกรมชลประทานไม่ได้"))
+        elif now - observed > FLOWS_OLD:
+            problems.append(("warning", f"รายงานน้ำกรมชลประทานไม่อัปเดต (ฉบับล่าสุดเป็นของ {_clock(observed)} น.)"
+                                        " · งานอ่านรายงานทุก 2 ชม. อาจหยุด หรือรายงานเปลี่ยนรูปแบบ"))
     return problems
 
 
@@ -174,30 +191,19 @@ def main(argv: list[str] | None = None) -> int:
         problems = [("critical", f"เปิดข้อมูลไม่ได้เลย: {exc}")]
     else:
         listed = {f.get("path") for f in manifest.get("files", [])}
-        forecast = radar = rivers = overview = dams = None
-        for path in ("forecast/rivers.json", "summary/overview.json", "water/dams.json"):
+        # each listed file once; None when it could not be opened (a file not listed is not judged)
+        documents: dict[str, dict | None] = {}
+        for path in ("forecast/rain.json", "radar.json", "forecast/rivers.json", "summary/overview.json",
+                     "water/dams.json", "water/flows.json", "summary/canals.json"):
             if path in listed:
                 try:
-                    document = _get_json(DATA_BASE + path)
+                    documents[path] = _get_json(DATA_BASE + path)
                 except (OSError, ValueError):
-                    document = None
-                if path == "forecast/rivers.json":
-                    rivers = document
-                elif path == "summary/overview.json":
-                    overview = document
-                else:
-                    dams = document
-        if "forecast/rain.json" in listed:
-            try:
-                forecast = _get_json(DATA_BASE + "forecast/rain.json")
-            except (OSError, ValueError):
-                forecast = None
-        if "radar.json" in listed:
-            try:
-                radar = _get_json(DATA_BASE + "radar.json")
-            except (OSError, ValueError):
-                radar = None
-        problems = evaluate(manifest, forecast, now, radar, rivers, overview, dams)
+                    documents[path] = None
+        problems = evaluate(manifest, documents.get("forecast/rain.json"), now, documents.get("radar.json"),
+                            documents.get("forecast/rivers.json"), documents.get("summary/overview.json"),
+                            documents.get("water/dams.json"), documents.get("water/flows.json"),
+                            documents.get("summary/canals.json"))
     with open(args.report, "w", encoding="utf-8") as fh:
         fh.write(report(problems, now))
     with open(args.status, "w", encoding="utf-8") as fh:

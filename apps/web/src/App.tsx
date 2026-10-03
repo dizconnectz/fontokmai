@@ -18,6 +18,8 @@ import {
   ShieldAlert,
   Umbrella,
   Dam,
+  Gauge,
+  Spline,
   Thermometer,
   TrendingUp,
   X,
@@ -46,6 +48,7 @@ import {
 import type { Focus, Layers, LngLat } from './MapView';
 import { outlineBounds, WATCH_COLOR, watchAreas, watchShapes } from './overview';
 import { favoriteLine } from './favoriteLine';
+import { CANAL_CLASSES, canalBounds, canalFeatures, FLOW_CLASSES, FLOW_PLAIN } from './flows';
 
 const MapView = lazy(() => import('./MapView'));
 // "/" in development, "/fontokmai/" on GitHub Pages (WEB_BASE at build time)
@@ -108,6 +111,9 @@ export default function App() {
     loadBoundaries,
     riverLines,
     loadRiverLines,
+    flows,
+    canalLines,
+    canals,
   } = data;
   const [layers, setLayers] = useState<Layers>({
     alerts: true,
@@ -119,6 +125,8 @@ export default function App() {
     dams: true,
     weather: true,
     rivers: true,
+    flows: true,
+    canals: true,
     watch: true,
   });
   // the time the map shows: null = now (the latest radar frame); otherwise a radar or forecast time
@@ -231,6 +239,7 @@ export default function App() {
         (layers.rain && !!rain) ||
         (layers.dams && !!dams) ||
         (layers.rivers && !!rivers) ||
+        (layers.flows && !!flows) ||
         (layers.weather && !!weather)));
   // outlines of the summary's places; the file of outlines loads once there is something to outline
   const summaryAreas = useMemo(() => watchAreas(overview, now), [overview, now]);
@@ -255,7 +264,14 @@ export default function App() {
     [riverShown, rivers, riverLines, riverDay(now)],
   );
   const riverKey = !!riverShapes?.features.length;
-  const panelKey = pinKey || bankKey || watchKey || riverKey;
+  // the canals of the pilot by the trial outlook (D35): coloured lines, thin where nothing adds up
+  const canalShown = layers.canals && !!canalLines && step.kind !== 'forecast';
+  const canalShapes = useMemo(
+    () => (canalShown ? canalFeatures(canalLines, canals) : null),
+    [canalShown, canalLines, canals],
+  );
+  const canalKey = !!canalShapes?.features.length;
+  const panelKey = pinKey || bankKey || watchKey || riverKey || canalKey;
   // the saved place in one line on top; naming its district needs the DOPA places, loaded once a place is saved
   useEffect(() => {
     if (favorite) void loadPlaces();
@@ -470,6 +486,9 @@ export default function App() {
               dams={step.kind === 'forecast' ? null : dams}
               weather={step.kind === 'forecast' ? null : weather}
               rivers={step.kind === 'forecast' ? null : rivers}
+              flows={step.kind === 'forecast' ? null : flows}
+              canalShapes={canalShapes}
+              canalOutlook={canals}
               watch={watch}
               riverStretches={riverShapes}
               onOverview={setOverviewZoom}
@@ -563,6 +582,16 @@ export default function App() {
                 <TrendingUp size={16} /> แนวโน้มน้ำแม่น้ำ
               </button>
             )}
+            {flows && (
+              <button aria-pressed={layers.flows} onClick={() => toggle('flows')}>
+                <Gauge size={16} /> ประตูน้ำและสถานีวัดน้ำ
+              </button>
+            )}
+            {canalLines && (
+              <button aria-pressed={layers.canals} onClick={() => toggle('canals')}>
+                <Spline size={16} /> คลองที่อาจล้น (ทดลอง)
+              </button>
+            )}
             {overview && (
               <button aria-pressed={layers.watch} onClick={() => toggle('watch')}>
                 <SquareDashed size={16} /> กรอบพื้นที่ที่ต้องระวัง
@@ -620,6 +649,21 @@ export default function App() {
                     </span>
                   ))}
                   <small>เส้นและหมุดสีเดียวกัน · พยากรณ์ของระบบ (แบบจำลอง)</small>
+                </div>
+              )}
+              {canalKey && (
+                <div className="legend-row legend-canals" aria-label="เส้นคลองตามเกณฑ์ทดลอง">
+                  <span>คลอง</span>
+                  {CANAL_CLASSES.map((item) => (
+                    <span key={item.level}>
+                      <i
+                        className={`legend-line ${item.level === 'none' ? 'thin' : ''}`}
+                        style={{ background: item.color }}
+                      />{' '}
+                      {item.label}
+                    </span>
+                  ))}
+                  <small>เกณฑ์ทดลองของเว็บ ไม่ใช่ประกาศ · แตะเส้นเพื่อดูเหตุผล</small>
                 </div>
               )}
               {bankKey && (
@@ -686,6 +730,20 @@ export default function App() {
                       {item.range && <small>{item.range}</small>}
                     </span>
                   ))}
+                </div>
+              )}
+              {layers.flows && flows && step.kind !== 'forecast' && (
+                <div className="legend-row rain-hour">
+                  <span>สถานีวัดน้ำและประตูน้ำ (สถานะตามกรมชลฯ)</span>
+                  {FLOW_CLASSES.map((item) => (
+                    <span key={item.pin}>
+                      <i className="legend-pin" style={{ background: item.color }} /> {item.label}
+                    </span>
+                  ))}
+                  <span>
+                    <i className="legend-pin" style={{ background: FLOW_PLAIN.color }} />{' '}
+                    {FLOW_PLAIN.label}
+                  </span>
                 </div>
               )}
               {layers.weather && weather && step.kind !== 'forecast' && (
@@ -929,6 +987,16 @@ export default function App() {
               news={news}
               dams={dams}
               rivers={step.kind === 'forecast' ? null : rivers}
+              canals={step.kind === 'forecast' ? null : canals}
+              onCanal={(id) => {
+                const bounds = canalBounds(canalLines, id);
+                if (!bounds) return;
+                setSelectedTime(null);
+                setLayers((current) => (current.canals ? current : { ...current, canals: true }));
+                setFocus({ key: `canal:${id}:${Date.now()}`, bounds, maxZoom: 12 });
+                if (typeof matchMedia === 'function' && matchMedia('(max-width: 899px)').matches)
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
               onRiver={(points) => {
                 // the stretches of a river forecast to rise: the box around their points, a little wider
                 const xs = points.map((p) => p[0]);

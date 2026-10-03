@@ -36,7 +36,7 @@ from fontokmai.publish.git_pages import publish_snapshot
 from fontokmai.road_flood_build import build_road_flood_history, fixture_files, is_fresh
 from fontokmai.run import SnapshotResult, run_cap_snapshot
 from fontokmai.schedule import run_forever
-from fontokmai.sources import rid_dams
+from fontokmai.sources import rid_dams, rid_report
 from fontokmai.sources.glofas import all_points as glofas_points
 from fontokmai.sources.open_data.http import fixture_opener, open_url
 from fontokmai.sources.open_data.longdo_live import FEED_URL as LONGDO_FEED_URL
@@ -67,6 +67,8 @@ def _summary(result: SnapshotResult) -> dict[str, Any]:
         summary["radar"] = {**radar_summary(result.radar), "status": radar_status}
     if result.overview_error:
         summary["overview"] = f"error: {result.overview_error}"
+    if result.canals_error:
+        summary["canals"] = f"error: {result.canals_error}"
     return summary
 
 
@@ -220,6 +222,10 @@ def _scheduled_job(args: argparse.Namespace) -> Callable[[datetime], dict[str, A
             outlook = refresh_outlook(args.out, args.db, now) if args.forecast else None
             if outlook:
                 summary["outlook"] = outlook
+            # RID's daily report of the Chao Phraya's gates and stations, every 2 hours (D35)
+            flows = rid_report.refresh(args.out, args.db, now) if args.forecast else None
+            if flows:
+                summary["flows"] = flows
         pressure = process_pressure()
         if pressure:
             summary["processes"] = f"{pressure[0]}/{pressure[1]}"
@@ -264,6 +270,9 @@ def main(argv: list[str] | None = None) -> int:
             written += write_live_floods_example(args.out, args.live_floods_fixtures)
         if args.bkk_fixtures:
             written += write_bkk_examples(args.out, args.bkk_fixtures)
+            # RID's report sits beside the DXS answers (tests/fixtures/rid), after the forecast and Bangkok examples
+            from fontokmai.examples import write_flows_examples
+            written += write_flows_examples(args.out, args.bkk_fixtures.parent / "rid")
         if args.forecast_fixtures and args.live_floods_fixtures and args.bkk_fixtures:
             from fontokmai.examples import write_overview_example
             written += write_overview_example(args.out)

@@ -1,0 +1,151 @@
+{
+  "$defs": {
+    "CanalFactor": {
+      "additionalProperties": false,
+      "properties": {
+        "at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Time of the data the factor uses",
+          "title": "At"
+        },
+        "kind": {
+          "description": "inflow: water let into the canal network (RID's gates); rain: rain forecast over its districts; drainage: the state of the river it drains to; level: Bangkok's gauges on it rising; flooding: RID's report of flooded districts along it",
+          "enum": [
+            "inflow",
+            "rain",
+            "drainage",
+            "level",
+            "flooding"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "points": {
+          "description": "What this factor adds to the canal's score (0 = noted, no points)",
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Points",
+          "type": "integer"
+        },
+        "source_th": {
+          "title": "Source Th",
+          "type": "string"
+        },
+        "text_th": {
+          "title": "Text Th",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "points",
+        "text_th",
+        "source_th",
+        "at"
+      ],
+      "title": "CanalFactor",
+      "type": "object"
+    },
+    "CanalWatch": {
+      "additionalProperties": false,
+      "properties": {
+        "factors": {
+          "items": {
+            "$ref": "#/$defs/CanalFactor"
+          },
+          "title": "Factors",
+          "type": "array"
+        },
+        "id": {
+          "description": "The canal's id in ref/canals.json",
+          "title": "Id",
+          "type": "string"
+        },
+        "level": {
+          "anyOf": [
+            {
+              "enum": [
+                "watch",
+                "warn"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "warn (score 3 or more) or watch (2) by this site's trial rules; null below. Not an announcement and not a forecast of how high the water will be",
+          "title": "Level"
+        },
+        "name_th": {
+          "title": "Name Th",
+          "type": "string"
+        },
+        "score": {
+          "minimum": 0,
+          "title": "Score",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "name_th",
+        "score",
+        "level",
+        "factors"
+      ],
+      "title": "CanalWatch",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "canals": {
+      "description": "Every canal of ref/canals.json, the highest score first",
+      "items": {
+        "$ref": "#/$defs/CanalWatch"
+      },
+      "title": "Canals",
+      "type": "array"
+    },
+    "generated_at": {
+      "format": "date-time",
+      "title": "Generated At",
+      "type": "string"
+    },
+    "notes_th": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Notes Th",
+      "type": "array"
+    },
+    "rules": {
+      "description": "Version of the trial rules, e.g. canals-v1",
+      "title": "Rules",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1",
+      "default": "1",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "generated_at",
+    "rules",
+    "canals",
+    "notes_th"
+  ],
+  "title": "CanalOutlook",
+  "type": "object"
+}

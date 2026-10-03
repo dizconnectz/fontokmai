@@ -12,7 +12,15 @@ import type {
   StyleSpecification,
 } from 'maplibre-gl';
 import type { FeatureCollection, MultiPolygon, Point } from 'geojson';
-import { displayStatus, safeLink, type Alert, type Camera, type RadarFeed } from './data';
+import {
+  displayStatus,
+  safeLink,
+  type Alert,
+  type Camera,
+  type CanalOutlook,
+  type RadarFeed,
+  type RidFlows,
+} from './data';
 import { LEVEL_FILL, LEVEL_LINE, levelOf } from './alerts';
 import type { ForecastAreas } from './forecast';
 import { isOngoing, isShown, reportedAt, REPORTER_TH, type FloodReport } from './floods';
@@ -70,6 +78,20 @@ import {
 import { MAP_IMAGE_RATIO, mapImage } from './mapIcons';
 import { distanceM } from './roads';
 import { WATCH_COLOR, type WatchShapes } from './overview';
+import {
+  canalLevel,
+  canalsOld,
+  canalWords,
+  factorText,
+  flowFeatures,
+  flowsOld,
+  flowText,
+  pointName,
+  sitePoints,
+  type CanalShapes,
+  type FlowPoint,
+  type FlowSite,
+} from './flows';
 import type { RiverStretches } from './rivers';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
@@ -84,6 +106,10 @@ export interface Layers {
   dams: boolean;
   weather: boolean;
   rivers: boolean;
+  /** RID's stations, barrages and gates (D35) */
+  flows: boolean;
+  /** the canals of the pilot by the site's trial outlook (D35) */
+  canals: boolean;
   /** outlines of the places the summary lists */
   watch: boolean;
 }
@@ -116,6 +142,12 @@ interface Props {
   weather: WeatherToday | null;
   /** the GloFAS river trend, or null while the timeline shows the forecast */
   rivers: RiverForecast | null;
+  /** RID's daily figures of the Chao Phraya (D35), or null while the timeline shows the forecast */
+  flows: RidFlows | null;
+  /** the canals of the pilot coloured by the outlook, or null (layer off, or the timeline on the forecast) */
+  canalShapes: CanalShapes | null;
+  /** the outlook the canal lines are coloured by: their popups read its factors */
+  canalOutlook: CanalOutlook | null;
   /** outlines of the summary's places (empty when the layer is off) */
   watch: WatchShapes;
   /** stretches of river the model sees rising, or null (layer off, or the timeline on the forecast) */
@@ -245,6 +277,7 @@ const DETAIL_ZOOM = 8;
 const SEVERE_KINDS = [
   ['weather', 'weather'],
   ['dam', 'dams'],
+  ['flow', 'flows'],
   ['river', 'rivers'],
   ['rain', 'rain'],
   ['flood', 'floods'],
@@ -338,6 +371,46 @@ function addOverlays(instance: LibreMap) {
       ],
     },
   });
+  // the canals of the pilot by the site's trial outlook (D35): bold red or orange where its factors add up, thin
+  // elsewhere to show which canals it follows
+  instance.addSource('canal-lines', { type: 'geojson', data: empty });
+  instance.addLayer({
+    id: 'canal-line-casing',
+    type: 'line',
+    source: 'canal-lines',
+    filter: ['!=', ['get', 'level'], 'none'],
+    layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: {
+      'line-color': '#ffffff',
+      'line-opacity': 0.85,
+      'line-width': ['interpolate', ['linear'], ['zoom'], 5, 3, 9, 5.5, 13, 8],
+    },
+  });
+  instance.addLayer({
+    id: 'canal-line',
+    type: 'line',
+    source: 'canal-lines',
+    layout: {
+      'line-join': 'round',
+      'line-cap': 'round',
+      'line-sort-key': ['get', 'rank'] as unknown as number,
+    },
+    paint: {
+      'line-color': ['get', 'color'],
+      'line-opacity': ['case', ['==', ['get', 'level'], 'none'], 0.7, 1],
+      'line-width': [
+        'interpolate',
+        ['linear'],
+        ['zoom'],
+        5,
+        ['case', ['==', ['get', 'level'], 'none'], 1, 2],
+        9,
+        ['case', ['==', ['get', 'level'], 'none'], 1.6, 3.2],
+        13,
+        ['case', ['==', ['get', 'level'], 'none'], 2.4, 5],
+      ],
+    },
+  });
   // the summary's places: over the alert zones and the rain, under the pins; the places to watch now on top
   instance.addSource('watch', { type: 'geojson', data: empty });
   const nowFirst = ['case', ['==', ['get', 'when'], 'now'], 1, 0] as unknown as number;
@@ -401,6 +474,7 @@ function addOverlays(instance: LibreMap) {
     ['camera', 'cameras'],
     ['weather', 'weather'],
     ['dam', 'dams'],
+    ['flow', 'flows'],
     ['river', 'rivers'],
     ['water', 'water'],
     ['rain', 'rain'],
@@ -568,6 +642,8 @@ const POINT_LAYERS = [
   'weather-pin',
   'dam-cluster',
   'dam-pin',
+  'flow-cluster',
+  'flow-pin',
   'river-cluster',
   'river-pin',
   'water-cluster',
@@ -579,9 +655,11 @@ const POINT_LAYERS = [
   'bank-reach',
   'bank-point',
   'river-line',
+  'canal-line',
   ...SEVERE_KINDS.map(([kind]) => `${kind}-top`),
 ];
-type PointKind = 'flood' | 'camera' | 'water' | 'rain' | 'dam' | 'weather' | 'river' | 'bank';
+type PointKind =
+  'flood' | 'camera' | 'water' | 'rain' | 'dam' | 'flow' | 'canal' | 'weather' | 'river' | 'bank';
 
 function bankPopup(item: BankObservation, now: number): HTMLElement {
   const root = document.createElement('div');
@@ -711,6 +789,95 @@ function barragePopup(barrage: Barrage): HTMLElement {
     line('ไม่มีอ่างเก็บน้ำ จึงไม่มีตัวเลขความจุ และเว็บนี้ยังไม่มีตัวเลขการระบายน้ำ', 'small'),
     link,
   );
+  return root;
+}
+
+/** A link to a page of this site, in the same tab */
+function pageLink(path: string, text: string): HTMLElement {
+  const link = document.createElement('a');
+  link.href = `${import.meta.env.BASE_URL}${path}`;
+  link.textContent = text;
+  return link;
+}
+function pointList(points: FlowPoint[]): HTMLElement {
+  const list = document.createElement('ul');
+  list.className = 'flow-points';
+  for (const point of points) {
+    const item = document.createElement('li');
+    item.append(line(pointName(point), 'b'), line(flowText(point)));
+    list.append(item);
+  }
+  return list;
+}
+
+/**
+ * A site of RID's daily report (D35): the river or the barrage first, then the gates, each in plain words; many gates
+ * fold under one line so that the popup stays short. RID's figures, said as RID's, with their time and source.
+ */
+function flowPopup(site: FlowSite, file: RidFlows, now: number): HTMLElement {
+  const root = document.createElement('div');
+  root.className = 'camera-popup flow-popup';
+  const { main, gates } = sitePoints(file, site);
+  root.append(line(site.name_th, 'strong'));
+  if (main.length) root.append(pointList(main));
+  if (gates.length && main.length + gates.length > 4) {
+    const fold = document.createElement('details');
+    const summary = document.createElement('summary');
+    summary.textContent = `ประตูรับน้ำ ${gates.length} จุด`;
+    fold.append(summary, pointList(gates));
+    root.append(fold);
+  } else if (gates.length) root.append(pointList(gates));
+  root.append(
+    line(`ตัวเลขเวลา 06:00 น. ${thaiDay(file.report_date)} · กรมชลฯ รายงานวันละครั้ง`, 'small'),
+  );
+  if (flowsOld(file, now)) {
+    const old = line('รายงานเก่า ยังไม่มีฉบับใหม่', 'small');
+    old.className = 'popup-old';
+    root.append(old);
+  }
+  root.append(linkOut(file.source_url, `ที่มา: ${shortCredit(file.credit_th)} (รายงาน PDF) ↗`));
+  return root;
+}
+
+/** A canal by the site's trial outlook (D35): its level, each factor with its points, and how the score is made. */
+function canalPopup(
+  id: string,
+  name: string,
+  outlook: CanalOutlook | null,
+  now: number,
+): HTMLElement {
+  const root = document.createElement('div');
+  root.className = 'camera-popup canal-popup';
+  root.append(line(name, 'strong'));
+  const watch = outlook?.canals.find((canal) => canal.id === id);
+  if (!outlook || !watch) root.append(line('ยังไม่มีผลประเมินของคลองนี้'));
+  else {
+    const level = line(canalWords(watch), 'b');
+    level.className = `canal-level ${canalLevel(watch)}`;
+    root.append(level);
+    if (watch.factors.length) {
+      const list = document.createElement('ul');
+      list.className = 'flow-points';
+      for (const factor of watch.factors) {
+        const entry = document.createElement('li');
+        entry.textContent = factorText(factor);
+        list.append(entry);
+      }
+      root.append(list);
+    } else root.append(line('ยังไม่มีปัจจัยที่ทำให้น้ำในคลองสูงขึ้นจากข้อมูลที่มี'));
+    root.append(
+      line(
+        `เกณฑ์ทดลองของเว็บ ไม่ใช่ประกาศ · คิดเมื่อ ${reportTime(outlook.generated_at, now)}`,
+        'small',
+      ),
+    );
+    if (canalsOld(outlook, now)) {
+      const old = line('ผลประเมินไม่อัปเดต แสดงผลครั้งก่อน', 'small');
+      old.className = 'popup-old';
+      root.append(old);
+    }
+  }
+  root.append(pageLink('method/#canals', 'วิธีคิดคะแนน →'));
   return root;
 }
 
@@ -1160,6 +1327,35 @@ export default function MapView(props: Props) {
               const report = latest.current.floods.find((r) => r.id === hit?.properties.id);
               if (report) return showFlood.current(report);
             }
+            if (layer === 'flow-pin' && latest.current.flows) {
+              const file = latest.current.flows;
+              const site = file.sites.find((s) => s.id === hit?.properties.code);
+              if (site)
+                return open(
+                  'flow',
+                  site.location as LngLat,
+                  flowPopup(site, file, Date.now()),
+                  (now) => {
+                    const flows = latest.current.flows;
+                    const current = flows?.sites.find((s) => s.id === site.id);
+                    return flows && current ? flowPopup(current, flows, now) : null;
+                  },
+                );
+            }
+            if (layer === 'canal-line') {
+              const id = String(hit?.properties.id ?? '');
+              const name = String(hit?.properties.name ?? '');
+              if (id)
+                return open(
+                  'canal',
+                  [event.lngLat.lng, event.lngLat.lat],
+                  canalPopup(id, name, latest.current.canalOutlook, Date.now()),
+                  (now) =>
+                    latest.current.canalShapes?.features.some((f) => f.properties?.id === id)
+                      ? canalPopup(id, name, latest.current.canalOutlook, now)
+                      : null,
+                );
+            }
             if (layer === 'dam-pin') {
               const barrage = BARRAGES.find((b) => b.id === hit?.properties.code);
               if (barrage) return open('dam', barrage.location as LngLat, barragePopup(barrage));
@@ -1545,8 +1741,9 @@ export default function MapView(props: Props) {
             },
           ];
         }),
-        // the barrages go with the dams, grey: no figure of theirs is on this site
-        ...(dams.length
+        // the barrages go with the dams, grey, while no figure of theirs is on this site: RID's daily report has
+        // them (D35), and then their pins are those of its layer
+        ...(dams.length && !props.flows?.sites.length
           ? BARRAGES.map((barrage) => ({
               type: 'Feature' as const,
               geometry: { type: 'Point' as const, coordinates: barrage.location },
@@ -1557,7 +1754,32 @@ export default function MapView(props: Props) {
     };
     setPoints(map.current, 'dams', collection);
     if (!collection.features.length && popupKind.current === 'dam') popup.current?.remove();
-  }, [props.dams, props.layers.dams, ready, styleVersion]);
+  }, [props.dams, props.flows, props.layers.dams, ready, styleVersion]);
+
+  // RID's stations, barrages and gates (D35), coloured by RID's own state of the station there
+  useEffect(() => {
+    if (!ready || !map.current) return;
+    const collection = flowFeatures(props.layers.flows ? props.flows : null, props.now);
+    setPoints(map.current, 'flows', collection);
+    if (!collection.features.length && popupKind.current === 'flow') popup.current?.remove();
+  }, [props.flows, props.layers.flows, props.now, ready, styleVersion]);
+
+  // The canals of the pilot by the trial outlook (D35); the casing follows the basemap like the river lines'
+  useEffect(() => {
+    const instance = map.current;
+    if (!ready || !instance) return;
+    (instance.getSource('canal-lines') as GeoJSONSource | undefined)?.setData(
+      props.canalShapes ?? { type: 'FeatureCollection', features: [] },
+    );
+    if (instance.getLayer('canal-line-casing'))
+      instance.setPaintProperty(
+        'canal-line-casing',
+        'line-color',
+        props.theme === 'dark' ? '#10181f' : '#ffffff',
+      );
+    if (!props.canalShapes?.features.length && popupKind.current === 'canal')
+      popup.current?.remove();
+  }, [props.canalShapes, props.theme, ready, styleVersion]);
 
   // An open popup follows the clock and the files: its age labels change, and it closes when what it shows is
   // gone (a report past its time, a station no longer in the file). Rebuilt only when its words change.
@@ -1590,7 +1812,18 @@ export default function MapView(props: Props) {
       current.setDOMContent(content);
       popupShown.current = content;
     }
-  }, [props.now, props.floods, props.rivers, props.water, props.rain, props.dams, props.weather]);
+  }, [
+    props.now,
+    props.floods,
+    props.rivers,
+    props.water,
+    props.rain,
+    props.dams,
+    props.weather,
+    props.flows,
+    props.canalShapes,
+    props.canalOutlook,
+  ]);
 
   // The GloFAS river trend, coloured by the next 7 days against today (model values)
   useEffect(() => {
@@ -1793,6 +2026,13 @@ export default function MapView(props: Props) {
         .join(' '),
     [props.riverStretches],
   );
+  const canalCodes = useMemo(
+    () =>
+      (props.canalShapes?.features ?? [])
+        .map((feature) => `${feature.properties?.id}:${feature.properties?.level}`)
+        .join(' '),
+    [props.canalShapes],
+  );
 
   const pinCenter = () => {
     const center = map.current?.getCenter();
@@ -1821,6 +2061,7 @@ export default function MapView(props: Props) {
       data-zoom={zoom}
       data-watch={watchCodes}
       data-rivers={riverCodes}
+      data-canals={canalCodes}
       aria-busy={!ready || rendering}
     >
       <div ref={element} className="map-canvas" />

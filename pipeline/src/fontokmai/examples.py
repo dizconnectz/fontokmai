@@ -381,3 +381,48 @@ def write_overview_example(out: Path) -> list[Path]:
     path = target / "overview.json"
     path.write_text(build_overview(files, now).model_dump_json(indent=2) + "\n", encoding="utf-8", newline="\n")
     return [path]
+
+
+FLOWS_AT = "2026-10-03T11:00:00+07:00"
+# the stations' states as the chart of 2026-10-03 shows them (the chart picture is not kept in the repository)
+FLOWS_STATES = {"c2": "critical", "c13": "critical", "c3": "critical", "c7a": "critical", "c35": "flood",
+                "c29b": "normal", "s26": "critical"}
+
+
+def write_flows_examples(out: Path, fixtures: Path) -> list[Path]:
+    """contracts/v1/examples/flows and canals: water/flows.json from the text of RID's report of 2026-10-03, the
+    shipped canals, and the canal outlook of these with the other examples (D35)."""
+    from importlib import resources
+
+    from fontokmai.canal_outlook import build_canal_outlook
+    from fontokmai.sources import rid_chart, rid_report
+
+    text = (fixtures / "report-2026-10-03.txt").read_text(encoding="utf-8")
+    day = rid_report.report_day(text)
+    assert day is not None
+    flows = rid_report.build(rid_report.parse_report(text), FLOWS_STATES, day, datetime.fromisoformat(FLOWS_AT),
+                             rid_chart.CHART_URL.format(day=day),
+                             rid_report.flooded_districts(text, rid_report.district_index()))
+    written = []
+    target = out / "flows"
+    target.mkdir(parents=True, exist_ok=True)
+    path = target / "flows.json"
+    path.write_text(flows.model_dump_json(indent=2) + "\n", encoding="utf-8", newline="\n")
+    written.append(path)
+    lines = resources.files("fontokmai.ref_data").joinpath("canals.json").read_bytes()
+    target = out / "canals"
+    target.mkdir(parents=True, exist_ok=True)
+    path = target / "canals.json"
+    path.write_bytes(lines)
+    written.append(path)
+    files = {"ref/canals.json": lines, "water/flows.json": flows.model_dump_json().encode("utf-8")}
+    for rel, example in (("forecast/rain.json", out / "forecast" / "rain.json"),
+                         ("bkk/water.json", out / "bkk" / "water.json")):
+        if example.exists():
+            files[rel] = example.read_bytes()
+    outlook = build_canal_outlook(files, datetime.fromisoformat(FLOWS_AT))
+    assert outlook is not None
+    path = target / "outlook.json"
+    path.write_text(outlook.model_dump_json(indent=2) + "\n", encoding="utf-8", newline="\n")
+    written.append(path)
+    return written

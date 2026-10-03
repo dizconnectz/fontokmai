@@ -12,6 +12,7 @@ import {
   RAIN_OLD_COLOR,
 } from './bkk';
 import { RIVER_CLASSES, RIVER_UNKNOWN_COLOR } from './rivers';
+import { FLOW_CLASSES, FLOW_OLD, FLOW_PLAIN } from './flows';
 
 // lucide "waves", "video", "droplet", "cloud-rain", "dam" and "thermometer", in their 24 × 24 box
 const GLYPHS = {
@@ -47,6 +48,8 @@ const GLYPHS = {
   river: ['M22 7 13.5 15.5 8.5 10.5 2 17', 'M16 7h6v6'],
   'river-flat': ['M5 12h14', 'm12 5 7 7-7 7'],
   'river-down': ['M22 17 13.5 8.5 8.5 13.5 2 7', 'M16 17h6v-6'],
+  // RID's stations and gates (D35): lucide "gauge", a measured figure
+  flow: ['m12 14 4-4', 'M3.34 19a10 10 0 1 1 17.32 0'],
 };
 type Kind = keyof typeof GLYPHS;
 
@@ -62,6 +65,11 @@ const PINS: Record<string, { kind: Kind; color: string }> = {
   'pin-dam-unknown': { kind: 'dam', color: DAM_UNKNOWN_COLOR },
   'pin-wx-none': { kind: 'weather', color: RAIN_OLD_COLOR },
   'pin-river-unknown': { kind: 'river-flat', color: RIVER_UNKNOWN_COLOR },
+  [FLOW_PLAIN.pin]: { kind: 'flow', color: FLOW_PLAIN.color },
+  [FLOW_OLD.pin]: { kind: 'flow', color: FLOW_OLD.color },
+  ...Object.fromEntries(
+    FLOW_CLASSES.map((item) => [item.pin, { kind: 'flow' as const, color: item.color }]),
+  ),
   ...Object.fromEntries(
     RIVER_CLASSES.map((item) => [item.pin, { kind: item.glyph, color: item.color }]),
   ),
@@ -85,6 +93,7 @@ export const CLUSTER_COLOR: Record<Kind, string> = {
   river: '#1565c0',
   'river-flat': '#1565c0',
   'river-down': '#1565c0',
+  flow: '#00796b',
 };
 
 export interface MapImage {
@@ -174,7 +183,7 @@ function cluster(kind: Kind, label: string): MapImage | null {
 export function mapImage(name: string): MapImage | null {
   const found = PINS[name];
   if (found) return pin(found.kind, found.color);
-  const match = /^cluster-(flood|camera|water|rain|dam|weather|river)-(.+)$/.exec(name);
+  const match = /^cluster-(flood|camera|water|rain|dam|flow|weather|river)-(.+)$/.exec(name);
   return match ? cluster(match[1] as Kind, match[2]) : null;
 }
 export const MAP_IMAGE_RATIO = RATIO;

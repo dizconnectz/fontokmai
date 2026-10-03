@@ -1283,6 +1283,146 @@ test('the rivers by the system’s 7-day forecast: stretches on the map, a card 
   await expect(page.getByTestId('status-bar')).not.toContainText('แม่น้ำ');
 });
 
+/** RID's report of 3 Oct as of the snapshot's day (25 Sep), so that it is that morning's report */
+function flowsOfTheDay() {
+  const flows = read('flows', 'flows');
+  flows.report_date = '2026-09-25';
+  flows.observed_at = '2026-09-25T06:00:00+07:00';
+  flows.fetched_at = '2026-09-25T11:00:00+07:00';
+  return flows;
+}
+async function listFlows(page: Page) {
+  const manifest = read('active', 'manifest');
+  manifest.files.push({ path: 'water/flows.json', sha256: 'f'.repeat(64), size: 1, revision: 1 });
+  await page.route('**/examples/active/manifest.json?*', (route) =>
+    route.fulfill({ json: manifest }),
+  );
+}
+
+test("RID's gates and stations are a pin whose popup says RID's figures in plain words", async ({
+  page,
+}) => {
+  await prepare(page);
+  await listFlows(page);
+  // the Rama VI barrage's site alone, at the centre of the first view
+  const flows = flowsOfTheDay();
+  flows.sites = flows.sites
+    .filter((site: { id: string }) => site.id === 'rama6')
+    .map((site: object) => ({ ...site, location: [101, 13.2] }));
+  await page.route('**/water/flows.json?*', (route) => route.fulfill({ json: flows }));
+  await page.goto('/');
+  await page.getByRole('button', { name: 'ชั้นข้อมูล' }).click();
+  await expect(page.getByRole('button', { name: 'ประตูน้ำและสถานีวัดน้ำ' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await page.getByRole('button', { name: 'ชั้นข้อมูล' }).click();
+  const popup = await tapCentrePin(page);
+  await expect(popup).toContainText('เขื่อนพระรามหก จ.พระนครศรีอยุธยา');
+  await expect(popup).toContainText('น้ำผ่านเขื่อนพระรามหก612 ลบ.ม./วิ · เพิ่มจากเมื่อวาน 546');
+  // RID's state of the station below the barrage, said as RID's
+  await expect(popup).toContainText('แม่น้ำป่าสัก ท้ายเขื่อนพระรามหก (S.26)');
+  await expect(popup).toContainText('กรมชลฯ จัดว่าวิกฤต');
+  await expect(popup).toContainText('ปิด ไม่มีน้ำเข้าคลองระพีพัฒน์ → ทุ่งรังสิต');
+  await expect(popup).toContainText('ตัวเลขเวลา 06:00 น. 25 ก.ย. 2569 · กรมชลฯ รายงานวันละครั้ง');
+  await expect(popup).not.toContainText('รายงานเก่า');
+  await expect(
+    popup.getByRole('link', { name: 'ที่มา: กรมชลประทาน (รายงาน PDF) ↗' }),
+  ).toHaveAttribute('href', 'https://water.rid.go.th/flood/flood/daily.pdf');
+  await expect(page.getByTestId('pin-card')).not.toBeVisible();
+  await page.getByRole('button', { name: 'คำอธิบายแผนที่' }).click();
+  await expect(
+    page.locator('.legend-row', { hasText: 'สถานีวัดน้ำและประตูน้ำ (สถานะตามกรมชลฯ)' }),
+  ).toContainText('ท่วม');
+});
+
+test('the canals by the trial outlook: coloured lines, a card, a chip and a popup with the reasons', async ({
+  page,
+}) => {
+  await prepare(page);
+  await listFlows(page);
+  await page.route('**/water/flows.json?*', (route) => route.fulfill({ json: flowsOfTheDay() }));
+  // the Rangsit canal drawn across the centre of the first view, so that a tap at the centre finds it
+  const lines = read('canals', 'canals');
+  const rangsit = lines.canals.find((canal: { id: string }) => canal.id === 'rangsit');
+  rangsit.line.coordinates = [
+    [
+      [100.8, 13.2],
+      [101.2, 13.2],
+    ],
+  ];
+  await page.route('**/ref/canals.json?*', (route) => route.fulfill({ json: lines }));
+  // the producer's outlook made at the snapshot's time, with the Rangsit canal at warn and Hok Wa at watch
+  const outlook = read('canals', 'outlook');
+  outlook.generated_at = read('active', 'manifest').generated_at;
+  for (const watch of outlook.canals) {
+    if (watch.id === 'rangsit') {
+      watch.factors.unshift({
+        kind: 'rain',
+        points: 2,
+        text_th: 'พยากรณ์ฝนหนักมาก สูงสุดราว 95 มม. วันที่ 26 ก.ย. แถว ธัญบุรี',
+        source_th: 'Open-Meteo',
+        at: outlook.generated_at,
+      });
+      Object.assign(watch, { score: 3, level: 'warn' });
+    }
+    if (watch.id === 'hokwa') Object.assign(watch, { score: 2, level: 'watch' });
+  }
+  await page.route('**/summary/canals.json?*', (route) => route.fulfill({ json: outlook }));
+  await page.goto('/');
+  const surface = page.getByTestId('map-surface');
+  await expect(surface).toHaveAttribute('aria-busy', 'false', { timeout: 15_000 });
+  await expect(surface).toHaveAttribute('data-canals', /rangsit:warn/);
+  await expect(surface).toHaveAttribute('data-canals', /hokwa:watch/);
+  await expect(surface).toHaveAttribute('data-canals', /raphiphat:none/);
+  // a card lists the canals at watch or warn with what adds up; the status bar counts them
+  const card = page.getByTestId('canals');
+  await expect(card.getByRole('heading')).toHaveText('คลองที่อาจล้น (ทดลอง) · ต้องระวัง 1 สาย');
+  await expect(card).toContainText('คลองรังสิตประยูรศักดิ์');
+  await expect(card).toContainText('ต้องระวัง · 3 คะแนน');
+  await expect(card).toContainText('+2 พยากรณ์ฝนหนักมาก');
+  await expect(card).toContainText('เกณฑ์ทดลองของเว็บ ไม่ใช่ประกาศ');
+  await expect(card).not.toContainText('คลองระพีพัฒน์แยกตก');
+  await expect(page.getByTestId('status-bar')).toContainText('คลองอาจล้น 2 สาย');
+  await page.getByRole('button', { name: 'คำอธิบายแผนที่' }).click();
+  await expect(page.locator('.legend-canals')).toContainText('ต้องระวัง');
+  await page.getByRole('button', { name: 'ย่อ', exact: true }).click();
+  // the card's canal flies the map to it; its line answers a tap with the reasons
+  await card.getByRole('button', { name: /คลองรังสิตประยูรศักดิ์/ }).click();
+  await expect.poll(async () => Number(await surface.getAttribute('data-zoom'))).toBeGreaterThan(8);
+  await page.waitForTimeout(700);
+  const canvas = page.locator('.maplibregl-canvas');
+  const box = (await canvas.boundingBox())!;
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  await expect
+    .poll(async () => {
+      await page.mouse.move(x + 40, y + 40);
+      await page.mouse.move(x, y);
+      return canvas.evaluate((el) => getComputedStyle(el).cursor);
+    })
+    .toBe('pointer');
+  await page.mouse.click(x, y);
+  const popup = page.locator('.maplibregl-popup');
+  await expect(popup).toContainText('คลองรังสิตประยูรศักดิ์');
+  await expect(popup).toContainText('ต้องระวัง · 3 คะแนน');
+  await expect(popup).toContainText('+1 กรมชลฯ รายงานพื้นที่ประสบอุทกภัยใน');
+  // a factor that only notes something has no points before it
+  await expect(popup).toContainText('ปตร.พระนารายณ์ ปิด ไม่มีน้ำเข้าคลองระพีพัฒน์ → ทุ่งรังสิต');
+  await expect(popup).toContainText('เกณฑ์ทดลองของเว็บ ไม่ใช่ประกาศ');
+  await expect(popup.getByRole('link', { name: 'วิธีคิดคะแนน →' })).toHaveAttribute(
+    'href',
+    '/method/#canals',
+  );
+  await expect(page.getByTestId('pin-card')).not.toBeVisible();
+  // nothing at watch or warn: no card and nothing in the status bar; the thin lines stay
+  for (const watch of outlook.canals) Object.assign(watch, { score: 1, level: null });
+  await page.goto('/');
+  await expect(surface).toHaveAttribute('data-canals', /rangsit:none/);
+  await expect(card).toHaveCount(0);
+  await expect(page.getByTestId('status-bar')).not.toContainText('คลอง');
+});
+
 test('the river trend is a pin with a plain-word popup and never the model number', async ({
   page,
 }) => {

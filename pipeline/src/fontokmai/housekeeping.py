@@ -45,7 +45,10 @@ DATA_BUDGET = 1024**3  # fontokmai's files under the state folder; over it, the 
 # Not kept: alerts.json (its CAP documents are in the database), radar images, and the reference files.
 VERSIONED = ("forecast/outlook.json", "forecast/rain.json", "forecast/rivers.json", "radar.json", "bkk/water.json",
              "bkk/rain.json",
-             "bkk/flooding.json", "bkk/news.json", "water/dams.json", "weather/today.json")
+             "bkk/flooding.json", "bkk/news.json", "water/dams.json", "weather/today.json",
+             # RID's daily flows (D35), once a day: with the rain and Bangkok's levels it lets the canal outlook be
+             # made again to test its trial rules later, so the outlook itself (new every round) is not kept
+             "water/flows.json")
 FLOOD_FACTS = ("id", "title_th", "road_th", "location", "start", "stop", "reporter", "url")
 
 
@@ -232,7 +235,8 @@ def _day_files(root: Path) -> list[tuple[str, Path]]:
 
 # what the jobs of a round said (cli.py): the container's log goes with the container at every deploy, the archive
 # stays, so a job that stopped working shows here (2026-10-02 review)
-JOB_KEYS = ("road_flood_history", "forecast", "rivers", "dams", "processes", "restart")
+JOB_KEYS = ("road_flood_history", "forecast", "rivers", "dams", "outlook", "flows", "canals", "processes",
+            "restart")
 
 
 def _jobs(summary: dict[str, Any]) -> dict[str, Any] | None:

@@ -1,0 +1,287 @@
+{
+ "version": "2026-10-03",
+ "credit_th": "กรมชลประทาน (รายงานสถานการณ์น้ำประจำวัน SWOC และผังน้ำเจ้าพระยาตอนล่าง)",
+ "location_credit_th": "© OpenStreetMap contributors (ODbL 1.0)",
+ "figures": [
+  {
+   "id": "c2",
+   "name_th": "แม่น้ำเจ้าพระยา ที่นครสวรรค์",
+   "kind": "station",
+   "code": "C.2",
+   "capacity_cms": 3735,
+   "dot": [
+    0.4901,
+    0.101
+   ]
+  },
+  {
+   "id": "c13",
+   "name_th": "ท้ายเขื่อนเจ้าพระยา",
+   "kind": "station",
+   "code": "C.13",
+   "capacity_cms": 2720,
+   "capacity_kind": "release",
+   "dot": [
+    0.5193,
+    0.4094
+   ]
+  },
+  {
+   "id": "c3",
+   "name_th": "แม่น้ำเจ้าพระยา ที่สิงห์บุรี",
+   "kind": "station",
+   "code": "C.3",
+   "capacity_cms": 2997,
+   "dot": [
+    0.4865,
+    0.4704
+   ]
+  },
+  {
+   "id": "c7a",
+   "name_th": "แม่น้ำเจ้าพระยา ที่อ่างทอง",
+   "kind": "station",
+   "code": "C.7A",
+   "capacity_cms": 2880,
+   "dot": [
+    0.4889,
+    0.5854
+   ]
+  },
+  {
+   "id": "c35",
+   "name_th": "แม่น้ำเจ้าพระยา ที่อยุธยา",
+   "kind": "station",
+   "code": "C.35",
+   "capacity_cms": 1159,
+   "dot": [
+    0.4901,
+    0.7056
+   ]
+  },
+  {
+   "id": "c29b",
+   "name_th": "แม่น้ำเจ้าพระยา ที่ อ.สามโคก",
+   "kind": "station",
+   "code": "C.29B",
+   "capacity_cms": 3600,
+   "dot": [
+    0.4889,
+    0.7918
+   ]
+  },
+  {
+   "id": "s26",
+   "name_th": "แม่น้ำป่าสัก ท้ายเขื่อนพระรามหก",
+   "kind": "station",
+   "code": "S.26",
+   "capacity_cms": 641,
+   "dot": [
+    0.724,
+    0.7282
+   ]
+  },
+  {
+   "id": "rama6",
+   "name_th": "น้ำผ่านเขื่อนพระรามหก",
+   "kind": "barrage"
+  },
+  {
+   "id": "phranarai",
+   "name_th": "ปตร.พระนารายณ์",
+   "kind": "gate",
+   "capacity_cms": 210,
+   "capacity_kind": "release",
+   "into_th": "คลองระพีพัฒน์ → ทุ่งรังสิต"
+  },
+  {
+   "id": "phrasrisin",
+   "name_th": "ปตร.พระศรีศิลป์",
+   "kind": "gate",
+   "into_th": "คลองระพีพัฒน์แยกตก"
+  },
+  {
+   "id": "phrasrisaowaphak",
+   "name_th": "ปตร.พระศรีเสาวภาค",
+   "kind": "gate",
+   "into_th": "คลองระพีพัฒน์แยกใต้"
+  },
+  {
+   "id": "east_intake",
+   "name_th": "รับน้ำเข้าทุ่งฝั่งตะวันออก (รวม)",
+   "kind": "intake"
+  },
+  {
+   "id": "manorom",
+   "name_th": "ปตร.มโนรมย์",
+   "kind": "gate",
+   "capacity_cms": 210,
+   "capacity_kind": "release",
+   "into_th": "คลองชัยนาท-ป่าสัก"
+  },
+  {
+   "id": "maharaj",
+   "name_th": "ปตร.มหาราช",
+   "kind": "gate",
+   "capacity_cms": 65,
+   "capacity_kind": "release",
+   "into_th": "คลองชัยนาท-อยุธยา"
+  },
+  {
+   "id": "west_intake",
+   "name_th": "รับน้ำเข้าทุ่งฝั่งตะวันตก (รวม)",
+   "kind": "intake"
+  },
+  {
+   "id": "makhamthao_uthong",
+   "name_th": "ปตร.มะขามเฒ่า-อู่ทอง",
+   "kind": "gate",
+   "capacity_cms": 35,
+   "capacity_kind": "release",
+   "into_th": "คลองมะขามเฒ่า-อู่ทอง"
+  },
+  {
+   "id": "makhamthao_krasiao",
+   "name_th": "ปตร.มะขามเฒ่า-กระเสียว",
+   "kind": "gate",
+   "capacity_cms": 12,
+   "capacity_kind": "release",
+   "into_th": "คลองมะขามเฒ่า-กระเสียว"
+  },
+  {
+   "id": "phonlathep",
+   "name_th": "ปตร.พลเทพ",
+   "kind": "gate",
+   "capacity_cms": 318,
+   "capacity_kind": "release",
+   "into_th": "แม่น้ำสุพรรณ (ท่าจีน)"
+  },
+  {
+   "id": "boromthat",
+   "name_th": "ปตร.บรมธาตุ",
+   "kind": "gate",
+   "capacity_cms": 230,
+   "capacity_kind": "release",
+   "into_th": "แม่น้ำน้อย"
+  },
+  {
+   "id": "small_west",
+   "name_th": "คลองเล็กอื่น ๆ ฝั่งตะวันตก",
+   "kind": "intake"
+  }
+ ],
+ "sites": [
+  {
+   "id": "nakhonsawan",
+   "name_th": "แม่น้ำเจ้าพระยา ที่นครสวรรค์",
+   "location": [
+    100.1385,
+    15.6975
+   ],
+   "location_note_th": "บนแม่น้ำใกล้ตัวอำเภอ ไม่ใช่ตำแหน่งเครื่องวัดจริง",
+   "points": [
+    "c2"
+   ]
+  },
+  {
+   "id": "chao-phraya-dam",
+   "name_th": "เขื่อนเจ้าพระยา จ.ชัยนาท",
+   "location": [
+    100.17999,
+    15.15935
+   ],
+   "location_note_th": "ตัวเขื่อนตาม OpenStreetMap ประตูรับน้ำอยู่รอบเขื่อน",
+   "points": [
+    "c13",
+    "east_intake",
+    "manorom",
+    "maharaj",
+    "west_intake",
+    "makhamthao_uthong",
+    "makhamthao_krasiao",
+    "phonlathep",
+    "boromthat",
+    "small_west"
+   ]
+  },
+  {
+   "id": "singburi",
+   "name_th": "แม่น้ำเจ้าพระยา ที่สิงห์บุรี",
+   "location": [
+    100.4025,
+    14.8994
+   ],
+   "location_note_th": "บนแม่น้ำใกล้ตัวอำเภอ ไม่ใช่ตำแหน่งเครื่องวัดจริง",
+   "points": [
+    "c3"
+   ]
+  },
+  {
+   "id": "angthong",
+   "name_th": "แม่น้ำเจ้าพระยา ที่อ่างทอง",
+   "location": [
+    100.448,
+    14.5831
+   ],
+   "location_note_th": "บนแม่น้ำใกล้ตัวอำเภอ ไม่ใช่ตำแหน่งเครื่องวัดจริง",
+   "points": [
+    "c7a"
+   ]
+  },
+  {
+   "id": "ayutthaya",
+   "name_th": "แม่น้ำเจ้าพระยา ที่อยุธยา",
+   "location": [
+    100.5671,
+    14.3453
+   ],
+   "location_note_th": "บนแม่น้ำใกล้ตัวอำเภอ ไม่ใช่ตำแหน่งเครื่องวัดจริง",
+   "points": [
+    "c35"
+   ]
+  },
+  {
+   "id": "samkhok",
+   "name_th": "แม่น้ำเจ้าพระยา ที่ อ.สามโคก จ.ปทุมธานี",
+   "location": [
+    100.5263,
+    14.072
+   ],
+   "location_note_th": "บนแม่น้ำใกล้ตัวอำเภอ ไม่ใช่ตำแหน่งเครื่องวัดจริง",
+   "points": [
+    "c29b"
+   ]
+  },
+  {
+   "id": "rama6",
+   "name_th": "เขื่อนพระรามหก จ.พระนครศรีอยุธยา",
+   "location": [
+    100.7614,
+    14.55862
+   ],
+   "location_note_th": "ตัวเขื่อนตาม OpenStreetMap ปตร.พระนารายณ์อยู่ที่หัวคลองระพีพัฒน์ข้างเขื่อน",
+   "points": [
+    "rama6",
+    "s26",
+    "phranarai"
+   ]
+  },
+  {
+   "id": "raphiphat-split",
+   "name_th": "จุดแยกคลองระพีพัฒน์ (แยกตก/แยกใต้)",
+   "location": [
+    100.8741,
+    14.333
+   ],
+   "location_note_th": "จุดแยกคลองตาม OpenStreetMap",
+   "points": [
+    "phrasrisin",
+    "phrasrisaowaphak"
+   ]
+  }
+ ],
+ "notes_th": [
+  "ตัวเลขจากรายงานสถานการณ์น้ำประจำวันของกรมชลประทาน (SWOC) และสีสถานะจากผังน้ำเจ้าพระยาตอนล่าง เวลา 06:00 น.",
+  "จุดบนแผนที่ของสถานีอยู่บนแม่น้ำใกล้ตัวอำเภอ ไม่ใช่ตำแหน่งเครื่องวัดจริง ประตูที่รับน้ำเข้าคลองอยู่ที่หัวคลองตาม OpenStreetMap"
+ ]
+}

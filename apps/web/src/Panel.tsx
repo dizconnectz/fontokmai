@@ -22,6 +22,7 @@ import {
   Route,
   ShieldAlert,
   ShieldCheck,
+  Spline,
   Sun,
   TrendingUp,
   Waves,
@@ -43,6 +44,7 @@ import {
   staleAfter,
   type Alert,
   type Camera,
+  type CanalOutlook,
   type LiveFloods,
   type RainForecast,
   type RoadFloodHistory,
@@ -142,6 +144,7 @@ import {
   type OverviewItem,
 } from './overview';
 import type { RefState } from './useData';
+import { canalsOld, canalsToWatch, canalWords, factorText } from './flows';
 
 type Road = RoadFloodHistory['roads'][number];
 const RADAR_STALE_MIN = 45;
@@ -1101,6 +1104,70 @@ function RiverOutlookCard({
   );
 }
 
+/**
+ * The canals of the pilot that may overflow by the site's trial rules (D35, user 2026-10-03: the gates' figures as
+ * one factor of which canal may flood): shown only while one is at watch or warn, each with the factors that count.
+ */
+function CanalCard({
+  outlook,
+  now,
+  onCanal,
+}: {
+  outlook: CanalOutlook;
+  now: number;
+  /** show the canal on the map; the side panel stays */
+  onCanal: (id: string) => void;
+}) {
+  const shown = canalsToWatch(outlook);
+  // nothing adds up: no card (user 2026-10-02); the thin lines on the map still show the canals followed
+  if (!shown.length) return null;
+  const warn = shown.filter((watch) => watch.level === 'warn').length;
+  return (
+    <Section
+      id="canals"
+      headingId="canals-heading"
+      testId="canals"
+      headingClass={warn ? 'heading-rain' : undefined}
+      heading={
+        <>
+          <Spline size={18} /> คลองที่อาจล้น (ทดลอง)
+          {warn ? ` · ต้องระวัง ${warn} สาย` : ` · เฝ้าดู ${shown.length} สาย`}
+        </>
+      }
+    >
+      {canalsOld(outlook, now) && (
+        <p className="inline-warning">
+          <Info size={15} /> ผลประเมินไม่อัปเดต · แสดงผลครั้งก่อน
+        </p>
+      )}
+      <ul className="flood-list">
+        {shown.map((watch) => (
+          <li key={watch.id}>
+            <button className="road-button" onClick={() => onCanal(watch.id)}>
+              <span className="flood-line">
+                <strong>{watch.name_th}</strong>
+                <span className={`canal-level ${watch.level}`}>{canalWords(watch)}</span>
+                {watch.factors
+                  .filter((factor) => factor.points > 0)
+                  .map((factor, i) => (
+                    <small key={`${factor.kind}-${i}`}>{factorText(factor)}</small>
+                  ))}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <small className="source-note">
+        เกณฑ์ทดลองของเว็บ ไม่ใช่ประกาศ และยังไม่ได้ทดสอบย้อนหลังกับเหตุการณ์จริง ·
+        คะแนนบอกว่าปัจจัยที่ทำให้น้ำในคลองสูงขึ้นมาพร้อมกันกี่อย่าง ไม่ได้บอกว่าน้ำจะสูงเท่าไร ·
+        จากตัวเลขกรมชลประทาน พยากรณ์ฝน และระดับน้ำ กทม. · คิดเมื่อ{' '}
+        {reportTime(outlook.generated_at, now)} · แตะชื่อเพื่อดูบนแผนที่ ·{' '}
+        <a href={`${import.meta.env.BASE_URL}method/#canals`}>วิธีคิด</a>
+      </small>
+    </Section>
+  );
+}
+
 export function Overview({
   snapshot,
   alerts,
@@ -1115,6 +1182,8 @@ export function Overview({
   dams,
   rivers,
   onRiver,
+  canals,
+  onCanal,
   water,
   onBank,
   onDam,
@@ -1138,6 +1207,9 @@ export function Overview({
   /** the GloFAS river forecast, or null (not published, or the timeline on the forecast) */
   rivers: RiverForecast | null;
   onRiver: (points: number[][]) => void;
+  /** the canals' outlook by the trial rules (D35), or null (not published, or the timeline on the forecast) */
+  canals: CanalOutlook | null;
+  onCanal: (id: string) => void;
   water: CanalLevels | null;
   onBank: (item: BankObservation) => void;
   onDam: (location: number[]) => void;
@@ -1156,7 +1228,17 @@ export function Overview({
   return (
     <>
       <StatusBar
-        counts={statusCounts({ summary, floods, dams, riverRows, alerts, trusted, worst, now })}
+        counts={statusCounts({
+          summary,
+          floods,
+          dams,
+          riverRows,
+          canals,
+          alerts,
+          trusted,
+          worst,
+          now,
+        })}
       />
       {summary && (
         <WatchSummary
@@ -1179,6 +1261,7 @@ export function Overview({
       {rivers && riverRows && (
         <RiverOutlookCard rivers={rivers} rows={riverRows} now={now} onRiver={onRiver} />
       )}
+      {canals && <CanalCard outlook={canals} now={now} onCanal={onCanal} />}
       {!!water?.bank_observations?.length && (
         <section
           className="panel-section"

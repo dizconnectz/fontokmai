@@ -119,6 +119,27 @@ class Watch(unittest.TestCase):
         self.assertEqual(evaluate(listed, FRESH_FORECAST, NOW, FRESH_RADAR, dams=by_hand), [])
         self.assertEqual(evaluate(listed, FRESH_FORECAST, NOW, FRESH_RADAR), [])  # not fetched: not judged
 
+    def test_rids_report_and_the_canal_outlook_are_expected_and_must_stay_fresh(self):
+        listed = manifest()
+        listed["files"].append({"path": "ref/canals.json"})  # the round carries the canals
+        missing = [text for _, text in evaluate(listed, FRESH_FORECAST, NOW, FRESH_RADAR)]
+        self.assertEqual(len(missing), 2)
+        self.assertIn("water/flows.json", missing[0])
+        listed["files"] += [{"path": "water/flows.json"}, {"path": "summary/canals.json"}]
+        canals = {"generated_at": (NOW - timedelta(minutes=10)).isoformat()}
+        # the report of 06:00 yesterday, and even of the day before when RID skipped a day
+        for days in (1, 2):
+            flows = {"observed_at": (NOW - timedelta(days=days, hours=2)).isoformat()}
+            self.assertEqual(evaluate(listed, FRESH_FORECAST, NOW, FRESH_RADAR, flows=flows, canals=canals), [])
+        old = {"observed_at": (NOW - timedelta(days=3)).isoformat()}
+        [(level, text)] = evaluate(listed, FRESH_FORECAST, NOW, FRESH_RADAR, flows=old, canals=canals)
+        self.assertEqual(level, "warning")
+        self.assertTrue(text.startswith("รายงานน้ำกรมชลประทานไม่อัปเดต"))
+        stale = {"generated_at": (NOW - timedelta(hours=1)).isoformat()}
+        found = evaluate(listed, FRESH_FORECAST, NOW, FRESH_RADAR, flows=None, canals=stale)
+        self.assertEqual([text.split(" (")[0] for _, text in found], ["คลองที่อาจล้นไม่อัปเดต",
+                                                                       "เปิดไฟล์รายงานน้ำกรมชลประทานไม่ได้"])
+
     def test_the_report_lists_the_problems_and_mentions_no_one(self):
         # the owner asked for no emails (2026-10-01): a mention in a report would send one
         text = report([("critical", "x"), ("warning", "y")], NOW)

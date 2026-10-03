@@ -2147,3 +2147,34 @@ details > ul {
   color: var(--warn-ink);
   font-weight: 600;
 }
+/* ---------- RID's stations and gates, and the canals by the trial outlook (D35) ---------- */
+.flow-points {
+  display: grid;
+  gap: 4px;
+  margin: 2px 0;
+  padding: 0;
+  list-style: none;
+}
+.flow-points li {
+  display: grid;
+  gap: 1px;
+}
+.flow-popup summary {
+  color: var(--brand);
+  font-weight: 600;
+  cursor: pointer;
+}
+.canal-level {
+  justify-self: start;
+  padding: 1px 7px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+.canal-level.warn {
+  background: var(--extreme-bg);
+  color: var(--extreme-ink);
+}
+.canal-level.watch {
+  background: var(--severe-bg);
+  color: var(--severe-ink);
+}

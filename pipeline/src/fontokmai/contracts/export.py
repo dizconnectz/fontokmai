@@ -17,7 +17,9 @@ from fontokmai.contracts.bkk import (
     WeatherToday,
 )
 from fontokmai.contracts.boundaries import Boundaries
+from fontokmai.contracts.canals import CanalLines, CanalOutlook
 from fontokmai.contracts.cctv import CctvRegistry
+from fontokmai.contracts.flows import RidFlows
 from fontokmai.contracts.forecast import RainForecast, RiverForecast
 from fontokmai.contracts.live_floods import LiveFloods
 from fontokmai.contracts.manifest import Manifest
@@ -35,8 +37,11 @@ SCHEMAS: dict[str, type[BaseModel]] = {
     "bkk_rain.schema.json": RainGauges,
     "bkk_water.schema.json": CanalLevels,
     "boundaries.schema.json": Boundaries,
+    "canal_outlook.schema.json": CanalOutlook,
+    "canals.schema.json": CanalLines,
     "cctv.schema.json": CctvRegistry,
     "dams.schema.json": DamReport,
+    "flows.schema.json": RidFlows,
     "forecast.schema.json": RainForecast,
     "forecast_rivers.schema.json": RiverForecast,
     "live_floods.schema.json": LiveFloods,

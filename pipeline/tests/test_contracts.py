@@ -21,8 +21,9 @@ def test_export_schemas_writes_one_file_per_contract(tmp_path):
     written = export_schemas(tmp_path)
     assert sorted(p.name for p in written) == [
         "alerts.schema.json", "bkk_flooding.schema.json", "bkk_news.schema.json", "bkk_rain.schema.json",
-        "bkk_water.schema.json", "boundaries.schema.json", "cctv.schema.json", "dams.schema.json",
-        "forecast.schema.json", "forecast_rivers.schema.json",
+        "bkk_water.schema.json", "boundaries.schema.json", "canal_outlook.schema.json", "canals.schema.json",
+        "cctv.schema.json", "dams.schema.json", "flows.schema.json", "forecast.schema.json",
+        "forecast_rivers.schema.json",
         "live_floods.schema.json", "manifest.schema.json", "outlook.schema.json", "overview.schema.json",
         "places.schema.json",
         "radar.schema.json", "river_lines.schema.json",

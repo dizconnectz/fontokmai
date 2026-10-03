@@ -1,0 +1,306 @@
+{
+  "$defs": {
+    "FlowPoint": {
+      "additionalProperties": false,
+      "properties": {
+        "below_bank_m": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "How far the water is below the bank (m), when the report says it; negative = above the bank",
+          "title": "Below Bank M"
+        },
+        "capacity_cms": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "As RID's chart prints it: a station's channel capacity, or the most a gate or barrage releases (Qmax)",
+          "title": "Capacity Cms"
+        },
+        "capacity_kind": {
+          "anyOf": [
+            {
+              "enum": [
+                "channel",
+                "release"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Capacity Kind"
+        },
+        "code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "RID's station code, e.g. C.29B",
+          "title": "Code"
+        },
+        "flow_cms": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "m³/s at 06:00 of report_date, as the report gives it; null when the report gives none",
+          "title": "Flow Cms"
+        },
+        "id": {
+          "description": "Stable id, e.g. c29b, rama6, phranarai",
+          "title": "Id",
+          "type": "string"
+        },
+        "into_th": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Where a gate's water goes, e.g. คลองระพีพัฒน์ → ทุ่งรังสิต",
+          "title": "Into Th"
+        },
+        "kind": {
+          "description": "station: a gauging station on the river; barrage: the flow through a barrage; gate: a gate that lets water into a canal or river; intake: the total of several gates (an irrigation side)",
+          "enum": [
+            "station",
+            "barrage",
+            "gate",
+            "intake"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "level_m": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Water level, m above mean sea level, when the report gives it",
+          "title": "Level M"
+        },
+        "name_th": {
+          "title": "Name Th",
+          "type": "string"
+        },
+        "state": {
+          "anyOf": [
+            {
+              "enum": [
+                "normal",
+                "critical",
+                "flood"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "RID's own state of the station from the coloured dot of its chart (green, yellow, red): RID's assessment, not this site's; null when the chart has no dot there or could not be read",
+          "title": "State"
+        },
+        "yesterday_cms": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The report's figure for the day before",
+          "title": "Yesterday Cms"
+        }
+      },
+      "required": [
+        "id",
+        "name_th",
+        "kind",
+        "flow_cms"
+      ],
+      "title": "FlowPoint",
+      "type": "object"
+    },
+    "FlowSite": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "location": {
+          "description": "[lon, lat] of the pin; see location_note_th for how exact it is",
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "title": "Location",
+          "type": "array"
+        },
+        "location_note_th": {
+          "title": "Location Note Th",
+          "type": "string"
+        },
+        "name_th": {
+          "title": "Name Th",
+          "type": "string"
+        },
+        "points": {
+          "description": "The ids of points shown at this site, in this order",
+          "items": {
+            "type": "string"
+          },
+          "title": "Points",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name_th",
+        "location",
+        "location_note_th",
+        "points"
+      ],
+      "title": "FlowSite",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "chart_url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "RID's chart of that day (picture), to link to; null when not read",
+      "title": "Chart Url"
+    },
+    "credit_th": {
+      "title": "Credit Th",
+      "type": "string"
+    },
+    "fetched_at": {
+      "description": "When this site read the report",
+      "format": "date-time",
+      "title": "Fetched At",
+      "type": "string"
+    },
+    "flooded_districts": {
+      "description": "DOPA codes of the districts the report's flood section (section 6) names as affected by flooding that day: RID's report, not this site's assessment",
+      "items": {
+        "type": "string"
+      },
+      "title": "Flooded Districts",
+      "type": "array"
+    },
+    "location_credit_th": {
+      "title": "Location Credit Th",
+      "type": "string"
+    },
+    "notes_th": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Notes Th",
+      "type": "array"
+    },
+    "observed_at": {
+      "description": "06:00 of report_date (Thai time): the time of the figures",
+      "format": "date-time",
+      "title": "Observed At",
+      "type": "string"
+    },
+    "page_url": {
+      "description": "RID's page of the daily charts",
+      "title": "Page Url",
+      "type": "string"
+    },
+    "points": {
+      "items": {
+        "$ref": "#/$defs/FlowPoint"
+      },
+      "title": "Points",
+      "type": "array"
+    },
+    "report_date": {
+      "description": "The report's own date",
+      "format": "date",
+      "title": "Report Date",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1",
+      "default": "1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "sites": {
+      "items": {
+        "$ref": "#/$defs/FlowSite"
+      },
+      "title": "Sites",
+      "type": "array"
+    },
+    "source_url": {
+      "description": "RID's daily report (PDF), to link to",
+      "title": "Source Url",
+      "type": "string"
+    }
+  },
+  "required": [
+    "fetched_at",
+    "report_date",
+    "observed_at",
+    "source_url",
+    "chart_url",
+    "page_url",
+    "credit_th",
+    "location_credit_th",
+    "points",
+    "sites",
+    "notes_th"
+  ],
+  "title": "RidFlows",
+  "type": "object"
+}

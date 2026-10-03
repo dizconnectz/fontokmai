@@ -20,7 +20,13 @@ import {
   validOverview,
   validBoundaries,
   validRiverLines,
+  validFlows,
+  validCanalLines,
+  validCanalOutlook,
   type Boundaries,
+  type CanalLines,
+  type CanalOutlook,
+  type RidFlows,
   type RiverLines,
   type CanalLevels,
   type CctvRegistry,
@@ -59,7 +65,10 @@ type RefName =
   | 'rivers'
   | 'overview'
   | 'boundaries'
-  | 'riverLines';
+  | 'riverLines'
+  | 'flows'
+  | 'canalLines'
+  | 'canals';
 // Files of the manifest outside the snapshot generation. Cameras and the forecast (timeline, ~50 KB gzip)
 // load at once; the others on first need.
 const REF_FILES: Record<RefName, { path: string; valid: (value: unknown) => boolean }> = {
@@ -84,6 +93,11 @@ const REF_FILES: Record<RefName, { path: string; valid: (value: unknown) => bool
   boundaries: { path: 'ref/boundaries.json', valid: validBoundaries },
   // the main rivers cut into stretches (~65 KB gzip), on first need: a river forecast to rise
   riverLines: { path: 'ref/river_lines.json', valid: validRiverLines },
+  // RID's daily figures of the Chao Phraya's stations and gates (D35), and the canals they may fill: the lines
+  // (~3 KB) and their outlook by the site's trial rules (rebuilt every round), all small, loaded at once
+  flows: { path: 'water/flows.json', valid: validFlows },
+  canalLines: { path: 'ref/canals.json', valid: validCanalLines },
+  canals: { path: 'summary/canals.json', valid: validCanalOutlook },
 };
 const IDLE: RefSlot<never> = { value: null, state: 'idle' };
 
@@ -109,6 +123,9 @@ export function useData() {
   const [overview, setOverview] = useState<RefSlot<SummaryOverview>>(IDLE);
   const [boundaries, setBoundaries] = useState<RefSlot<Boundaries>>(IDLE);
   const [riverLines, setRiverLines] = useState<RefSlot<RiverLines>>(IDLE);
+  const [flows, setFlows] = useState<RefSlot<RidFlows>>(IDLE);
+  const [canalLines, setCanalLines] = useState<RefSlot<CanalLines>>(IDLE);
+  const [canals, setCanals] = useState<RefSlot<CanalOutlook>>(IDLE);
   const current = useRef<Snapshot | null>(null);
   const settings = useRef<RuntimeConfig | null>(null);
   const flight = useRef<AbortController | null>(null);
@@ -126,6 +143,9 @@ export function useData() {
       'outlook',
       'rivers',
       'overview',
+      'flows',
+      'canalLines',
+      'canals',
     ]),
   );
   const refreshRef = useRef<() => Promise<void>>(async () => undefined);
@@ -186,6 +206,15 @@ export function useData() {
       ),
       riverLines: new RefSync(REF_FILES.riverLines.path, loader('riverLines'), (slot) =>
         setRiverLines(slot as RefSlot<RiverLines>),
+      ),
+      flows: new RefSync(REF_FILES.flows.path, loader('flows'), (slot) =>
+        setFlows(slot as RefSlot<RidFlows>),
+      ),
+      canalLines: new RefSync(REF_FILES.canalLines.path, loader('canalLines'), (slot) =>
+        setCanalLines(slot as RefSlot<CanalLines>),
+      ),
+      canals: new RefSync(REF_FILES.canals.path, loader('canals'), (slot) =>
+        setCanals(slot as RefSlot<CanalOutlook>),
       ),
     };
   }
@@ -301,5 +330,8 @@ export function useData() {
     loadBoundaries,
     riverLines: riverLines.value,
     loadRiverLines,
+    flows: flows.value,
+    canalLines: canalLines.value,
+    canals: canals.value,
   };
 }

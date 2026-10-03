@@ -4,7 +4,7 @@ import { isOngoing } from './floods';
 import { openSection } from './Fold';
 import { changeSince, shownItems, type Overview } from './overview';
 import type { RiverRow } from './rivers';
-import type { Alert, LiveFloods } from './data';
+import type { Alert, CanalOutlook, LiveFloods } from './data';
 
 /**
  * The whole picture in one line at the top of the side panel (user 2026-10-01): how many places to watch now and to
@@ -34,6 +34,9 @@ export interface StatusCounts {
   /** main rivers the system's forecast sees rising in 7 days, and whether one rises a lot */
   riversRising?: number;
   riversFast?: boolean;
+  /** canals of the pilot at warn and at watch by the site's trial rules (D35) */
+  canalsWarn?: number;
+  canalsWatch?: number;
   /** alerts in effect; null when the alert feed cannot be trusted (old or missing) */
   alerts: number | null;
   worst: Level | null;
@@ -90,6 +93,13 @@ export function statusChips(counts: StatusCounts): Chip[] {
       tone: counts.riversFast ? 'danger' : 'warn',
       target: 'rivers',
     });
+  if (counts.canalsWarn || counts.canalsWatch)
+    chips.push({
+      key: 'canals',
+      text: `คลองอาจล้น ${(counts.canalsWarn ?? 0) + (counts.canalsWatch ?? 0)} สาย`,
+      tone: counts.canalsWarn ? 'danger' : 'warn',
+      target: 'canals',
+    });
   if (counts.alerts)
     chips.push({
       key: 'alerts',
@@ -112,6 +122,7 @@ export function statusCounts({
   floods,
   dams,
   riverRows = null,
+  canals = null,
   alerts,
   trusted,
   worst,
@@ -122,6 +133,8 @@ export function statusCounts({
   dams: DamReport | null;
   /** the rivers card's rows (riverSummary), worked out once for both */
   riverRows?: RiverRow[] | null;
+  /** the canals' outlook (D35), as the canals card reads it */
+  canals?: CanalOutlook | null;
   alerts: Alert[];
   trusted: boolean;
   worst: Level | null;
@@ -142,6 +155,8 @@ export function statusCounts({
       : 0,
     riversRising: risingRivers.length,
     riversFast: risingRivers.some((row) => row.trend === 'rising_fast'),
+    canalsWarn: (canals?.canals ?? []).filter((watch) => watch.level === 'warn').length,
+    canalsWatch: (canals?.canals ?? []).filter((watch) => watch.level === 'watch').length,
     alerts: alerts.length ? alerts.length : trusted ? 0 : null,
     worst,
   };

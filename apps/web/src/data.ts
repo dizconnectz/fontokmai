@@ -20,6 +20,9 @@ import damsSchema from '../../../contracts/v1/schema/dams.schema.json';
 import weatherTodaySchema from '../../../contracts/v1/schema/weather_today.schema.json';
 import boundariesSchema from '../../../contracts/v1/schema/boundaries.schema.json';
 import riverLinesSchema from '../../../contracts/v1/schema/river_lines.schema.json';
+import flowsSchema from '../../../contracts/v1/schema/flows.schema.json';
+import canalsSchema from '../../../contracts/v1/schema/canals.schema.json';
+import canalOutlookSchema from '../../../contracts/v1/schema/canal_outlook.schema.json';
 import type { Manifest } from '../../../contracts/v1/ts/manifest';
 import type { Alert, AlertsFeed } from '../../../contracts/v1/ts/alerts';
 import type { RadarFeed } from '../../../contracts/v1/ts/radar';
@@ -38,6 +41,9 @@ import type { DamReport } from '../../../contracts/v1/ts/dams';
 import type { WeatherToday } from '../../../contracts/v1/ts/weather_today';
 import type { Boundaries } from '../../../contracts/v1/ts/boundaries';
 import type { RiverLines } from '../../../contracts/v1/ts/river_lines';
+import type { RidFlows } from '../../../contracts/v1/ts/flows';
+import type { CanalLines } from '../../../contracts/v1/ts/canals';
+import type { CanalOutlook } from '../../../contracts/v1/ts/canal_outlook';
 
 export type {
   RainOutlook,
@@ -45,6 +51,8 @@ export type {
   AlertsFeed,
   Boundaries,
   CanalLevels,
+  CanalLines,
+  CanalOutlook,
   CctvRegistry,
   DamReport,
   LiveFloods,
@@ -52,6 +60,7 @@ export type {
   PlaceGazetteer,
   RadarFeed,
   RainForecast,
+  RidFlows,
   RiverForecast,
   RiverLines,
   SummaryOverview,
@@ -119,6 +128,11 @@ export const validWeatherToday = ajv.compile<WeatherToday>(
 );
 export const validBoundaries = ajv.compile<Boundaries>(allowAdditions(boundariesSchema) as object);
 export const validRiverLines = ajv.compile<RiverLines>(allowAdditions(riverLinesSchema) as object);
+export const validFlows = ajv.compile<RidFlows>(allowAdditions(flowsSchema) as object);
+export const validCanalLines = ajv.compile<CanalLines>(allowAdditions(canalsSchema) as object);
+export const validCanalOutlook = ajv.compile<CanalOutlook>(
+  allowAdditions(canalOutlookSchema) as object,
+);
 
 /** radar.json belongs to the snapshot generation, like alerts.json. */
 export function validateRadar(manifest: Manifest, radar: unknown): RadarFeed {
