@@ -76,6 +76,7 @@ import {
   type RiverPoint,
 } from './rivers';
 import { MAP_IMAGE_RATIO, mapImage } from './mapIcons';
+import { resetSent, send } from './mapSources';
 import { distanceM } from './roads';
 import { WATCH_COLOR, type WatchShapes } from './overview';
 import {
@@ -283,20 +284,22 @@ const SEVERE_KINDS = [
   ['rain', 'rain'],
   ['flood', 'floods'],
 ] as const;
-/** Points into their source, the severe ones (`severe` true) into its unclustered twin above every bubble. */
+/**
+ * Points into their source, the severe ones (`severe` true) into its unclustered twin above every bubble; each only
+ * when what it shows changed (M42).
+ */
 function setPoints(instance: LibreMap, source: string, collection: FeatureCollection<Point>) {
   const severe = collection.features.filter((feature) => feature.properties?.severe === true);
-  (instance.getSource(source) as GeoJSONSource | undefined)?.setData({
+  send(instance, source, {
     type: 'FeatureCollection',
     features: collection.features.filter((feature) => feature.properties?.severe !== true),
   });
-  (instance.getSource(`${source}-top`) as GeoJSONSource | undefined)?.setData({
-    type: 'FeatureCollection',
-    features: severe,
-  });
+  send(instance, `${source}-top`, { type: 'FeatureCollection', features: severe });
 }
 /** Our sources and layers; added on load and again after the basemap changes with the theme. */
 function addOverlays(instance: LibreMap) {
+  // every source is new and empty: what was sent before is forgotten
+  resetSent(instance);
   const empty: FeatureCollection = { type: 'FeatureCollection', features: [] };
   instance.addSource('alerts', { type: 'geojson', data: empty });
   instance.addLayer({
@@ -1533,7 +1536,6 @@ export default function MapView(props: Props) {
   // Official alert zones coloured by CAP severity
   useEffect(() => {
     if (!ready || !map.current) return;
-    setRendering(true);
     const collection: FeatureCollection<MultiPolygon> = {
       type: 'FeatureCollection',
       features: props.layers.alerts
@@ -1548,6 +1550,7 @@ export default function MapView(props: Props) {
                     },
                     properties: {
                       eventId: alert.event_id,
+                      revision: alert.revision,
                       level: levelOf(alert),
                       status: displayStatus(alert, props.now),
                       selected: alert.event_id === props.selectedAlertId,
@@ -1558,7 +1561,14 @@ export default function MapView(props: Props) {
           )
         : [],
     };
-    (map.current.getSource('alerts') as GeoJSONSource | undefined)?.setData(collection);
+    // the zones are large: their signature is what they are and how they are drawn, not their shapes (M42)
+    const signature = collection.features
+      .map(
+        ({ properties: p }) =>
+          `${p?.eventId}:${p?.revision}:${p?.level}:${p?.status}:${p?.selected}`,
+      )
+      .join(' ');
+    if (send(map.current, 'alerts', collection, signature)) setRendering(true);
   }, [props.alerts, props.selectedAlertId, props.now, props.layers.alerts, ready, styleVersion]);
 
   // Stretches of river the model sees rising; the casing follows the basemap like the outlines'
@@ -1919,10 +1929,10 @@ export default function MapView(props: Props) {
         ];
       }),
     };
-    (map.current.getSource('water') as GeoJSONSource | undefined)?.setData(collection);
+    send(map.current, 'water', collection);
     if (!collection.features.length && popupKind.current === 'water') popup.current?.remove();
     const banks = bankFeatures(props.layers.water ? props.water : null, props.now);
-    (map.current.getSource('bank-evidence') as GeoJSONSource | undefined)?.setData(banks);
+    send(map.current, 'bank-evidence', banks);
     if (!banks.features.length && popupKind.current === 'bank') popup.current?.remove();
   }, [props.water, props.layers.water, props.now, ready, styleVersion]);
 
