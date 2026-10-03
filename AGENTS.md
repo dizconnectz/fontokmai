@@ -49,11 +49,11 @@
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md`)
 
 #### 2026-10-03 14:49 ICT — ฝน 14 วันขึ้นจริง · ปิดงานระยะแรก (Codex)
-- b30c3cc: collector/สัญญา24/ตัวอย่าง/types/การ์ดพับ18จุด ECMWF51+GFS31 · 12ชม./retry3ชม. แชร์budget8000/24ชม. คลังเดิมมีเพดาน/retention · docs/design/hydrology-pilot-plan.md และ sources§15.4
-- **โค้ด** CIผ่าน: pytest258+consumerPython57, vitest150+consumer64, Playwright135(3จอ)+consumerbrowser64; schema/examples/types/docker/ruff/build/format/safetyผ่าน (runs37106534549/560) · รอบเว็บเดิมที่ล้มแถบสีเป็นงานClaude ซึ่งaafbb84แก้testแล้ว ไม่แก้ทับ
-- **ข้อมูล/ความแม่น** APIจริง18จุด×2โมเดลครบ 4–17ต.ค.; gzip27KB/รอบ เก็บสมาชิกก่อนเหตุไว้สอบเทียบ ยังไม่มีหลักฐานว่าแม่นขึ้น ทะเบียนตลิ่ง/กำลังระบายยังnull; helpersกันรวมซ้ำ/เวลาไม่ตรง+Muskingumยังไม่เปิดสร้างพยากรณ์น้ำจริง
-- **Deploy** Pages37107037751และVPSb30c3ccสำเร็จ รอบ14:33เก็บข้อมูล; ทดสอบรอบเผยแพร่ทีละรอบ14:42ด้วยcontainerfontokmaiชั่วคราวแล้วคืนตัวหลัก → manifest20261003T074219Z-vps/1399cf61ea43 แสดง18จุด/14วันจริงบนdesktop/Pixel7 sha256และค่าการ์ดตรง ไม่มีJSerror/ล้นจอ
-- รายละเอียด/คำสั่งและประวัติ13:09/13:38/14:30: private/handoffs/2026-10-03-codex-outlook.md · ต่อไปเติมtopology/หน้าตัด/ตลิ่ง/ประตูที่สิทธิ์ชัดและbacktestก่อนเปิดคำนวณน้ำล้นจริง
+- b30c3cc: ensemble14วัน/18จุด ECMWF+GFS สัญญา24/collector/การ์ดพับ/ทะเบียนตลิ่งที่ยังnull; 12ชม./งบและretentionเดิม · design/hydrology-pilot-plan.md + sources§15.4
+- **โค้ด** CIผ่าน pytest258+57, vitest150+64, Playwright135+consumerbrowser64; schema/types/examples/docker/ruff/build/format/safety · aafbb84ของClaudeแยกจากงานนี้
+- **ข้อมูล/ความแม่น** APIจริงครบ18×2โมเดล/14วัน; gzip27KB เก็บสมาชิกเพื่อbacktest ยังไม่มีผลยืนยันแม่นขึ้น/ยังไม่เปิดคำนวณน้ำล้นจริง
+- **Deploy** Pages/VPSสำเร็จ data1399cf61ea43/manifest20261003T074219Z-vps; ตรวจเว็บจริงdesktop/Pixel7 18จุด4–17ต.ค. ค่า/shaตรง ไม่มีJSerror/ล้นจอ ตัวเก็บหลักกลับมารันหลังทดสอบรอบ14:42
+- ฉบับเต็ม/คำสั่ง/ประวัติ: private/handoffs/2026-10-03-codex-outlook.md · ต่อไปเติมtopology/ตลิ่ง/ประตูที่ตรวจสอบและสอบเทียบก่อนคาดน้ำล้น
 
 #### 2026-10-03 15:10 ICT — คำอธิบายแผนที่แบบเรียบ · เครดิตแผนที่ย่อเอง · ปิด M43 (Claude)
 - **ผู้ใช้ขอ legend ให้ minimal และเครดิต OpenFreeMap/OSM ย่อตั้งแต่แรก**: คีย์เหลือบรรทัดเดียวทุกจอ (ระดับประกาศ + สเกลฝน + ⓘ) กรอบสรุป/เส้นแม่น้ำ/ตลิ่ง/หมุดย้ายเข้า ⓘ “คำอธิบายแผนที่” (ชื่อเดิม “ความหมายหมุด” → แก้ consumer specs 3 ไฟล์) · เครดิตแผนที่: แนวทาง OSMF (safe harbour) ห้ามซ่อนตั้งแต่แรก แต่ย่อได้หลัง 5 วินาทีหรือเมื่อแตะแผนที่ → ทำแบบนั้น ⓘ เปิดกลับได้
