@@ -52,7 +52,7 @@
 #### 2026-10-03 15:10 ICT — คำอธิบายแผนที่แบบเรียบ · เครดิตแผนที่ย่อเอง · ปิด M43 (Claude)
 - **ผู้ใช้ขอ legend ให้ minimal และเครดิต OpenFreeMap/OSM ย่อตั้งแต่แรก**: คีย์เหลือบรรทัดเดียวทุกจอ (ระดับประกาศ + สเกลฝน + ⓘ) กรอบสรุป/เส้นแม่น้ำ/ตลิ่ง/หมุดย้ายเข้า ⓘ “คำอธิบายแผนที่” (ชื่อเดิม “ความหมายหมุด” → แก้ consumer specs 3 ไฟล์) · เครดิตแผนที่: แนวทาง OSMF (safe harbour) ห้ามซ่อนตั้งแต่แรก แต่ย่อได้หลัง 5 วินาทีหรือเมื่อแตะแผนที่ → ทำแบบนั้น ⓘ เปิดกลับได้
 - **M43 ปิด** (ตามเกณฑ์ Codex): popup วัดพื้นที่ที่ legend/timeline/ปุ่มซูมบังจริงตอนเปิด (`coveredBottom`) จำกัดความสูง+เลื่อนแผนที่ และ popup อยู่เหนือ legend/timeline (z-index 5) · เทสต์ 390×568 และ 844×390 พร้อม timeline: ลิงก์ที่มารับ pointer เอง (ถอดการแก้แล้วเทสต์ล้ม)
-- **ซ้อนกับ Codex** (App.tsx จองไว้): แก้แค่บล็อก legend ทดสอบใน worktree แยก commit บน `b30c3cc` · **prettier `apps/web/tests/outlook.spec.ts`** เพราะ `format:check` ของ web ล้มที่ `b30c3cc`
+- **ซ้อนกับ Codex** (App.tsx จองไว้): แก้แค่บล็อก legend ทดสอบใน worktree แยก commit บน `b30c3cc` (prettier ในเครื่องเตือน `outlook.spec.ts` เพราะบรรทัดแบบ CRLF เท่านั้น CI ผ่าน ไม่ได้แก้ไฟล์นั้น)
 - **โค้ด** vitest 150 · Playwright 98 (chromium รวม outlook) · consumer 64 + browser 64
 
 #### 2026-10-03 14:30 ICT — ฝน ensemble 14 วันระยะแรก (Codex)
