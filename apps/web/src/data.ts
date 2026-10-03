@@ -76,6 +76,11 @@ export interface Snapshot {
   feed: AlertsFeed | null;
   /** Latest radar frames of the same generation, when the snapshot has them. */
   radar?: RadarFeed | null;
+  /**
+   * Why the generation's radar.json could not be used (Codex M45): the alerts still show, the radar is left out
+   * (never one of another generation) and is tried again at the next refresh. Absent when there was no problem.
+   */
+  radarError?: DataError['code'];
 }
 export interface RuntimeConfig {
   DATA_BASE_URL: string;
@@ -228,23 +233,42 @@ export async function loadSnapshot(
         priorFile.sha256 === file.sha256 &&
         priorFile.size === file.size &&
         priorFile.revision === file.revision;
-      const next: Snapshot = validateSnapshot(
-        manifest,
-        file ? (canReuse ? previous.feed : await getJson(url.href, fetcher, signal)) : null,
-      );
       const radarFile = manifest.files.find((f) => f.path === 'radar.json');
+      const radarUrl = new URL('radar.json', base);
+      radarUrl.searchParams.set('g', manifest.generation_id);
+      const priorRadar = previous?.manifest.files.find((f) => f.path === 'radar.json');
+      const reuseRadar =
+        radarFile &&
+        previous?.radar &&
+        previous.manifest.generation_id === manifest.generation_id &&
+        priorRadar?.sha256 === radarFile.sha256;
+      // the alerts and the radar of the generation load together; only the alerts can stop the snapshot (M45)
+      const [feed, radar] = await Promise.all([
+        file ? (canReuse ? previous.feed : getJson(url.href, fetcher, signal)) : null,
+        !radarFile
+          ? undefined
+          : reuseRadar
+            ? previous!.radar
+            : getJson(radarUrl.href, fetcher, signal).catch((error: unknown) => {
+                if (signal?.aborted) throw error;
+                return error instanceof DataError
+                  ? error
+                  : new DataError('network', 'โหลดไม่สำเร็จ');
+              }),
+      ]);
+      const next: Snapshot = validateSnapshot(manifest, feed);
       if (radarFile) {
-        const radarUrl = new URL('radar.json', base);
-        radarUrl.searchParams.set('g', manifest.generation_id);
-        const priorRadar = previous?.manifest.files.find((f) => f.path === 'radar.json');
-        const reuseRadar =
-          previous?.radar &&
-          previous.manifest.generation_id === manifest.generation_id &&
-          priorRadar?.sha256 === radarFile.sha256;
-        next.radar = validateRadar(
-          manifest,
-          reuseRadar ? previous.radar : await getJson(radarUrl.href, fetcher, signal),
-        );
+        try {
+          if (radar instanceof DataError) throw radar;
+          next.radar = validateRadar(manifest, radar);
+        } catch (error) {
+          if (!(error instanceof DataError)) throw error;
+          // a radar of another generation may be the host serving the new manifest first: the whole snapshot is
+          // tried once more, as before; after that the alerts go without it
+          if (error.code === 'mixed' && attempt === 0) throw error;
+          next.radar = null;
+          next.radarError = error.code;
+        }
       }
       if (previous) {
         const oldEpoch = previous.manifest.recovery_epoch;

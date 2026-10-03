@@ -877,6 +877,14 @@ export default function App() {
             </div>
           </div>
         )}
+        {snapshot?.radarError && (
+          <p className="notice" role="status" data-testid="radar-unavailable">
+            <Info size={16} />
+            <span>
+              ภาพเรดาร์รอบนี้โหลดไม่สำเร็จ จะลองใหม่เอง · ประกาศและข้อมูลอื่นยังแสดงตามปกติ
+            </span>
+          </p>
+        )}
         {stale && (
           <div className="notice warning" role="status">
             <RefreshCw size={16} />

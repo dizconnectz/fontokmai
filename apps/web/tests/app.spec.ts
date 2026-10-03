@@ -113,6 +113,24 @@ async function tapCentrePin(page: Page) {
   return page.locator('.maplibregl-popup');
 }
 
+test('the official alerts show when the radar cannot be loaded, and the panel says so (M45)', async ({
+  page,
+}) => {
+  await prepare(page);
+  const manifest = read('active', 'manifest');
+  manifest.files.push({ path: 'radar.json', sha256: 'a'.repeat(64), size: 1, revision: 1 });
+  await page.route('**/examples/active/manifest.json?*', (route) =>
+    route.fulfill({ json: manifest }),
+  );
+  await page.route('**/examples/active/radar.json?*', (route) => route.abort());
+  await page.goto('/');
+  await expect(page.getByTestId('alert-card')).toHaveCount(3);
+  await expect(page.getByTestId('radar-unavailable')).toContainText(
+    'ภาพเรดาร์รอบนี้โหลดไม่สำเร็จ จะลองใหม่เอง',
+  );
+  await expect(page.getByText('ยังไม่มีชุดข้อมูลที่ตรวจสอบครบ')).toHaveCount(0);
+});
+
 test('official alerts show their severity and a one-line summary, then open in full', async ({
   page,
 }) => {

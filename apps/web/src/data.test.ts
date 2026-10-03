@@ -163,6 +163,89 @@ describe('snapshot loading and recovery', () => {
     feed!.alerts[0].geometry!.type = undefined;
     expect(() => validateSnapshot(manifest, feed)).toThrow();
   });
+  it('shows the alerts when the radar fails, without the radar, and loads it again next time (M45)', async () => {
+    const { manifest } = pair();
+    const feed = pair().feed!;
+    const listed: Manifest = {
+      ...manifest,
+      files: [
+        ...manifest.files,
+        { path: 'radar.json', sha256: 'a'.repeat(64), size: 1, revision: 1 },
+      ],
+    };
+    const radar = {
+      schema_version: '1',
+      generation_id: manifest.generation_id,
+      name_th: 'เรดาร์',
+      credit_th: 'กรมอุตุนิยมวิทยา',
+      source_url: 'https://weather.tmd.go.th/',
+      coordinates: [
+        [97, 21],
+        [106, 21],
+        [106, 5],
+        [97, 5],
+      ],
+      frames: [{ time: manifest.generated_at, path: 'radar/a.png' }],
+      legend: [],
+      legend_opacity: 0.7,
+      notes_th: [],
+    };
+    const failing = vi.fn<typeof fetch>(async (input) => {
+      const url = String(input);
+      if (url.includes('manifest.json')) return new Response(JSON.stringify(listed));
+      if (url.includes('alerts.json')) return new Response(JSON.stringify(feed));
+      return new Response('down', { status: 503 });
+    });
+    const down = await loadSnapshot(base, null, failing);
+    expect(down.feed?.alerts).toHaveLength(feed.alerts.length);
+    expect([down.radar, down.radarError]).toEqual([null, 'network']);
+    // not drawn in the radar's colours: invalid; of another generation (after one retry): mixed, never used
+    for (const [body, code] of [
+      [{ ...radar, legend_opacity: 0 }, 'invalid'],
+      [{ ...radar, generation_id: 'other' }, 'mixed'],
+    ] as const) {
+      const odd = vi.fn<typeof fetch>(async (input) => {
+        const url = String(input);
+        return new Response(
+          JSON.stringify(
+            url.includes('manifest.json') ? listed : url.includes('alerts.json') ? feed : body,
+          ),
+        );
+      });
+      const snapshot = await loadSnapshot(base, null, odd);
+      expect([snapshot.feed?.generation_id, snapshot.radar, snapshot.radarError]).toEqual([
+        feed.generation_id,
+        null,
+        code,
+      ]);
+    }
+    // the next refresh asks for the radar again and takes it when it is there
+    const back = vi.fn<typeof fetch>(async (input) => {
+      const url = String(input);
+      return new Response(
+        JSON.stringify(
+          url.includes('manifest.json') ? listed : url.includes('alerts.json') ? feed : radar,
+        ),
+      );
+    });
+    const again = await loadSnapshot(base, down, back);
+    expect([again.radar?.frames.length, again.radarError]).toEqual([1, undefined]);
+    // alerts that cannot be read still stop the snapshot
+    const broken = vi.fn<typeof fetch>(async (input) => {
+      const url = String(input);
+      return new Response(
+        JSON.stringify(
+          url.includes('manifest.json')
+            ? listed
+            : url.includes('alerts.json')
+              ? { ...feed, alerts: 'x' }
+              : radar,
+        ),
+      );
+    });
+    await expect(loadSnapshot(base, null, broken)).rejects.toMatchObject({ code: 'invalid' });
+  });
+
   it('rejects network failures without erasing the last complete set', async () => {
     const previous = pair();
     await expect(
