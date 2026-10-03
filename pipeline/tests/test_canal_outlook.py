@@ -1,5 +1,5 @@
-"""The canals that may overflow, by this site's trial rules (D35, contract section 27): each factor's points, and old
-data left out."""
+"""The canals that may overflow, by this site's trial rules (D35, contract section 27): each factor's points, old data
+left out, and a canal without data said to be not assessed (Codex M48–M50)."""
 
 from datetime import UTC, date, datetime, timedelta
 from importlib import resources
@@ -25,7 +25,7 @@ def rain(mm: float) -> bytes:
     """A lattice over the Rangsit pilot with the same rain each day at every point."""
     points = [[col, row] for row in range(5) for col in range(4)]
     days = [TODAY + timedelta(days=d) for d in range(3)]
-    value = int(mm * 10)
+    value = round(mm * 10)
     return RainForecast(
         name_th="test", credit_th="test", source_url="https://open-meteo.com/", fetched_at=NOW,
         lattice=ForecastLattice(west=100.375, south=13.75, step=0.25), points=points, hours=[], rain=[],
@@ -33,13 +33,18 @@ def rain(mm: float) -> bytes:
         day_code=[[61] * len(points) for _ in days], notes_th=[]).model_dump_json().encode()
 
 
-def levels(rise_cm: float) -> bytes:
-    at = NOW - timedelta(minutes=30)
+def levels_at(at: datetime, before: datetime, rise_cm: float = 15, fetched: datetime = NOW) -> bytes:
+    """Bangkok's file fetched at `fetched`, with one gauge on Hok Wa read at `at` and before that at `before`."""
     station = CanalStation(code="H1", name_th="ค.หกวา-ทดสอบ", canal_th="คลองหกวา", district_th=None, location=None,
                            observed_at=at, level_in_m=1.0, level_out_m=None, pumps=None,
-                           previous_level_in_m=1.0 - rise_cm / 100, previous_observed_at=at - timedelta(hours=3))
-    return CanalLevels(fetched_at=at, source_url="https://weather.bangkok.go.th/water/summary", credit_th="x",
+                           previous_level_in_m=1.0 - rise_cm / 100, previous_observed_at=before)
+    return CanalLevels(fetched_at=fetched, source_url="https://weather.bangkok.go.th/water/summary", credit_th="x",
                        stations=[station], notes_th=[]).model_dump_json().encode()
+
+
+def levels(rise_cm: float) -> bytes:
+    at = NOW - timedelta(minutes=30)
+    return levels_at(at, at - timedelta(hours=3), rise_cm)
 
 
 def outlook(**files: bytes):
@@ -89,3 +94,61 @@ def test_old_data_is_left_out_and_said_so():
     assert any("ไม่มีรายงานกรมชลประทานที่ใหม่พอ" in note for note in result.notes_th)
     assert [c.id for c in result.canals][0] in canals  # every canal is listed, the highest score first
     assert len(result.canals) == len(canals) == 6
+
+
+def test_m48_a_level_counts_by_the_time_of_its_reading_never_by_the_file_that_brought_it():
+    # a file fetched now that brings a reading of three days ago
+    old = levels_at(NOW - timedelta(days=3), NOW - timedelta(days=3, hours=3))
+    canals, _ = outlook(flows=flows({}, flooded=["1306"]), levels=old)
+    hokwa = canals["hokwa"]
+    assert not [f for f in hokwa.factors if f.kind == "level"]
+    assert [g.text_th for g in hokwa.gaps if g.kind == "level"] == ["ไม่มีค่าวัดระดับน้ำบนคลองนี้ใน 6 ชม. ล่าสุด"]
+    assert (hokwa.score, hokwa.level) == (1, None)
+    # a reading ahead of the clock, a comparison later than the reading, or one too far back count nothing either
+    for at, before in ((NOW + timedelta(hours=1), NOW - timedelta(hours=2)), (NOW - timedelta(hours=1), NOW),
+                       (NOW - timedelta(hours=1), NOW - timedelta(hours=8))):
+        canals, _ = outlook(levels=levels_at(at, before))
+        assert not [f for f in canals["hokwa"].factors if f.kind == "level"], (at, before)
+    # a recent rise counts, said with the hours it rose in and the time of the reading
+    canals, _ = outlook(levels=levels(15))
+    level = next(f for f in canals["hokwa"].factors if f.kind == "level")
+    assert level.text_th == "ระดับน้ำที่ ค.หกวา-ทดสอบ สูงขึ้น 15 ซม. ใน 3 ชม. (วัดเมื่อ 10:30 น.)"
+    assert level.at == NOW - timedelta(minutes=30)
+
+
+def test_m49_the_rain_classes_are_tmds_from_35_1_and_90_1_mm():
+    expected = {34.9: (0, None), 35.0: (0, None), 35.1: (1, "watch"), 89.9: (1, "watch"), 90.0: (1, "watch"),
+                90.1: (2, "warn")}
+    for mm, (points, level) in expected.items():
+        # the Raphiphat intake at half of the most it lets in adds one point
+        canals, _ = outlook(flows=flows({"phranarai": 110}), rain=rain(mm))
+        rain_factor = next(f for f in canals["raphiphat"].factors if f.kind == "rain")
+        assert (rain_factor.points, canals["raphiphat"].level) == (points, level), mm
+    canals, _ = outlook(rain=rain(35.1))
+    assert next(f for f in canals["raphiphat"].factors).text_th.startswith("พยากรณ์ฝนหนัก สูงสุดราว 35.1 มม.")
+    canals, _ = outlook(rain=rain(90.1))
+    assert next(f for f in canals["raphiphat"].factors).text_th.startswith("พยากรณ์ฝนหนักมาก สูงสุดราว 90.1 มม.")
+    canals, _ = outlook(rain=rain(35))
+    assert next(f for f in canals["raphiphat"].factors).text_th.startswith("พยากรณ์ฝนไม่ถึงเกณฑ์ฝนหนัก สูงสุดราว 35 มม.")
+
+
+def test_m50_without_its_data_a_canal_is_not_assessed_never_below_the_rules():
+    canals, result = outlook()  # the lines alone
+    assert all(not c.assessed and c.level is None and c.score == 0 for c in result.canals)
+    hokwa = canals["hokwa"]
+    assert [g.kind for g in hokwa.gaps] == ["inflow", "flooding", "rain", "level"]
+    assert hokwa.gaps[0].text_th == "รายงานกรมชลประทาน ไม่มีในรอบนี้"
+    assert {i.source: i.status for i in result.inputs} == {"flows": "missing", "rain": "missing", "levels": "missing"}
+    assert sum("ไม่มีระดับน้ำ กทม. ที่ใหม่พอ" in note for note in result.notes_th) == 1
+    # some of the data: assessed, with what could not be judged said
+    canals, _ = outlook(rain=rain(5))
+    assert canals["rangsit"].assessed
+    assert [g.kind for g in canals["rangsit"].gaps] == ["inflow", "drainage", "flooding"]
+    # old data: said with its time
+    canals, result = outlook(flows=flows({"phranarai": 0}, day=TODAY - timedelta(days=3)), rain=rain(5))
+    assert next(i for i in result.inputs if i.source == "flows").status == "stale"
+    assert canals["rangsit"].gaps[0].text_th == "รายงานกรมชลประทาน เก่าเกินเกณฑ์ (ข้อมูล 30/09 06:00 น.)"
+    # all of it there and nothing adding up: assessed, nothing missing, no points
+    canals, result = outlook(flows=flows({"phranarai": 0}), rain=rain(5), levels=levels(0))
+    assert (canals["hokwa"].assessed, canals["hokwa"].gaps, canals["hokwa"].score) == (True, [], 0)
+    assert {i.status for i in result.inputs} == {"fresh"}

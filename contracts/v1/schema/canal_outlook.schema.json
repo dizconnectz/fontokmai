@@ -54,14 +54,106 @@
       "title": "CanalFactor",
       "type": "object"
     },
+    "CanalGap": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "description": "A factor that applies to the canal but could not be judged",
+          "enum": [
+            "inflow",
+            "rain",
+            "drainage",
+            "level",
+            "flooding"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "text_th": {
+          "description": "Why, e.g. ไม่มีพยากรณ์ฝนที่ใหม่พอ",
+          "title": "Text Th",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "text_th"
+      ],
+      "title": "CanalGap",
+      "type": "object"
+    },
+    "CanalInput": {
+      "additionalProperties": false,
+      "properties": {
+        "at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The time of the data (RID's 06:00, the forecast's fetch, the Bangkok file's fetch); null when missing",
+          "title": "At"
+        },
+        "name_th": {
+          "title": "Name Th",
+          "type": "string"
+        },
+        "source": {
+          "description": "flows: water/flows.json (RID); rain: forecast/rain.json; levels: bkk/water.json (Bangkok's gauges)",
+          "enum": [
+            "flows",
+            "rain",
+            "levels"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "status": {
+          "description": "fresh: used; stale: older than the rules allow, not used; missing: not in the round or unreadable",
+          "enum": [
+            "fresh",
+            "stale",
+            "missing"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source",
+        "name_th",
+        "status",
+        "at"
+      ],
+      "title": "CanalInput",
+      "type": "object"
+    },
     "CanalWatch": {
       "additionalProperties": false,
       "properties": {
+        "assessed": {
+          "default": true,
+          "description": "False when no factor that applies to the canal had data fresh enough: its score and level then say nothing, and it is shown as not assessed, never as below the rules (M50)",
+          "title": "Assessed",
+          "type": "boolean"
+        },
         "factors": {
           "items": {
             "$ref": "#/$defs/CanalFactor"
           },
           "title": "Factors",
+          "type": "array"
+        },
+        "gaps": {
+          "description": "The factors that apply to the canal but could not be judged, with why; the score counts only the others",
+          "items": {
+            "$ref": "#/$defs/CanalGap"
+          },
+          "title": "Gaps",
           "type": "array"
         },
         "id": {
@@ -120,6 +212,14 @@
       "format": "date-time",
       "title": "Generated At",
       "type": "string"
+    },
+    "inputs": {
+      "description": "What each source was when this was made",
+      "items": {
+        "$ref": "#/$defs/CanalInput"
+      },
+      "title": "Inputs",
+      "type": "array"
     },
     "notes_th": {
       "items": {

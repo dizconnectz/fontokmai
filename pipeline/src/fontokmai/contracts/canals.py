@@ -32,8 +32,11 @@ class CanalLines(ContractModel):
     notes_th: list[str]
 
 
+FactorKind = Literal["inflow", "rain", "drainage", "level", "flooding"]
+
+
 class CanalFactor(ContractModel):
-    kind: Literal["inflow", "rain", "drainage", "level", "flooding"] = Field(description=(
+    kind: FactorKind = Field(description=(
         "inflow: water let into the canal network (RID's gates); rain: rain forecast over its districts; drainage:"
         " the state of the river it drains to; level: Bangkok's gauges on it rising; flooding: RID's report of"
         " flooded districts along it"))
@@ -41,6 +44,11 @@ class CanalFactor(ContractModel):
     text_th: str
     source_th: str
     at: AwareDatetime | None = Field(description="Time of the data the factor uses")
+
+
+class CanalGap(ContractModel):
+    kind: FactorKind = Field(description="A factor that applies to the canal but could not be judged")
+    text_th: str = Field(description="Why, e.g. ไม่มีพยากรณ์ฝนที่ใหม่พอ")
 
 
 class CanalWatch(ContractModel):
@@ -51,6 +59,21 @@ class CanalWatch(ContractModel):
         "warn (score 3 or more) or watch (2) by this site's trial rules; null below. Not an announcement and not a"
         " forecast of how high the water will be"))
     factors: list[CanalFactor]
+    assessed: bool = Field(default=True, description=(
+        "False when no factor that applies to the canal had data fresh enough: its score and level then say"
+        " nothing, and it is shown as not assessed, never as below the rules (M50)"))
+    gaps: list[CanalGap] = Field(default_factory=list, description=(
+        "The factors that apply to the canal but could not be judged, with why; the score counts only the others"))
+
+
+class CanalInput(ContractModel):
+    source: Literal["flows", "rain", "levels"] = Field(description=(
+        "flows: water/flows.json (RID); rain: forecast/rain.json; levels: bkk/water.json (Bangkok's gauges)"))
+    name_th: str
+    status: Literal["fresh", "stale", "missing"] = Field(description=(
+        "fresh: used; stale: older than the rules allow, not used; missing: not in the round or unreadable"))
+    at: AwareDatetime | None = Field(description="The time of the data (RID's 06:00, the forecast's fetch, the"
+                                                 " Bangkok file's fetch); null when missing")
 
 
 class CanalOutlook(ContractModel):
@@ -58,4 +81,5 @@ class CanalOutlook(ContractModel):
     generated_at: AwareDatetime
     rules: str = Field(description="Version of the trial rules, e.g. canals-v1")
     canals: list[CanalWatch] = Field(description="Every canal of ref/canals.json, the highest score first")
+    inputs: list[CanalInput] = Field(default_factory=list, description="What each source was when this was made")
     notes_th: list[str]

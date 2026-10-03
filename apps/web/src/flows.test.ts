@@ -8,6 +8,7 @@ import {
   canalWords,
   factorText,
   flowFeatures,
+  gapLines,
   flowText,
   sitePin,
   sitePoints,
@@ -46,6 +47,12 @@ describe("RID's daily figures on the map (D35)", () => {
     expect(sitePin(flows, site('rama6'), AT)).toBe('pin-flow-critical');
     expect(sitePin(flows, site('raphiphat-split'), AT)).toBe('pin-flow');
     expect(sitePin(flows, site('samkhok'), AT + 3 * 86_400_000)).toBe('pin-flow-old');
+    // a station whose state the chart has not given is grey, never blue like a gate or green (Codex M51)
+    const unread = {
+      ...flows,
+      points: flows.points.map((p) => (p.id === 'c35' ? { ...p, state: null } : p)),
+    };
+    expect(sitePin(unread, site('ayutthaya'), AT)).toBe('pin-flow-unknown');
     // a station RID calls flooded never goes into a bubble
     const severe = flowFeatures(flows, AT).features.filter((f) => f.properties?.severe);
     expect(severe.map((f) => f.properties?.code)).toEqual(['ayutthaya']);
@@ -91,9 +98,10 @@ describe('the canals by the trial outlook (D35)', () => {
     const level = (id: string) => shapes.find((f) => f.properties?.id === id)!.properties;
     expect([level('rangsit')?.level, level('rangsit')?.color]).toEqual(['warn', '#d32f2f']);
     expect(level('hokwa')?.level).toBe('watch');
-    expect(canalFeatures(lines, null).features.every((f) => f.properties?.level === 'none')).toBe(
-      true,
-    );
+    // no outlook: every canal unknown, never "below the rules" (Codex M50)
+    expect(
+      canalFeatures(lines, null).features.every((f) => f.properties?.level === 'unknown'),
+    ).toBe(true);
     expect(canalFeatures(null, raised).features).toEqual([]);
   });
 
@@ -117,6 +125,36 @@ describe('the canals by the trial outlook (D35)', () => {
     expect(canalBounds(lines, 'nowhere')).toBeNull();
     expect(canalsOld(outlook, AT)).toBe(false);
     expect(canalsOld(outlook, AT + 3 * 3_600_000)).toBe(true);
+  });
+
+  it('says a canal without its data is not assessed, with what is missing and why (M50)', () => {
+    const blind = {
+      ...outlook.canals.find((watch) => watch.id === 'hokwa')!,
+      score: 0,
+      level: null,
+      factors: [],
+      assessed: false,
+      gaps: [
+        { kind: 'inflow' as const, text_th: 'รายงานกรมชลประทาน ไม่มีในรอบนี้' },
+        { kind: 'flooding' as const, text_th: 'รายงานกรมชลประทาน ไม่มีในรอบนี้' },
+        { kind: 'rain' as const, text_th: 'พยากรณ์ฝน เก่าเกินเกณฑ์ (ข้อมูล 26/09 11:50 น.)' },
+      ],
+    };
+    expect(canalWords(blind)).toBe('ข้อมูลไม่พอประเมิน');
+    expect(gapLines(blind)).toEqual([
+      'น้ำเข้า รายงานน้ำท่วม: รายงานกรมชลประทาน ไม่มีในรอบนี้',
+      'ฝน: พยากรณ์ฝน เก่าเกินเกณฑ์ (ข้อมูล 26/09 11:50 น.)',
+    ]);
+    const shapes = canalFeatures(lines, {
+      ...outlook,
+      canals: outlook.canals.map((watch) => (watch.id === 'hokwa' ? blind : watch)),
+    });
+    const hokwa = shapes.features.find((f) => f.properties?.id === 'hokwa')!.properties;
+    expect([hokwa?.level, hokwa?.color]).toEqual(['unknown', '#90a4ae']);
+    // a file from before the field: assessed
+    const { assessed: _, gaps: __, ...older } = outlook.canals[0];
+    expect(canalWords(older)).toBe('ยังไม่ถึงเกณฑ์ · 1 คะแนน');
+    expect(gapLines(older)).toEqual([]);
   });
 
   it('puts the canals at watch or warn in the status bar, red with one at warn', () => {

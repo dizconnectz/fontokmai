@@ -22,8 +22,10 @@ export const FLOW_CLASSES: { state: State; pin: string; label: string; color: st
   { state: 'critical', pin: 'pin-flow-critical', label: 'วิกฤต', color: '#fb8c00' },
   { state: 'normal', pin: 'pin-flow-normal', label: 'ปกติ', color: '#43a047' },
 ];
-/** a gate or barrage with figures, no station state of RID's there */
+/** a gate or barrage with figures and no station of RID's there */
 export const FLOW_PLAIN = { pin: 'pin-flow', label: 'ประตูน้ำ', color: '#1e88e5' };
+/** a station whose state RID's chart has not given (yet): never shown as normal (Codex M51) */
+export const FLOW_UNKNOWN = { pin: 'pin-flow-unknown', label: 'ยังไม่ทราบสถานะ', color: '#90a4ae' };
 export const FLOW_OLD = { pin: 'pin-flow-old', label: 'รายงานเก่า', color: '#90a4ae' };
 
 export function flowsOld(file: RidFlows, now: number): boolean {
@@ -42,11 +44,18 @@ export function siteState(file: RidFlows, site: FlowSite): State | null {
   return worst;
 }
 
-/** The picture of a site's pin: RID's worst state there, blue for gates only, grey once the report is old. */
+/**
+ * The picture of a site's pin: RID's worst state there; grey for a station whose state is not known and once the
+ * report is old; blue for gates alone, which have no state of RID's.
+ */
 export function sitePin(file: RidFlows, site: FlowSite, now: number): string {
   if (flowsOld(file, now)) return FLOW_OLD.pin;
   const state = siteState(file, site);
-  return state ? FLOW_CLASSES.find((item) => item.state === state)!.pin : FLOW_PLAIN.pin;
+  if (state) return FLOW_CLASSES.find((item) => item.state === state)!.pin;
+  const station = site.points.some(
+    (id) => file.points.find((point) => point.id === id)?.kind === 'station',
+  );
+  return station ? FLOW_UNKNOWN.pin : FLOW_PLAIN.pin;
 }
 
 /** The sites as map points; a site whose station RID calls flooded never goes into a bubble. */
@@ -149,21 +158,41 @@ export function sitePoints(
   };
 }
 
-export type CanalLevel = 'warn' | 'watch' | 'none';
+export type CanalLevel = 'warn' | 'watch' | 'none' | 'unknown';
 export const CANAL_CLASSES: { level: CanalLevel; label: string; color: string }[] = [
   { level: 'warn', label: 'ต้องระวัง', color: '#d32f2f' },
   { level: 'watch', label: 'เฝ้าดู', color: '#ef6c00' },
   { level: 'none', label: 'ยังไม่ถึงเกณฑ์', color: '#4f83b5' },
+  // drawn dashed: not a low score, no score at all (Codex M50)
+  { level: 'unknown', label: 'ข้อมูลไม่พอประเมิน', color: '#90a4ae' },
 ];
 
+/** A canal the outlook could not assess, or does not list, is "unknown", never "below the rules" (M50). */
 export function canalLevel(watch: CanalWatch | undefined): CanalLevel {
-  return watch?.level ?? 'none';
+  if (!watch || watch.assessed === false) return 'unknown';
+  return watch.level ?? 'none';
 }
 
-/** "ต้องระวัง · 3 คะแนน" for a canal of the outlook */
+/** "ต้องระวัง · 3 คะแนน" for a canal of the outlook; "ข้อมูลไม่พอประเมิน" without a score */
 export function canalWords(watch: CanalWatch): string {
-  const label = CANAL_CLASSES.find((item) => item.level === canalLevel(watch))!.label;
-  return `${label} · ${watch.score} คะแนน`;
+  const level = canalLevel(watch);
+  const label = CANAL_CLASSES.find((item) => item.level === level)!.label;
+  return level === 'unknown' ? label : `${label} · ${watch.score} คะแนน`;
+}
+
+const KIND_TH: Record<CanalFactor['kind'], string> = {
+  inflow: 'น้ำเข้า',
+  rain: 'ฝน',
+  drainage: 'การระบาย',
+  level: 'ระดับน้ำ',
+  flooding: 'รายงานน้ำท่วม',
+};
+/** "ฝน: พยากรณ์ฝน เก่าเกินเกณฑ์ (…)", the factors that could not be judged, those of one reason together */
+export function gapLines(watch: CanalWatch): string[] {
+  const byText = new Map<string, string[]>();
+  for (const gap of watch.gaps ?? [])
+    byText.set(gap.text_th, [...(byText.get(gap.text_th) ?? []), KIND_TH[gap.kind]]);
+  return [...byText].map(([text, kinds]) => `${kinds.join(' ')}: ${text}`);
 }
 
 export function canalsOld(outlook: CanalOutlook, now: number): boolean {
@@ -172,7 +201,7 @@ export function canalsOld(outlook: CanalOutlook, now: number): boolean {
 
 export type CanalShapes = FeatureCollection<MultiLineString>;
 
-/** The canals as map lines, coloured by the outlook; a canal the outlook does not list is drawn thin. */
+/** The canals as map lines, coloured by the outlook; one it could not assess or does not list is unknown. */
 export function canalFeatures(lines: CanalLines | null, outlook: CanalOutlook | null): CanalShapes {
   return {
     type: 'FeatureCollection',

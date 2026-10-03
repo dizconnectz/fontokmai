@@ -84,6 +84,7 @@ import {
   canalWords,
   factorText,
   flowFeatures,
+  gapLines,
   flowsOld,
   flowText,
   pointName,
@@ -378,7 +379,7 @@ function addOverlays(instance: LibreMap) {
     id: 'canal-line-casing',
     type: 'line',
     source: 'canal-lines',
-    filter: ['!=', ['get', 'level'], 'none'],
+    filter: ['in', ['get', 'level'], ['literal', ['warn', 'watch']]],
     layout: { 'line-join': 'round', 'line-cap': 'round' },
     paint: {
       'line-color': '#ffffff',
@@ -397,17 +398,24 @@ function addOverlays(instance: LibreMap) {
     },
     paint: {
       'line-color': ['get', 'color'],
-      'line-opacity': ['case', ['==', ['get', 'level'], 'none'], 0.7, 1],
+      'line-opacity': ['case', ['in', ['get', 'level'], ['literal', ['none', 'unknown']]], 0.7, 1],
+      // not assessed: dashed, so that it reads apart from a low score without its colour
+      'line-dasharray': [
+        'case',
+        ['==', ['get', 'level'], 'unknown'],
+        ['literal', [2, 2]],
+        ['literal', [1, 0]],
+      ],
       'line-width': [
         'interpolate',
         ['linear'],
         ['zoom'],
         5,
-        ['case', ['==', ['get', 'level'], 'none'], 1, 2],
+        ['case', ['in', ['get', 'level'], ['literal', ['none', 'unknown']]], 1, 2],
         9,
-        ['case', ['==', ['get', 'level'], 'none'], 1.6, 3.2],
+        ['case', ['in', ['get', 'level'], ['literal', ['none', 'unknown']]], 1.6, 3.2],
         13,
-        ['case', ['==', ['get', 'level'], 'none'], 2.4, 5],
+        ['case', ['in', ['get', 'level'], ['literal', ['none', 'unknown']]], 2.4, 5],
       ],
     },
   });
@@ -864,7 +872,21 @@ function canalPopup(
         list.append(entry);
       }
       root.append(list);
-    } else root.append(line('ยังไม่มีปัจจัยที่ทำให้น้ำในคลองสูงขึ้นจากข้อมูลที่มี'));
+    } else if (watch.assessed !== false)
+      root.append(line('ยังไม่มีปัจจัยที่ทำให้น้ำในคลองสูงขึ้นจากข้อมูลที่มี'));
+    // what could not be judged, and why: a missing source is never read as nothing found (M50)
+    const gaps = gapLines(watch);
+    if (gaps.length) {
+      root.append(line('ยังไม่ได้นับ', 'small'));
+      const list = document.createElement('ul');
+      list.className = 'flow-points canal-gaps';
+      for (const text of gaps) {
+        const entry = document.createElement('li');
+        entry.textContent = text;
+        list.append(entry);
+      }
+      root.append(list);
+    }
     root.append(
       line(
         `เกณฑ์ทดลองของเว็บ ไม่ใช่ประกาศ · คิดเมื่อ ${reportTime(outlook.generated_at, now)}`,

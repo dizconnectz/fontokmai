@@ -144,7 +144,7 @@ import {
   type OverviewItem,
 } from './overview';
 import type { RefState } from './useData';
-import { canalsOld, canalsToWatch, canalWords, factorText } from './flows';
+import { canalsOld, canalsToWatch, canalWords, factorText, gapLines } from './flows';
 
 type Road = RoadFloodHistory['roads'][number];
 const RADAR_STALE_MIN = 45;
@@ -1152,6 +1152,11 @@ function CanalCard({
                   .map((factor, i) => (
                     <small key={`${factor.kind}-${i}`}>{factorText(factor)}</small>
                   ))}
+                {gapLines(watch).map((text) => (
+                  <small key={text} className="quiet">
+                    ยังไม่ได้นับ {text}
+                  </small>
+                ))}
               </span>
             </button>
           </li>

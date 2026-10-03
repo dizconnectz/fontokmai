@@ -1421,6 +1421,32 @@ test('the canals by the trial outlook: coloured lines, a card, a chip and a popu
   await expect(surface).toHaveAttribute('data-canals', /rangsit:none/);
   await expect(card).toHaveCount(0);
   await expect(page.getByTestId('status-bar')).not.toContainText('คลอง');
+  // without its data a canal is not assessed: dashed grey and said so, never "below the rules" (Codex M50)
+  for (const watch of outlook.canals)
+    Object.assign(watch, {
+      score: 0,
+      level: null,
+      factors: [],
+      assessed: false,
+      gaps: [{ kind: 'rain', text_th: 'พยากรณ์ฝน ไม่มีในรอบนี้' }],
+    });
+  await page.goto('/');
+  await expect(surface).toHaveAttribute('data-canals', /rangsit:unknown/);
+  await expect(card).toHaveCount(0);
+  await page.getByRole('button', { name: 'คำอธิบายแผนที่' }).click();
+  await expect(page.locator('.legend-canals')).toContainText('ข้อมูลไม่พอประเมิน');
+  await page.getByRole('button', { name: 'ย่อ', exact: true }).click();
+  await expect
+    .poll(async () => {
+      await page.mouse.move(x + 40, y + 40);
+      await page.mouse.move(x, y);
+      return canvas.evaluate((el) => getComputedStyle(el).cursor);
+    })
+    .toBe('pointer');
+  await page.mouse.click(x, y);
+  await expect(popup).toContainText('ข้อมูลไม่พอประเมิน');
+  await expect(popup).toContainText('ฝน: พยากรณ์ฝน ไม่มีในรอบนี้');
+  await expect(popup).not.toContainText('0 คะแนน');
 });
 
 test('the river trend is a pin with a plain-word popup and never the model number', async ({

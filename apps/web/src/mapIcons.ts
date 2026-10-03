@@ -12,7 +12,7 @@ import {
   RAIN_OLD_COLOR,
 } from './bkk';
 import { RIVER_CLASSES, RIVER_UNKNOWN_COLOR } from './rivers';
-import { FLOW_CLASSES, FLOW_OLD, FLOW_PLAIN } from './flows';
+import { FLOW_CLASSES, FLOW_OLD, FLOW_PLAIN, FLOW_UNKNOWN } from './flows';
 
 // lucide "waves", "video", "droplet", "cloud-rain", "dam" and "thermometer", in their 24 × 24 box
 const GLYPHS = {
@@ -67,6 +67,7 @@ const PINS: Record<string, { kind: Kind; color: string }> = {
   'pin-river-unknown': { kind: 'river-flat', color: RIVER_UNKNOWN_COLOR },
   [FLOW_PLAIN.pin]: { kind: 'flow', color: FLOW_PLAIN.color },
   [FLOW_OLD.pin]: { kind: 'flow', color: FLOW_OLD.color },
+  [FLOW_UNKNOWN.pin]: { kind: 'flow', color: FLOW_UNKNOWN.color },
   ...Object.fromEntries(
     FLOW_CLASSES.map((item) => [item.pin, { kind: 'flow' as const, color: item.color }]),
   ),

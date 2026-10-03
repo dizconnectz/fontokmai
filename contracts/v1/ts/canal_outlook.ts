@@ -1,6 +1,10 @@
 /* Generated from contracts/v1/schema/canal_outlook.schema.json by scripts/gen-ts-types.sh. Do not edit by hand. */
 
 /**
+ * False when no factor that applies to the canal had data fresh enough: its score and level then say nothing, and it is shown as not assessed, never as below the rules (M50)
+ */
+export type Assessed = boolean;
+/**
  * Time of the data the factor uses
  */
 export type At = string | null;
@@ -16,6 +20,18 @@ export type SourceTh = string;
 export type TextTh = string;
 export type Factors = CanalFactor[];
 /**
+ * A factor that applies to the canal but could not be judged
+ */
+export type Kind1 = "inflow" | "rain" | "drainage" | "level" | "flooding";
+/**
+ * Why, e.g. ไม่มีพยากรณ์ฝนที่ใหม่พอ
+ */
+export type TextTh1 = string;
+/**
+ * The factors that apply to the canal but could not be judged, with why; the score counts only the others
+ */
+export type Gaps = CanalGap[];
+/**
  * The canal's id in ref/canals.json
  */
 export type Id = string;
@@ -30,6 +46,23 @@ export type Score = number;
  */
 export type Canals = CanalWatch[];
 export type GeneratedAt = string;
+/**
+ * The time of the data (RID's 06:00, the forecast's fetch, the Bangkok file's fetch); null when missing
+ */
+export type At1 = string | null;
+export type NameTh1 = string;
+/**
+ * flows: water/flows.json (RID); rain: forecast/rain.json; levels: bkk/water.json (Bangkok's gauges)
+ */
+export type Source = "flows" | "rain" | "levels";
+/**
+ * fresh: used; stale: older than the rules allow, not used; missing: not in the round or unreadable
+ */
+export type Status = "fresh" | "stale" | "missing";
+/**
+ * What each source was when this was made
+ */
+export type Inputs = CanalInput[];
 export type NotesTh = string[];
 /**
  * Version of the trial rules, e.g. canals-v1
@@ -40,12 +73,15 @@ export type SchemaVersion = "1";
 export interface CanalOutlook {
   canals: Canals;
   generated_at: GeneratedAt;
+  inputs?: Inputs;
   notes_th: NotesTh;
   rules: Rules;
   schema_version?: SchemaVersion;
 }
 export interface CanalWatch {
+  assessed?: Assessed;
   factors: Factors;
+  gaps?: Gaps;
   id: Id;
   level: Level;
   name_th: NameTh;
@@ -57,4 +93,14 @@ export interface CanalFactor {
   points: Points;
   source_th: SourceTh;
   text_th: TextTh;
+}
+export interface CanalGap {
+  kind: Kind1;
+  text_th: TextTh1;
+}
+export interface CanalInput {
+  at: At1;
+  name_th: NameTh1;
+  source: Source;
+  status: Status;
 }

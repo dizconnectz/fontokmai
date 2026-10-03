@@ -4,14 +4,17 @@ user 2026-10-03: the gates' figures as "1 ใน factor ในการพยา
 Each canal of ref/canals.json gets points from five factors, each with its words, source and time:
 - inflow: water let into its network by RID's gates (water/flows.json): the Raphiphat intake at 50% / 80% of the
   most it lets in scores 1 / 2; gates whose capacity RID does not print are only noted
-- rain: the forecast rain of today, tomorrow and the day after over the districts it runs through (forecast/rain.json,
-  TMD day classes): heavy (35 mm) 1, very heavy (90 mm) 2
+- rain: the forecast rain of today, tomorrow and the day after over the districts it runs through (forecast/rain.json):
+  TMD's heavy (from 35.1 mm) 1, very heavy (from 90.1 mm) 2
 - drainage: the river it drains to (its RID station): RID's own state critical 1 / flood 2, or the flow at 80% / 100%
   of the channel capacity, whichever is more
-- level: Bangkok's gauges on it (bkk/water.json) rising 10 cm or more since the reading before: 1
+- level: a Bangkok gauge on it (bkk/water.json) rising 10 cm or more within 6 hours, read in the last 6 hours: 1
 - flooding: RID's report naming a district along it as flooded that day: 1
 A score of 3 or more is "warn", 2 "watch". These are trial rules of this site, not an announcement, and not tested
-against past events yet; the factors are shown so a reader can judge them. Data too old is left out and said so.
+against past events yet; the factors are shown so a reader can judge them. Data too old is left out and said so: a
+factor that applies to a canal but has no data fresh enough is a gap of that canal, and a canal with nothing but gaps
+is not assessed, never "below the rules" (Codex M50). The levels count by the time of each reading, not the time of
+the file that brought it (M48).
 """
 
 from __future__ import annotations
@@ -25,24 +28,30 @@ from typing import Any
 from pydantic import BaseModel, ValidationError
 
 from fontokmai.contracts.bkk import CanalLevels
-from fontokmai.contracts.canals import CanalFactor, CanalLines, CanalOutlook, CanalWatch
+from fontokmai.contracts.canals import CanalFactor, CanalGap, CanalInput, CanalLines, CanalOutlook, CanalWatch
 from fontokmai.contracts.flows import RidFlows
 from fontokmai.contracts.forecast import RainForecast
 
 CANALS_PATH = "summary/canals.json"
 LINES_PATH = "ref/canals.json"
-RULES = "canals-v1"
+RULES = "canals-v2"  # v2 (2026-10-03, Codex M48–M50): TMD's rain classes from 35.1/90.1 mm, levels by reading time
 ICT = timezone(timedelta(hours=7))
 FLOWS_MAX_AGE = timedelta(days=2)  # the report is daily
 RAIN_MAX_AGE = timedelta(hours=12)  # refreshed every 6 hours
-LEVELS_MAX_AGE = timedelta(hours=6)  # Bangkok's file comes by hand (D31)
-HEAVY, VERY_HEAVY = 350, 900  # 0.1 mm a day: TMD's heavy and very heavy
+LEVELS_MAX_AGE = timedelta(hours=6)  # Bangkok's file comes by hand (D31): a reading older than this says nothing now
+RISE_WITHIN = timedelta(hours=6)  # a rise is counted against a reading at most this much earlier
+CLOCK_SLACK = timedelta(minutes=10)  # a reading this much ahead of the clock is a wrong clock, not the future
+# TMD's classes of the rain of a day, in 0.1 mm as the forecast holds it: heavy 35.1–90.0, very heavy from 90.1
+HEAVY, VERY_HEAVY = 351, 901
 RISE_CM = 10
 WARN, WATCH = 3, 2
 NOTES_TH = [
     "เกณฑ์ทดลองของเว็บนี้ ไม่ใช่ประกาศของหน่วยงาน และยังไม่ได้ทดสอบย้อนหลังกับเหตุการณ์จริง",
     "คะแนนบอกว่าปัจจัยที่ทำให้น้ำในคลองสูงขึ้นมาพร้อมกันกี่อย่าง ไม่ได้บอกว่าน้ำจะสูงกี่เซนติเมตรหรือท่วมตรงไหน",
 ]
+SOURCE_NAMES = {"flows": "รายงานกรมชลประทาน", "rain": "พยากรณ์ฝน", "levels": "ระดับน้ำ กทม."}
+# why a source cannot be used, said after its name
+STATUS_TH = {"stale": "เก่าเกินเกณฑ์", "missing": "ไม่มีในรอบนี้"}
 
 
 def _load[M: BaseModel](files: dict[str, bytes], path: str, model: type[M]) -> M | None:
@@ -60,9 +69,18 @@ def _cms(value: float) -> str:
     return f"{value:,.0f} ลบ.ม./วิ"
 
 
+def _mm(tenths: int) -> str:
+    """"35.1" for 351 (0.1 mm), "95" for 950"""
+    return f"{tenths / 10:.1f}".removesuffix(".0")
+
+
 def _thai_day(day: date) -> str:
     months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."]
     return f"{day.day} {months[day.month - 1]}"
+
+
+def _clock(at: datetime) -> str:
+    return at.astimezone(ICT).strftime("%H:%M น.")
 
 
 def district_names() -> dict[str, str]:
@@ -129,10 +147,9 @@ def _drainage(canal: Any, points: dict[str, Any], at: datetime) -> list[CanalFac
     return [CanalFactor(kind="drainage", points=max(by_state, by_flow), text_th=text, source_th="กรมชลประทาน", at=at)]
 
 
-def _rain(canal: Any, forecast: RainForecast | None, cells: dict[str, set[int]], names: dict[str, str],
-          today: date) -> list[CanalFactor]:
-    if forecast is None:
-        return []
+def _rain(canal: Any, forecast: RainForecast, cells: dict[str, set[int]], names: dict[str, str],
+          today: date) -> list[CanalFactor] | None:
+    """The rain factor, or None when the forecast has no value for the canal's districts in these days."""
     best: tuple[int, date, str] | None = None
     for d, day in enumerate(forecast.days):
         if not 0 <= (day - today).days <= 2:
@@ -142,44 +159,60 @@ def _rain(canal: Any, forecast: RainForecast | None, cells: dict[str, set[int]],
             if values and (best is None or max(values) > best[0]):
                 best = (max(values), day, district)
     if best is None:
-        return []
+        return None
     value, day, district = best
     score = 2 if value >= VERY_HEAVY else 1 if value >= HEAVY else 0
     word = "ฝนหนักมาก" if score == 2 else "ฝนหนัก" if score == 1 else "ฝนไม่ถึงเกณฑ์ฝนหนัก"
-    text = f"พยากรณ์{word} สูงสุดราว {value / 10:.0f} มม. วันที่ {_thai_day(day)} แถว {names.get(district, district)}"
+    text = f"พยากรณ์{word} สูงสุดราว {_mm(value)} มม. วันที่ {_thai_day(day)} แถว {names.get(district, district)}"
     return [CanalFactor(kind="rain", points=score, text_th=text, source_th="Open-Meteo", at=forecast.fetched_at)]
 
 
-def _levels(canal: Any, levels: CanalLevels | None) -> list[CanalFactor]:
-    if levels is None or not canal.dxs_canals:
-        return []
-    rises = []
+def _levels(canal: Any, levels: CanalLevels, now: datetime) -> list[CanalFactor] | None:
+    """A gauge on the canal rising RISE_CM within RISE_WITHIN, by readings of the last LEVELS_MAX_AGE (M48: the time
+    of the reading, never the time of the file); None when no gauge on it has a reading that recent."""
+    read, rises = False, []
     for station in levels.stations:
-        if station.canal_th not in canal.dxs_canals or station.level_in_m is None:
+        at = station.observed_at
+        if station.canal_th not in canal.dxs_canals or station.level_in_m is None or at is None:
             continue
+        if not now - LEVELS_MAX_AGE <= at <= now + CLOCK_SLACK:
+            continue
+        read = True
         before, since = station.previous_level_in_m, station.previous_observed_at
-        if before is None or since is None or station.observed_at is None:
+        if before is None or since is None or not timedelta(0) < at - since <= RISE_WITHIN:
             continue
         cm = round((station.level_in_m - before) * 100)
         if cm >= RISE_CM:
             rises.append((cm, station))
+    if not read:
+        return None
     if not rises:
         return []
     cm, station = max(rises, key=lambda item: item[0])
+    hours = (station.observed_at - station.previous_observed_at).total_seconds() / 3600
     more = f" (และอีก {len(rises) - 1} สถานี)" if len(rises) > 1 else ""
-    text = f"ระดับน้ำที่ {station.name_th} สูงขึ้น {cm} ซม. จากค่าวัดก่อนหน้า{more}"
+    text = (f"ระดับน้ำที่ {station.name_th} สูงขึ้น {cm} ซม. ใน {hours:.1f}".removesuffix(".0")
+            + f" ชม. (วัดเมื่อ {_clock(station.observed_at)}){more}")
     return [CanalFactor(kind="level", points=1, text_th=text, source_th="สำนักการระบายน้ำ กทม.",
                         at=station.observed_at)]
 
 
-def _flooding(canal: Any, flows: RidFlows | None, names: dict[str, str]) -> list[CanalFactor]:
-    if flows is None:
-        return []
+def _flooding(canal: Any, flows: RidFlows, names: dict[str, str]) -> list[CanalFactor]:
     hit = [code for code in canal.districts if code in flows.flooded_districts]
     if not hit:
         return []
     text = "กรมชลฯ รายงานพื้นที่ประสบอุทกภัยใน " + " ".join(names.get(code, code) for code in hit)
     return [CanalFactor(kind="flooding", points=1, text_th=text, source_th="กรมชลประทาน", at=flows.observed_at)]
+
+
+def _input(source: str, document: Any, at: datetime | None, max_age: timedelta, now: datetime) -> CanalInput:
+    status = "missing" if document is None or at is None else "stale" if now - at > max_age else "fresh"
+    return CanalInput(source=source, name_th=SOURCE_NAMES[source], status=status, at=at)
+
+
+def _gap_text(item: CanalInput) -> str:
+    when = f" (ข้อมูล {item.at.astimezone(ICT):%d/%m %H:%M} น.)" if item.at else ""
+    return f"{item.name_th} {STATUS_TH[item.status]}{when}"
 
 
 def build_canal_outlook(files: dict[str, bytes], now: datetime) -> CanalOutlook | None:
@@ -189,35 +222,60 @@ def build_canal_outlook(files: dict[str, bytes], now: datetime) -> CanalOutlook 
         return None
     today = now.astimezone(ICT).date()
     flows = _load(files, "water/flows.json", RidFlows)
-    if flows is not None and now - flows.observed_at > FLOWS_MAX_AGE:
-        flows = None
     forecast = _load(files, "forecast/rain.json", RainForecast)
-    if forecast is not None and now - forecast.fetched_at > RAIN_MAX_AGE:
-        forecast = None
     levels = _load(files, "bkk/water.json", CanalLevels)
-    if levels is not None and now - levels.fetched_at > LEVELS_MAX_AGE:
-        levels = None
+    inputs = {
+        "flows": _input("flows", flows, flows.observed_at if flows else None, FLOWS_MAX_AGE, now),
+        "rain": _input("rain", forecast, forecast.fetched_at if forecast else None, RAIN_MAX_AGE, now),
+        "levels": _input("levels", levels, levels.fetched_at if levels else None, LEVELS_MAX_AGE, now),
+    }
+    flows = flows if inputs["flows"].status == "fresh" else None
+    forecast = forecast if inputs["rain"].status == "fresh" else None
+    levels = levels if inputs["levels"].status == "fresh" else None
     points = {point.id: point for point in flows.points} if flows else {}
     cells = district_cells(forecast) if forecast else {}
     names = district_names()
     watches = []
     for canal in lines.canals:
-        factors = []
+        factors: list[CanalFactor] = []
+        gaps: list[CanalGap] = []
+        judged = 0
         if flows is not None:
-            factors += _inflow(canal, points, flows.observed_at)
-            factors += _drainage(canal, points, flows.observed_at)
-        factors += _rain(canal, forecast, cells, names, today)
-        factors += _levels(canal, levels)
-        factors += _flooding(canal, flows, names)
+            factors += _inflow(canal, points, flows.observed_at) + _drainage(canal, points, flows.observed_at)
+            factors += _flooding(canal, flows, names)
+            judged += 1
+        else:
+            gaps += [CanalGap(kind=kind, text_th=_gap_text(inputs["flows"]))
+                     for kind, applies in (("inflow", bool(canal.fed_by)), ("drainage", bool(canal.drains_to)),
+                                           ("flooding", True)) if applies]
+        rain = _rain(canal, forecast, cells, names, today) if forecast is not None else None
+        if rain is not None:
+            factors += rain
+            judged += 1
+        else:
+            gaps.append(CanalGap(kind="rain", text_th=_gap_text(inputs["rain"]) if forecast is None
+                                 else "พยากรณ์ฝนไม่มีค่าของอำเภอที่คลองผ่าน"))
+        if canal.dxs_canals:
+            level = _levels(canal, levels, now) if levels is not None else None
+            if level is not None:
+                factors += level
+                judged += 1
+            else:
+                gaps.append(CanalGap(kind="level", text_th=_gap_text(inputs["levels"]) if levels is None
+                                     else "ไม่มีค่าวัดระดับน้ำบนคลองนี้ใน 6 ชม. ล่าสุด"))
         score = sum(factor.points for factor in factors)
-        level = "warn" if score >= WARN else "watch" if score >= WATCH else None
+        assessed = judged > 0
+        level_name = ("warn" if score >= WARN else "watch" if score >= WATCH else None) if assessed else None
         # the factors that count first, then what is only noted
         factors.sort(key=lambda factor: -factor.points)
-        watches.append(CanalWatch(id=canal.id, name_th=canal.name_th, score=score, level=level, factors=factors))
-    watches.sort(key=lambda watch: (-watch.score, watch.name_th))
+        watches.append(CanalWatch(id=canal.id, name_th=canal.name_th, score=score, level=level_name, factors=factors,
+                                  assessed=assessed, gaps=gaps))
+    watches.sort(key=lambda watch: (-watch.score, not watch.assessed, watch.name_th))
     notes = list(NOTES_TH)
     if flows is None:
-        notes.append("ไม่มีรายงานกรมชลประทานที่ใหม่พอ จึงไม่นับน้ำเข้าและการระบาย")
+        notes.append("ไม่มีรายงานกรมชลประทานที่ใหม่พอ จึงไม่นับน้ำเข้า การระบาย และรายงานน้ำท่วม")
     if forecast is None:
         notes.append("ไม่มีพยากรณ์ฝนที่ใหม่พอ จึงไม่นับฝน")
-    return CanalOutlook(generated_at=now, rules=RULES, canals=watches, notes_th=notes)
+    if levels is None:
+        notes.append("ไม่มีระดับน้ำ กทม. ที่ใหม่พอ จึงไม่นับระดับน้ำ")
+    return CanalOutlook(generated_at=now, rules=RULES, canals=watches, inputs=list(inputs.values()), notes_th=notes)

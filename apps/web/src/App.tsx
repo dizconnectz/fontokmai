@@ -48,7 +48,14 @@ import {
 import type { Focus, Layers, LngLat } from './MapView';
 import { outlineBounds, WATCH_COLOR, watchAreas, watchShapes } from './overview';
 import { favoriteLine } from './favoriteLine';
-import { CANAL_CLASSES, canalBounds, canalFeatures, FLOW_CLASSES, FLOW_PLAIN } from './flows';
+import {
+  CANAL_CLASSES,
+  canalBounds,
+  canalFeatures,
+  FLOW_CLASSES,
+  FLOW_PLAIN,
+  FLOW_UNKNOWN,
+} from './flows';
 
 const MapView = lazy(() => import('./MapView'));
 // "/" in development, "/fontokmai/" on GitHub Pages (WEB_BASE at build time)
@@ -657,8 +664,13 @@ export default function App() {
                   {CANAL_CLASSES.map((item) => (
                     <span key={item.level}>
                       <i
-                        className={`legend-line ${item.level === 'none' ? 'thin' : ''}`}
-                        style={{ background: item.color }}
+                        className={`legend-line ${item.level === 'none' || item.level === 'unknown' ? 'thin' : ''}`}
+                        style={{
+                          background:
+                            item.level === 'unknown'
+                              ? `repeating-linear-gradient(90deg, ${item.color} 0 5px, transparent 5px 8px)`
+                              : item.color,
+                        }}
                       />{' '}
                       {item.label}
                     </span>
@@ -743,6 +755,10 @@ export default function App() {
                   <span>
                     <i className="legend-pin" style={{ background: FLOW_PLAIN.color }} />{' '}
                     {FLOW_PLAIN.label}
+                  </span>
+                  <span>
+                    <i className="legend-pin" style={{ background: FLOW_UNKNOWN.color }} />{' '}
+                    {FLOW_UNKNOWN.label}หรือรายงานเก่า
                   </span>
                 </div>
               )}

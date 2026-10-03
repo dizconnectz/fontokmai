@@ -95,7 +95,7 @@ def test_the_refresh_writes_the_flows_and_reads_the_report_again_only_once_it_ch
     out, db = tmp_path / "out", tmp_path / "state.db"
     get, calls = getter(picture=chart({"c29b": "normal", "c35": "flood"}))
     note = rid_report.refresh(out, db, NOW, get=get)
-    assert note == "built 16 figures of 2026-10-03 (2 station states, 7 flooded districts)"
+    assert note == "built 16 figures of 2026-10-03 (2 of 7 station states, 7 flooded districts)"
     flows = RidFlows.model_validate_json((out / rid_report.FLOWS_PATH).read_bytes())
     points = {point.id: point for point in flows.points}
     assert (points["phranarai"].flow_cms, points["phranarai"].capacity_cms) == (0, 210)
@@ -104,23 +104,50 @@ def test_the_refresh_writes_the_flows_and_reads_the_report_again_only_once_it_ch
     assert flows.observed_at == datetime(2026, 10, 3, 6, 0, tzinfo=rid_report.ICT)
     assert flows.chart_url.endswith("Chao_low03102026.jpg")
     assert {"1301", "1307"} <= set(flows.flooded_districts)
-    # two hours on, the report is asked for with what the server said about it, and an unchanged one is not read
-    get, calls = getter(report=304)
+    # two hours on, the report is asked for with what the server said about it, and an unchanged one is not read;
+    # its chart, which gave two of the seven states, is read again on its own
+    get, calls = getter(report=304, picture=chart({"c29b": "normal", "c35": "flood"}))
     assert rid_report.refresh(out, db, NOW + timedelta(minutes=90), get=get) is None
-    assert rid_report.refresh(out, db, NOW + timedelta(hours=2), get=get) == "report not changed"
-    assert calls == [(rid_report.REPORT_URL, {"etag": "e1"})]
+    note = rid_report.refresh(out, db, NOW + timedelta(hours=2), get=get)
+    assert note == "report not changed; chart gave no more states (2 of 7)"
+    assert calls[0] == (rid_report.REPORT_URL, {"etag": "e1"}) and len(calls) == 2
 
 
-def test_a_report_read_before_its_chart_is_up_is_read_again(tmp_path, text):
+def test_a_chart_not_up_or_not_readable_yet_is_read_again_on_its_own(tmp_path, text):
+    """Codex M51: the chart's states are followed apart from the report, which is not downloaded again for them."""
     out, db = tmp_path / "out", tmp_path / "state.db"
     get, calls = getter(picture=None)  # the chart of the day is not up yet
     assert rid_report.refresh(out, db, NOW, get=get).startswith("built 16 figures")
     assert RidFlows.model_validate_json((out / rid_report.FLOWS_PATH).read_bytes()).chart_url is None
-    get, calls = getter(report=304, picture=chart({"c29b": "critical"}))
-    rid_report.refresh(out, db, NOW + timedelta(hours=2), get=get)
-    assert calls[0] == (rid_report.REPORT_URL, {})  # no validators kept: the report is read again with the chart
+    # up, but its dots not readable yet (a frame and no colour): nothing changes, and it is tried again later
+    get, calls = getter(report=304, picture=chart({}))
+    note = rid_report.refresh(out, db, NOW + timedelta(hours=2), get=get)
+    assert note == "report not changed; chart gave no more states (0 of 7)"
+    assert calls[0] == (rid_report.REPORT_URL, {"etag": "e1"})  # the report was read once: 304
+    get, calls = getter(report=304, picture=chart({"c29b": "critical", "c35": "flood"}))
+    note = rid_report.refresh(out, db, NOW + timedelta(hours=4), get=get)
+    assert note == "report not changed; chart read again (2 of 7 station states)"
     flows = RidFlows.model_validate_json((out / rid_report.FLOWS_PATH).read_bytes())
-    assert next(p for p in flows.points if p.id == "c29b").state == "critical"
+    states = {p.id: p.state for p in flows.points}
+    assert (states["c29b"], states["c35"], states["c2"]) == ("critical", "flood", None)
+    assert flows.chart_url.endswith("Chao_low03102026.jpg")
+    # the whole chart read: the report is no longer followed by its chart
+    every = {item["id"]: "normal" for item in rid_report.registry()["figures"] if item.get("dot")}
+    get, calls = getter(report=304, picture=chart(every))
+    rid_report.refresh(out, db, NOW + timedelta(hours=6), get=get)
+    get, calls = getter(report=304, picture=chart(every))
+    assert rid_report.refresh(out, db, NOW + timedelta(hours=8), get=get) == "report not changed"
+    assert len(calls) == 1
+
+
+def test_a_lost_file_is_read_in_full_whatever_the_server_said_before(tmp_path, text):
+    out, db = tmp_path / "out", tmp_path / "state.db"
+    get, _ = getter(picture=chart({"c29b": "normal"}))
+    rid_report.refresh(out, db, NOW, get=get)
+    (out / rid_report.FLOWS_PATH).unlink()
+    get, calls = getter(report=304, picture=chart({"c29b": "normal"}))
+    assert rid_report.refresh(out, db, NOW + timedelta(hours=2), get=get).startswith("built 16 figures")
+    assert calls[0] == (rid_report.REPORT_URL, {})
 
 
 def test_a_report_whose_wording_changed_or_an_older_day_never_replaces_the_file(tmp_path, text):

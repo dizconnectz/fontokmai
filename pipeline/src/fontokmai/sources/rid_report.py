@@ -238,6 +238,30 @@ def build(figures: dict[str, Figure], states: dict[str, str | None], day: date, 
                     sites=sites, flooded_districts=flooded, notes_th=data["notes_th"])
 
 
+def _unread_states(flows: RidFlows, dots: dict[str, tuple[float, float]]) -> int:
+    """How many stations with a dot on the chart have no state in the file."""
+    return sum(1 for point in flows.points if point.id in dots and point.state is None)
+
+
+def _read_chart_again(path: Path, current: RidFlows, dots: dict[str, tuple[float, float]], get: Getter) -> str:
+    """The report has not changed but some of its stations have no state: their chart is read again on its own (a
+    picture of a few hundred KB, at most every REFRESH), and the states it now gives are added (Codex M51)."""
+    chart_url = rid_chart.CHART_URL.format(day=current.report_date)
+    try:
+        _, picture, _ = get(chart_url, {})
+        states = rid_chart.chart_states(picture, dots)
+    except (OSError, rid_chart.ChartError) as exc:
+        return f"report not changed; chart still unread ({type(exc).__name__})"
+    before = sum(1 for point in current.points if point.state)
+    points = [point.model_copy(update={"state": states.get(point.id) or point.state}) for point in current.points]
+    after = sum(1 for point in points if point.state)
+    if after <= before:
+        return f"report not changed; chart gave no more states ({before} of {len(dots)})"
+    atomic_write(path, current.model_copy(update={"points": points, "chart_url": chart_url})
+                 .model_dump_json().encode("utf-8"))
+    return f"report not changed; chart read again ({after} of {len(dots)} station states)"
+
+
 def refresh(out: Path, db: Path, now: datetime, *, get: Getter = conditional_get) -> str | None:
     """Every REFRESH: the day's report into water/flows.json (the next round publishes it), unless the file already
     holds a later day. A line for the round log, or None when it is not time yet."""
@@ -247,40 +271,41 @@ def refresh(out: Path, db: Path, now: datetime, *, get: Getter = conditional_get
             return None
         store.set_meta(ATTEMPT_KEY, now.isoformat())
         validators = json.loads(store.get_meta(VALIDATORS_KEY) or "{}")
+    path = out / FLOWS_PATH
+    try:
+        current: RidFlows | None = RidFlows.model_validate_json(path.read_bytes())
+    except (OSError, ValueError):
+        current = None
+        validators = {}  # no file to keep: the report is read in full, whatever the server said of it before
+    data = registry()
+    dots = {item["id"]: tuple(item["dot"]) for item in data["figures"] if item.get("dot")}
     try:
         status, body, fresh = get(REPORT_URL, validators)
         if status == 304:
+            if current is not None and _unread_states(current, dots):
+                return _read_chart_again(path, current, dots, get)
             return "report not changed"
         text = report_text(body)
         day = report_day(text)
         figures = parse_report(text)
         if day is None or len(figures) < MIN_FIGURES:
             return f"error: the report read as {len(figures)} figures, day {day}"
-        data = registry()
-        dots = {item["id"]: tuple(item["dot"]) for item in data["figures"] if item.get("dot")}
         states: dict[str, str | None] = {}
         chart_url = rid_chart.CHART_URL.format(day=day)
         try:
             _, picture, _ = get(chart_url, {})
             states = rid_chart.chart_states(picture, dots)
         except (OSError, rid_chart.ChartError):
-            chart_url = None  # the chart is not up yet: the states wait for the next attempt
-            fresh = {}
+            chart_url = None  # the chart is not up yet: its states are read on a later attempt
         flows = build(figures, states, day, now, chart_url, flooded_districts(text, district_index()), data)
     except Exception as exc:  # noqa: BLE001 - reported in the round log; the last good file stays
         return f"error: {type(exc).__name__}: {exc}"[:300]
-    path = out / FLOWS_PATH
-    try:
-        current = RidFlows.model_validate_json(path.read_bytes())
-    except (OSError, ValueError):
-        current = None
     if current is not None and current.report_date > flows.report_date:
         return f"kept the report of {current.report_date.isoformat()}"
     atomic_write(path, flows.model_dump_json().encode("utf-8"))
     with StateStore(db) as store:
-        # the report is read again only once both it and its chart were read
+        # the chart's states are followed on their own (M51): a report read once is not downloaded again
         store.set_meta(VALIDATORS_KEY, json.dumps(fresh))
     read_states = sum(1 for state in states.values() if state)
-    return (f"built {len(figures)} figures of {day.isoformat()} ({read_states} station states, "
+    return (f"built {len(figures)} figures of {day.isoformat()} ({read_states} of {len(dots)} station states, "
             f"{len(flows.flooded_districts)} flooded districts)")
-

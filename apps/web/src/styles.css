@@ -2178,3 +2178,7 @@ details > ul {
   background: var(--severe-bg);
   color: var(--severe-ink);
 }
+.canal-level.unknown {
+  background: var(--hover);
+  color: var(--muted);
+}
