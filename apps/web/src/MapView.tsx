@@ -474,24 +474,50 @@ const PIN_POPUP_OFFSET: Record<PositionAnchor, [number, number]> = {
 // bottom (one line on a phone)
 const POPUP_PIN = 44;
 const POPUP_TOP = 8;
-const POPUP_BOTTOM = 56;
-/** The tallest a popup's card may be on this map; a longer one scrolls (CSS `--popup-max`). */
+const POPUP_GAP = 8;
+// what lies over the bottom of the map: the key's line (its opened list is drawn under a popup), the timeline and
+// the map buttons
+const MAP_BOTTOM_COVERS = ['.legend-strip', '.timeline', '.maplibregl-ctrl-bottom-right'];
+/**
+ * The height at the bottom of the map that these cover now, beside `card` only what is under it (Codex M43: a
+ * fixed allowance left the source link of a long popup under the key and the timeline on a short phone).
+ */
+function coveredBottom(instance: LibreMap, card?: DOMRect): number {
+  const frame = instance.getContainer().getBoundingClientRect();
+  let top = frame.bottom;
+  for (const selector of MAP_BOTTOM_COVERS) {
+    const box = document.querySelector(selector)?.getBoundingClientRect();
+    if (!box || !box.height || box.top >= frame.bottom || box.bottom <= frame.top) continue;
+    if (card && (box.right <= card.left || box.left >= card.right)) continue;
+    top = Math.min(top, box.top);
+  }
+  return frame.bottom - top + POPUP_GAP;
+}
+/** The tallest a popup's card may be on this map now; a longer one scrolls (CSS `--popup-max`). */
 function sizePopups(instance: LibreMap) {
-  const room = instance.getContainer().clientHeight - POPUP_PIN - POPUP_TOP - POPUP_BOTTOM - 16;
-  instance.getContainer().style.setProperty('--popup-max', `${Math.max(160, room)}px`);
+  const room =
+    instance.getContainer().clientHeight -
+    POPUP_PIN -
+    POPUP_TOP -
+    coveredBottom(instance) -
+    POPUP_GAP;
+  instance.getContainer().style.setProperty('--popup-max', `${Math.max(120, room)}px`);
 }
 /**
- * Pan just enough that an open popup is whole on the map, above its pin (2026-10-03: a long card was cut off at the
- * bottom of a phone's map). MapLibre puts a popup above its pin whenever there is room above, so the pin goes low
- * enough for the card to fit over it, and stays above the key. Not while the map flies: the flight placed it.
+ * Pan just enough that an open popup is whole on the map, above its pin and clear of what covers the bottom
+ * (2026-10-03: a long card was cut off at the bottom of a phone's map). MapLibre puts a popup above its pin
+ * whenever there is room above, so the pin goes low enough for the card to fit over it. Not while the map flies:
+ * the flight placed it.
  */
 function fitPopup(instance: LibreMap, popup: Popup, at: LngLat) {
   if (instance.isMoving()) return;
-  const card = popup.getElement()?.getBoundingClientRect().height ?? 0;
+  sizePopups(instance); // the key and the timeline may have changed since the map opened
+  const card = popup.getElement()?.getBoundingClientRect();
   const height = instance.getContainer().clientHeight;
-  if (!card || !height) return;
+  if (!card?.height || !height) return;
   const y = instance.project(at).y;
-  const target = Math.min(Math.max(y, card + POPUP_PIN + POPUP_TOP), height - POPUP_BOTTOM);
+  const lowest = height - coveredBottom(instance, card);
+  const target = Math.min(Math.max(y, card.height + POPUP_PIN + POPUP_TOP), lowest);
   if (Math.abs(target - y) >= 1) instance.panBy([0, y - target], { duration: 250 });
 }
 /** Layers that answer a tap with a popup (pins) or a zoom (bubbles), topmost last. */
@@ -940,6 +966,27 @@ export default function MapView(props: Props) {
           }),
           'bottom-right',
         );
+        // the map's credit folds into its (i) five seconds after the map opens, or at the first touch of the map
+        // (user 2026-10-03: small from the start). OpenStreetMap's attribution guidelines want it seen when the
+        // map opens and allow it to fold after five seconds or on interaction; the (i) opens it again
+        let creditFolded = false;
+        const foldCredit = (tries = 0) => {
+          if (creditFolded || disposed) return;
+          const credit = instance
+            .getContainer()
+            .querySelector('.maplibregl-ctrl-attrib.maplibregl-compact');
+          if (!credit) {
+            // its text has not arrived yet; MapLibre opens it when it does
+            if (tries < 30) window.setTimeout(() => foldCredit(tries + 1), 1_000);
+            return;
+          }
+          creditFolded = true;
+          credit.classList.remove('maplibregl-compact-show');
+        };
+        window.setTimeout(() => foldCredit(), 5_000);
+        instance.once('mousedown', () => foldCredit());
+        instance.once('touchstart', () => foldCredit());
+        instance.once('wheel', () => foldCredit());
         instance
           .getCanvas()
           .setAttribute(

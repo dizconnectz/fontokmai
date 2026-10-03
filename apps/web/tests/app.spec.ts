@@ -792,7 +792,7 @@ test('on a phone the colour key is one slim line by the zoom buttons, and its pi
   const zoom = (await page.locator('.maplibregl-ctrl-zoom-in').boundingBox())!;
   expect(key.x + key.width).toBeLessThan(zoom.x);
   // the button keeps its words for a screen reader; on the screen it is an (i)
-  await page.getByRole('button', { name: 'ความหมายหมุด' }).click();
+  await page.getByRole('button', { name: 'คำอธิบายแผนที่' }).click();
   await expect(page.locator('#legend-pins')).toBeVisible();
   const close = page.getByRole('button', { name: 'ย่อ', exact: true });
   const shut = (await close.boundingBox())!;
@@ -914,6 +914,119 @@ test('a canal level says whether it rose or fell, what the number is, and that c
     /weather\.bangkok\.go\.th\/water\/summary/,
   );
 });
+
+test('the key is one slim line with the colour scales of the map, the rest opens from its (i)', async ({
+  page,
+}) => {
+  // user 2026-10-03: the key should be more minimal
+  await prepare(page);
+  await page.goto('/');
+  const legend = page.locator('.map-legend');
+  await expect(legend.locator('.legend-levels')).toBeVisible();
+  await expect(page.locator('#legend-pins')).toBeHidden();
+  const line = (await legend.boundingBox())!;
+  expect(line.height).toBeLessThan(40);
+  const info = page.getByRole('button', { name: 'คำอธิบายแผนที่' });
+  await info.click();
+  await expect(page.locator('#legend-pins')).toBeVisible();
+  await page.getByRole('button', { name: 'ย่อ', exact: true }).click();
+  await expect(page.locator('#legend-pins')).toBeHidden();
+});
+
+test('the map credit shows when the map opens, then folds into its (i), which opens it again', async ({
+  page,
+}) => {
+  // OpenStreetMap's attribution guidelines: seen when the map opens, folded after five seconds or on a touch of the
+  // map (user 2026-10-03: small from the start)
+  await prepare(page);
+  await page.route('https://tiles.openfreemap.org/**', (route) =>
+    route.fulfill({
+      json: {
+        version: 8,
+        sources: {
+          osm: {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: [] },
+            attribution: '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap</a>',
+          },
+        },
+        layers: [
+          { id: 'background', type: 'background', paint: { 'background-color': '#e7ede8' } },
+          { id: 'osm', type: 'circle', source: 'osm' },
+        ],
+      },
+    }),
+  );
+  await page.goto('/');
+  const credit = page.locator('.maplibregl-ctrl-attrib');
+  await expect(credit).toHaveClass(/maplibregl-compact-show/);
+  await expect(credit).toContainText('OpenStreetMap');
+  await page.clock.fastForward(6_000);
+  await expect(credit).not.toHaveClass(/maplibregl-compact-show/);
+  await page.locator('.maplibregl-ctrl-attrib-button').click();
+  await expect(credit).toHaveClass(/maplibregl-compact-show/);
+  await expect(credit.getByRole('link', { name: '© OpenStreetMap' })).toBeVisible();
+});
+
+for (const viewport of [
+  { width: 390, height: 568 },
+  { width: 844, height: 390 },
+]) {
+  test(`a long popup's source link is never under the key or the timeline at ${viewport.width}x${viewport.height}`, async ({
+    page,
+  }) => {
+    // Codex M43: on a short phone the key and the timeline covered the link of a long canal popup
+    await page.setViewportSize(viewport);
+    await prepare(page);
+    const manifest = read('active', 'manifest');
+    // with the rain forecast the timeline shows, under the key, as on the live site
+    manifest.files.push(
+      { path: 'bkk/water.json', sha256: 'b'.repeat(64), size: 1, revision: 1 },
+      { path: 'forecast/rain.json', sha256: 'f'.repeat(64), size: 1, revision: 1 },
+    );
+    await page.route('**/examples/active/manifest.json?*', (route) =>
+      route.fulfill({ json: manifest }),
+    );
+    const forecast = JSON.parse(
+      readFileSync(
+        new URL('../../../contracts/v1/examples/forecast/rain.json', import.meta.url),
+        'utf8',
+      ),
+    );
+    await page.route('**/forecast/rain.json?*', (route) => route.fulfill({ json: forecast }));
+    const now = Date.parse(manifest.generated_at);
+    const iso = (ms: number) => new Date(ms).toISOString();
+    const water = read('bkk', 'water');
+    const station = water.stations.find((s: { code: string }) => s.code === 'S001');
+    // measured and fetched two hours ago, so that the card also says its data is old
+    water.fetched_at = iso(now - 120 * 60_000);
+    water.stations = [
+      {
+        ...station,
+        location: [101, 13.2],
+        observed_at: iso(now - 125 * 60_000),
+        level_in_m: 0.99,
+        previous_level_in_m: 0.87,
+        previous_observed_at: iso(now - 305 * 60_000),
+      },
+    ];
+    await page.route('**/bkk/water.json?*', (route) => route.fulfill({ json: water }));
+    await page.goto('/');
+    await expect(page.locator('.timeline')).toBeVisible();
+    const popup = await tapCentrePin(page);
+    await expect(popup).toContainText('ส.คลองเตย');
+    const link = popup.locator('a');
+    await link.scrollIntoViewIfNeeded();
+    // the link takes the pointer itself: nothing lies over it
+    await link.click({ trial: true, timeout: 5_000 });
+    const box = (await link.boundingBox())!;
+    const hit = await page.evaluate(
+      ([x, y]) => document.elementFromPoint(x, y)?.closest('a')?.getAttribute('href') ?? null,
+      [box.x + box.width / 2, box.y + box.height / 2],
+    );
+    expect(hit).toMatch(/weather\.bangkok\.go\.th/);
+  });
+}
 
 test('a dam the report leaves blank shows its last known figures with their day and time', async ({
   page,
@@ -1296,6 +1409,10 @@ test('the summary’s places are outlined on the map, apart from the alert zones
   // the two districts to watch now, and the provinces to prepare for that the outlines file has
   await expect(surface).toHaveAttribute('data-watch', '1030 1017 11 12 13');
   const key = page.locator('.legend-watch');
+  // the key is one line; what the outlines mean opens from its (i) (user 2026-10-03: more minimal)
+  await expect(key).toBeHidden();
+  await page.getByRole('button', { name: 'คำอธิบายแผนที่' }).click();
+  await expect(key).toBeVisible();
   await expect(key).toContainText('ต้องระวังตอนนี้');
   await expect(key).toContainText('เตรียมรับมือ');
   await expect(key).toContainText('เกณฑ์ของเว็บ ไม่ใช่ประกาศ');

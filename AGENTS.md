@@ -46,18 +46,19 @@
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
 | Codex | 2026-10-03 13:55 | AGENTS.md; pipeline/src/fontokmai/{contracts/outlook.py,contracts/export.py,sources/ensemble.py,outlook_build.py,hydrology.py,ref_data/hydrology.json,run.py,cli.py,housekeeping.py,examples.py}; pipeline/tests/{test_outlook.py,test_hydrology.py,test_contracts.py}; apps/web/src/{data.ts,useData.ts,App.tsx,outlook.ts,RainOutlookCard.tsx,Outlook.css,outlook.test.ts}; apps/web/tests/outlook.spec.ts; contracts/v1/{README.md,schema/outlook.schema.json,ts/outlook.ts,examples/outlook/}; scripts/gen-ts-types.sh; tests/consumer/outlook.test.ts; docs/{design/hydrology-pilot-plan.md,sources.md}; private/handoffs/{2026-10-03-codex-outlook.md,README.md} | ทำพยากรณ์14วัน | outlook |
-| Claude | 2026-10-03 14:15 | `apps/web/src/{MapView.tsx,styles.css}`, `App.tsx` **เฉพาะบล็อก `map-legend` + บรรทัด `panelKey`** (ไม่แตะส่วน Outlook ของ Codex · commit เฉพาะ hunk ของตัวเอง), `apps/web/tests/app.spec.ts`, consumer specs ที่อ้างปุ่ม legend | legend แบบเรียบ (ผู้ใช้ขอ) · เครดิตแผนที่ย่อหลัง 5 วินาที · M43 | legend |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md`)
+
+#### 2026-10-03 15:10 ICT — คำอธิบายแผนที่แบบเรียบ · เครดิตแผนที่ย่อเอง · ปิด M43 (Claude)
+- **ผู้ใช้ขอ legend ให้ minimal และเครดิต OpenFreeMap/OSM ย่อตั้งแต่แรก**: คีย์เหลือบรรทัดเดียวทุกจอ (ระดับประกาศ + สเกลฝน + ⓘ) กรอบสรุป/เส้นแม่น้ำ/ตลิ่ง/หมุดย้ายเข้า ⓘ “คำอธิบายแผนที่” (ชื่อเดิม “ความหมายหมุด” → แก้ consumer specs 3 ไฟล์) · เครดิตแผนที่: แนวทาง OSMF (safe harbour) ห้ามซ่อนตั้งแต่แรก แต่ย่อได้หลัง 5 วินาทีหรือเมื่อแตะแผนที่ → ทำแบบนั้น ⓘ เปิดกลับได้
+- **M43 ปิด** (ตามเกณฑ์ Codex): popup วัดพื้นที่ที่ legend/timeline/ปุ่มซูมบังจริงตอนเปิด (`coveredBottom`) จำกัดความสูง+เลื่อนแผนที่ และ popup อยู่เหนือ legend/timeline (z-index 5) · เทสต์ 390×568 และ 844×390 พร้อม timeline: ลิงก์ที่มารับ pointer เอง (ถอดการแก้แล้วเทสต์ล้ม)
+- **ซ้อนกับ Codex** (App.tsx จองไว้): แก้แค่บล็อก legend ทดสอบใน worktree แยก commit บน `b30c3cc` · **prettier `apps/web/tests/outlook.spec.ts`** เพราะ `format:check` ของ web ล้มที่ `b30c3cc`
+- **โค้ด** vitest 150 · Playwright 98 (chromium รวม outlook) · consumer 64 + browser 64
 
 #### 2026-10-03 14:30 ICT — ฝน ensemble 14 วันระยะแรก (Codex)
 - ผู้ใช้ “ทำเลย”: สัญญา24/collector/schema/types/examples + การ์ดพับ18จุด ECMWF51/GFS31 แยกสมาชิกถ่วงโมเดลเท่ากัน มีป้ายทดลอง/เก่า/ขาด; registryตลิ่ง/กำลังระบายnull และฟังก์ชันกันนับน้ำซ้ำ/เวลาไม่ตรง ยังไม่เปิด flood routingจริง · docs/design/hydrology-pilot-plan.md + sources§15.4
 - โค้ด: Python315ผ่าน; ruff/build/format; vitest150/consumer64; browserใหม่6ผ่าน WCAG · เว็บเดิม82/84 (เทสต์แถบสีล้มจากงานApp/MapView/stylesที่อีกฝ่ายแก้ค้างไว้ ไม่ทับและไม่commitส่วนนั้น) · stageAppเฉพาะการ์ด18บรรทัด
 - ข้อมูล: APIจริงครบ18×2โมเดล/14วัน raw140KB/gzip27KB อยู่ในbudget/retentionเดิม ยังไม่มีผลวัดความแม่น · deploy: รอ CI/Pages/VPS · รายละเอียด/ประวัติ13:09และ13:38ย้ายไป private/handoffs/2026-10-03-codex-outlook.md
-
-#### 2026-10-03 13:00 ICT — ตรวจสคริปต์ดูแล VPS · ระดับน้ำคลองอ่านง่าย · คู่มือขึ้น/ลงระบบ (Claude)
-- ฉบับเต็ม: `private/handoffs/2026-10-03-claude-vps-canal.md` · แก้ cache/รอบค้าง/ตัวเฝ้าดิสก์และ deploy แล้ว; คลองแสดงขึ้น–ลง แต่ DXS ไม่มีตลิ่ง จึงไม่บอกวิกฤต · คู่มือขึ้น/ลงอยู่ในเครื่องเท่านั้น
-- pytest240/vitest146/Playwright84; consumer61/64+Python57 · รอผู้ใช้ลบรหัส DXS ที่ไม่ใช้บน VPS
 
 ## B. การตัดสินใจ
 ข้อเสนอเดิม D1–D10 จากร่างแรกถูกแทนด้วยตารางนี้เพราะขัดกับ D12 (ดูเหตุผลเดิมได้ใน snapshot)

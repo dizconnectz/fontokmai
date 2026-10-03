@@ -155,6 +155,11 @@ test("bank colour key fits the phone map while point details are open", async ({
   await prepare(page, { "bkk/water.json": water });
   await page.goto("/?pin=13.75,100.51");
   const key = page.locator('[aria-label="สีระดับน้ำเทียบตลิ่ง"]');
+  // the key is one line; the bank colours open from its (i) (user 2026-10-03: more minimal)
+  await expect(key).toBeHidden();
+  await page
+    .getByRole("button", { name: "คำอธิบายแผนที่", exact: true })
+    .click();
   await expect(key).toBeVisible();
   await expect(key).toContainText("ไม่ทราบ");
   const box = await key.boundingBox();

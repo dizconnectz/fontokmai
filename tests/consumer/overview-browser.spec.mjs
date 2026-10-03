@@ -204,7 +204,7 @@ for (const width of [1440, 390]) {
     await expect(more).toBeFocused();
     await page.keyboard.press("Enter");
     const key = page.locator(".legend-toggle");
-    await expect(key).toHaveAccessibleName("ความหมายหมุด");
+    await expect(key).toHaveAccessibleName("คำอธิบายแผนที่");
     const keyBox = await key.boundingBox();
     if (width === 390) {
       expect(keyBox.width).toBeGreaterThanOrEqual(24);

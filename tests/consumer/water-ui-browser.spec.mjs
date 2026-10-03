@@ -187,7 +187,7 @@ for (const viewport of [
     });
     await page.goto("/");
     const info = page.getByRole("button", {
-      name: "ความหมายหมุด",
+      name: "คำอธิบายแผนที่",
       exact: true,
     });
     await expect(info).toBeVisible();
@@ -239,7 +239,7 @@ for (const viewport of [
     await prepare(page, { "water/dams.json": read("bkk/dams.json") });
     await page.goto("/");
     const info = page.getByRole("button", {
-      name: "ความหมายหมุด",
+      name: "คำอธิบายแผนที่",
       exact: true,
     });
     await expect(info).toBeVisible();

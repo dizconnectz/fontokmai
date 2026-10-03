@@ -255,6 +255,7 @@ export default function App() {
     [riverShown, rivers, riverLines, riverDay(now)],
   );
   const riverKey = !!riverShapes?.features.length;
+  const panelKey = pinKey || bankKey || watchKey || riverKey;
   // the saved place in one line on top; naming its district needs the DOPA places, loaded once a place is saved
   useEffect(() => {
     if (favorite) void loadPlaces();
@@ -583,90 +584,59 @@ export default function App() {
           </div>
         </div>
 
-        {(colourKey || pinKey || bankKey || watchKey || riverKey) && (
-          <div className={`map-legend ${legendOpen ? 'open' : ''}`} aria-label="คำอธิบายสี">
-            {watchKey && (
-              <div className="legend-row legend-watch" aria-label="กรอบพื้นที่จากการ์ดสรุป">
-                <span>
-                  <i className="legend-outline" style={{ borderColor: WATCH_COLOR.now }} />{' '}
-                  ต้องระวังตอนนี้
-                </span>
-                <span>
-                  <i className="legend-outline next" style={{ borderColor: WATCH_COLOR.next }} />{' '}
-                  เตรียมรับมือ
-                </span>
-                <small>เกณฑ์ของเว็บ ไม่ใช่ประกาศ</small>
-              </div>
-            )}
-            {riverKey && (
-              <div className="legend-row legend-rivers" aria-label="เส้นแม่น้ำตามพยากรณ์ 7 วัน">
-                <span>แม่น้ำ 7 วัน:</span>
-                {RIVER_CLASSES.map((item) => (
-                  <span key={item.trend}>
-                    <i
-                      className={`legend-line ${item.trend.startsWith('rising') ? '' : 'thin'}`}
-                      style={{ background: item.color }}
-                    />{' '}
-                    {item.label}
-                  </span>
-                ))}
-                <small>พยากรณ์ของระบบ (แบบจำลอง)</small>
-              </div>
-            )}
-            {bankKey && (
-              <div className="legend-row bank-key" aria-label="สีระดับน้ำเทียบตลิ่ง">
-                <span>ตลิ่ง:</span>
-                <span>
-                  <i style={{ background: BANK_COLORS.above_bank }} /> เกิน
-                </span>
-                <span>
-                  <i style={{ background: BANK_COLORS.at_bank }} /> ถึง
-                </span>
-                <span>
-                  <i style={{ background: BANK_COLORS.below_bank }} /> ต่ำกว่า
-                </span>
-                <span>
-                  <i style={{ background: BANK_COLORS.unknown }} /> ไม่ทราบ
-                </span>
-              </div>
-            )}
-            {layers.alerts && (
-              <div className="legend-row legend-levels">
-                {LEGEND_LEVELS.map((level) => (
-                  <span key={level}>
-                    <i style={{ background: LEVEL_FILL[level] }} /> {LEVEL_LABEL[level]}
-                  </span>
-                ))}
-              </div>
-            )}
-            {layers.radar && (step.kind !== 'now' || frames.length > 0) && (
-              <div className="legend-row radar-scale">
-                <span>{step.kind === 'forecast' ? 'พยากรณ์ฝน' : 'ฝน'}</span>
-                {keyColours.length ? (
-                  <>
-                    <span
-                      className="radar-gradient"
-                      style={{ background: `linear-gradient(90deg, ${keyColours.join(', ')})` }}
-                    />
-                    <span>หนัก</span>
-                  </>
-                ) : (
-                  <span>สีตามภาพของกรมอุตุฯ</span>
-                )}
-                {step.kind === 'radar' && radarAge !== null && radarAge > 45 && (
-                  <b className="stale-mark">เก่า</b>
-                )}
-              </div>
-            )}
-            {layers.radar && step.kind === 'forecast' && (
-              <div className="legend-row legend-note">
-                <small>ระบายสีตั้งแต่ 0.5 มม./ชม. · ไม่มีสีไม่ได้แปลว่าไม่มีฝน</small>
-              </div>
-            )}
+        {(colourKey || panelKey) && (
+          <div className={`map-legend ${legendOpen ? 'open' : ''}`} aria-label="คำอธิบายแผนที่">
+            {/* behind the (i): what the outlines, the river lines and the pins mean; the line under it keeps only
+                the colour scales of the whole map (user 2026-10-03: the key should be more minimal) */}
             <div id="legend-pins" className="legend-pins" hidden={!legendOpen}>
               {overviewZoom && (
                 <div className="legend-row legend-note" data-testid="overview-hint">
                   <small>ภาพรวมแสดงเฉพาะจุดสำคัญ · ซูมเข้าเพื่อดูหมุดทั้งหมด</small>
+                </div>
+              )}
+              {watchKey && (
+                <div className="legend-row legend-watch" aria-label="กรอบพื้นที่จากการ์ดสรุป">
+                  <span>
+                    <i className="legend-outline" style={{ borderColor: WATCH_COLOR.now }} />{' '}
+                    ต้องระวังตอนนี้
+                  </span>
+                  <span>
+                    <i className="legend-outline next" style={{ borderColor: WATCH_COLOR.next }} />{' '}
+                    เตรียมรับมือ
+                  </span>
+                  <small>เกณฑ์ของเว็บ ไม่ใช่ประกาศ</small>
+                </div>
+              )}
+              {riverKey && (
+                <div className="legend-row legend-rivers" aria-label="เส้นแม่น้ำตามพยากรณ์ 7 วัน">
+                  <span>แม่น้ำ 7 วัน</span>
+                  {RIVER_CLASSES.map((item) => (
+                    <span key={item.trend}>
+                      <i
+                        className={`legend-line ${item.trend.startsWith('rising') ? '' : 'thin'}`}
+                        style={{ background: item.color }}
+                      />{' '}
+                      {item.label}
+                    </span>
+                  ))}
+                  <small>เส้นและหมุดสีเดียวกัน · พยากรณ์ของระบบ (แบบจำลอง)</small>
+                </div>
+              )}
+              {bankKey && (
+                <div className="legend-row bank-key" aria-label="สีระดับน้ำเทียบตลิ่ง">
+                  <span>ตลิ่ง</span>
+                  <span>
+                    <i style={{ background: BANK_COLORS.above_bank }} /> เกิน
+                  </span>
+                  <span>
+                    <i style={{ background: BANK_COLORS.at_bank }} /> ถึง
+                  </span>
+                  <span>
+                    <i style={{ background: BANK_COLORS.below_bank }} /> ต่ำกว่า
+                  </span>
+                  <span>
+                    <i style={{ background: BANK_COLORS.unknown }} /> ไม่ทราบ
+                  </span>
                 </div>
               )}
               {layers.floods && step.kind !== 'forecast' && (
@@ -729,7 +699,8 @@ export default function App() {
                   ))}
                 </div>
               )}
-              {layers.rivers && rivers && step.kind !== 'forecast' && (
+              {/* the river pins share the colours of the lines above: their own row only without the lines */}
+              {layers.rivers && rivers && step.kind !== 'forecast' && !riverKey && (
                 <div className="legend-row rain-hour">
                   <span>แนวโน้มน้ำแม่น้ำ 7 วัน (แบบจำลอง · ทดลอง)</span>
                   {RIVER_CLASSES.map((item) => (
@@ -748,18 +719,56 @@ export default function App() {
                 </div>
               )}
             </div>
-            {pinKey && (
-              <button
-                className="legend-toggle"
-                aria-expanded={legendOpen}
-                aria-controls="legend-pins"
-                onClick={() => setLegendOpen((open) => !open)}
-              >
-                <ChevronUp size={14} className="legend-toggle-chevron" aria-hidden="true" />
-                <Info size={16} className="legend-toggle-info" aria-hidden="true" />
-                <span className="legend-toggle-text">{legendOpen ? 'ย่อ' : 'ความหมายหมุด'}</span>
-              </button>
-            )}
+            <div className="legend-strip">
+              {layers.alerts && (
+                <div className="legend-row legend-levels">
+                  {LEGEND_LEVELS.map((level) => (
+                    <span key={level}>
+                      <i style={{ background: LEVEL_FILL[level] }} /> {LEVEL_LABEL[level]}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {layers.radar && (step.kind !== 'now' || frames.length > 0) && (
+                <div className="legend-row radar-scale">
+                  <span>{step.kind === 'forecast' ? 'พยากรณ์ฝน' : 'ฝน'}</span>
+                  {keyColours.length ? (
+                    <>
+                      <span
+                        className="radar-gradient"
+                        style={{ background: `linear-gradient(90deg, ${keyColours.join(', ')})` }}
+                      />
+                      <span>หนัก</span>
+                    </>
+                  ) : (
+                    <span>สีตามภาพของกรมอุตุฯ</span>
+                  )}
+                  {step.kind === 'radar' && radarAge !== null && radarAge > 45 && (
+                    <b className="stale-mark">เก่า</b>
+                  )}
+                </div>
+              )}
+              {panelKey && (
+                <button
+                  className="legend-toggle"
+                  aria-expanded={legendOpen}
+                  aria-controls="legend-pins"
+                  title={legendOpen ? 'ย่อ' : 'คำอธิบายแผนที่'}
+                  onClick={() => setLegendOpen((open) => !open)}
+                >
+                  <ChevronUp size={14} className="legend-toggle-chevron" aria-hidden="true" />
+                  <Info size={16} className="legend-toggle-info" aria-hidden="true" />
+                  <span className="legend-toggle-text">
+                    {legendOpen ? 'ย่อ' : 'คำอธิบายแผนที่'}
+                  </span>
+                </button>
+              )}
+              {layers.radar && step.kind === 'forecast' && (
+                <div className="legend-row legend-note">
+                  <small>ระบายสีตั้งแต่ 0.5 มม./ชม. · ไม่มีสีไม่ได้แปลว่าไม่มีฝน</small>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </main>
