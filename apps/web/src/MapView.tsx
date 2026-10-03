@@ -380,6 +380,9 @@ function addOverlays(instance: LibreMap) {
       'text-size': ['interpolate', ['linear'], ['zoom'], 4, 11, 7, 13, 11, 15],
       'text-max-width': 12,
       'text-line-height': 1.25,
+      // Pins stand above their location; place the name below its anchor so a central pin cannot cover it.
+      'text-anchor': 'top',
+      'text-offset': [0, 0.4],
       'text-padding': 3,
       'text-allow-overlap': false,
       'text-ignore-placement': false,
