@@ -15,6 +15,7 @@ from fontokmai.contracts.cctv import CctvRegistry
 from fontokmai.contracts.common import SourceStatus
 from fontokmai.contracts.forecast import RainForecast, RiverForecast
 from fontokmai.contracts.manifest import Manifest
+from fontokmai.contracts.outlook import RainOutlook
 from fontokmai.contracts.places import PlaceGazetteer
 from fontokmai.contracts.radar import RadarFeed
 from fontokmai.contracts.river_lines import RiverLines
@@ -39,7 +40,8 @@ REF_MODELS: dict[str, type[BaseModel]] = {"ref/road_flood_history.json": RoadFlo
                                           "ref/boundaries.json": Boundaries,
                                           "ref/river_lines.json": RiverLines,
                                           "forecast/rain.json": RainForecast,
-                                          "forecast/rivers.json": RiverForecast}
+                                          "forecast/rivers.json": RiverForecast,
+                                          "forecast/outlook.json": RainOutlook}
 # curated files shipped with the package and copied into every snapshot
 STATIC_REFS = {"ref/cctv.json": "cctv.json", "ref/places.json": "places.json", "ref/boundaries.json": "boundaries.json",
                "ref/river_lines.json": "river_lines.json"}

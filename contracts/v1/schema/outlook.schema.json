@@ -1,0 +1,307 @@
+{
+  "$defs": {
+    "EnsembleMember": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "rain_mm": {
+          "items": {
+            "anyOf": [
+              {
+                "maximum": 2000,
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Rain Mm",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "rain_mm"
+      ],
+      "title": "EnsembleMember",
+      "type": "object"
+    },
+    "HydrologyPoint": {
+      "additionalProperties": false,
+      "properties": {
+        "area_id": {
+          "title": "Area Id",
+          "type": "string"
+        },
+        "area_th": {
+          "title": "Area Th",
+          "type": "string"
+        },
+        "bank_datum": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bank Datum"
+        },
+        "bank_m": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bank M"
+        },
+        "credit_th": {
+          "title": "Credit Th",
+          "type": "string"
+        },
+        "flow_capacity_m3s": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Flow Capacity M3S"
+        },
+        "gate_operation_known": {
+          "default": false,
+          "title": "Gate Operation Known",
+          "type": "boolean"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "location": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "title": "Location",
+          "type": "array"
+        },
+        "name_th": {
+          "title": "Name Th",
+          "type": "string"
+        },
+        "pump_capacity_m3s": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pump Capacity M3S"
+        },
+        "source_url": {
+          "title": "Source Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "area_id",
+        "area_th",
+        "name_th",
+        "location",
+        "source_url",
+        "credit_th"
+      ],
+      "title": "HydrologyPoint",
+      "type": "object"
+    },
+    "OutlookPoint": {
+      "additionalProperties": false,
+      "properties": {
+        "missing_models": {
+          "items": {
+            "enum": [
+              "ecmwf_ifs025",
+              "gfs05"
+            ],
+            "type": "string"
+          },
+          "title": "Missing Models",
+          "type": "array"
+        },
+        "models": {
+          "items": {
+            "$ref": "#/$defs/PointEnsemble"
+          },
+          "title": "Models",
+          "type": "array"
+        },
+        "point": {
+          "$ref": "#/$defs/HydrologyPoint"
+        }
+      },
+      "required": [
+        "point",
+        "models",
+        "missing_models"
+      ],
+      "title": "OutlookPoint",
+      "type": "object"
+    },
+    "PointEnsemble": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_members": {
+          "minimum": 1,
+          "title": "Expected Members",
+          "type": "integer"
+        },
+        "fetched_at": {
+          "format": "date-time",
+          "title": "Fetched At",
+          "type": "string"
+        },
+        "grid_location": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "title": "Grid Location",
+          "type": "array"
+        },
+        "issued_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Issued At"
+        },
+        "members": {
+          "items": {
+            "$ref": "#/$defs/EnsembleMember"
+          },
+          "title": "Members",
+          "type": "array"
+        },
+        "model": {
+          "enum": [
+            "ecmwf_ifs025",
+            "gfs05"
+          ],
+          "title": "Model",
+          "type": "string"
+        }
+      },
+      "required": [
+        "model",
+        "expected_members",
+        "fetched_at",
+        "grid_location",
+        "members"
+      ],
+      "title": "PointEnsemble",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "credit_th": {
+      "default": "Open-Meteo.com (CC BY 4.0), ECMWF และ NOAA",
+      "title": "Credit Th",
+      "type": "string"
+    },
+    "days": {
+      "items": {
+        "format": "date",
+        "type": "string"
+      },
+      "maxItems": 14,
+      "minItems": 14,
+      "title": "Days",
+      "type": "array"
+    },
+    "experimental": {
+      "const": true,
+      "default": true,
+      "title": "Experimental",
+      "type": "boolean"
+    },
+    "fetched_at": {
+      "format": "date-time",
+      "title": "Fetched At",
+      "type": "string"
+    },
+    "notes_th": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Notes Th",
+      "type": "array"
+    },
+    "points": {
+      "items": {
+        "$ref": "#/$defs/OutlookPoint"
+      },
+      "title": "Points",
+      "type": "array"
+    },
+    "product": {
+      "const": "pilot_rain_ensemble",
+      "default": "pilot_rain_ensemble",
+      "title": "Product",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1",
+      "default": "1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_url": {
+      "default": "https://open-meteo.com/en/docs/ensemble-api",
+      "title": "Source Url",
+      "type": "string"
+    },
+    "spatial_scope": {
+      "const": "sampled_points",
+      "default": "sampled_points",
+      "title": "Spatial Scope",
+      "type": "string"
+    }
+  },
+  "required": [
+    "fetched_at",
+    "days",
+    "points",
+    "notes_th"
+  ],
+  "title": "RainOutlook",
+  "type": "object"
+}

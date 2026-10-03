@@ -1,0 +1,96 @@
+.outlook-card {
+  border-bottom: 1px solid var(--line);
+  padding: 12px 16px;
+  font-size: 0.85rem;
+}
+.outlook-card summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.outlook-tag {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-left: 6px;
+  font-weight: 400;
+}
+.outlook-place {
+  display: grid;
+  gap: 4px;
+  margin: 12px 0 8px;
+}
+.outlook-place select {
+  width: 100%;
+  min-width: 0;
+  background: var(--surface);
+  color: inherit;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 7px;
+  font: inherit;
+}
+.outlook-weeks {
+  display: flex;
+  gap: 8px;
+}
+.outlook-weeks button,
+.outlook-map {
+  background: transparent;
+  color: inherit;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font: inherit;
+  min-height: 36px;
+  cursor: pointer;
+}
+.outlook-weeks button[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--surface);
+}
+.outlook-card table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.79rem;
+  margin: 10px 0;
+}
+.outlook-card caption {
+  text-align: left;
+  font-size: 0.73rem;
+  margin-bottom: 8px;
+}
+.outlook-card th,
+.outlook-card td {
+  padding: 6px 3px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+.outlook-card thead th {
+  font-weight: 500;
+  font-size: 0.71rem;
+}
+.outlook-watch td:last-child {
+  color: #a54100;
+  font-weight: 700;
+}
+[data-theme='dark'] .outlook-watch td:last-child {
+  color: #ffb56b;
+}
+.outlook-note {
+  font-size: 0.74rem;
+  line-height: 1.6;
+  margin: 8px 0;
+}
+.outlook-warning {
+  font-weight: 600;
+  color: #9b4700;
+}
+[data-theme='dark'] .outlook-warning {
+  color: #ffb56b;
+}
+.outlook-method {
+  margin: 10px 0;
+  font-size: 0.78rem;
+}
+.outlook-card a {
+  font-size: 0.74rem;
+}

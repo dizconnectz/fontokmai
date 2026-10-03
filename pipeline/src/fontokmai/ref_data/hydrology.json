@@ -1,0 +1,316 @@
+{
+  "version": "2026-10-03",
+  "scope": "sampled_points",
+  "notes_th": [
+    "ทะเบียนเริ่มต้น ยังไม่มีพารามิเตอร์พร้อมใช้ routing หรือตลิ่ง",
+    "ไม่ใช่ขอบเขตพื้นที่รับน้ำ"
+  ],
+  "points": [
+    {
+      "id": "ping-r01",
+      "area_id": "ping",
+      "area_th": "พื้นที่ติดตามแม่น้ำปิง",
+      "name_th": "ปิง ช่วง อ.เชียงดาว จ.เชียงใหม่",
+      "location": [
+        98.925,
+        19.525
+      ],
+      "source_url": "https://www.openstreetmap.org/",
+      "credit_th": "© OpenStreetMap contributors; จุดตัวอย่างที่ fontokmai เลือก",
+      "bank_m": null,
+      "bank_datum": null,
+      "flow_capacity_m3s": null,
+      "pump_capacity_m3s": null,
+      "gate_operation_known": false
+    },
+    {
+      "id": "ping-r10",
+      "area_id": "ping",
+      "area_th": "พื้นที่ติดตามแม่น้ำปิง",
+      "name_th": "ปิง ช่วง อ.เก้าเลี้ยว จ.นครสวรรค์",
+      "location": [
+        100.025,
+        15.825
+      ],
+      "source_url": "https://www.openstreetmap.org/",
+      "credit_th": "© OpenStreetMap contributors; จุดตัวอย่างที่ fontokmai เลือก",
+      "bank_m": null,
+      "bank_datum": null,
+      "flow_capacity_m3s": null,
+      "pump_capacity_m3s": null,
+      "gate_operation_known": false
+    },
+    {
+      "id": "wang-r06",
+      "area_id": "wang",
+      "area_th": "พื้นที่ติดตามแม่น้ำวัง",
+      "name_th": "วัง ช่วง อ.เมืองปาน จ.ลำปาง",
+      "location": [
+        99.575,
+        18.925
+      ],
+      "source_url": "https://www.openstreetmap.org/",
+      "credit_th": "© OpenStreetMap contributors; จุดตัวอย่างที่ fontokmai เลือก",
+      "bank_m": null,
+      "bank_datum": null,
+      "flow_capacity_m3s": null,
+      "pump_capacity_m3s": null,
+      "gate_operation_known": false
+    },
+    {
+      "id": "wang-r01",
+      "area_id": "wang",
+      "area_th": "พื้นที่ติดตามแม่น้ำวัง",
+      "name_th": "วัง ช่วง อ.บ้านตาก จ.ตาก",
+      "location": [
+        99.075,
+        17.125
+      ],
+      "source_url": "https://www.openstreetmap.org/",
+      "credit_th": "© OpenStreetMap contributors; จุดตัวอย่างที่ fontokmai เลือก",
+      "bank_m": null,
+      "bank_datum": null,
+      "flow_capacity_m3s": null,
+      "pump_capacity_m3s": null,
+      "gate_operation_known": false
+    },
+    {
+      "id": "yom-r01",
+      "area_id": "yom",
+      "area_th": "พื้นที่ติดตามแม่น้ำยม",
+      "name_th": "ยม ช่วง อ.เชียงม่วน จ.พะเยา",
+      "location": [
+        100.225,
+        18.975
+      ],
+      "source_url": "https://www.openstreetmap.org/",
+      "credit_th": "© OpenStreetMap contributors; จุดตัวอย่างที่ fontokmai เลือก",
+      "bank_m": null,
+      "bank_datum": null,
+      "flow_capacity_m3s": null,
+      "pump_capacity_m3s": null,
+      "gate_operation_known": false
+    },
+    {
+      "id": "yom-r11",
+      "area_id": "yom",
+      "area_th": "พื้นที่ติดตามแม่น้ำยม",
+      "name_th": "ยม ช่วง อ.โพทะเล จ.พิจิตร",
+      "location": [
+        100.325,
+        16.025
+      ],
+      "source_url": "https://www.openstreetmap.org/",
+      "credit_th": "© OpenStreetMap contributors; จุดตัวอย่างที่ fontokmai เลือก",
+      "bank_m": null,
+      "bank_datum": null,
+      "flow_capacity_m3s": null,
+      "pump_capacity_m3s": null,
+      "gate_operation_known": false
+    },
+    {
+      "id": "nan-r01",
+      "area_id": "nan",
+      "area_th": "พื้นที่ติดตามแม่น้ำน่าน",
+      "name_th": "น่าน ช่วง อ.เฉลิมพระเกียรติ จ.น่าน",
+      "location": [
+        101.075,
+        19.525
+      ],
+      "source_url": "https://www.openstreetmap.org/",
+      "credit_th": "© OpenStreetMap contributors; จุดตัวอย่างที่ fontokmai เลือก",
+      "bank_m": null,
+      "bank_datum": null,
+      "flow_capacity_m3s": null,
+      "pump_capacity_m3s": null,
+      "gate_operation_known": false
+    },
+    {
+      "id": "nan-r14",
+      "area_id": "nan",
+      "area_th": "พื้นที่ติดตามแม่น้ำน่าน",
+      "name_th": "น่าน ช่วง อ.ชุมแสง จ.นครสวรรค์",
+      "location": [
+        100.225,
+        15.825
+      ],
+      "source_url": "https://www.openstreetmap.org/",
+      "credit_th": "© OpenStreetMap contributors; จุดตัวอย่างที่ fontokmai เลือก",
+      "bank_m": null,
+      "bank_datum": null,
+      "flow_capacity_m3s": null,
+      "pump_capacity_m3s": null,
+      "gate_operation_known": false
+    },
+    {
+      "id": "cp-nakhonsawan",
+      "area_id": "cp",
+      "area_th": "พื้นที่ติดตามแม่น้ำเจ้าพระยา",
+      "name_th": "เจ้าพระยา ที่นครสวรรค์",
+      "location": [
+        100.087,
+        15.653
+      ],
+      "source_url": "https://www.openstreetmap.org/",
+      "credit_th": "© OpenStreetMap contributors; จุดตัวอย่างที่ fontokmai เลือก",
+      "bank_m": null,
+      "bank_datum": null,
+      "flow_capacity_m3s": null,
+      "pump_capacity_m3s": null,
+      "gate_operation_known": false
+    },
+    {
+      "id": "cp-pathumthani",
+      "area_id": "cp",
+      "area_th": "พื้นที่ติดตามแม่น้ำเจ้าพระยา",
+      "name_th": "เจ้าพระยา ที่ปทุมธานี",
+      "location": [
+        100.483,
+        14.016
+      ],
+      "source_url": "https://www.openstreetmap.org/",
+      "credit_th": "© OpenStreetMap contributors; จุดตัวอย่างที่ fontokmai เลือก",
+      "bank_m": null,
+      "bank_datum": null,
+      "flow_capacity_m3s": null,
+      "pump_capacity_m3s": null,
+      "gate_operation_known": false
+    },
+    {
+      "id": "pasak-r03",
+      "area_id": "pasak",
+      "area_th": "พื้นที่ติดตามแม่น้ำป่าสัก",
+      "name_th": "ป่าสัก ช่วง อ.หล่มเก่า จ.เพชรบูรณ์",
+      "location": [
+        101.425,
+        17.075
+      ],
+      "source_url": "https://www.openstreetmap.org/",
+      "credit_th": "© OpenStreetMap contributors; จุดตัวอย่างที่ fontokmai เลือก",
+      "bank_m": null,
+      "bank_datum": null,
+      "flow_capacity_m3s": null,
+      "pump_capacity_m3s": null,
+      "gate_operation_known": false
+    },
+    {
+      "id": "pasak-thaluea",
+      "area_id": "pasak",
+      "area_th": "พื้นที่ติดตามแม่น้ำป่าสัก",
+      "name_th": "ป่าสัก ก่อนบรรจบเจ้าพระยา",
+      "location": [
+        100.675,
+        14.525
+      ],
+      "source_url": "https://www.openstreetmap.org/",
+      "credit_th": "© OpenStreetMap contributors; จุดตัวอย่างที่ fontokmai เลือก",
+      "bank_m": null,
+      "bank_datum": null,
+      "flow_capacity_m3s": null,
+      "pump_capacity_m3s": null,
+      "gate_operation_known": false
+    },
+    {
+      "id": "hii-atg101",
+      "area_id": "rangsit",
+      "area_th": "รังสิต–คลองหลวงและใกล้เคียง",
+      "name_th": "จุฬาลงกรณ์ ธัญบุรี",
+      "location": [
+        100.60567,
+        13.981354
+      ],
+      "source_url": "https://tiservice.hii.or.th/opendata/data_catalog/water_level/0all_stn_metadata.csv",
+      "credit_th": "สถาบันสารสนเทศทรัพยากรน้ำ (องค์การมหาชน); ตำแหน่งจากทะเบียนสถานี ไม่ใช่ค่าวัดฝน",
+      "bank_m": null,
+      "bank_datum": null,
+      "flow_capacity_m3s": null,
+      "pump_capacity_m3s": null,
+      "gate_operation_known": false
+    },
+    {
+      "id": "hii-bkk002",
+      "area_id": "rangsit",
+      "area_th": "รังสิต–คลองหลวงและใกล้เคียง",
+      "name_th": "คลองเปรมประชากร หลักหก",
+      "location": [
+        100.60259,
+        13.96562
+      ],
+      "source_url": "https://tiservice.hii.or.th/opendata/data_catalog/water_level/0all_stn_metadata.csv",
+      "credit_th": "สถาบันสารสนเทศทรัพยากรน้ำ (องค์การมหาชน); ตำแหน่งจากทะเบียนสถานี ไม่ใช่ค่าวัดฝน",
+      "bank_m": null,
+      "bank_datum": null,
+      "flow_capacity_m3s": null,
+      "pump_capacity_m3s": null,
+      "gate_operation_known": false
+    },
+    {
+      "id": "hii-bkk013",
+      "area_id": "rangsit",
+      "area_th": "รังสิต–คลองหลวงและใกล้เคียง",
+      "name_th": "คลองระพีพัฒน์แยกใต้ หนองเสือ",
+      "location": [
+        100.8917,
+        14.22058
+      ],
+      "source_url": "https://tiservice.hii.or.th/opendata/data_catalog/water_level/0all_stn_metadata.csv",
+      "credit_th": "สถาบันสารสนเทศทรัพยากรน้ำ (องค์การมหาชน); ตำแหน่งจากทะเบียนสถานี ไม่ใช่ค่าวัดฝน",
+      "bank_m": null,
+      "bank_datum": null,
+      "flow_capacity_m3s": null,
+      "pump_capacity_m3s": null,
+      "gate_operation_known": false
+    },
+    {
+      "id": "hii-bkk015",
+      "area_id": "rangsit",
+      "area_th": "รังสิต–คลองหลวงและใกล้เคียง",
+      "name_th": "คลองหกวา คลอง 8",
+      "location": [
+        100.77497,
+        13.94162
+      ],
+      "source_url": "https://tiservice.hii.or.th/opendata/data_catalog/water_level/0all_stn_metadata.csv",
+      "credit_th": "สถาบันสารสนเทศทรัพยากรน้ำ (องค์การมหาชน); ตำแหน่งจากทะเบียนสถานี ไม่ใช่ค่าวัดฝน",
+      "bank_m": null,
+      "bank_datum": null,
+      "flow_capacity_m3s": null,
+      "pump_capacity_m3s": null,
+      "gate_operation_known": false
+    },
+    {
+      "id": "hii-cpy014",
+      "area_id": "rangsit",
+      "area_th": "รังสิต–คลองหลวงและใกล้เคียง",
+      "name_th": "เจ้าพระยา สะพานนวลฉวี",
+      "location": [
+        100.535034,
+        13.947525
+      ],
+      "source_url": "https://tiservice.hii.or.th/opendata/data_catalog/water_level/0all_stn_metadata.csv",
+      "credit_th": "สถาบันสารสนเทศทรัพยากรน้ำ (องค์การมหาชน); ตำแหน่งจากทะเบียนสถานี ไม่ใช่ค่าวัดฝน",
+      "bank_m": null,
+      "bank_datum": null,
+      "flow_capacity_m3s": null,
+      "pump_capacity_m3s": null,
+      "gate_operation_known": false
+    },
+    {
+      "id": "hii-rsk7",
+      "area_id": "rangsit",
+      "area_th": "รังสิต–คลองหลวงและใกล้เคียง",
+      "name_th": "คลองเจ็ด คลองหลวง",
+      "location": [
+        100.75422,
+        14.1911
+      ],
+      "source_url": "https://tiservice.hii.or.th/opendata/data_catalog/water_level/0all_stn_metadata.csv",
+      "credit_th": "สถาบันสารสนเทศทรัพยากรน้ำ (องค์การมหาชน); ตำแหน่งจากทะเบียนสถานี ไม่ใช่ค่าวัดฝน",
+      "bank_m": null,
+      "bank_datum": null,
+      "flow_capacity_m3s": null,
+      "pump_capacity_m3s": null,
+      "gate_operation_known": false
+    }
+  ]
+}

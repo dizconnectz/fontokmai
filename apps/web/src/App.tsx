@@ -1,3 +1,4 @@
+import Outlook from './RainOutlookCard';
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowDown,
@@ -824,6 +825,23 @@ export default function App() {
             onOpen={openFavorite}
           />
         )}
+
+        <Outlook
+          data={data.outlook}
+          state={data.outlookState}
+          now={now}
+          onPoint={(point) => {
+            setPin(point);
+            setFocus({
+              key: `outlook:${point}:${Date.now()}`,
+              bounds: [
+                [point[0] - 0.02, point[1] - 0.02],
+                [point[0] + 0.02, point[1] + 0.02],
+              ],
+              maxZoom: 10,
+            });
+          }}
+        />
 
         {road && roads ? (
           <RoadCard road={road} history={roads} onClose={() => setRoadKey(null)} />

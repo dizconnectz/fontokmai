@@ -16,6 +16,26 @@ from fontokmai.sources.tmd_cap.fetch import Fetcher, FetchError, fixture_fetcher
 STALE_GRACE = timedelta(minutes=15)
 
 
+def write_outlook_example(out: Path) -> list[Path]:
+    """Synthetic members; this file contains no real forecast or measured water capacity."""
+    from fontokmai.contracts.outlook import EnsembleMember, OutlookPoint, PointEnsemble, RainOutlook
+    from fontokmai.sources.ensemble import MODELS, load_points
+
+    now = datetime.fromisoformat("2026-09-25T18:20:00+07:00")
+    points = [p for p in load_points() if p.id in {"hii-atg101", "ping-r01"}]
+    example = RainOutlook(fetched_at=now, days=[now.date() + timedelta(days=n) for n in range(1, 15)],
+        points=[OutlookPoint(point=p, missing_models=[], models=[PointEnsemble(
+            model=model, expected_members=count, fetched_at=now, grid_location=p.location,
+            members=[EnsembleMember(id=f"{i:02d}", rain_mm=[
+                40.0 if (d + i) % 3 == 0 else float(d % 5) for d in range(14)]) for i in range(count)])
+            for model, count in MODELS.items()]) for p in points],
+        notes_th=["ข้อมูลสังเคราะห์สำหรับทดสอบ ไม่ใช่พยากรณ์จริง"])
+    path = out / "outlook" / "outlook.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(example.model_dump_json(indent=2) + "\n", encoding="utf-8", newline="\n")
+    return [path]
+
+
 @dataclass(frozen=True)
 class Step:
     now: str

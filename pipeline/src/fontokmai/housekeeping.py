@@ -43,7 +43,8 @@ PRESSURE_TIERS = ((0.90, 1, 1, 7), (0.85, 7, 2, 30), (0.80, 30, 3, 90))
 DATA_BUDGET = 1024**3  # fontokmai's files under the state folder; over it, the last tier applies anyway
 # the files the rules and the forecasts read; they change when their source does, most of them not every round.
 # Not kept: alerts.json (its CAP documents are in the database), radar images, and the reference files.
-VERSIONED = ("forecast/rain.json", "forecast/rivers.json", "radar.json", "bkk/water.json", "bkk/rain.json",
+VERSIONED = ("forecast/outlook.json", "forecast/rain.json", "forecast/rivers.json", "radar.json", "bkk/water.json",
+             "bkk/rain.json",
              "bkk/flooding.json", "bkk/news.json", "water/dams.json", "weather/today.json")
 FLOOD_FACTS = ("id", "title_th", "road_th", "location", "start", "stop", "reporter", "url")
 

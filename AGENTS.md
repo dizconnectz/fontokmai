@@ -1,7 +1,7 @@
 # AGENTS.md — fontokmai (ฝนตกไหม): ข้อตกลงทีม สถานะ และการตัดสินใจ
 
 > **สถานะ**: เว็บแบบแผนที่เป็นหลักออนไลน์ที่ `https://dizconnectz.github.io/fontokmai/` (D28, D29): ประกาศกรมอุตุฯ ระบายสีตามระดับ, เรดาร์ฝน, กล้อง CCTV, ปักหมุดดูข้อมูลจุด, ค้นหาสถานที่ (ตำบล/อำเภอ/จังหวัด/สถานที่/ถนน), แถบเลื่อนเวลา (เรดาร์ย้อนหลัง → พยากรณ์ฝน 72 ชม.), ฝน 7 วัน, สายด่วน, รายงานน้ำท่วมตอนนี้ (Longdo/iTIC), ที่ของฉัน, ตัวเฝ้าข้อมูลหยุด (data-watch), ระดับน้ำคลอง/ฝนวัดจริง/ถนนท่วม กทม. + เขื่อนใหญ่ + สถานีอุตุฯ (DXS ดึงเป็นครั้งๆ D31), หน้าเกี่ยวกับ/คำถามที่พบบ่อย + SEO/AEO, แนวโน้มน้ำแม่น้ำ 14 จุด (GloFAS วันละครั้ง), การ์ดสรุปจุดที่ต้องระวังบนสุดของแถบข้าง (`summary/overview.json` กฎ v0 + เรดาร์ + ท้ายน้ำของเขื่อน) พร้อมแถบสรุป แนวโน้ม 1 ชม. และกรอบอำเภอ/จังหวัดบนแผนที่ (`ref/boundaries.json`) · ข้อมูลจาก VPS ทุก 15 นาที · สำรองรายวัน + คลังตรวจความแม่น (P0-B2) · แบบระบบ v6.1
-> อัปเดตล่าสุด: 2026-10-03 13:38 ICT (Codex) · เวลาเป็น ICT (UTC+7) · วันที่แบบ ISO (ค.ศ.)
+> อัปเดตล่าสุด: 2026-10-03 14:30 ICT (Codex) · เวลาเป็น ICT (UTC+7) · วันที่แบบ ISO (ค.ศ.)
 > ไฟล์นี้เป็นช่องทางสื่อสารหลักระหว่าง Claude ↔ Codex ↔ ผู้ใช้ และ **ต้องมีขนาดไม่เกิน 32 KiB (UTF-8)** เพื่อให้ Codex โหลดได้ครบ
 > เอกสารอื่น: แบบระบบ `docs/design/fontokmai-design.md` · แหล่งข้อมูลและสิทธิ์ `docs/sources.md` · ประวัติเต็ม `private/handoffs/` (อยู่ใน private repo ไม่อยู่ใน repo สาธารณะ)
 
@@ -45,19 +45,15 @@
 ### A5. งานที่กำลังทำ (Active claims)
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
+| Codex | 2026-10-03 13:55 | AGENTS.md; pipeline/src/fontokmai/{contracts/outlook.py,contracts/export.py,sources/ensemble.py,outlook_build.py,hydrology.py,ref_data/hydrology.json,run.py,cli.py,housekeeping.py,examples.py}; pipeline/tests/{test_outlook.py,test_hydrology.py,test_contracts.py}; apps/web/src/{data.ts,useData.ts,App.tsx,outlook.ts,RainOutlookCard.tsx,Outlook.css,outlook.test.ts}; apps/web/tests/outlook.spec.ts; contracts/v1/{README.md,schema/outlook.schema.json,ts/outlook.ts,examples/outlook/}; scripts/gen-ts-types.sh; tests/consumer/outlook.test.ts; docs/{design/hydrology-pilot-plan.md,sources.md}; private/handoffs/{2026-10-03-codex-outlook.md,README.md} | ทำพยากรณ์14วัน | outlook |
+| Claude | 2026-10-03 14:15 | `apps/web/src/{MapView.tsx,styles.css}`, `App.tsx` **เฉพาะบล็อก `map-legend` + บรรทัด `panelKey`** (ไม่แตะส่วน Outlook ของ Codex · commit เฉพาะ hunk ของตัวเอง), `apps/web/tests/app.spec.ts`, consumer specs ที่อ้างปุ่ม legend | legend แบบเรียบ (ผู้ใช้ขอ) · เครดิตแผนที่ย่อหลัง 5 วินาที · M43 | legend |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md`)
 
-#### 2026-10-03 13:38 ICT — แผนฝน 14 วันและน้ำเจ้าพระยา–รังสิต (Codex)
-- ตรวจโค้ด+ไฟล์จริง: ฝน7วัน; GloFAS115จุดมี30วัน แต่ไม่มีตลิ่ง/หน้าตัด/กำลังระบายครบ (bank_observationsว่าง) · RID35เขื่อนเป็นรายวัน ไม่ใช่แผนระบาย · ห้ามบวก Q โมเดลกับน้ำปล่อยซ้ำ
-- แผนทดลอง: `docs/design/hydrology-pilot-plan.md`; สิทธิ์/สถานีประวัติ/ข้อจำกัดใน sources§15 · เริ่มปิง–วัง–ยม–น่าน–เจ้าพระยาและคลองรังสิต; ensemble8–14วันเป็นแนวโน้มลุ่มน้ำก่อน routing/ประตู/ตลิ่งที่สอบเทียบ
-- **โค้ด** แก้เอกสารเท่านั้น; repo safety/diff check ผ่าน · **ความแม่น** ยังไม่มี backtest/แบบใหม่ · **deploy** ไม่เปลี่ยนเว็บ/VPS · รายละเอียด `private/handoffs/2026-10-03-codex-hydrology-plan.md`; เก็บ A6 Claude13:00ฉบับเต็มใน handoff เพื่อคุม32KiB
-
-#### 2026-10-03 13:09 ICT — รีวิว UX/UI และ performance (Codex)
-- รีวิว `104a37a` + เว็บจริง: **M40** โหลดข้อมูลน้ำล้มแต่สรุปสีเขียว “ยังไม่พบจุดที่ต้องระวัง”; **M43** legend ทับลิงก์ popup ที่ 390×568; **M41** การ์ดขยับตอนโหลด CLS 0.16–0.33; **M42** แผนที่นิ่งแต่ส่ง source เดิม 9 ชุดทุก 15วินาที · วิธีทำซ้ำ/เกณฑ์ปิด/ข้อเสนอใน [รายงาน](private/handoffs/2026-10-03-codex-ux-performance-review.md)
-- **โค้ด** build/tsc/license · vitest146 ผ่าน · browser probes+axe หน้าแรกไม่มี error (ไม่ใช่ full E2E/WCAG) · CPU×4/เน็ตจำลอง map ready 13.9–15.2วินาที ไม่ใช่ผลผู้ชมจริง
-- **ความแม่น** ไม่ได้ backtest · **deploy** ตรวจเว็บจริง ไม่มี production code/VPS เปลี่ยน · ขั้นต่อไป: M40/M43 ก่อน แล้ว M41/M42; คงการ์ดเขื่อน/น้ำท่วมเปิดตามผู้ใช้
-- A6 2ต.ค.16:35 เก็บครบที่ `private/handoffs/2026-10-02-claude-code-review.md` เพื่อคุม 32KiB
+#### 2026-10-03 14:30 ICT — ฝน ensemble 14 วันระยะแรก (Codex)
+- ผู้ใช้ “ทำเลย”: สัญญา24/collector/schema/types/examples + การ์ดพับ18จุด ECMWF51/GFS31 แยกสมาชิกถ่วงโมเดลเท่ากัน มีป้ายทดลอง/เก่า/ขาด; registryตลิ่ง/กำลังระบายnull และฟังก์ชันกันนับน้ำซ้ำ/เวลาไม่ตรง ยังไม่เปิด flood routingจริง · docs/design/hydrology-pilot-plan.md + sources§15.4
+- โค้ด: Python315ผ่าน; ruff/build/format; vitest150/consumer64; browserใหม่6ผ่าน WCAG · เว็บเดิม82/84 (เทสต์แถบสีล้มจากงานApp/MapView/stylesที่อีกฝ่ายแก้ค้างไว้ ไม่ทับและไม่commitส่วนนั้น) · stageAppเฉพาะการ์ด18บรรทัด
+- ข้อมูล: APIจริงครบ18×2โมเดล/14วัน raw140KB/gzip27KB อยู่ในbudget/retentionเดิม ยังไม่มีผลวัดความแม่น · deploy: รอ CI/Pages/VPS · รายละเอียด/ประวัติ13:09และ13:38ย้ายไป private/handoffs/2026-10-03-codex-outlook.md
 
 #### 2026-10-03 13:00 ICT — ตรวจสคริปต์ดูแล VPS · ระดับน้ำคลองอ่านง่าย · คู่มือขึ้น/ลงระบบ (Claude)
 - ฉบับเต็ม: `private/handoffs/2026-10-03-claude-vps-canal.md` · แก้ cache/รอบค้าง/ตัวเฝ้าดิสก์และ deploy แล้ว; คลองแสดงขึ้น–ลง แต่ DXS ไม่มีตลิ่ง จึงไม่บอกวิกฤต · คู่มือขึ้น/ลงอยู่ในเครื่องเท่านั้น
@@ -115,7 +111,7 @@
 
 15. **ทวนงาน 1–2 ต.ค.** `04ba201`…`b392ff9`: สัญญาข้อ 20 (`kind`), 21 (`area_code`, `earlier`), 22 (`ref/boundaries.json`), 23 (`ref/river_lines.json`) · ที่ของฉันบรรทัดเดียวไม่บอก “ปลอดภัย” · ป้าย “ใหม่”/เพิ่ม-ลด นับจากที่การ์ดแสดง · หมุดร้ายแรงนอกกลุ่ม (popup/คีย์บอร์ด) · consumer specs ที่ Claude แก้ตามคำขอผู้ใช้
 
-16. **แผน 3 ต.ค.**: ฝน ensemble 7–14 วัน + โครงข่ายห้าลุ่มน้ำ/รังสิตใน `docs/design/hydrology-pilot-plan.md`; sources§15 · ข้อเสนอ ยังไม่ implement/รับรองความแม่น
+16. **ลงมือ 3 ต.ค. ตามผู้ใช้**: ฝน ensemble14วัน/18จุด ECMWF+GFS (สัญญา24), การ์ดพับ/เลือกพื้นที่ และทะเบียนไฮดรอลิก; ยังไม่มีตลิ่ง/พารามิเตอร์ครบ ไม่เปิดคาดน้ำล้น/ไม่รับรองความแม่น · กำลังขึ้นระบบ
 
 ## D. ขั้นต่อไป
 1. (เสร็จ) เว็บแผนที่เป็นหลักพร้อมประกาศ เรดาร์ กล้อง หมุด ค้นถนน และค้นหาสถานที่ (D29)

@@ -31,6 +31,7 @@ from fontokmai.forecast_build import (
 )
 from fontokmai.health import process_pressure
 from fontokmai.housekeeping import housekeeping, published_epoch, restore_db
+from fontokmai.outlook_build import refresh as refresh_outlook
 from fontokmai.publish.git_pages import publish_snapshot
 from fontokmai.road_flood_build import build_road_flood_history, fixture_files, is_fresh
 from fontokmai.run import SnapshotResult, run_cap_snapshot
@@ -216,6 +217,9 @@ def _scheduled_job(args: argparse.Namespace) -> Callable[[datetime], dict[str, A
             dams = refresh_dams(now)
             if dams:
                 summary["dams"] = dams
+            outlook = refresh_outlook(args.out, args.db, now) if args.forecast else None
+            if outlook:
+                summary["outlook"] = outlook
         pressure = process_pressure()
         if pressure:
             summary["processes"] = f"{pressure[0]}/{pressure[1]}"
@@ -247,6 +251,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "contract-examples":
         written = write_examples(args.out, real=args.real_fixtures, synthetic=args.synthetic_fixtures)
+        from fontokmai.examples import write_outlook_example
+        written += write_outlook_example(args.out)
         written += write_places_example(args.out)
         written += write_boundaries_example(args.out)
         written += write_river_lines_example(args.out)

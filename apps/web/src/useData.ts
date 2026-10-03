@@ -16,6 +16,7 @@ import {
   validSituation,
   validWeatherToday,
   validRivers,
+  validOutlook,
   validOverview,
   validBoundaries,
   validRiverLines,
@@ -34,6 +35,7 @@ import {
   type SituationReport,
   type WeatherToday,
   type RiverForecast,
+  type RainOutlook,
   type SummaryOverview,
   type RuntimeConfig,
   type Snapshot,
@@ -53,6 +55,7 @@ type RefName =
   | 'news'
   | 'dams'
   | 'weather'
+  | 'outlook'
   | 'rivers'
   | 'overview'
   | 'boundaries'
@@ -73,6 +76,7 @@ const REF_FILES: Record<RefName, { path: string; valid: (value: unknown) => bool
   dams: { path: 'water/dams.json', valid: validDams },
   weather: { path: 'weather/today.json', valid: validWeatherToday },
   // the GloFAS river trend (model values, rebuilt once a day)
+  outlook: { path: 'forecast/outlook.json', valid: validOutlook },
   rivers: { path: 'forecast/rivers.json', valid: validRivers },
   // the places to watch, rebuilt every round from the other files (not official)
   overview: { path: 'summary/overview.json', valid: validOverview },
@@ -100,6 +104,7 @@ export function useData() {
   const [news, setNews] = useState<RefSlot<SituationReport>>(IDLE);
   const [dams, setDams] = useState<RefSlot<DamReport>>(IDLE);
   const [weather, setWeather] = useState<RefSlot<WeatherToday>>(IDLE);
+  const [outlook, setOutlook] = useState<RefSlot<RainOutlook>>(IDLE);
   const [rivers, setRivers] = useState<RefSlot<RiverForecast>>(IDLE);
   const [overview, setOverview] = useState<RefSlot<SummaryOverview>>(IDLE);
   const [boundaries, setBoundaries] = useState<RefSlot<Boundaries>>(IDLE);
@@ -118,6 +123,7 @@ export function useData() {
       'news',
       'dams',
       'weather',
+      'outlook',
       'rivers',
       'overview',
     ]),
@@ -165,6 +171,9 @@ export function useData() {
       ),
       weather: new RefSync(REF_FILES.weather.path, loader('weather'), (slot) =>
         setWeather(slot as RefSlot<WeatherToday>),
+      ),
+      outlook: new RefSync(REF_FILES.outlook.path, loader('outlook'), (slot) =>
+        setOutlook(slot as RefSlot<RainOutlook>),
       ),
       rivers: new RefSync(REF_FILES.rivers.path, loader('rivers'), (slot) =>
         setRivers(slot as RefSlot<RiverForecast>),
@@ -284,6 +293,8 @@ export function useData() {
     news: news.value,
     dams: dams.value,
     weather: weather.value,
+    outlook: outlook.value,
+    outlookState: outlook.state,
     rivers: rivers.value,
     overview: overview.value,
     boundaries: boundaries.value,

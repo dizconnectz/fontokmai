@@ -1,3 +1,5 @@
+import outlookSchema from '../../../contracts/v1/schema/outlook.schema.json';
+import type { RainOutlook } from '../../../contracts/v1/ts/outlook';
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
 import manifestSchema from '../../../contracts/v1/schema/manifest.schema.json';
@@ -38,6 +40,7 @@ import type { Boundaries } from '../../../contracts/v1/ts/boundaries';
 import type { RiverLines } from '../../../contracts/v1/ts/river_lines';
 
 export type {
+  RainOutlook,
   Alert,
   AlertsFeed,
   Boundaries,
@@ -100,6 +103,7 @@ export const validRoadFlood = ajv.compile<RoadFloodHistory>(
 );
 export const validPlaces = ajv.compile<PlaceGazetteer>(allowAdditions(placesSchema) as object);
 export const validForecast = ajv.compile<RainForecast>(allowAdditions(forecastSchema) as object);
+export const validOutlook = ajv.compile<RainOutlook>(allowAdditions(outlookSchema) as object);
 export const validRivers = ajv.compile<RiverForecast>(allowAdditions(riversSchema) as object);
 export const validOverview = ajv.compile<SummaryOverview>(allowAdditions(overviewSchema) as object);
 export const validLiveFloods = ajv.compile<LiveFloods>(allowAdditions(liveFloodsSchema) as object);
