@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Crosshair, Expand, LocateFixed, MapPin, Map as MapIcon, Star } from 'lucide-react';
+import areaThaiFont from '@fontsource/noto-sans-thai/files/noto-sans-thai-thai-600-normal.woff2?url';
+import areaLatinFont from '@fontsource/noto-sans-thai/files/noto-sans-thai-latin-600-normal.woff2?url';
 import type {
   GeoJSONSource,
   ImageSource,
@@ -169,8 +171,19 @@ const BASEMAP = {
   light: 'https://tiles.openfreemap.org/styles/positron',
   dark: 'https://tiles.openfreemap.org/styles/dark',
 };
+/** Use our bundled Thai font even when the external basemap or its glyph service is unavailable. */
+function withAreaFonts(style: StyleSpecification): StyleSpecification {
+  style['font-faces'] = {
+    ...style['font-faces'],
+    'Fontokmai Area': [
+      { url: areaThaiFont, 'unicode-range': ['U+0E01-0E5B', 'U+200C-200D', 'U+25CC'] },
+      { url: areaLatinFont, 'unicode-range': ['U+0000-00FF', 'U+2000-206F'] },
+    ],
+  };
+  return style;
+}
 function blankStyle(theme: 'light' | 'dark'): StyleSpecification {
-  return {
+  return withAreaFonts({
     version: 8,
     sources: {},
     layers: [
@@ -180,7 +193,7 @@ function blankStyle(theme: 'light' | 'dark'): StyleSpecification {
         paint: { 'background-color': theme === 'dark' ? '#18222b' : '#e7ede8' },
       },
     ],
-  };
+  });
 }
 /** OpenFreeMap style with Thai place names first, or null when it cannot be loaded. */
 async function loadBasemap(
@@ -206,7 +219,7 @@ async function loadBasemap(
           ['get', 'name:en'],
         ];
     }
-    return style;
+    return withAreaFonts(style);
   } catch {
     return null;
   }
@@ -353,6 +366,30 @@ function addOverlays(instance: LibreMap) {
         ['literal', [1, 0]],
         ['literal', [2.5, 1.5]],
       ],
+    },
+  });
+  // Polygon placement anchors each name inside its outline; the full place name includes the province.
+  // Collision detection hides crowded names until zooming in instead of painting unreadable text.
+  instance.addLayer({
+    id: 'watch-label',
+    type: 'symbol',
+    source: 'watch',
+    layout: {
+      'text-field': ['get', 'place'],
+      'text-font': ['Fontokmai Area'],
+      'text-size': ['interpolate', ['linear'], ['zoom'], 4, 11, 7, 13, 11, 15],
+      'text-max-width': 12,
+      'text-line-height': 1.25,
+      'text-padding': 3,
+      'text-allow-overlap': false,
+      'text-ignore-placement': false,
+      'symbol-sort-key': ['case', ['==', ['get', 'when'], 'now'], 0, 1],
+    },
+    paint: {
+      'text-color': ['case', ['==', ['get', 'when'], 'now'], '#971d1d', '#914400'],
+      'text-halo-color': '#ffffff',
+      'text-halo-width': 2,
+      'text-halo-blur': 0.3,
     },
   });
   // cameras at the bottom, flood reports on top; points close together merge into a numbered bubble until
@@ -999,8 +1036,29 @@ export default function MapView(props: Props) {
           if (event.error.message.includes('Worker failed')) setUnavailable(true);
         });
         instance.on('idle', () => {
-          if (!disposed) setRendering(false);
+          if (disposed) return;
+          setRendering(false);
+          // The canvas description follows labels actually drawn in this view, including collisions.
+          const names = instance.getLayer('watch-label')
+            ? [
+                ...new Set(
+                  instance
+                    .queryRenderedFeatures({ layers: ['watch-label'] })
+                    .map((feature) => feature.properties.place),
+                ),
+              ]
+            : [];
+          if (names.length)
+            instance
+              .getCanvas()
+              .setAttribute(
+                'aria-description',
+                `พื้นที่ในกรอบที่เห็น (การประเมินของเว็บแบบทดลอง): ${names.join(' · ')}`,
+              );
+          else instance.getCanvas().removeAttribute('aria-description');
         });
+        // Do not describe labels from the previous view while new tiles and placements are still loading.
+        instance.on('movestart', () => instance.getCanvas().removeAttribute('aria-description'));
         instance.on('zoomend', () => {
           if (!disposed) setZoom(Math.round(instance.getZoom() * 10) / 10);
         });
@@ -1307,6 +1365,20 @@ export default function MapView(props: Props) {
         'line-color',
         props.theme === 'dark' ? '#10181f' : '#ffffff',
       );
+    if (instance.getLayer('watch-label')) {
+      instance.setPaintProperty(
+        'watch-label',
+        'text-halo-color',
+        props.theme === 'dark' ? '#10181f' : '#ffffff',
+      );
+      instance.setPaintProperty(
+        'watch-label',
+        'text-color',
+        props.theme === 'dark'
+          ? ['case', ['==', ['get', 'when'], 'now'], '#ffb9b9', '#ffd09e']
+          : ['case', ['==', ['get', 'when'], 'now'], '#971d1d', '#914400'],
+      );
+    }
   }, [props.watch, props.theme, ready, styleVersion]);
 
   // Radar frame as an image overlay under the outlines and the pins
@@ -1369,6 +1441,7 @@ export default function MapView(props: Props) {
               'river-line-casing',
               'watch-casing',
               'watch-line',
+              'watch-label',
               'radar',
               ...POINT_LAYERS,
             ].includes(layer.id),

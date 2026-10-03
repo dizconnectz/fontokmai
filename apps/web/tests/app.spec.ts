@@ -1398,7 +1398,7 @@ test('the summary of places to watch comes first, then flood reports, then the o
 
 test('the summary’s places are outlined on the map, apart from the alert zones', async ({
   page,
-}) => {
+}, testInfo) => {
   await prepare(page);
   const overview = read('overview', 'overview');
   overview.generated_at = read('active', 'manifest').generated_at;
@@ -1408,6 +1408,12 @@ test('the summary’s places are outlined on the map, apart from the alert zones
   await expect(surface).toHaveAttribute('aria-busy', 'false', { timeout: 15_000 });
   // the two districts to watch now, and the provinces to prepare for that the outlines file has
   await expect(surface).toHaveAttribute('data-watch', '1030 1017 11 12 13');
+  const canvas = page.locator('.maplibregl-canvas');
+  // This description comes from MapLibre's rendered symbols, not the input data: Thai labels really draw
+  // at country zoom even with the external basemap and its glyph service replaced by an empty style.
+  await expect(canvas).toHaveAttribute('aria-description', /พื้นที่ในกรอบที่เห็น.*(?:เขต|จ\.)/, {
+    timeout: 15_000,
+  });
   const key = page.locator('.legend-watch');
   // the key is one line; what the outlines mean opens from its (i) (user 2026-10-03: more minimal)
   await expect(key).toBeHidden();
@@ -1422,6 +1428,7 @@ test('the summary’s places are outlined on the map, apart from the alert zones
   await expect(toggle).toHaveAttribute('aria-pressed', 'true');
   await toggle.click();
   await expect(surface).toHaveAttribute('data-watch', '');
+  await expect(canvas).not.toHaveAttribute('aria-description', /พื้นที่ในกรอบที่เห็น/);
   await expect(key).toHaveCount(0);
   // a province card fits the map to its outlined districts
   await toggle.click();
@@ -1431,6 +1438,16 @@ test('the summary’s places are outlined on the map, apart from the alert zones
     .getByRole('button', { name: /กรุงเทพมหานคร · 2 เขต/ })
     .click();
   await expect(surface).not.toHaveAttribute('data-zoom', '5');
+  // Both neighbouring districts become identifiable as we move closer; each name includes its province.
+  await expect(canvas).toHaveAttribute('aria-description', /เขตจตุจักร กรุงเทพมหานคร/);
+  await expect(canvas).toHaveAttribute('aria-description', /เขตห้วยขวาง กรุงเทพมหานคร/);
+  await page.screenshot({ path: testInfo.outputPath('watch-labels-light.png') });
+  await page.getByRole('button', { name: 'เปลี่ยนเป็นโหมดมืด' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(surface).toHaveAttribute('aria-busy', 'false');
+  await expect(canvas).toHaveAttribute('aria-description', /เขตจตุจักร กรุงเทพมหานคร/);
+  await expect(canvas).toHaveAttribute('aria-description', /เขตห้วยขวาง กรุงเทพมหานคร/);
+  await page.screenshot({ path: testInfo.outputPath('watch-labels-dark.png') });
 });
 
 test('the summary says what changed in the last hour, and the saved place has a line of its own', async ({
