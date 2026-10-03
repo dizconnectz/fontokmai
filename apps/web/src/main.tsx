@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+// Required Notice: Copyright (c) 2026 fontokmai by Takuma (https://dizconnectz.github.io/fontokmai/)
+// Automated and AI-assisted reuse remains subject to LICENSE and NOTICE; see AI_USAGE.md.
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import '@fontsource/noto-sans-thai/thai-400.css';

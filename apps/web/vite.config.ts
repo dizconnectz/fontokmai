@@ -5,6 +5,13 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const examples = fileURLToPath(new URL('../../contracts/v1/examples/', import.meta.url));
+// Keep the application's licence visible in distributed chunks, including AI-assisted copies.
+// This notice does not change the licences of bundled third-party modules.
+const usageNotice = `/*! fontokmai application code: PolyForm-Noncommercial-1.0.0.
+ * Required Notice: Copyright (c) 2026 fontokmai by Takuma (https://dizconnectz.github.io/fontokmai/)
+ * Automated/AI-assisted reuse: see LICENSE, NOTICE and AI_USAGE.md at https://github.com/dizconnectz/fontokmai.
+ * Bundled third-party modules retain their own licences; see THIRD-PARTY-NOTICES.txt.
+ */`;
 // Serve and bundle the producer's fixtures without maintaining a second copy.
 function contractExamples(): Plugin {
   const assets = new Map<string, Buffer>();
@@ -15,7 +22,7 @@ function contractExamples(): Plugin {
       assets.set(`examples/${scenario}/${file}`, readFileSync(`${examples}/${scenario}/${file}`));
     }
   }
-  for (const file of ['LICENSE', 'NOTICE']) {
+  for (const file of ['LICENSE', 'NOTICE', 'AI_USAGE.md']) {
     assets.set(file, readFileSync(fileURLToPath(new URL(`../../${file}`, import.meta.url))));
   }
   assets.set(
@@ -64,5 +71,6 @@ export default defineConfig({
   // GitHub Pages serves the site under /fontokmai/; local dev, preview and tests stay at /
   base: process.env.WEB_BASE ?? '/',
   plugins: [react(), contractExamples()],
+  build: { rolldownOptions: { output: { postBanner: usageNotice } } },
   test: { include: ['src/**/*.test.ts'] },
 });
