@@ -45,6 +45,7 @@
 ### A5. งานที่กำลังทำ (Active claims)
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
+| Claude | 2026-10-03 22:20 | `apps/web/src/{data,useData,refSync,App,Panel,StatusBar,MapView}*`, `apps/web/tests/app.spec.ts`, `pipeline/src/fontokmai/overview_build.py`, `scripts/check_live_data.py` (+tests) | แก้รีวิว Codex M45 M40 M44 M46 M47 M42 M41 | review-fixes |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md`)
 
