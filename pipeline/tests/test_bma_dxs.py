@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from fontokmai.contracts.bkk import DamReport
+from fontokmai.contracts.bkk import CanalLevels, CanalStation, DamReport
 from fontokmai.run import run_cap_snapshot
 from fontokmai.sources.bma_dxs import (
     ENDPOINT,
@@ -28,9 +28,11 @@ from fontokmai.sources.bma_dxs import (
     load_account,
     outline,
     published_dams,
+    published_water,
     release_up,
     text,
     with_previous,
+    with_previous_levels,
 )
 from fontokmai.sources.open_data.http import OpenDataError
 from fontokmai.sources.tmd_cap.fetch import fixture_fetcher
@@ -272,3 +274,57 @@ def test_the_published_dams_file_is_read_or_left_out():
     assert published_dams(site) == published
     assert published_dams(offline) is None and published_dams(junk) is None
 
+
+
+T = datetime.fromisoformat("2026-10-02T12:45:00+07:00")
+
+
+def _levels(*stations):
+    """A canal file of (code, observed_at, level, previous) stations."""
+    return CanalLevels(
+        fetched_at=T + timedelta(hours=6), source_url="https://weather.bangkok.go.th/water/summary", credit_th="x",
+        notes_th=[], stations=[CanalStation(
+            code=code, name_th=f"ค.{code}", canal_th=None, district_th=None, location=None, observed_at=at,
+            level_in_m=level, level_out_m=None, pumps=None,
+            previous_level_in_m=previous[0] if previous else None,
+            previous_observed_at=previous[1] if previous else None) for code, at, level, previous in stations])
+
+
+def test_each_canal_level_carries_the_reading_before_it_on_the_site():
+    """User 2026-10-02: a level above the sea says neither high nor low; rising or falling it can say."""
+    published = _levels(("A", T, 0.87, None), ("B", T, 0.40, None), ("C", T - timedelta(hours=30), 0.10, None),
+                        ("D", T, 0.50, (0.45, T - timedelta(hours=2))))
+    new = _levels(("A", T + timedelta(hours=3), 0.99, None),  # a new reading: compared with the one before
+                  ("B", T, 0.40, None),  # the same reading sent again, without a comparison of its own
+                  ("C", T + timedelta(hours=3), 0.20, None),  # the one before is 33 hours older: not compared
+                  ("D", T, 0.50, None),  # the same reading sent again: keeps the first comparison
+                  ("E", T + timedelta(hours=3), 1.00, None))  # a station the site did not have
+    stations = {s.code: s for s in with_previous_levels(new, published).stations}
+    assert (stations["A"].previous_level_in_m, stations["A"].previous_observed_at) == (0.87, T)
+    assert stations["B"].previous_level_in_m is None and stations["C"].previous_level_in_m is None
+    assert (stations["D"].previous_level_in_m, stations["D"].previous_observed_at) == (0.45, T - timedelta(hours=2))
+    assert stations["E"].previous_level_in_m is None
+    assert with_previous_levels(new, None) == new
+
+
+def test_a_reading_older_than_the_published_one_is_not_compared_backwards():
+    published = _levels(("A", T + timedelta(hours=3), 0.99, None))
+    (station,) = with_previous_levels(_levels(("A", T, 0.87, None)), published).stations
+    assert station.previous_level_in_m is None
+
+
+def test_the_published_canal_levels_are_read_or_left_out():
+    published = _levels(("A", T, 0.87, None))
+
+    @contextmanager
+    def site(url):
+        assert url.startswith("https://dizconnectz.github.io/fontokmai-data/data/v1/bkk/water.json?t=")
+        yield io.BytesIO(published.model_dump_json().encode())
+
+    @contextmanager
+    def offline(url):
+        raise OpenDataError("offline")
+        yield  # pragma: no cover
+
+    assert published_water(site) == published
+    assert published_water(offline) is None

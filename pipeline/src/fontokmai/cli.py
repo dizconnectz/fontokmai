@@ -308,13 +308,15 @@ def main(argv: list[str] | None = None) -> int:
         from fontokmai.publish.snapshot import atomic_write
         from fontokmai.sources import bma_dxs
         fetched = bma_dxs.collect_bkk(bma_dxs.load_account(args.account), args.out, datetime.now(UTC))
+        # each canal level with the one before it on the site: the web says rising or falling (user 2026-10-02)
+        water = bma_dxs.with_previous_levels(fetched.water, bma_dxs.published_water()) if fetched.water else None
         written = {}
         extras, problems = bma_dxs.collect_extras(bma_dxs.load_account(args.account), datetime.now(UTC))
         if bma_dxs.DAMS_PATH in extras:  # GetDam answers only today: the day before comes from what the site has
             published = bma_dxs.published_dams()
             extras[bma_dxs.DAMS_PATH] = bma_dxs.with_last_known(
                 bma_dxs.with_previous(extras[bma_dxs.DAMS_PATH], published), published)
-        for rel, model in ((bma_dxs.WATER_PATH, fetched.water), (bma_dxs.RAIN_PATH, fetched.rain),
+        for rel, model in ((bma_dxs.WATER_PATH, water), (bma_dxs.RAIN_PATH, fetched.rain),
                            (bma_dxs.FLOODING_PATH, fetched.flooding), *extras.items()):
             if model is not None:
                 atomic_write(args.out / rel, model.model_dump_json().encode("utf-8"))

@@ -17,7 +17,9 @@
       "level_in_m": 1.78,
       "level_out_m": 0.95,
       "pumps": 4,
-      "pumps_running": 2
+      "pumps_running": 2,
+      "previous_level_in_m": null,
+      "previous_observed_at": null
     },
     {
       "code": "S002",
@@ -32,7 +34,9 @@
       "level_in_m": -0.12,
       "level_out_m": null,
       "pumps": null,
-      "pumps_running": null
+      "pumps_running": null,
+      "previous_level_in_m": null,
+      "previous_observed_at": null
     },
     {
       "code": "S003",
@@ -44,7 +48,9 @@
       "level_in_m": null,
       "level_out_m": 0.4,
       "pumps": null,
-      "pumps_running": null
+      "pumps_running": null,
+      "previous_level_in_m": null,
+      "previous_observed_at": null
     },
     {
       "code": "S004",
@@ -56,7 +62,9 @@
       "level_in_m": null,
       "level_out_m": null,
       "pumps": null,
-      "pumps_running": null
+      "pumps_running": null,
+      "previous_level_in_m": null,
+      "previous_observed_at": null
     }
   ],
   "notes_th": [

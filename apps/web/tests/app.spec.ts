@@ -832,6 +832,89 @@ test('a pumping station says how many of its pumps run, and a station without th
   await expect(page.locator('.maplibregl-popup')).not.toContainText('เครื่องสูบน้ำ');
 });
 
+test('a canal level says whether it rose or fell, what the number is, and that critical cannot be told', async ({
+  page,
+}) => {
+  // user 2026-10-02: "+0.99 above the sea" alone was hard to read: high or not, dangerous or not
+  await prepare(page);
+  const manifest = read('active', 'manifest');
+  manifest.files.push(
+    { path: 'bkk/water.json', sha256: 'b'.repeat(64), size: 1, revision: 1 },
+    { path: 'live/floods.json', sha256: 'a'.repeat(64), size: 1, revision: 1 },
+  );
+  await page.route('**/examples/active/manifest.json?*', (route) =>
+    route.fulfill({ json: manifest }),
+  );
+  const now = Date.parse(manifest.generated_at);
+  const iso = (ms: number) => new Date(ms).toISOString();
+  const water = read('bkk', 'water');
+  const station = water.stations.find((s: { code: string }) => s.code === 'S001');
+  water.fetched_at = manifest.generated_at;
+  water.stations = [
+    {
+      ...station,
+      location: [101, 13.2],
+      observed_at: iso(now - 10 * 60_000),
+      level_in_m: 0.99,
+      previous_level_in_m: 0.87,
+      previous_observed_at: iso(now - 190 * 60_000),
+    },
+  ];
+  await page.route('**/bkk/water.json?*', (route) => route.fulfill({ json: water }));
+  // a flood report of people 900 m east of the station
+  await page.route('**/live/floods.json?*', (route) =>
+    route.fulfill({
+      json: {
+        schema_version: '1',
+        fetched_at: iso(now - 5 * 60_000),
+        source_url: 'https://traffic.longdo.com/',
+        credit_th: 'iTIC และ Longdo Traffic (CC BY 4.0)',
+        notes_th: [],
+        reports: [
+          {
+            id: 'longdo:9',
+            title_th: 'น้ำท่วม ซอยริมคลอง',
+            road_th: 'ซอยริมคลอง',
+            location: [101.0083, 13.2],
+            start: iso(now - 10 * 60_000),
+            stop: iso(now + 50 * 60_000),
+            reporter: 'public',
+            url: 'https://traffic.longdo.com/e/A00000009',
+          },
+        ],
+      },
+    }),
+  );
+  await page.goto('/');
+  // close enough that the flood pin 900 m away does not cover the station's
+  const surface = page.getByTestId('map-surface');
+  await zoomForPins(page);
+  for (let step = 0; step < 6 && Number(await surface.getAttribute('data-zoom')) < 13; step++) {
+    const zoom = Number(await surface.getAttribute('data-zoom'));
+    await page.getByRole('button', { name: 'ขยายแผนที่' }).click();
+    await expect
+      .poll(async () => Number(await surface.getAttribute('data-zoom')))
+      .toBeGreaterThan(zoom);
+  }
+  const popup = await tapCentrePin(page);
+  await expect(popup).toContainText(
+    'น้ำในคลอง +0.99 ม.รทก. · ↑ สูงขึ้น 12 ซม. จากค่าวัด 3 ชม.ก่อนหน้า',
+  );
+  await expect(popup.locator('.level-up')).toHaveText('↑ สูงขึ้น 12 ซม. จากค่าวัด 3 ชม.ก่อนหน้า');
+  await expect(popup).toContainText('มีรายงานน้ำท่วมใกล้จุดนี้ 1 จุด (ในรัศมี 1 กม.)');
+  await expect(popup).toContainText('ตัวเลขคือความสูงผิวน้ำเทียบระดับน้ำทะเล ไม่ใช่ความลึก');
+  await expect(popup).toContainText('ระบบบอกไม่ได้ว่าวิกฤตหรือยัง');
+  await expect(popup).toContainText(
+    'ฝั่งที่ระบายออก +0.95 ม.รทก. · เครื่องสูบน้ำเดินอยู่ 2 จาก 4 เครื่อง',
+  );
+  // one link only, to the department's page that shows the bank and critical levels
+  await expect(popup.locator('a')).toHaveCount(1);
+  await expect(popup.locator('a')).toHaveAttribute(
+    'href',
+    /weather\.bangkok\.go\.th\/water\/summary/,
+  );
+});
+
 test('a dam the report leaves blank shows its last known figures with their day and time', async ({
   page,
 }) => {

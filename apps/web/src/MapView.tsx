@@ -28,7 +28,10 @@ import {
   DAY_RAIN_CLASSES,
   DAM_CLASSES,
   lastQuarterText,
-  levelWords,
+  levelChange,
+  levelChangeWords,
+  levelSigned,
+  LEVEL_NO_BANK_TH,
   measuredText,
   mmText,
   damsOldNote,
@@ -63,6 +66,7 @@ import {
   type RiverPoint,
 } from './rivers';
 import { MAP_IMAGE_RATIO, mapImage } from './mapIcons';
+import { distanceM } from './roads';
 import { WATCH_COLOR, type WatchShapes } from './overview';
 import type { RiverStretches } from './rivers';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -466,6 +470,30 @@ const PIN_POPUP_OFFSET: Record<PositionAnchor, [number, number]> = {
   left: [14, -18],
   right: [-14, -18],
 };
+// room a popup keeps on the map: above the pin it points to (head and tip), at the top, and over the key at the
+// bottom (one line on a phone)
+const POPUP_PIN = 44;
+const POPUP_TOP = 8;
+const POPUP_BOTTOM = 56;
+/** The tallest a popup's card may be on this map; a longer one scrolls (CSS `--popup-max`). */
+function sizePopups(instance: LibreMap) {
+  const room = instance.getContainer().clientHeight - POPUP_PIN - POPUP_TOP - POPUP_BOTTOM - 16;
+  instance.getContainer().style.setProperty('--popup-max', `${Math.max(160, room)}px`);
+}
+/**
+ * Pan just enough that an open popup is whole on the map, above its pin (2026-10-03: a long card was cut off at the
+ * bottom of a phone's map). MapLibre puts a popup above its pin whenever there is room above, so the pin goes low
+ * enough for the card to fit over it, and stays above the key. Not while the map flies: the flight placed it.
+ */
+function fitPopup(instance: LibreMap, popup: Popup, at: LngLat) {
+  if (instance.isMoving()) return;
+  const card = popup.getElement()?.getBoundingClientRect().height ?? 0;
+  const height = instance.getContainer().clientHeight;
+  if (!card || !height) return;
+  const y = instance.project(at).y;
+  const target = Math.min(Math.max(y, card + POPUP_PIN + POPUP_TOP), height - POPUP_BOTTOM);
+  if (Math.abs(target - y) >= 1) instance.panBy([0, y - target], { duration: 250 });
+}
 /** Layers that answer a tap with a popup (pins) or a zoom (bubbles), topmost last. */
 const POINT_LAYERS = [
   'camera-cluster',
@@ -645,30 +673,66 @@ function weatherPopup(station: WeatherStation, file: WeatherToday, now: number):
   return root;
 }
 
-function waterPopup(station: CanalStation, file: CanalLevels, now: number): HTMLElement {
+const FLOOD_NEAR_STATION_M = 1_000;
+
+function waterPopup(
+  station: CanalStation,
+  file: CanalLevels,
+  now: number,
+  floods: FloodReport[],
+): HTMLElement {
   const root = document.createElement('div');
   root.className = 'camera-popup';
+  // the level, and whether it rose or fell since the reading before (user 2026-10-02: a level above the sea alone
+  // says neither high nor low); "critical" is never guessed, the department gives no bank level
+  const level = line(
+    station.level_in_m === null
+      ? 'น้ำในคลอง: ไม่มีค่าล่าสุด'
+      : `น้ำในคลอง ${levelSigned(station.level_in_m)}`,
+    'b',
+  );
+  const change = levelChange(station);
+  if (change) {
+    const words = document.createElement('span');
+    words.className = change.cm > 1 ? 'level-up' : change.cm < -1 ? 'level-down' : 'level-steady';
+    words.textContent = levelChangeWords(change);
+    level.append(' · ', words);
+  }
   root.append(
     line(station.name_th, 'strong'),
     line([station.canal_th, district(station.district_th)].filter(Boolean).join(' · ')),
-    line(`น้ำในคลอง: ${levelWords(station.level_in_m)}`, 'b'),
+    level,
   );
-  if (station.level_out_m !== null)
-    root.append(line(`ด้านนอก (ฝั่งที่ระบายน้ำออก): ${levelWords(station.level_out_m)}`));
-  // how many pumps run, as the station reports it: a count, never turned into a drainage capacity; a
-  // station that lists more running pumps than it has is not given a "5 of 4"
+  // the outer side and the pumps on one line, so that the card stays shorter than the map on a phone. How many
+  // pumps run, as the station reports it: a count, never turned into a drainage capacity; a station that lists
+  // more running pumps than it has is not given a "5 of 4"
   const running = station.pumps_running;
-  if (running != null && (running > 0 || station.pumps))
-    root.append(
-      line(
-        running === 0
-          ? `เครื่องสูบน้ำหยุดทั้ง ${station.pumps} เครื่อง`
-          : station.pumps && running <= station.pumps
-            ? `เครื่องสูบน้ำเดินอยู่ ${running} จาก ${station.pumps} เครื่อง`
-            : `เครื่องสูบน้ำเดินอยู่ ${running} เครื่อง`,
-      ),
-    );
+  const station_line = [
+    station.level_out_m !== null && `ฝั่งที่ระบายออก ${levelSigned(station.level_out_m)}`,
+    running != null &&
+      (running > 0 || station.pumps) &&
+      (running === 0
+        ? `เครื่องสูบน้ำหยุดทั้ง ${station.pumps} เครื่อง`
+        : station.pumps && running <= station.pumps
+          ? `เครื่องสูบน้ำเดินอยู่ ${running} จาก ${station.pumps} เครื่อง`
+          : `เครื่องสูบน้ำเดินอยู่ ${running} เครื่อง`),
+  ].filter(Boolean);
+  if (station_line.length) root.append(line(station_line.join(' · ')));
+  // flood reports of people near the station: what the level cannot say, they sometimes do (only when there are)
+  const near = station.location
+    ? floods.filter(
+        (report) =>
+          isOngoing(report, now) &&
+          distanceM(station.location!, report.location) <= FLOOD_NEAR_STATION_M,
+      ).length
+    : 0;
+  if (near) {
+    const words = line(`มีรายงานน้ำท่วมใกล้จุดนี้ ${near} จุด (ในรัศมี 1 กม.)`);
+    words.className = 'release-alarm';
+    root.append(words);
+  }
   root.append(
+    line(LEVEL_NO_BANK_TH, 'small'),
     line(measuredText(station.observed_at, now)),
     ...note(file.fetched_at, now),
     sourceLink(file.source_url, file.credit_th),
@@ -898,6 +962,8 @@ export default function MapView(props: Props) {
         });
         instance.on('load', () => {
           addOverlays(instance);
+          sizePopups(instance);
+          instance.on('resize', () => sizePopups(instance));
           const open = (
             kind: PointKind,
             at: LngLat,
@@ -925,6 +991,7 @@ export default function MapView(props: Props) {
             popupRebuild.current = rebuild;
             popupShown.current = content;
             next.addTo(instance);
+            fitPopup(instance, next, at);
           };
           showFlood.current = (report) => {
             const at = report.location as LngLat;
@@ -1041,11 +1108,13 @@ export default function MapView(props: Props) {
                 return open(
                   'water',
                   station.location as LngLat,
-                  waterPopup(station, file, Date.now()),
+                  waterPopup(station, file, Date.now(), latest.current.floods),
                   (now) => {
                     const water = latest.current.water;
                     const current = water?.stations.find((s) => s.code === station.code);
-                    return water && current ? waterPopup(current, water, now) : null;
+                    return water && current
+                      ? waterPopup(current, water, now, latest.current.floods)
+                      : null;
                   },
                 );
             }

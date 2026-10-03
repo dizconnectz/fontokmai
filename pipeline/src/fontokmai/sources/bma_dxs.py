@@ -515,7 +515,8 @@ def parse_dams(result: ET.Element, now: datetime) -> DamReport:
 
 # ---------- the release of the report before (GetDam has no date: it answers only the latest day) ----------
 
-PUBLISHED_DAMS_URL = "https://dizconnectz.github.io/fontokmai-data/data/v1/water/dams.json"
+PUBLISHED_BASE = "https://dizconnectz.github.io/fontokmai-data/data/v1/"
+PUBLISHED_DAMS_URL = PUBLISHED_BASE + "water/dams.json"
 PREVIOUS_MAX_DAYS = 3  # an older report is not "the one before" (the Bangkok update is run by hand, D31)
 # release up a lot, a trial rule of this site (not the department's), on /method and in contract section 18
 RELEASE_UP_MIN_MCM = 1.0
@@ -578,15 +579,50 @@ def with_previous(report: DamReport, published: DamReport | None) -> DamReport:
         dam.model_copy(update={"previous_outflow_mcm": before.get(dam.id)}) for dam in report.dams]})
 
 
-def published_dams(opener: Any = None, now: datetime | None = None) -> DamReport | None:
-    """The dams file this site publishes now (our own public data), or None when it cannot be read."""
+def _published(model: Any, url: str, opener: Any = None, now: datetime | None = None) -> Any:
+    """A file this site publishes now (our own public data), or None when it cannot be read."""
     from fontokmai.sources.open_data.http import OpenDataError, open_url, read_bytes
 
     stamp = int((now or datetime.now(UTC)).timestamp())
     try:
-        return DamReport.model_validate_json(read_bytes(opener or open_url, f"{PUBLISHED_DAMS_URL}?t={stamp}"))
+        return model.model_validate_json(read_bytes(opener or open_url, f"{url}?t={stamp}"))
     except (OpenDataError, ValueError):
         return None
+
+
+def published_dams(opener: Any = None, now: datetime | None = None) -> DamReport | None:
+    """The dams file this site publishes now, or None when it cannot be read."""
+    return _published(DamReport, PUBLISHED_DAMS_URL, opener, now)
+
+
+def published_water(opener: Any = None, now: datetime | None = None) -> CanalLevels | None:
+    """The canal levels this site publishes now, or None when they cannot be read."""
+    return _published(CanalLevels, PUBLISHED_BASE + WATER_PATH, opener, now)
+
+
+LEVEL_PREVIOUS_MAX = timedelta(hours=24)  # an older reading says little about rising or falling now
+
+
+def with_previous_levels(water: CanalLevels, published: CanalLevels | None) -> CanalLevels:
+    """Each station with the inner level of the reading before this one, from the file the site publishes now
+    (at most LEVEL_PREVIOUS_MAX earlier), so that the web can say rising or falling (user 2026-10-02: a level
+    above the sea alone says neither high nor low). A reading sent again keeps the comparison the first one made."""
+    if published is None:
+        return water
+    before = {station.code: station for station in published.stations}
+    stations = []
+    for station in water.stations:
+        old = before.get(station.code)
+        level = at = None
+        if old is not None and station.observed_at is not None and old.observed_at is not None:
+            if old.observed_at == station.observed_at:
+                level, at = old.previous_level_in_m, old.previous_observed_at
+            elif timedelta(0) < station.observed_at - old.observed_at <= LEVEL_PREVIOUS_MAX:
+                level, at = old.level_in_m, old.observed_at
+        if level is not None and at is not None:
+            station = station.model_copy(update={"previous_level_in_m": level, "previous_observed_at": at})
+        stations.append(station)
+    return water.model_copy(update={"stations": stations})
 
 
 def parse_weather(result: ET.Element, now: datetime) -> WeatherToday:

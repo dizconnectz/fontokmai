@@ -78,6 +78,11 @@ class CanalStation(ContractModel):
     pumps_running: int | None = Field(default=None, description=(
         "Pumps running at the reading (pumpdata true); null when the station gives no pump status. A count of "
         "pumps, not a drainage capacity"))
+    previous_level_in_m: float | None = Field(default=None, description=(
+        "Inner level of the reading before this one, as the site published it (at most 24 hours earlier), to tell "
+        "rising from falling; null when there is none. Compared by this site, not by the department (2026-10-03)"))
+    previous_observed_at: AwareDatetime | None = Field(default=None, description=(
+        "Time of that earlier reading (Thai time); null with previous_level_in_m"))
 
 
 class CanalLevels(ContractModel):

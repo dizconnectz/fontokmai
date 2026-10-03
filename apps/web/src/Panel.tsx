@@ -97,6 +97,8 @@ import {
   shownDam,
   releaseChange,
   releaseWords,
+  levelChange,
+  levelChangeWords,
   levelWords,
   measuredText,
   oldNote,
@@ -1690,6 +1692,11 @@ export function PinCard({
                 <li key={station.code} className="road-line">
                   <strong>
                     {station.name_th} · น้ำในคลอง{levelWords(station.level_in_m)}
+                    {(() => {
+                      // rising or falling since the reading before (user 2026-10-02)
+                      const change = levelChange(station);
+                      return change ? ` · ${levelChangeWords(change)}` : '';
+                    })()}
                   </strong>
                   <span>
                     {station.canal_th ? `${station.canal_th} · ` : ''}ห่าง {distanceText(distance)}{' '}
@@ -1708,6 +1715,8 @@ export function PinCard({
           <small className="source-note">
             ที่มา: {shortCredit((water ?? rain)!.credit_th)} · ระดับน้ำเทียบระดับน้ำทะเล
             ไม่ใช่ความลึกน้ำท่วมบนถนน
+            {nearWater.length > 0 &&
+              ' · ยังบอกไม่ได้ว่าวิกฤตหรือใกล้ล้นตลิ่ง เพราะต้นทางไม่ได้ส่งระดับตลิ่งมา'}
           </small>
         </section>
       )}

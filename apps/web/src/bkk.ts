@@ -96,6 +96,55 @@ export function levelWords(metres: number | null): string {
   return `${metres > 0 ? 'สูงกว่า' : 'ต่ำกว่า'}ระดับน้ำทะเล ${size}`;
 }
 
+/** "+0.99 ม.รทก." with its sign (a minus below the sea), or "ไม่มีค่า" */
+export function levelSigned(metres: number | null): string {
+  if (metres === null) return 'ไม่มีค่า';
+  const cm = Math.round(metres * 100);
+  return `${cm > 0 ? '+' : cm < 0 ? '−' : ''}${(Math.abs(cm) / 100).toFixed(2)} ม.รทก.`;
+}
+
+/** The inner level against the reading before it, as this site compares them (contract section 14). */
+export interface LevelChange {
+  /** centimetres, more than 0 when the water rose */
+  cm: number;
+  /** minutes between the two readings */
+  minutes: number;
+  /** time of the earlier reading */
+  since: string;
+}
+const LEVEL_CHANGE_MAX_MS = 24 * 3_600_000;
+/** null without an earlier reading within a day (user 2026-10-02: a level alone says neither high nor low). */
+export function levelChange(
+  station: Pick<
+    CanalStation,
+    'level_in_m' | 'observed_at' | 'previous_level_in_m' | 'previous_observed_at'
+  >,
+): LevelChange | null {
+  const { level_in_m: level, observed_at: at } = station;
+  const before = station.previous_level_in_m;
+  const since = station.previous_observed_at;
+  if (level === null || before == null || !at || !since) return null;
+  const ms = Date.parse(at) - Date.parse(since);
+  if (!(ms > 0 && ms <= LEVEL_CHANGE_MAX_MS)) return null;
+  return { cm: Math.round((level - before) * 100), minutes: ms / 60_000, since };
+}
+/** "↑ สูงขึ้น 12 ซม. จากค่าวัด 3 ชม.ก่อนหน้า" · "↓ ลดลง 5 ซม. …" · "ทรงตัว …" (1 cm or less) */
+export function levelChangeWords(change: LevelChange): string {
+  const span =
+    change.minutes < 90
+      ? `${Math.round(change.minutes)} นาที`
+      : `${Math.round(change.minutes / 60)} ชม.`;
+  const from = `จากค่าวัด ${span}ก่อนหน้า`;
+  if (Math.abs(change.cm) <= 1) return `ทรงตัว ${from}`;
+  return change.cm > 0 ? `↑ สูงขึ้น ${change.cm} ซม. ${from}` : `↓ ลดลง ${-change.cm} ซม. ${from}`;
+}
+/**
+ * What a canal level cannot say: the department's DXS gives no bank or warning level (contract 14.1), so "critical"
+ * is never guessed; its own page, the source link, shows them.
+ */
+export const LEVEL_NO_BANK_TH =
+  'ตัวเลขคือความสูงผิวน้ำเทียบระดับน้ำทะเล ไม่ใช่ความลึก · ระบบบอกไม่ได้ว่าวิกฤตหรือยัง เพราะต้นทางไม่ได้ส่งระดับตลิ่งมา (ดูได้ที่ลิงก์ที่มา)';
+
 /** "วัดเมื่อ 19:25 น. (27 นาทีก่อน)", with the date when it was another day */
 export function measuredText(observedAt: string | null, now: number): string {
   if (!observedAt) return 'ไม่มีค่าล่าสุด';

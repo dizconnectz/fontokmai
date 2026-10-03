@@ -376,6 +376,33 @@
           "description": "Time of the latest reading (Thai time)",
           "title": "Observed At"
         },
+        "previous_level_in_m": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Inner level of the reading before this one, as the site published it (at most 24 hours earlier), to tell rising from falling; null when there is none. Compared by this site, not by the department (2026-10-03)",
+          "title": "Previous Level In M"
+        },
+        "previous_observed_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Time of that earlier reading (Thai time); null with previous_level_in_m",
+          "title": "Previous Observed At"
+        },
         "pumps": {
           "anyOf": [
             {

@@ -77,6 +77,14 @@ export type NameTh2 = string;
  */
 export type ObservedAt2 = string | null;
 /**
+ * Inner level of the reading before this one, as the site published it (at most 24 hours earlier), to tell rising from falling; null when there is none. Compared by this site, not by the department (2026-10-03)
+ */
+export type PreviousLevelInM = number | null;
+/**
+ * Time of that earlier reading (Thai time); null with previous_level_in_m
+ */
+export type PreviousObservedAt = string | null;
+/**
  * Number of pumps, for a pumping station
  */
 export type Pumps = number | null;
@@ -142,6 +150,8 @@ export interface CanalStation {
   location: Location;
   name_th: NameTh2;
   observed_at: ObservedAt2;
+  previous_level_in_m?: PreviousLevelInM;
+  previous_observed_at?: PreviousObservedAt;
   pumps: Pumps;
   pumps_running?: PumpsRunning;
 }

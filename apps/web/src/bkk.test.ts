@@ -21,6 +21,10 @@ import {
   measuredText,
   oldNote,
   damsOldNote,
+  levelChange,
+  levelChangeWords,
+  levelSigned,
+  LEVEL_NO_BANK_TH,
   levelText,
   levelWords,
   mmText,
@@ -223,6 +227,38 @@ describe('Bangkok canal levels and rain gauges', () => {
     expect(levelWords(1.78)).toBe('สูงกว่าระดับน้ำทะเล 1.78 ม.');
     expect(levelWords(0.004)).toBe('เท่ากับระดับน้ำทะเล');
     expect(levelWords(null)).toBe('ไม่มีค่า');
+  });
+
+  it('says whether a canal level rose or fell since the reading before, and never calls it critical', () => {
+    // user 2026-10-02: "+0.99 above the sea" alone says neither high nor low
+    const station = {
+      level_in_m: 0.99,
+      observed_at: '2026-10-02T15:45:00+07:00',
+      previous_level_in_m: 0.87,
+      previous_observed_at: '2026-10-02T12:45:00+07:00',
+    };
+    expect(levelChangeWords(levelChange(station)!)).toBe(
+      '↑ สูงขึ้น 12 ซม. จากค่าวัด 3 ชม.ก่อนหน้า',
+    );
+    const fell = { previous_level_in_m: 1.04, previous_observed_at: '2026-10-02T15:05:00+07:00' };
+    expect(levelChangeWords(levelChange({ ...station, ...fell })!)).toBe(
+      '↓ ลดลง 5 ซม. จากค่าวัด 40 นาทีก่อนหน้า',
+    );
+    expect(levelChangeWords(levelChange({ ...station, previous_level_in_m: 0.985 })!)).toBe(
+      'ทรงตัว จากค่าวัด 3 ชม.ก่อนหน้า',
+    );
+    // no earlier reading, one more than a day older, or no level now: nothing is said
+    expect(
+      levelChange({ ...station, previous_level_in_m: null, previous_observed_at: null }),
+    ).toBeNull();
+    expect(
+      levelChange({ ...station, previous_observed_at: '2026-10-01T12:45:00+07:00' }),
+    ).toBeNull();
+    expect(levelChange({ ...station, level_in_m: null })).toBeNull();
+    expect(levelSigned(0.99)).toBe('+0.99 ม.รทก.');
+    expect(levelSigned(-0.1)).toBe('−0.10 ม.รทก.');
+    expect(levelSigned(0.004)).toBe('0.00 ม.รทก.');
+    expect(LEVEL_NO_BANK_TH).toContain('ระบบบอกไม่ได้');
   });
 
   it('gives the time of a reading as a clock time and how long ago', () => {
