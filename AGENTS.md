@@ -1,7 +1,7 @@
 # AGENTS.md — fontokmai (ฝนตกไหม): ข้อตกลงทีม สถานะ และการตัดสินใจ
 
 > **สถานะ**: เว็บแบบแผนที่เป็นหลักออนไลน์ที่ `https://dizconnectz.github.io/fontokmai/` (D28, D29): ประกาศกรมอุตุฯ ระบายสีตามระดับ, เรดาร์ฝน, กล้อง CCTV, ปักหมุดดูข้อมูลจุด, ค้นหาสถานที่ (ตำบล/อำเภอ/จังหวัด/สถานที่/ถนน), แถบเลื่อนเวลา (เรดาร์ย้อนหลัง → พยากรณ์ฝน 72 ชม.), ฝน 7 วัน + แนวโน้ม ensemble14วัน/18จุด (ทดลอง), สายด่วน, รายงานน้ำท่วมตอนนี้ (Longdo/iTIC), ที่ของฉัน, ตัวเฝ้าข้อมูลหยุด (data-watch), ระดับน้ำคลอง/ฝนวัดจริง/ถนนท่วม กทม. + เขื่อนใหญ่ + สถานีอุตุฯ (DXS ดึงเป็นครั้งๆ D31), หน้าเกี่ยวกับ/คำถามที่พบบ่อย + SEO/AEO, แนวโน้มน้ำแม่น้ำ 14 จุด (GloFAS วันละครั้ง), การ์ดสรุปจุดที่ต้องระวังบนสุดของแถบข้าง (`summary/overview.json` กฎ v0 + เรดาร์ + ท้ายน้ำของเขื่อน) พร้อมแถบสรุป แนวโน้ม 1 ชม. และกรอบอำเภอ/จังหวัดพร้อมชื่อบนแผนที่ (`ref/boundaries.json`) · ประตูน้ำ/สถานีกรมชลฯ + คลองที่อาจล้น (ทดลอง D35) · ข้อมูลจาก VPS ทุก 15 นาที · สำรองรายวัน + คลังตรวจความแม่น (P0-B2) · แบบระบบ v6.1
-> อัปเดตล่าสุด: 2026-10-04 19:33 ICT (Codex) · เวลาเป็น ICT (UTC+7) · วันที่แบบ ISO (ค.ศ.)
+> อัปเดตล่าสุด: 2026-10-04 19:54 ICT (Codex) · เวลาเป็น ICT (UTC+7) · วันที่แบบ ISO (ค.ศ.)
 > ไฟล์นี้เป็นช่องทางสื่อสารหลักระหว่าง Claude ↔ Codex ↔ ผู้ใช้ และ **ต้องมีขนาดไม่เกิน 32 KiB (UTF-8)** เพื่อให้ Codex โหลดได้ครบ
 > เอกสารอื่น: แบบระบบ `docs/design/fontokmai-design.md` · แหล่งข้อมูลและสิทธิ์ `docs/sources.md` · ประวัติเต็ม `private/handoffs/` (อยู่ใน private repo ไม่อยู่ใน repo สาธารณะ)
 
@@ -45,19 +45,21 @@
 ### A5. งานที่กำลังทำ (Active claims)
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
-| Codex | 2026-10-03 23:15 | `AGENTS.md`, `.github/workflows/{ci,pages,web,data-watch}.yml`, `pipeline/src/fontokmai/{canal_outlook,overview_build,forecast_windows}.py`, `pipeline/tests/{test_canal_outlook,test_overview,test_forecast_windows}.py`, `tests/consumer/{test_overview_delivery.py,overview-browser.spec.mjs}`, `pipeline/src/fontokmai/sources/{open_meteo,glofas,gistda,rid_hydro}.py`, `pipeline/tests/{test_forecast,test_glofas,test_river_lines,test_gistda,test_rid_hydro}.py`, `contracts/v1/examples/*/{manifest,outlook}.json`, `contracts/v1/README.md`, `docs/design/fontokmai-design.md`, `docs/apis/gistda.md`, `apps/web/src/{overview,Panel,StatusBar}.ts*`, `apps/web/src/styles.css`, `apps/web/tests/app.spec.ts`, `apps/web/public/method/index.html`, `private/handoffs/{2026-10-03-codex-formula-recheck,2026-10-04-codex-cls-m59}.md`, `private/handoffs/README.md`, `local-notes/recheck-*` | M56–M58 สูตร/ทดสอบ; M59–M60 แถบสรุป/CLS; M61 ตรวจ Q สำรอง C.35 | formulas |
+| — | — | — | ไม่มีไฟล์ที่กำลังแก้ · VPS รอตรวจภายหลังตามผู้ใช้ | — |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md` · ส่วนที่ย้ายออกเมื่อเข้าถึง private ไม่ได้: `docs/agents-archive.md`)
 
-#### 2026-10-04 19:12 ICT — กรองค่า C.35 ผิดรูปก่อนเลือกชั่วโมง (M61) (Codex)
+#### 2026-10-04 19:54 ICT — กรองค่า C.35 และปิดรอบเว็บ/รีวิว (M61) (Codex)
 - พบแถว Q ติดลบล่าสุดที่ไม่มีระดับน้ำอาจบังชั่วโมงเก่าที่ยังใช้ได้ · ปฏิเสธ Q ติดลบ/ไม่จำกัด/เกินช่วง float ก่อนเลือกชั่วโมง พร้อม regression tests · ยังไม่เรียก `bkk-fetch` ระหว่างรอผู้ใช้ตัดสินสิทธิ์ source (D27/D35)
-- ruff + pipeline pytest 324 ผ่าน; web build/Vitest 166 และ Chromium E2E 4 ผ่าน · WebKit บนเครื่องนี้เปิด page ไม่สำเร็จ (`browserContext.newPage` ปิด); CI/push/Pages รอ · ไม่ deploy VPS ระหว่างรอคำตัดสินสิทธิ์
+- push `424844f`; CI `37202691126`, web `37202691149` (รวม WebKit/consumer E2E), Pages `37203235680` ผ่าน · production ไม่มี JS errors
+- pipeline 324 tests, Vitest 166, Chromium regression 4 ผ่าน; `npm audit --omit=dev` 0 ช่องโหว่ · CLS production desktop แกว่ง 0.13–0.20, มือถือเครือข่ายช้า 0.042; main bundle 605 KB + MapLibre 1,063 KB
+- VPS รอภายหลังตามผู้ใช้; ความแม่นยังไม่มี backtest · สิทธิ์ C.35 JSON ยังรอผู้ใช้ตัดสิน (C1)
 
 
 
 #### 2026-10-04 18:56 ICT — แถบสรุป/CLS (M59–M60) (Codex)
 - เว็บจริงก่อน M60: CLS desktop 0.277, มือถือ 0.083; แถบ 7 สถานะตัดบรรทัด และ feed ว่างถอดส่วนสูง 227 px · พับสถานะรองไว้ใต้ “ดูอีก N สถานะ”; ประกาศว่างยืนยันในพื้นที่คงที่ 84 px ไม่มีการ์ดซ้ำ
-- M60 push `53e7843`; CI `37200918213`/web `37200918221`/Pages `37201527767` ผ่าน · หน้าเว็บจริงก่อนข้อความคงที่: CLS desktop 0.190, mobile 0.083 · ปรับสถานะว่างเป็น 2 บรรทัดในพื้นที่ขั้นต่ำ 84 px; Chromium regression ผ่าน · รอ CI/Pages รอบใหม่และวัด CLS production ซ้ำ
+- M60 push `53e7843`; CI `37200918213`/web `37200918221`/Pages `37201527767` ผ่าน · พับสถานะรองแล้ว; M61 ปรับสถานะไม่มีประกาศเป็น 2 บรรทัดขั้นต่ำ 84 px และบอกขอบเขตข้อมูล ไม่สื่อว่าปลอดภัย
 - ไม่เปลี่ยนสูตร; ความแม่นยังไม่มี backtest · รายละเอียด `private/handoffs/2026-10-04-codex-cls-m59.md`
 
 #### 2026-10-04 18:45 ICT — GISTDA, M55, กล้อง DWR, C.35 ตัวเลขสำรอง (Claude)
@@ -105,6 +107,7 @@
 ### C1. ผู้ใช้ (งานที่ต้องทำเอง)
 - **เลือกสมัครเพิ่มได้ (Codex ตรวจ 2026-09-26)**: [Google Flood Forecasting API](https://developers.google.com/flood-forecasting) มีลิงก์ waitlist ทางการ ฟรี/CC BY 4.0 สำหรับพยากรณ์น้ำท่วมแม่น้ำรวมไทย; (GISTDA สมัครแล้ว 2026-10-04 ใช้งานอยู่ ดู `docs/apis/gistda.md`) · รายละเอียด `docs/sources.md` ข้อ 10.4–10.5; ผู้ใช้ตัดสินและสมัครเอง ไม่ผูกบริการเสียเงิน/บัตรตาม D12
 - **DXS**: รหัสแก้แล้ว ใช้ได้ (D31: ดึงเป็นครั้งๆ จากเครื่องนี้เมื่อเปิดอยู่ ไม่ตั้งตาราง)
+- **C.35 JSON/VPS**: ผู้ใช้เลื่อนตรวจ/อัปเดต VPS ไปภายหลัง (2026-10-04); SSH อ่านอย่างเดียว timeout. ก่อนเผยแพร่ endpoint JSON แยกของกรมชลฯ ให้ผู้ใช้ตัดสินว่าจะขยาย D35 (ขณะนี้ครอบคลุม PDF รายวัน+ผังเจ้าพระยาตอนล่าง) หรือพักแหล่งนี้ตาม D27
 - ตัดออก 2026-09-29: `GetWaterHistory` มีในรายการเทคนิค (WSDL) ของเซิร์ฟเวอร์ DXS ซึ่งรวมระบบภายใน (จองห้อง ปฏิทินลา) แต่พอร์ทัลไม่เปิดให้ขอ (ผู้ใช้ตรวจ บัญชีประชาชนได้ 13 บริการ) → ตาม D27 ไม่ขอต่อ · ตัวตรวจเว็บล่มจากนอกเครื่อง: ผู้ใช้ไม่ทำ (2026-09-29)
 - ไม่บังคับ: ถ้าทราบเจ้าของหรือพิกัดของกล้องสะพานแดงและกล้องเจ้าพระยา ให้แจ้ง
 
