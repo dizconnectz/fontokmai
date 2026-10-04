@@ -3,6 +3,13 @@
 AGENTS.md ต้องไม่เกิน 32 KiB จึงย้ายส่วนที่ไม่ได้ใช้งานแล้วมาเก็บที่นี่แบบไม่ตัดทอน (ห้ามลบประวัติ) · ใหม่สุดอยู่บน
 ควรย้ายไป `private/handoffs/` เมื่อมีคนเข้าถึง private repo ได้ (Claude ในเครื่อง cloud เข้าไม่ได้)
 
+## 2026-10-04 21:15 (Claude: ย้าย A6 เพื่อให้ AGENTS.md ไม่เกิน 32 KiB)
+
+#### 2026-10-04 18:45 ICT — GISTDA, M55, กล้อง DWR, C.35 ตัวเลขสำรอง (Claude)
+- merged PR #3–#11: M55 สีนอกแถบสีไม่นับเป็นฝน · กล้อง DWR 128 ตัว `cctv/mjpeg/{code}` · GISTDA `floods/satellite.json` (สัญญา28) + ชั้นแผนที่ + การ์ดหมุด + "ที่ของฉัน" + overview `satellite_flood` · ท่วมซ้ำ `ref/flood_freq.json` (สัญญา29, `flood-freq` รันมือ) · คู่มือ `docs/apis/gistda.md` · DXS วันที่ พ.ศ. 29 ก.พ. · key GISTDA อยู่ VPS เท่านั้น
+- C.35 ตัวเลขสำรอง: `bkk-fetch` ถามบริการ JSON ของหน้าศูนย์อุทกวิทยาฯ (ตอบเฉพาะในไทย, ต้องเปิดหน้าก่อนเพื่อคุกกี้ ไม่งั้น 401) → `bkk/rid_hydro.json` → `flow_backup_at` เมื่อรายงานไม่มีเลข (ดู `docs/sources.md`)
+- **PC ผู้ใช้**: สคริปต์อัปเดต กทม. รันจาก clone แยก `~/.fontokmai/app` (`git pull --ff-only` ตาม main ทุกรอบ) ห้ามแก้โค้ดในนั้น · งานต่อ `docs/handoff-claude-2026-10-04.md`
+
 ## 2026-10-04 20:40 (Claude: ย้าย A6 เก่าสุดเพื่อให้ AGENTS.md ไม่เกิน 32 KiB)
 
 #### 2026-10-04 11:47 ICT — ทวนสูตรและทยอยแก้ M52–M54 (Codex)
