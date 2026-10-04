@@ -66,7 +66,11 @@ describe('the summary of places to watch', () => {
     expect(next[0].place_th).toBe('จ.สมุทรปราการ');
     // two days later every forecast of the example has passed, and the rules never keep them
     expect(liveItems(overview, 'next', AT + 5 * DAY)).toEqual([]);
-    expect(oldInputs(overview)).toEqual(['แนวโน้มแม่น้ำ (GloFAS)']);
+    // the example has no satellite file (GISTDA, added 2026-10-04): missing is said, never read as no flood
+    expect(oldInputs(overview)).toEqual([
+      'น้ำท่วมจากภาพดาวเทียม (GISTDA)',
+      'แนวโน้มแม่น้ำ (GloFAS)',
+    ]);
   });
 
   it('drops what was happening once it is over, even while the file is fresh (Codex M27)', () => {

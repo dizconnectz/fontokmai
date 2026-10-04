@@ -125,6 +125,7 @@ export default function App() {
     canalLines,
     canals,
     satellite,
+    floodFreq,
   } = data;
   const [layers, setLayers] = useState<Layers>({
     alerts: true,
@@ -1005,6 +1006,7 @@ export default function App() {
             flooding={flooding}
             satellite={satellite}
             satelliteShapes={satelliteLayer}
+            floodFreq={floodFreq}
             onClose={() => setPin(null)}
             onSelectAlert={selectAlert}
             onRoad={(r) => openRoad(r.key)}

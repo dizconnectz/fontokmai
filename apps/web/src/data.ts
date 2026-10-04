@@ -24,6 +24,7 @@ import flowsSchema from '../../../contracts/v1/schema/flows.schema.json';
 import canalsSchema from '../../../contracts/v1/schema/canals.schema.json';
 import canalOutlookSchema from '../../../contracts/v1/schema/canal_outlook.schema.json';
 import satelliteSchema from '../../../contracts/v1/schema/satellite.schema.json';
+import floodFreqSchema from '../../../contracts/v1/schema/flood_freq.schema.json';
 import type { Manifest } from '../../../contracts/v1/ts/manifest';
 import type { Alert, AlertsFeed } from '../../../contracts/v1/ts/alerts';
 import type { RadarFeed } from '../../../contracts/v1/ts/radar';
@@ -46,10 +47,12 @@ import type { RidFlows } from '../../../contracts/v1/ts/flows';
 import type { CanalLines } from '../../../contracts/v1/ts/canals';
 import type { CanalOutlook } from '../../../contracts/v1/ts/canal_outlook';
 import type { SatelliteFloods } from '../../../contracts/v1/ts/satellite';
+import type { FloodFrequency } from '../../../contracts/v1/ts/flood_freq';
 
 export type {
   RainOutlook,
   SatelliteFloods,
+  FloodFrequency,
   Alert,
   AlertsFeed,
   Boundaries,
@@ -143,6 +146,9 @@ export const validCanalOutlook = ajv.compile<CanalOutlook>(
 );
 export const validSatellite = ajv.compile<SatelliteFloods>(
   allowAdditions(satelliteSchema) as object,
+);
+export const validFloodFreq = ajv.compile<FloodFrequency>(
+  allowAdditions(floodFreqSchema) as object,
 );
 
 /** radar.json belongs to the snapshot generation, like alerts.json. */

@@ -41,6 +41,8 @@ const HOLDS_MS: Partial<Record<OverviewReason['kind'], number>> = {
   flood_reports: 12 * 3_600_000,
   rain_measured: 60 * 60_000,
   rain_radar: 45 * 60_000,
+  // GISTDA's satellite water: 36 hours from the producer's last check of the layer
+  satellite_flood: 36 * 3_600_000,
 };
 /**
  * Until when a reason holds; null when only its day decides (forecasts, rivers, dams). The producer's `until` and
@@ -95,6 +97,7 @@ export const REASON_TONE: Partial<Record<OverviewReason['kind'], 'danger' | 'war
   dam_release_up: 'danger',
   dam_full: 'warn',
   river_rising: 'warn',
+  satellite_flood: 'warn',
 };
 
 /** The items a list shows at `now`: none when the file is too old to list (the summary card says so). */

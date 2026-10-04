@@ -17,6 +17,7 @@ import {
   validWeatherToday,
   validRivers,
   validSatellite,
+  validFloodFreq,
   validOutlook,
   validOverview,
   validBoundaries,
@@ -29,6 +30,7 @@ import {
   type CanalOutlook,
   type RidFlows,
   type SatelliteFloods,
+  type FloodFrequency,
   type RiverLines,
   type CanalLevels,
   type CctvRegistry,
@@ -71,7 +73,8 @@ type RefName =
   | 'flows'
   | 'canalLines'
   | 'canals'
-  | 'satellite';
+  | 'satellite'
+  | 'floodFreq';
 // Files of the manifest outside the snapshot generation. Cameras and the forecast (timeline, ~50 KB gzip)
 // load at once; the others on first need.
 const REF_FILES: Record<RefName, { path: string; valid: (value: unknown) => boolean }> = {
@@ -103,6 +106,8 @@ const REF_FILES: Record<RefName, { path: string; valid: (value: unknown) => bool
   canals: { path: 'summary/canals.json', valid: validCanalOutlook },
   // GISTDA's flooded area seen from satellites, summed by district (~a few KB), loaded at once
   satellite: { path: 'floods/satellite.json', valid: validSatellite },
+  // GISTDA's recurrent flooding of the pilot by subdistrict (a statistic, built by hand once), for the pin card
+  floodFreq: { path: 'ref/flood_freq.json', valid: validFloodFreq },
 };
 const IDLE: RefSlot<never> = { value: null, state: 'idle' };
 
@@ -132,6 +137,7 @@ export function useData() {
   const [canalLines, setCanalLines] = useState<RefSlot<CanalLines>>(IDLE);
   const [canals, setCanals] = useState<RefSlot<CanalOutlook>>(IDLE);
   const [satellite, setSatellite] = useState<RefSlot<SatelliteFloods>>(IDLE);
+  const [floodFreq, setFloodFreq] = useState<RefSlot<FloodFrequency>>(IDLE);
   const current = useRef<Snapshot | null>(null);
   const settings = useRef<RuntimeConfig | null>(null);
   const flight = useRef<AbortController | null>(null);
@@ -153,6 +159,7 @@ export function useData() {
       'canalLines',
       'canals',
       'satellite',
+      'floodFreq',
     ]),
   );
   const refreshRef = useRef<() => Promise<void>>(async () => undefined);
@@ -229,6 +236,9 @@ export function useData() {
       ),
       satellite: new RefSync(REF_FILES.satellite.path, loader('satellite'), (slot) =>
         setSatellite(slot as RefSlot<SatelliteFloods>),
+      ),
+      floodFreq: new RefSync(REF_FILES.floodFreq.path, loader('floodFreq'), (slot) =>
+        setFloodFreq(slot as RefSlot<FloodFrequency>),
       ),
     };
   }
@@ -349,5 +359,6 @@ export function useData() {
     canalLines: canalLines.value,
     canals: canals.value,
     satellite: satellite.value,
+    floodFreq: floodFreq.value,
   };
 }

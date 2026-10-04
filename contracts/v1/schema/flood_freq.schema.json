@@ -1,0 +1,131 @@
+{
+  "$defs": {
+    "FloodFrequencyArea": {
+      "additionalProperties": false,
+      "properties": {
+        "area_rai": {
+          "description": "Land GISTDA mapped as flooded at least once, rai (1 rai = 1,600 m²)",
+          "minimum": 0,
+          "title": "Area Rai",
+          "type": "number"
+        },
+        "code": {
+          "description": "DOPA subdistrict code, as in ref/places.json",
+          "pattern": "^\\d{6}$",
+          "title": "Code",
+          "type": "string"
+        },
+        "max_freq": {
+          "description": "The most times any part of it was mapped flooded",
+          "minimum": 1,
+          "title": "Max Freq",
+          "type": "integer"
+        },
+        "name_th": {
+          "description": "The subdistrict, district and province (ref/places.json label)",
+          "title": "Name Th",
+          "type": "string"
+        },
+        "rai_by_freq": {
+          "description": "rai_by_freq[k]: rai mapped flooded exactly k + 1 times",
+          "items": {
+            "type": "number"
+          },
+          "title": "Rai By Freq",
+          "type": "array"
+        }
+      },
+      "required": [
+        "code",
+        "name_th",
+        "area_rai",
+        "max_freq",
+        "rai_by_freq"
+      ],
+      "title": "FloodFrequencyArea",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "built_at": {
+      "description": "When fontokmai read the layer (a statistic GISTDA rarely changes)",
+      "format": "date-time",
+      "title": "Built At",
+      "type": "string"
+    },
+    "credit_th": {
+      "title": "Credit Th",
+      "type": "string"
+    },
+    "data_created": {
+      "anyOf": [
+        {
+          "format": "date",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Newest _createdAt of the features read: when GISTDA made them",
+      "title": "Data Created"
+    },
+    "name_th": {
+      "title": "Name Th",
+      "type": "string"
+    },
+    "notes_th": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Notes Th",
+      "type": "array"
+    },
+    "product": {
+      "const": "gistda_flood_freq",
+      "default": "gistda_flood_freq",
+      "title": "Product",
+      "type": "string"
+    },
+    "provinces": {
+      "description": "DOPA province codes read (2 digits); other places are not covered",
+      "items": {
+        "type": "string"
+      },
+      "title": "Provinces",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1",
+      "default": "1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_url": {
+      "description": "GISTDA's disaster platform, to link to (never an API address)",
+      "title": "Source Url",
+      "type": "string"
+    },
+    "subdistricts": {
+      "description": "Subdistricts with land flooded more than once or once",
+      "items": {
+        "$ref": "#/$defs/FloodFrequencyArea"
+      },
+      "title": "Subdistricts",
+      "type": "array"
+    }
+  },
+  "required": [
+    "name_th",
+    "credit_th",
+    "source_url",
+    "built_at",
+    "data_created",
+    "provinces",
+    "subdistricts",
+    "notes_th"
+  ],
+  "title": "FloodFrequency",
+  "type": "object"
+}

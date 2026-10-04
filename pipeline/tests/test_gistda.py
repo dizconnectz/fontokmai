@@ -102,3 +102,42 @@ def test_the_opener_never_puts_the_key_in_an_error():
     with pytest.raises(OpenDataError) as caught, opener("https://example.com/"):
         pass
     assert "secret-key" not in str(caught.value)
+
+
+def _freq_api(by_province, calls=None):
+    def opener_for(key):
+        @contextmanager
+        def opener(url):
+            assert url.startswith(gistda.FREQ_URL) and key not in url
+            if calls is not None:
+                calls.append(url)
+            q = parse_qs(urlsplit(url).query)
+            rows = by_province.get(q["pv_idn"][0], [])
+            limit, offset = int(q["limit"][0]), int(q["offset"][0])
+            page = {"type": "FeatureCollection", "features": rows[offset:offset + limit], "numberMatched": len(rows)}
+            yield io.BytesIO(json.dumps(page).encode())
+        return opener
+    return opener_for
+
+
+def _piece(pv, ap, tb, freq, rai):
+    return {"type": "Feature", "geometry": None, "properties": {
+        "pv_code": pv, "ap_code": ap, "tb_code": tb, "freq": freq, "area_rai": rai,
+        "_createdAt": "2025-06-17T17:49:22.78Z"}}
+
+
+def test_flood_frequency_is_summed_by_subdistrict(tmp_path, monkeypatch):
+    monkeypatch.setattr(gistda, "PAGE", 2)
+    key = tmp_path / "gistda_key"
+    key.write_text("secret-key")
+    rows = {"13": [_piece("13", "01", "01", 1, 9.5), _piece("13", "01", "01", 3, 2.0),
+                   _piece("13", "01", "02", 2, 4.0), _piece("13", "99", "99", 2, 1.0),  # no such subdistrict
+                   _piece("13", "01", "02", None, 1.0)]}  # no count
+    freq = gistda.build_freq(tmp_path, NOW, key, ("13",), opener_for=_freq_api(rows))
+    by_code = {s.code: s for s in freq.subdistricts}
+    assert set(by_code) == {"130101", "130102"}
+    assert by_code["130101"].max_freq == 3 and by_code["130101"].rai_by_freq == [9.5, 0.0, 2.0]
+    assert by_code["130101"].area_rai == 11.5 and by_code["130101"].name_th.startswith("ต.บางปรอก")
+    assert freq.data_created == date(2025, 6, 17) and freq.provinces == ["13"]
+    text = (tmp_path / gistda.FREQ_PATH).read_text(encoding="utf-8")
+    assert "secret-key" not in text and "api-gateway" not in text

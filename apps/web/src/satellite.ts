@@ -1,5 +1,5 @@
 import type { FeatureCollection, MultiPolygon, Polygon } from 'geojson';
-import type { Boundaries, PlaceGazetteer, SatelliteFloods } from './data';
+import type { Boundaries, FloodFrequency, PlaceGazetteer, SatelliteFloods } from './data';
 
 // GISTDA's flooded area seen from satellites (contract section 28): an agency's map of water, summed by district,
 // never a figure of this site. A district without water in the file was not seen flooded in the window, which is
@@ -126,4 +126,34 @@ export function satelliteSource(file: SatelliteFloods): string {
     ? ` · ภาพดาวเทียมล่าสุด ${SHORT_DAY.format(Date.parse(`${file.latest_scene_day}T12:00:00+07:00`))}`
     : '';
   return `ที่มา: GISTDA (ข้อมูลเปิดภาครัฐ)${day} · ในรอบ ${file.window_days} วัน`;
+}
+
+export type FloodFrequencyArea = FloodFrequency['subdistricts'][number];
+
+export interface FrequencyHere {
+  /** the subdistrict in GISTDA's statistic, or null when the statistic covers its province but has no land of it */
+  area: FloodFrequencyArea | null;
+}
+/**
+ * GISTDA's recurrent flooding of the subdistrict with this DOPA code; undefined when the file does not cover its
+ * province (nothing is said then: not covered is not "never flooded").
+ */
+export function frequencyAt(file: FloodFrequency, subdistrict: string): FrequencyHere | undefined {
+  if (!file.provinces.includes(subdistrict.slice(0, 2))) return undefined;
+  return { area: file.subdistricts.find((s) => s.code === subdistrict) ?? null };
+}
+
+const RAI = (rai: number) =>
+  rai >= 10
+    ? Math.round(rai).toLocaleString('th-TH')
+    : rai.toLocaleString('th-TH', { maximumFractionDigits: 1 });
+
+/** "เคยท่วมรวมราว 120 ไร่ · บางส่วนท่วมซ้ำถึง 4 ครั้ง (ท่วม 2 ครั้งขึ้นไปราว 30 ไร่)" */
+export function frequencyWords(area: FloodFrequencyArea): string {
+  const repeated = area.rai_by_freq.slice(1).reduce((sum, rai) => sum + rai, 0);
+  const again =
+    area.max_freq > 1
+      ? ` · บางส่วนท่วมซ้ำถึง ${area.max_freq} ครั้ง (ท่วม 2 ครั้งขึ้นไปราว ${RAI(repeated)} ไร่)`
+      : ' · ท่วมครั้งเดียว ไม่พบท่วมซ้ำ';
+  return `เคยท่วมรวมราว ${RAI(area.area_rai)} ไร่${again}`;
 }

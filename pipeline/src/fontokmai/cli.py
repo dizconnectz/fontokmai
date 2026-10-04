@@ -138,6 +138,11 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     sched.add_argument("--forecast", action="store_true",
                        help="rebuild forecast/rain.json from Open-Meteo every 6 hours (network)")
     sched.add_argument("--max-rounds", type=int, help=argparse.SUPPRESS)
+    freq = sub.add_parser("flood-freq", help="read GISTDA's recurrent flooding of the pilot once (network, key)")
+    freq.add_argument("--out", type=Path, required=True, help="snapshot directory; the file goes to ref/")
+    freq.add_argument("--key", type=Path, required=True, help="GISTDA API key file")
+    freq.add_argument("--provinces", default=",".join(gistda.FREQ_PROVINCES),
+                      help="DOPA province codes, comma separated (default: the pilot)")
     restore = sub.add_parser("restore-db", help="put a daily backup in place of the state database (collector stopped)")
     restore.add_argument("--backup", type=Path, required=True, help="fontokmai-YYYYMMDD.db.gz")
     restore.add_argument("--db", type=Path, required=True, help="the database file to replace (or a new file)")
@@ -356,6 +361,12 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "schedule":
         run_forever(_scheduled_job(args), max_rounds=args.max_rounds)
+        return 0
+    if args.command == "flood-freq":
+        provinces = tuple(code.strip() for code in args.provinces.split(",") if code.strip())
+        result = gistda.build_freq(args.out, datetime.now(UTC), args.key, provinces)
+        print(json.dumps({"subdistricts": len(result.subdistricts), "provinces": result.provinces,
+                          "data_created": str(result.data_created)}, ensure_ascii=False))
         return 0
     if args.command == "restore-db":
         # a daily backup is older than what was published: a new recovery epoch tells the web to drop what it

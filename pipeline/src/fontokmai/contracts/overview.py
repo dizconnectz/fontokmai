@@ -14,7 +14,7 @@ from pydantic import AwareDatetime, Field
 from fontokmai.contracts.common import SCHEMA_VERSION, ContractModel, Position
 
 ReasonKind = Literal["flood_reports", "road_flooding", "rain_measured", "rain_radar", "rain_forecast",
-                     "rain_burst", "rain_3days", "river_rising", "dam_full", "dam_release_up"]
+                     "rain_burst", "rain_3days", "river_rising", "dam_full", "dam_release_up", "satellite_flood"]
 
 
 class OverviewReason(ContractModel):
@@ -30,7 +30,8 @@ class OverviewReason(ContractModel):
     until: AwareDatetime | None = Field(default=None, description=(
         "What is happening holds until this time, and the web leaves the reason out after it (Codex M27): flood"
         " reports while two are still within their time (stop, or 12 hours after start), a gauge 60 minutes, the"
-        " radar 45 minutes, a road report the end of its day. The count in the text is of the round, so it may be"
+        " radar 45 minutes, a road report the end of its day, GISTDA's satellite water 36 hours from its check. The"
+        " count in the text is of the round, so it may be"
         " one or two too many until the next round. Null for forecasts, which the web drops when their day passes"))
 
 

@@ -1,9 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import type { Boundaries, PlaceGazetteer, SatelliteFloods } from './data';
+import type { Boundaries, FloodFrequency, PlaceGazetteer, SatelliteFloods } from './data';
 import { favoriteLine } from './favoriteLine';
 import { nearestSubdistrict } from './places';
 import {
+  frequencyAt,
+  frequencyWords,
   satelliteColor,
   satelliteNear,
   satelliteOld,
@@ -105,5 +107,35 @@ describe('GISTDA flood water seen from satellites (user 2026-10-04)', () => {
     expect(satelliteWords({ ...district('1030', 0.04, 'x'), population: 0 })).toBe(
       'น้ำท่วมราว น้อยกว่า 0.1 ตร.กม.',
     );
+  });
+});
+
+describe('GISTDA recurrent flooding by subdistrict (user 2026-10-04)', () => {
+  const freq = {
+    schema_version: '1',
+    product: 'gistda_flood_freq',
+    name_th: 'พื้นที่น้ำท่วมซ้ำซาก',
+    credit_th: 'GISTDA',
+    source_url: 'https://disaster.gistda.or.th/',
+    built_at: '2026-10-04T14:00:00+07:00',
+    data_created: '2025-06-17',
+    provinces: ['13'],
+    subdistricts: [
+      {
+        code: '130101',
+        name_th: 'ต.บางปรอก อ.เมืองปทุมธานี จ.ปทุมธานี',
+        area_rai: 120.4,
+        max_freq: 4,
+        rai_by_freq: [90, 20, 6.4, 4],
+      },
+    ],
+    notes_th: [],
+  } as FloodFrequency;
+  it('says the land flooded and how often, and nothing outside the provinces read', () => {
+    expect(frequencyWords(frequencyAt(freq, '130101')!.area!)).toBe(
+      'เคยท่วมรวมราว 120 ไร่ · บางส่วนท่วมซ้ำถึง 4 ครั้ง (ท่วม 2 ครั้งขึ้นไปราว 30 ไร่)',
+    );
+    expect(frequencyAt(freq, '130102')).toEqual({ area: null }); // read, but no land of it in the statistic
+    expect(frequencyAt(freq, '100101')).toBeUndefined(); // Bangkok was not read: nothing is said
   });
 });
