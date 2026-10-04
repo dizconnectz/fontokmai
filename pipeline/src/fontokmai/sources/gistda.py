@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 import urllib.request
 from collections import defaultdict
 from collections.abc import Callable, Iterator
@@ -228,62 +229,131 @@ FREQ_NOTES_TH = [
     "พื้นที่ที่ไม่มีในรายการอาจไม่เคยมีภาพตอนท่วม ไม่ได้แปลว่าไม่เคยท่วม",
 ]
 FREQ_PROVINCES = ("10", "11", "12", "13", "14")  # the pilot (D15): Bangkok and the provinces around it
+FREQ_PAUSE_S = 0.5  # between pages: the whole country is about 7,900 pages, read once, gently
+FREQ_MAX_PAGES = 3000  # of one province
+FREQ_TRIES = 4  # a page the server drops or times out on is asked again after 5, 15 and 45 seconds
 
 
-def collect_freq(opener: Opener, now: datetime, provinces: tuple[str, ...] = FREQ_PROVINCES, *,
-                 page: int | None = None) -> FloodFrequency:
-    """GISTDA's recurrent flooding of the provinces, summed by subdistrict: a statistic, read by hand once."""
-    page = page or PAGE
-    known = {code: place.label for code, place in places().items() if place.kind == "subdistrict"}
+def all_provinces() -> tuple[str, ...]:
+    """Every DOPA province code of ref_data/places.json."""
+    return tuple(sorted(code for code, place in places().items() if place.kind == "province"))
+
+
+def _freq_page(opener: Opener, offset: int, page: int, query: dict[str, Any],
+               sleep: Callable[[float], None]) -> dict[str, Any]:
+    for attempt in range(FREQ_TRIES):
+        try:
+            return _page(opener, offset, page, FREQ_URL, query)
+        except OpenDataError:
+            if attempt == FREQ_TRIES - 1:
+                raise
+            sleep(5 * 3**attempt)
+    raise AssertionError("unreachable")
+
+
+def _freq_province(opener: Opener, province: str, known: dict[str, str], page: int, pause: float,
+                   sleep: Callable[[float], None]) -> tuple[dict[str, dict[int, float]], str, int]:
+    """The sums of one province by subdistrict, the newest _createdAt and how many features were read."""
+    query = {"pv_idn": int(province)}
     area: dict[str, dict[int, float]] = defaultdict(lambda: defaultdict(float))
     created = ""
-    for province in provinces:
-        query = {"pv_idn": int(province)}
-        first = _page(opener, 0, page, FREQ_URL, query)
-        matched, offset, current, seen = first["numberMatched"], 0, first, 0
-        if matched > MAX_PAGES * page:
-            raise OpenDataError(f"GISTDA flood-freq of {province} has {matched} features, more than {MAX_PAGES} pages")
-        while True:
-            if current["numberMatched"] != matched:
-                raise OpenDataError(f"GISTDA flood-freq of {province} changed while it was read")
-            batch = [f for f in current["features"] if isinstance(f, dict)]
-            seen += len(batch)
-            for feature in batch:
-                props = feature.get("properties") or {}
-                code = f"{props.get('pv_code', '')}{props.get('ap_code', '')}{props.get('tb_code', '')}"
-                freq, rai = props.get("freq"), _number(props.get("area_rai"))
-                if (code not in known or isinstance(freq, bool) or not isinstance(freq, int) or not 1 <= freq <= 100
-                        or rai is None):
-                    continue  # a piece without a subdistrict of ours, a count or an area is never guessed
-                area[code][freq] += rai
-                created = max(created, str(props.get("_createdAt") or ""))
-            offset += page
-            if offset >= matched or not batch:
-                break
-            current = _page(opener, offset, page, FREQ_URL, query)
-        if seen != matched:
-            raise OpenDataError(f"GISTDA flood-freq of {province} gave {seen} of {matched} features")
+    current = _freq_page(opener, 0, page, query, sleep)
+    matched, offset, seen = current["numberMatched"], 0, 0
+    if matched > FREQ_MAX_PAGES * page:
+        raise OpenDataError(f"GISTDA flood-freq of {province} has {matched} features, more than {FREQ_MAX_PAGES} pages")
+    while True:
+        if current["numberMatched"] != matched:
+            raise OpenDataError(f"GISTDA flood-freq of {province} changed while it was read")
+        batch = [f for f in current["features"] if isinstance(f, dict)]
+        seen += len(batch)
+        for feature in batch:
+            props = feature.get("properties") or {}
+            code = f"{props.get('pv_code', '')}{props.get('ap_code', '')}{props.get('tb_code', '')}"
+            freq, rai = props.get("freq"), _number(props.get("area_rai"))
+            if (code not in known or isinstance(freq, bool) or not isinstance(freq, int) or not 1 <= freq <= 100
+                    or rai is None):
+                continue  # a piece without a subdistrict of ours, a count or an area is never guessed
+            area[code][freq] += rai
+            created = max(created, str(props.get("_createdAt") or ""))
+        offset += page
+        if offset >= matched or not batch:
+            break
+        if pause:
+            sleep(pause)
+        current = _freq_page(opener, offset, page, query, sleep)
+    if seen != matched:
+        raise OpenDataError(f"GISTDA flood-freq of {province} gave {seen} of {matched} features")
+    return area, created, matched
+
+
+def _freq_areas(area: dict[str, dict[int, float]], known: dict[str, str]) -> list[FloodFrequencyArea]:
+    out = []
+    for code in sorted(area):
+        top = max(area[code])
+        out.append(FloodFrequencyArea(
+            code=code, name_th=known[code], area_rai=round(sum(area[code].values()), 1), max_freq=top,
+            rai_by_freq=[round(area[code].get(k, 0.0), 1) for k in range(1, top + 1)]))
+    return out
+
+
+def _freq_file(subdistricts: list[FloodFrequencyArea], provinces: list[str], created: str,
+               now: datetime) -> FloodFrequency:
     try:
         data_created = date.fromisoformat(created[:10]) if created else None
     except ValueError:
         data_created = None
-    subdistricts = []
-    for code in sorted(area):
-        top = max(area[code])
-        subdistricts.append(FloodFrequencyArea(
-            code=code, name_th=known[code], area_rai=round(sum(area[code].values()), 1), max_freq=top,
-            rai_by_freq=[round(area[code].get(k, 0.0), 1) for k in range(1, top + 1)]))
     return FloodFrequency(name_th=FREQ_NAME_TH, credit_th=CREDIT_TH, source_url=PAGE_URL, built_at=now,
-                          data_created=data_created, provinces=list(provinces), subdistricts=subdistricts,
-                          notes_th=FREQ_NOTES_TH)
+                          data_created=data_created, provinces=sorted(provinces),
+                          subdistricts=sorted(subdistricts, key=lambda s: s.code), notes_th=FREQ_NOTES_TH)
+
+
+def collect_freq(opener: Opener, now: datetime, provinces: tuple[str, ...] = FREQ_PROVINCES, *,
+                 page: int | None = None, pause: float = 0.0,
+                 sleep: Callable[[float], None] = time.sleep) -> FloodFrequency:
+    """GISTDA's recurrent flooding of the provinces, summed by subdistrict: a statistic, read by hand once."""
+    known = {code: place.label for code, place in places().items() if place.kind == "subdistrict"}
+    subdistricts: list[FloodFrequencyArea] = []
+    created = ""
+    for province in provinces:
+        area, made, _ = _freq_province(opener, province, known, page or PAGE, pause, sleep)
+        subdistricts += _freq_areas(area, known)
+        created = max(created, made)
+    return _freq_file(subdistricts, list(provinces), created, now)
 
 
 def build_freq(out_dir: Path, now: datetime, key_path: Path, provinces: tuple[str, ...] = FREQ_PROVINCES, *,
-               opener_for: Callable[[str], Opener] = keyed_opener) -> FloodFrequency:
-    """The hand-run command: read the provinces and replace out_dir/ref/flood_freq.json (the rounds publish it)."""
+               opener_for: Callable[[str], Opener] = keyed_opener, pause: float = FREQ_PAUSE_S,
+               again: bool = False, sleep: Callable[[float], None] = time.sleep,
+               log: Callable[[str], None] = print) -> FloodFrequency:
+    """The hand-run command: read the provinces one at a time into out_dir/ref/flood_freq.json (the rounds publish
+    it). The file is written after each province, so a run that stops resumes where it stopped: a province already
+    in the file is skipped unless `again`."""
     key = load_key(key_path)
     if key is None:
         raise OpenDataError("no GISTDA key in the key file")
-    freq = collect_freq(opener_for(key), now, provinces)
-    atomic_write(out_dir / FREQ_PATH, freq.model_dump_json().encode("utf-8"))
+    opener = opener_for(key)
+    del key
+    known = {code: place.label for code, place in places().items() if place.kind == "subdistrict"}
+    path = out_dir / FREQ_PATH
+    try:
+        current = FloodFrequency.model_validate_json(path.read_bytes())
+    except (OSError, ValueError):
+        current = None
+    subdistricts = list(current.subdistricts) if current else []
+    done = list(current.provinces) if current else []
+    created = current.data_created.isoformat() if current and current.data_created else ""
+    freq = current
+    for n, province in enumerate(provinces, 1):
+        if province in done and not again:
+            log(f"{n}/{len(provinces)} {province}: in the file already")
+            continue
+        area, made, matched = _freq_province(opener, province, known, PAGE, pause, sleep)
+        subdistricts = [s for s in subdistricts if s.code[:2] != province] + _freq_areas(area, known)
+        done = sorted(set(done) | {province})
+        created = max(created, made)
+        freq = _freq_file(subdistricts, done, created, now)
+        atomic_write(path, freq.model_dump_json().encode("utf-8"))
+        log(f"{n}/{len(provinces)} {province}: {len(area)} subdistricts from {matched} features")
+    if freq is None:
+        freq = _freq_file([], [], "", now)
     return freq

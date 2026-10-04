@@ -126,6 +126,7 @@ export default function App() {
     canals,
     satellite,
     floodFreq,
+    loadFloodFreq,
   } = data;
   const [layers, setLayers] = useState<Layers>({
     alerts: true,
@@ -209,8 +210,9 @@ export default function App() {
     if (pin && snapshot) {
       void loadRoads();
       void loadPlaces();
+      void loadFloodFreq();
     }
-  }, [pin, snapshot, loadRoads, loadPlaces]);
+  }, [pin, snapshot, loadRoads, loadPlaces, loadFloodFreq]);
   const selected = alerts.find((a) => a.event_id === selectedId);
   const road = roads?.roads.find((r) => r.key === roadKey) ?? null;
   const frames = useMemo(() => snapshot?.radar?.frames ?? [], [snapshot]);

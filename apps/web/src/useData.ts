@@ -106,7 +106,8 @@ const REF_FILES: Record<RefName, { path: string; valid: (value: unknown) => bool
   canals: { path: 'summary/canals.json', valid: validCanalOutlook },
   // GISTDA's flooded area seen from satellites, summed by district (~a few KB), loaded at once
   satellite: { path: 'floods/satellite.json', valid: validSatellite },
-  // GISTDA's recurrent flooding of the pilot by subdistrict (a statistic, built by hand once), for the pin card
+  // GISTDA's recurrent flooding by subdistrict (a statistic built by hand once; ~1 MB for the whole country), loaded
+  // when a pin is first dropped
   floodFreq: { path: 'ref/flood_freq.json', valid: validFloodFreq },
 };
 const IDLE: RefSlot<never> = { value: null, state: 'idle' };
@@ -159,7 +160,6 @@ export function useData() {
       'canalLines',
       'canals',
       'satellite',
-      'floodFreq',
     ]),
   );
   const refreshRef = useRef<() => Promise<void>>(async () => undefined);
@@ -258,6 +258,7 @@ export function useData() {
   const loadPlaces = useCallback(() => want('places'), [want]);
   const loadBoundaries = useCallback(() => want('boundaries'), [want]);
   const loadRiverLines = useCallback(() => want('riverLines'), [want]);
+  const loadFloodFreq = useCallback(() => want('floodFreq'), [want]);
 
   const refresh = useCallback(async () => {
     if (flight.current) return;
@@ -360,5 +361,6 @@ export function useData() {
     canals: canals.value,
     satellite: satellite.value,
     floodFreq: floodFreq.value,
+    loadFloodFreq,
   };
 }
