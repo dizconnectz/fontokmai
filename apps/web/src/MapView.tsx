@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Crosshair, Expand, LocateFixed, MapPin, Map as MapIcon, Star } from 'lucide-react';
+import { Crosshair, Expand, LocateFixed, MapPin, Map as MapIcon, Star, Waves } from 'lucide-react';
 import areaThaiFont from '@fontsource/noto-sans-thai/files/noto-sans-thai-thai-600-normal.woff2?url';
 import areaLatinFont from '@fontsource/noto-sans-thai/files/noto-sans-thai-latin-600-normal.woff2?url';
 import type {
@@ -172,6 +172,8 @@ interface Props {
   /** where the saved place is: a star pin stays there (user 2026-10-02); null when none, or the pin is on it */
   favoriteLocation: LngLat | null;
   onFavorite: () => void;
+  /** shows or hides GISTDA's satellite flood map; null when there is none to show */
+  onSatellite: (() => void) | null;
   onList: () => void;
   /** a report chosen in the list: fly there and open its popup, without touching the side panel */
   openFlood: { id: string; key: string } | null;
@@ -2180,6 +2182,29 @@ export default function MapView(props: Props) {
             >
               <Star size={17} />
               <span>ที่ของฉัน</span>
+            </button>
+          )}
+          {props.onSatellite && (
+            <button
+              aria-pressed={props.layers.satellite}
+              aria-label={
+                props.layers.satellite
+                  ? 'ซ่อนแผนที่น้ำท่วมจากดาวเทียม'
+                  : 'เปิดดูแผนที่น้ำท่วมจากดาวเทียม'
+              }
+              onClick={props.onSatellite}
+              style={
+                props.layers.satellite
+                  ? {
+                      borderColor: 'var(--brand)',
+                      background: 'var(--chip-bg)',
+                      color: 'var(--chip-ink)',
+                    }
+                  : undefined
+              }
+            >
+              <Waves size={17} />
+              <span>{props.layers.satellite ? 'ซ่อนแผนที่น้ำท่วม' : 'ดูแผนที่น้ำท่วม'}</span>
             </button>
           )}
         </div>
