@@ -22,7 +22,7 @@ jobs:
     # a failed scheduled run emails the owner too: what the check finds is in its report, not in the run's result
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Check the live data (report in the log and the summary)
         run: |
           python3 scripts/check_live_data.py --report report.md --status status.txt || echo "problem" > status.txt

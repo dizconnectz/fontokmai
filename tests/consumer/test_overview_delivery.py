@@ -85,13 +85,13 @@ def test_today_does_not_reuse_daily_total_that_includes_past_rain():
 
 
 def test_today_accumulates_only_remaining_hours_and_handles_null():
-    file = forecast([0] * 10, hourly=100)  # eight hours remaining = 80 mm
+    file = forecast([0] * 10, hourly=100)  # seven full future hours; the current partially elapsed hour is skipped
     result = build(file)
     reason = next(
         r for i in result.items for r in i.reasons if r.kind == "rain_forecast"
     )
-    assert "80 มม." in reason.text_th and reason.day == NOW.date()
-    file.rain[0] = [None] * 10
+    assert "70 มม." in reason.text_th and reason.day == NOW.date()
+    file.rain[1] = [None] * 10  # first full future hour; index 0 is the already-partly-elapsed hour
     result = build(file)
     assert not any(
         r.kind == "rain_forecast" and r.day == NOW.date()

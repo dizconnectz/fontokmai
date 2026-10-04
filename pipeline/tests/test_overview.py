@@ -40,7 +40,7 @@ def _dump(model):
 
 def _lattice_forecast(fill, fetched=NOW, hourly=lambda h, lon, lat: 0):
     """A 0.25° lattice over central Thailand (Kanchanaburi to Chachoengsao): day_rain[d] = fill(d, lon, lat) and
-    rain[h] = hourly(h, lon, lat), in 0.1 mm. The hours start at 17:00, so today has 8 hours to come (to 24:00)."""
+    rain[h] = hourly(h, lon, lat), in 0.1 mm. The first hour ends at 17:00; at NOW=16:30 it is partly elapsed."""
     lattice = ForecastLattice(west=99.0, south=13.5, step=0.25)
     points = [[c, r] for r in range(5) for c in range(9)]
     today = NOW.date()
@@ -125,7 +125,7 @@ def test_forecast_names_provinces_and_days_and_follows_a_place_already_watched()
             return 2000
         return 20
 
-    def hourly(h, lon, lat):  # 6 mm an hour to midnight around Pathum Thani: 48 mm in the rest of today
+    def hourly(h, lon, lat):  # 6 mm in each full future hour around Pathum Thani: 42 mm to midnight
         return 60 if lon >= 100.5 and lat >= 13.9 else 0
     reports = [_report(n, RANGSIT, timedelta(minutes=5)) for n in range(3)]
     files = {"forecast/rain.json": _dump(_lattice_forecast(fill, hourly=hourly)),
@@ -134,7 +134,7 @@ def test_forecast_names_provinces_and_days_and_follows_a_place_already_watched()
     thanyaburi = next(i for i in overview.items if i.when == "now")
     assert [r.kind for r in thanyaburi.reasons] == ["flood_reports", "rain_forecast"]
     assert thanyaburi.reasons[1].day == NOW.date()
-    assert thanyaburi.reasons[1].text_th.startswith("ฝนหนัก") and "สูงสุดราว 48 มม." in thanyaburi.reasons[1].text_th
+    assert thanyaburi.reasons[1].text_th.startswith("ฝนหนัก") and "สูงสุดราว 42 มม." in thanyaburi.reasons[1].text_th
     kanchanaburi = next(i for i in overview.items if i.place_th == "จ.กาญจนบุรี")
     assert kanchanaburi.when == "next" and kanchanaburi.zoom == 8 and kanchanaburi.area_code == "71"
     assert kanchanaburi.reasons[0].day == date(2026, 9, 29)
@@ -149,7 +149,7 @@ def test_forecast_names_provinces_and_days_and_follows_a_place_already_watched()
 
 
 def test_three_day_totals_and_short_bursts_use_the_experimental_levels_of_the_site():
-    # east of 100.9°: 10 mm an hour to midnight with one hour of 38 mm, then 40 mm on each of the next two days
+    # east of 100.9°: 10 mm in full future hours with one hour of 38 mm, then 40 mm on each of the next two days
     forecast = _lattice_forecast(lambda d, lon, lat: 400 if d in (1, 2) and lon >= 100.9 else 0,
                                  hourly=lambda h, lon, lat: (380 if h == 3 else 100) if lon >= 100.9 else 0)
     overview = build_overview({"forecast/rain.json": _dump(forecast)}, NOW, G)
@@ -159,11 +159,30 @@ def test_three_day_totals_and_short_bursts_use_the_experimental_levels_of_the_si
     assert burst.text_th == "ฝนแรงช่วงสั้นราว 38 มม./ชม. เสี่ยงน้ำขังรอระบาย"
     three = next(r for i in overview.items for r in i.reasons if r.kind == "rain_3days")
     # no agency is named for a threshold nobody could confirm (Codex M23), and the text says which three days
-    assert three.text_th == "ฝนพยากรณ์รวมวันนี้ถึงมะรืนราว 188 มม. ถึงเกณฑ์ทดลองของเว็บ"
+    assert three.text_th == "ฝนพยากรณ์รวมวันนี้ถึงมะรืนราว 178 มม. ถึงเกณฑ์ทดลองของเว็บ"
     stale = build_overview({"forecast/rain.json": _dump(_lattice_forecast(lambda d, lon, lat: 1500,
                                                                             fetched=NOW - timedelta(hours=13)))},
                            NOW, G)
     assert stale.items == []
+
+
+def test_m58_forecast_today_ignores_the_partly_elapsed_hour_and_requires_a_complete_hour_axis():
+    only_elapsed_hour = _lattice_forecast(lambda d, lon, lat: 0,
+                                          hourly=lambda h, lon, lat: 1000 if h == 0 else 0)
+    items = build_overview({"forecast/rain.json": _dump(only_elapsed_hour)}, NOW, G).items
+    assert not [reason for item in items for reason in item.reasons
+                if reason.kind in {"rain_forecast", "rain_3days"} and reason.day == NOW.date()]
+
+    # A missing bin does not hide a threshold exceeded by the known future hours, but marks the evidence incomplete.
+    known_rain = [list(row) for row in only_elapsed_hour.rain]
+    known_rain[1] = [1000] * len(only_elapsed_hour.points)  # 100 mm in the full 17:00–18:00 forecast hour
+    missing_axis = only_elapsed_hour.model_copy(update={
+        "hours": only_elapsed_hour.hours[:2] + only_elapsed_hour.hours[3:],
+        "rain": known_rain[:2] + known_rain[3:],
+    })
+    items = build_overview({"forecast/rain.json": _dump(missing_axis)}, NOW, G).items
+    reason = next(reason for item in items for reason in item.reasons if reason.kind == "rain_forecast")
+    assert "สูงสุดราว 100 มม." in reason.text_th and "ข้อมูลชั่วโมงพยากรณ์ไม่ครบ" in reason.text_th
 
 
 def test_rivers_rising_a_lot_and_dams_over_capacity_are_to_prepare_for():

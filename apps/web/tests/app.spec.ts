@@ -1679,7 +1679,7 @@ test('the summary of places to watch comes first, then flood reports, then the o
   await expect(summary).toContainText('ถนนน้ำท่วมขัง 1 สาย ยังไม่แห้ง');
   await expect(summary).toContainText('มีรายงานน้ำท่วม 2 จุด');
   await expect(summary).toContainText(
-    'อีก 2 วัน (วันอาทิตย์): ฝนหนักเกือบทั้งจังหวัด สูงสุดราว 50 มม.',
+    'อีก 2 วัน (วันอาทิตย์): ฝนหนักเกือบทั่ว กทม. สูงสุดราว 50 มม.',
   );
   const headings = await page.locator('#panel h2').allTextContents();
   const at = (text: string) => headings.findIndex((heading) => heading.includes(text));
