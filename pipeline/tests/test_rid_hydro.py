@@ -28,6 +28,15 @@ def test_a_notation_or_a_mark_is_not_a_figure():
     assert rid_hydro.parse_station("C.35", json.dumps({"d": json.loads(C35)}).encode()).flow_cms == 1489.0
 
 
+def test_invalid_latest_flow_does_not_hide_an_older_valid_hour():
+    for invalid in (-1, float("nan"), float("inf"), 10**1000):
+        rows = json.loads(C35)
+        rows[0]["Q"], rows[0]["waterlevelvalue"] = invalid, "*"
+        station = rid_hydro.parse_station("C.35", json.dumps(rows).encode())
+        assert station.flow_cms == 1489.0
+        assert station.observed_at == datetime(2026, 10, 4, 10, 0, tzinfo=UTC)
+
+
 def test_collect_asks_each_station_and_keeps_those_with_figures():
     asked = []
 
