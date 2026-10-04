@@ -8,6 +8,7 @@
 ## งานถัดไป (เรียงตามลำดับ)
 1. **merge แล้ว**: PR #3 (f427544) และ PR #4 GISTDA ฝั่ง pipeline (a4f578b) · ผู้ใช้รัน `deploy.sh` แล้วหลัง PR #3 (ก่อน PR #4) → **ต้อง deploy อีกครั้ง** หลังรวมชั้นแผนที่ แล้วดู log รอบว่ามี `"satellite": "built N districts ..."`
 2. **GISTDA พื้นที่น้ำท่วมจากดาวเทียม** (ผู้ใช้ขอ 2026-10-04 ยืนยันว่าไม่มีข้อห้ามเผยแพร่ต่อ แต่**ห้าม key อยู่ใน repo หรือหน้าเว็บ**)
+   - ท่วมซ้ำซากทั้งประเทศ: ผู้ใช้เริ่มรัน `--provinces all` บน VPS แล้ว 2026-10-04 (เบื้องหลัง หลายชั่วโมง) · ชุดใหม่ของ GISTDA: ไม่ตั้งตรวจอัตโนมัติ ผู้ใช้ให้จดไว้แล้วแจ้งเมื่อเจอ (AGENTS.md D7, `docs/apis/gistda.md` ท้ายไฟล์)
    - **คู่มือ API (ทุก endpoint, ช่องข้อมูล, พารามิเตอร์ที่ใช้ได้, วิธีทดลองบน VPS): `docs/apis/gistda.md`**
    - deploy a53b81c แล้ว (ผู้ใช้ 2026-10-04) · รอบแรกบน VPS: 158 อำเภอ 4,400.1 ตร.กม. ภาพ 2 ต.ค. · ไฟล์เดิมไม่มี `name_th` จึงไม่เผยแพร่จนกว่ารอบ GISTDA ถัดไป (ภายใน 3 ชม.) · build cache ของ fontokmai โตเป็น 599 MB (0 ลบได้) ควรดู `prune_own_cache.py`
    - key อยู่ที่ VPS `~/fontokmai/secrets/gistda_key` (600) + `GISTDA_KEY=` ใน `.env` · compose mount `/run/secrets/gistda_key` · ส่งเฉพาะ header `API-Key`

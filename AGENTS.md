@@ -105,3 +105,4 @@
 4. Claude: P0-B2 ที่เหลือ: takeover/failback, งบรวม image/cache, ระดับ 85/90% (design 4.9; สำรอง/retention/`restore-db`/คลัง เสร็จแล้ว)
 5. (ใช้งานแล้ว D31) DXS ดึงเป็นครั้งๆ จากเครื่องผู้ใช้เมื่อสั่ง รวมเขื่อน สรุปสถานการณ์ สถานีอุตุฯ และเครื่องสูบ
 6. Codex รีวิวตาม C2 (กลับมา 2026-09-27)
+7. **ทุก agent (ผู้ใช้สั่ง 2026-10-04)**: ข้อมูลท่วมซ้ำซาก `ref/flood_freq.json` เป็นสถิติที่ GISTDA สร้างเมื่อ 2025-06-17 (`data_created`) · ถ้าเจอว่า GISTDA มีชุดใหม่กว่า (เช่น `_createdAt` ของ `features/flood-freq` ใหม่กว่า หรือ GISTDA ประกาศ) ให้**แจ้งผู้ใช้**ให้รัน `flood-freq --provinces all --again` บน VPS (คำสั่งเต็มใน `docs/apis/gistda.md`) · ไม่ตั้งตรวจอัตโนมัติ
