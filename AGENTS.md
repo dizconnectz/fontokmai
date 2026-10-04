@@ -45,7 +45,7 @@
 ### A5. งานที่กำลังทำ (Active claims)
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
-| — | — | — | ไม่มีไฟล์ที่กำลังแก้ · VPS รอตรวจภายหลังตามผู้ใช้ | — |
+| Claude | 2026-10-04 20:40 | `pipeline/src/fontokmai/{canal_outlook,run}.py`, `pipeline/src/fontokmai/ref_data/canals*`, `pipeline/tests/test_canal_outlook.py`, `contracts/`, `apps/web/src/` | คลอง กทม. + ลิงก์ Longdo Water (ผู้ใช้ให้อำนาจทำแทน Codex) | canals-bkk |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md` · ส่วนที่ย้ายออกเมื่อเข้าถึง private ไม่ได้: `docs/agents-archive.md`)
 
@@ -66,10 +66,6 @@
 - merged PR #3–#11: M55 สีนอกแถบสีไม่นับเป็นฝน · กล้อง DWR 128 ตัว `cctv/mjpeg/{code}` · GISTDA `floods/satellite.json` (สัญญา28) + ชั้นแผนที่ + การ์ดหมุด + "ที่ของฉัน" + overview `satellite_flood` · ท่วมซ้ำ `ref/flood_freq.json` (สัญญา29, `flood-freq` รันมือ) · คู่มือ `docs/apis/gistda.md` · DXS วันที่ พ.ศ. 29 ก.พ. · key GISTDA อยู่ VPS เท่านั้น
 - C.35 ตัวเลขสำรอง: `bkk-fetch` ถามบริการ JSON ของหน้าศูนย์อุทกวิทยาฯ (ตอบเฉพาะในไทย, ต้องเปิดหน้าก่อนเพื่อคุกกี้ ไม่งั้น 401) → `bkk/rid_hydro.json` → `flow_backup_at` เมื่อรายงานไม่มีเลข (ดู `docs/sources.md`)
 - **PC ผู้ใช้**: สคริปต์อัปเดต กทม. รันจาก clone แยก `~/.fontokmai/app` (`git pull --ff-only` ตาม main ทุกรอบ) ห้ามแก้โค้ดในนั้น · งานต่อ `docs/handoff-claude-2026-10-04.md`
-
-#### 2026-10-04 11:47 ICT — ทวนสูตรและทยอยแก้ M52–M54 (Codex)
-- M48/M49 เดิมแก้แล้ว; พบต่อ M52: ขึ้น9.6ซม.ถูกปัดเป็น10ก่อนให้คะแนน และไม่มีคู่ค่าวัดยังassessed=true → canals-v3 ใช้ค่าจริง/คู่เวลาเรียงถูก; testใหม่9กรณี ชุดคลอง17ผ่าน+ruff; สัญญา27/วิธีคิด/designแก้ตรงกัน ไม่เปลี่ยนschema
-- M52 push446d766/CIผ่าน; M53 canals-v4 เพิ่มgapเมื่อข้อมูลบางส่วน/เวลาอนาคต ชุดคลอง21ผ่าน pushbfae8f5 · M54 ตรวจหน่วย/แกนเวลา/percentile ก่อนเผยแพร่ ทดสอบจำลอง13กรณี; รายงาน private/handoffs/2026-10-03-codex-formula-recheck.md (เก็บA6 21:32เดิม) · ความแม่นยังไม่ผ่านbacktest · รอCI/deploy
 
 ## B. การตัดสินใจ
 ข้อเสนอเดิม D1–D10 จากร่างแรกถูกแทนด้วยตารางนี้เพราะขัดกับ D12 (ดูเหตุผลเดิมได้ใน snapshot)
