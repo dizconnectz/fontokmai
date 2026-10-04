@@ -172,6 +172,23 @@ test('the page hardly shifts while the files arrive one by one (CLS at most 0.1,
     manifest.files.push({ path, sha256: 'a'.repeat(64), size: 1, revision: 1 });
   const overview = read('overview', 'overview');
   overview.generated_at = manifest.generated_at;
+  const current = overview.items.find((item: { when: string }) => item.when === 'now');
+  const ahead = overview.items.find((item: { when: string }) => item.when === 'next');
+  overview.items = [
+    ...Array.from({ length: 12 }, (_, index) => ({
+      ...current,
+      place_th: `อ.ทดสอบ${index} จ.ทดสอบ${index}`,
+      province_code: '99',
+      detail_th: `ใกล้ถนนตัวอย่างหมายเลข ${index} ในพื้นที่ทดสอบ`,
+      score: 100 - index,
+    })),
+    ...Array.from({ length: 6 }, (_, index) => ({
+      ...ahead,
+      place_th: `จ.เตรียม${index}`,
+      province_code: '99',
+      score: 50 - index,
+    })),
+  ];
   const later = (ms: number, json: unknown) => async (route: Route) => {
     await new Promise((resolve) => setTimeout(resolve, ms));
     await route.fulfill({ json });
@@ -202,6 +219,28 @@ test('the page hardly shifts while the files arrive one by one (CLS at most 0.1,
     worst = Math.max(worst, sum);
   }
   expect(worst).toBeLessThanOrEqual(0.1);
+});
+
+test('the summary previews the top area and can expand to all areas', async ({ page }) => {
+  await prepare(page);
+  const overview = read('overview', 'overview');
+  overview.generated_at = read('active', 'manifest').generated_at;
+  const current = overview.items.find((item: { when: string }) => item.when === 'now');
+  overview.items = Array.from({ length: 8 }, (_, index) => ({
+    ...current,
+    place_th: `อ.ทดสอบ${index} จ.ทดสอบ${index}`,
+    province_code: '99',
+    score: 100 - index,
+  }));
+  await page.route('**/summary/overview.json?*', (route) => route.fulfill({ json: overview }));
+  await page.goto('/');
+
+  const summary = page.getByTestId('summary');
+  const currentList = summary.locator('.summary-list').first();
+  await expect(currentList.locator('li')).toHaveCount(1);
+  await expect(summary).toContainText('ต้องระวังตอนนี้ 8 แห่ง');
+  await summary.getByRole('button', { name: 'ดูทั้งหมด' }).click();
+  await expect(currentList.locator('li')).toHaveCount(8);
 });
 
 test('official alerts show their severity and a one-line summary, then open in full', async ({

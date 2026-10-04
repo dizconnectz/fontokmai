@@ -13,8 +13,8 @@ export type OverviewReason = OverviewItem['reasons'][number];
 /** The file is rebuilt every round (15 minutes): older than this it is labelled, older than the second hidden. */
 export const OVERVIEW_STALE_MS = 45 * 60_000;
 export const OVERVIEW_TOO_OLD_MS = 3 * 3_600_000;
-/** items of each list shown before "ดูทั้งหมด" */
-export const OVERVIEW_TOP = 5;
+/** The top area in each list stays visible; the panel can expand the rest from "ดูทั้งหมด". */
+export const OVERVIEW_TOP = 1;
 
 const DAY = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' });
 const WEEKDAY = new Intl.DateTimeFormat('th-TH', { timeZone: 'Asia/Bangkok', weekday: 'long' });
