@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { LONGDO_WATER_TH, longdoWaterUrl } from './longdo';
 import {
   ArrowUpRight,
   Camera as CameraIcon,
@@ -1977,6 +1978,13 @@ export function PinCard({
             </small>
           </div>
         )}
+        {/* canals and rivers around the pin against their banks, which this site's files lack (user 2026-10-04) */}
+        <p className="source-note" data-testid="longdo-water">
+          <a href={longdoWaterUrl(pin)} target="_blank" rel="noopener noreferrer">
+            {LONGDO_WATER_TH}
+          </a>{' '}
+          ระดับน้ำคลองและแม่น้ำรอบหมุดเทียบตลิ่ง (ข้อมูล กทม. และแม่น้ำทั่วประเทศ)
+        </p>
         {reportedHere.length > 0 && (
           <div className="road-report-here" data-testid="road-report-here">
             <strong>
