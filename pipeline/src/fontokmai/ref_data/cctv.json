@@ -1,6 +1,6 @@
 {
  "schema_version": "1",
- "updated": "2026-09-27",
+ "updated": "2026-10-04",
  "cameras": [
   {
    "id": "bma-dds-2",
@@ -25,8 +25,8 @@
     17.95565
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC032103",
+   "note_th": "สถานี TC032103 ต.ท่าสะอาด อ.เซกา จ.บึงกาฬ"
   },
   {
    "id": "dwr-10",
@@ -39,7 +39,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-100",
@@ -52,7 +52,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-101",
@@ -65,7 +65,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-102",
@@ -78,7 +78,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-11",
@@ -90,8 +90,8 @@
     15.8506
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA063006",
+   "note_th": "สถานี TA063006 ต.หัวดง อ.เก้าเลี้ยว จ.นครสวรรค์"
   },
   {
    "id": "dwr-12",
@@ -104,7 +104,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-13",
@@ -116,8 +116,8 @@
     18.29202
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC070301",
+   "note_th": "สถานี TC070301 ต.สวนดอก อ.เมือง จ.ลำปาง"
   },
   {
    "id": "dwr-16",
@@ -130,7 +130,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-17",
@@ -143,7 +143,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-18",
@@ -156,7 +156,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-20",
@@ -169,7 +169,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-21",
@@ -182,7 +182,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-22",
@@ -195,7 +195,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-24",
@@ -208,7 +208,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-25",
@@ -221,7 +221,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-26",
@@ -233,8 +233,8 @@
     14.36839
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA100218",
+   "note_th": "สถานี TA100218 ต.บ้านป้อม อ.พระนครศรีอยุธยา จ.พระนครศรีอยุธยา"
   },
   {
    "id": "dwr-27",
@@ -246,8 +246,8 @@
     14.3163
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC100222",
+   "note_th": "สถานี TC100222 ต.บ้านแพน อ.เสนา จ.พระนครศรีอยุธยา"
   },
   {
    "id": "dwr-29",
@@ -260,7 +260,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-3",
@@ -272,8 +272,8 @@
     17.87617
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC031106",
+   "note_th": "สถานี TC031106 ต.น้ำโมง อ.ท่าบ่อ จ.หนองคาย"
   },
   {
    "id": "dwr-30",
@@ -286,7 +286,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-32",
@@ -299,7 +299,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-33",
@@ -312,7 +312,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-34",
@@ -325,7 +325,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-35",
@@ -338,7 +338,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-37",
@@ -350,8 +350,8 @@
     14.89902
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC100223",
+   "note_th": "สถานี TC100223 ต.บางมัญ อ.เมือง จ.สิงห์บุรี"
   },
   {
    "id": "dwr-38",
@@ -364,7 +364,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-4",
@@ -377,7 +377,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-40",
@@ -390,7 +390,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-41",
@@ -403,7 +403,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-42",
@@ -416,7 +416,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-43",
@@ -429,7 +429,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-44",
@@ -442,7 +442,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-49",
@@ -455,7 +455,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-50",
@@ -468,7 +468,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-52",
@@ -481,7 +481,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-53",
@@ -494,7 +494,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-55",
@@ -506,8 +506,8 @@
     11.20522
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC180805",
+   "note_th": "สถานี TC180805 ต.กำเนิดนพคุณ อ.บางสะพาน จ.ประจวบคีรีขันธ์"
   },
   {
    "id": "dwr-56",
@@ -519,8 +519,8 @@
     7.002
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA200304",
+   "note_th": "สถานี TA200304 ต.หาดใหญ่ อ.หาดใหญ่ จ.สงขลา"
   },
   {
    "id": "dwr-58",
@@ -532,8 +532,8 @@
     7.338
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA200206",
+   "note_th": "สถานี TA200206 ต.แม่ขรี อ.ตะโหมด จ.พัทลุง"
   },
   {
    "id": "dwr-59",
@@ -546,7 +546,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-65",
@@ -558,8 +558,8 @@
     17.8776
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC031203",
+   "note_th": "สถานี TC031203 ต.มีชัย อ.เมือง จ.หนองคาย"
   },
   {
    "id": "dwr-66",
@@ -571,8 +571,8 @@
     17.89975
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC030807",
+   "note_th": "สถานี TC030807 ต.เชียงคาน อ.เชียงคาน จ.เลย"
   },
   {
    "id": "dwr-67",
@@ -584,8 +584,8 @@
     15.32187
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC033612",
+   "note_th": "สถานี TC033612 ต.โขงเจียม อ.โขงเจียม จ.อุบลราชธานี"
   },
   {
    "id": "dwr-68",
@@ -598,7 +598,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-69",
@@ -611,7 +611,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-7",
@@ -623,8 +623,8 @@
     20.44375
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC020106",
+   "note_th": "สถานี TC020106 ต.เวียงพางคำ อ.แม่สาย จ.เชียงราย"
   },
   {
    "id": "dwr-70",
@@ -637,7 +637,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-71",
@@ -649,8 +649,8 @@
     17.51717
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA081301",
+   "note_th": "สถานี TA081301 ต.หาดเสี้ยว อ.ศรีสัชนาลัย จ.สุโขทัย"
   },
   {
    "id": "dwr-72",
@@ -662,8 +662,8 @@
     16.76207
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA081902",
+   "note_th": "สถานี TA081902 ต.บางระกำ อ.บางระกำ จ.พิษณุโลก"
   },
   {
    "id": "dwr-73",
@@ -676,7 +676,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-74",
@@ -688,8 +688,8 @@
     17.64285
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA091501",
+   "note_th": "สถานี TA091501 ต.ท่าเสา อ.เมือง จ.อุตรดิตถ์"
   },
   {
    "id": "dwr-75",
@@ -701,8 +701,8 @@
     18.79501
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA090502",
+   "note_th": "สถานี TA090502 ต.ฝายแก้ว อ.ภูเพียง จ.น่าน"
   },
   {
    "id": "dwr-76",
@@ -714,8 +714,8 @@
     16.00952
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA092306",
+   "note_th": "สถานี TA092306 ต.เนินมะกอก อ.บางมูลนาก จ.พิจิตร"
   },
   {
    "id": "dwr-77",
@@ -727,8 +727,8 @@
     16.8053
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA092101",
+   "note_th": "สถานี TA092101 ต.วัดจันทร์ อ.เมือง จ.พิษณุโลก"
   },
   {
    "id": "dwr-78",
@@ -740,8 +740,8 @@
     15.10848
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA100214",
+   "note_th": "สถานี TA100214 ต.โพนางดำตก อ.สรรพยา จ.ชัยนาท"
   },
   {
    "id": "dwr-79",
@@ -753,8 +753,8 @@
     14.73518
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA100215",
+   "note_th": "สถานี TA100215 ต.องครักษ์ อ.โพธิ์ทอง จ.อ่างทอง"
   },
   {
    "id": "dwr-8",
@@ -766,8 +766,8 @@
     16.36923
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA040906",
+   "note_th": "สถานี TA040906 ต.ดอนหัน อ.เมือง จ.ขอนแก่น"
   },
   {
    "id": "dwr-80",
@@ -779,8 +779,8 @@
     14.55615
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA121103",
+   "note_th": "สถานี TA121103 ต.ศาลารีไทย อ.เสาไห้ จ.สระบุรี"
   },
   {
    "id": "dwr-81",
@@ -792,8 +792,8 @@
     14.59235
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA121102",
+   "note_th": "สถานี TA121102 ต.แก่งคอย อ.แก่งคอย จ.สระบุรี"
   },
   {
    "id": "dwr-82",
@@ -805,8 +805,8 @@
     15.16075
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA130201",
+   "note_th": "สถานี TA130201 ต.หนองน้อย อ.วัดสิงห์ จ.ชัยนาท"
   },
   {
    "id": "dwr-83",
@@ -818,8 +818,8 @@
     13.5859
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA130203",
+   "note_th": "สถานี TA130203 ต.บ้านเกาะ อ.เมือง จ.สมุทรสาคร"
   },
   {
    "id": "dwr-84",
@@ -831,8 +831,8 @@
     13.7235
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA130204",
+   "note_th": "สถานี TA130204 ต.สามพราน อ.สามพราน จ.นครปฐม"
   },
   {
    "id": "dwr-85",
@@ -844,8 +844,8 @@
     13.89884
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA130205",
+   "note_th": "สถานี TA130205 ต.บางแก้วฟ้า อ.นครชัยศรี จ.นครปฐม"
   },
   {
    "id": "dwr-86",
@@ -857,8 +857,8 @@
     14.01599
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA130206",
+   "note_th": "สถานี TA130206 ต.บางเลน อ.บางเลน จ.นครปฐม"
   },
   {
    "id": "dwr-87",
@@ -870,8 +870,8 @@
     14.47044
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA130207",
+   "note_th": "สถานี TA130207 ต.ท่าพี่เลี้ยง อ.เมือง จ.สุพรรณบุรี"
   },
   {
    "id": "dwr-88",
@@ -883,8 +883,8 @@
     14.75148
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA130208",
+   "note_th": "สถานี TA130208 ต.สามชุก อ.สามชุก จ.สุพรรณบุรี"
   },
   {
    "id": "dwr-89",
@@ -896,8 +896,8 @@
     13.68868
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC151007",
+   "note_th": "สถานี TC151007 ต.หน้าเมือง อ.เมือง จ.ฉะเชิงเทรา"
   },
   {
    "id": "dwr-9",
@@ -909,8 +909,8 @@
     14.98455
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC050607",
+   "note_th": "สถานี TC050607 ต.ในเมือง อ.เมือง จ.นครราชสีมา"
   },
   {
    "id": "dwr-90",
@@ -922,8 +922,8 @@
     12.61389
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC170709",
+   "note_th": "สถานี TC170709 ต.วัดใหม่ อ.เมือง จ.จันทบุรี"
   },
   {
    "id": "dwr-91",
@@ -935,8 +935,8 @@
     15.29939
    ],
    "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA052203",
+   "note_th": "สถานี TA052203 ต.สตึก อ.สตึก จ.บุรีรัมย์"
   },
   {
    "id": "dwr-95",
@@ -949,7 +949,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-96",
@@ -962,7 +962,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-97",
@@ -975,7 +975,7 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-99",
@@ -988,7 +988,410 @@
    ],
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": null
+   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
+  },
+  {
+   "id": "dwr-ta020510",
+   "name_th": "สะพานมิตรภาพแม่นาวาง-ท่าตอน",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.40704,
+    20.05043
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA020510",
+   "note_th": "สถานี TA020510 ต.แม่นาวาง อ.แม่อาย จ.เชียงใหม่"
+  },
+  {
+   "id": "dwr-ta020511",
+   "name_th": "สะพานพ่อขุนเม็งรายมหาราช",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.77252,
+    19.93119
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA020511",
+   "note_th": "สถานี TA020511 ต.แม่ยาว อ.เมือง จ.เชียงราย"
+  },
+  {
+   "id": "dwr-ta030704",
+   "name_th": "แม่น้ำเลย",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    101.73438,
+    17.49478
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA030704",
+   "note_th": "สถานี TA030704 ต.กุดป่อง อ.เมือง จ.เลย"
+  },
+  {
+   "id": "dwr-ta033103",
+   "name_th": "ลำน้ำก่ำ",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    104.50442,
+    16.95748
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA033103",
+   "note_th": "สถานี TA033103 ต.นาแก อ.นาแก จ.นครพนม"
+  },
+  {
+   "id": "dwr-ta040502",
+   "name_th": "บ้านโนนเชือก",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    101.83,
+    15.73266
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA040502",
+   "note_th": "สถานี TA040502 ต.ส้มป่อย อ.จัตุรัส จ.ชัยภูมิ"
+  },
+  {
+   "id": "dwr-ta040705",
+   "name_th": "บ้านค่ายหมื่นแพ้ว",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    102.00973,
+    15.68141
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA040705",
+   "note_th": "สถานี TA040705 ต.บ้านค่าย อ.เมือง จ.ชัยภูมิ"
+  },
+  {
+   "id": "dwr-ta040905",
+   "name_th": "วัดป่าประชาราษฎร์",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    102.57006,
+    16.09691
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA040905",
+   "note_th": "สถานี TA040905 ต.กุดเค้า อ.มัญจาคีรี จ.ขอนแก่น"
+  },
+  {
+   "id": "dwr-ta042403",
+   "name_th": "กมลาไสย",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    103.57659,
+    16.34075
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA042403",
+   "note_th": "สถานี TA042403 ต.กมลาไสย อ.กมลาไสย จ.กาฬสินธุ์"
+  },
+  {
+   "id": "dwr-ta042504",
+   "name_th": "เสลภูมิ",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    103.90714,
+    16.03412
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA042504",
+   "note_th": "สถานี TA042504 ต.กลาง อ.เสลภูมิ จ.ร้อยเอ็ด"
+  },
+  {
+   "id": "dwr-ta042705",
+   "name_th": "ยโสธร",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    104.13444,
+    15.79895
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA042705",
+   "note_th": "สถานี TA042705 ต.ในเมือง อ.เมือง จ.ยโสธร"
+  },
+  {
+   "id": "dwr-ta042706",
+   "name_th": "สะพานบ้านแจนแลน",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    104.3239,
+    15.43222
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA042706",
+   "note_th": "สถานี TA042706 ต.กุดน้ำใส อ.ค้อวัง จ.ยโสธร"
+  },
+  {
+   "id": "dwr-ta051303",
+   "name_th": "ลำปลายมาศ",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    102.81715,
+    14.99931
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA051303",
+   "note_th": "สถานี TA051303 ต.หนองคู อ.ลำปลายมาศ จ.บุรีรัมย์"
+  },
+  {
+   "id": "dwr-ta052303",
+   "name_th": "ลำชีบ้านละลูน",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    103.37886,
+    14.87555
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA052303",
+   "note_th": "สถานี TA052303 ต.หนองเต็ง อ.กระสัง จ.บุรีรัมย์"
+  },
+  {
+   "id": "dwr-ta054502",
+   "name_th": "อุบลราชธานี",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    104.85743,
+    15.22294
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA054502",
+   "note_th": "สถานี TA054502 ต.ในเมือง อ.เมือง จ.อุบลราชธานี"
+  },
+  {
+   "id": "dwr-ta060503",
+   "name_th": "สะพานประชานิมิต",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    98.97523,
+    18.94562
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA060503",
+   "note_th": "สถานี TA060503 ต.สันโป่ง อ.แม่ริม จ.เชียงใหม่"
+  },
+  {
+   "id": "dwr-ta060810",
+   "name_th": "น้ำแม่กวงที่ลำพูน",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.017,
+    18.58286
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA060810",
+   "note_th": "สถานี TA060810 ต.เวียงยอง อ.เมืองลำพูน จ.ลำพูน"
+  },
+  {
+   "id": "dwr-ta061016",
+   "name_th": "น้ำแม่ขานที่บ้านท่าเดื่อ",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    98.85105,
+    18.61199
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA061016",
+   "note_th": "สถานี TA061016 ต.บ้านแม อ.สันป่าตอง จ.เชียงใหม่"
+  },
+  {
+   "id": "dwr-ta061206",
+   "name_th": "น้ำแม่ลี้ที่ อ.ลี้",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    98.95314,
+    17.80522
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA061206",
+   "note_th": "สถานี TA061206 ต.ลี้ อ.ลี้ จ.ลำพูน"
+  },
+  {
+   "id": "dwr-ta061802",
+   "name_th": "น้ำแม่หาดที่บ้านโป่ง",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    98.74661,
+    17.85103
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA061802",
+   "note_th": "สถานี TA061802 ต.โปงทุ่ง อ.ดอยเต่า จ.เชียงใหม่"
+  },
+  {
+   "id": "dwr-ta062301",
+   "name_th": "ห้วยแม่ท้อที่บ้านปากร้อง",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.11635,
+    16.86482
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA062301",
+   "note_th": "สถานี TA062301 ต.แม่ท้อ อ.เมืองตาก จ.ตาก"
+  },
+  {
+   "id": "dwr-ta063008",
+   "name_th": "แม่น้ำปิงที่บ้านบางแก้ว",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.86592,
+    16.00075
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA063008",
+   "note_th": "สถานี TA063008 ต.บางแก้ว อ.บรรพตพิสัย จ.นครสวรรค์"
+  },
+  {
+   "id": "dwr-ta070301",
+   "name_th": "แม่น้ำวังที่บ้านแป้นโป่งชัย",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.55392,
+    18.66961
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA070301",
+   "note_th": "สถานี TA070301 ต.บ้านสา อ.แจ้ห่ม จ.ลำปาง"
+  },
+  {
+   "id": "dwr-ta070403",
+   "name_th": "น้ำแม่ตุ๋ยที่บ้านแค่",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.44386,
+    18.37861
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA070403",
+   "note_th": "สถานี TA070403 ต.บ้านเป้า อ.เมืองลำปาง จ.ลำปาง"
+  },
+  {
+   "id": "dwr-ta070502",
+   "name_th": "สะพานเฉลิมพระเกียรติ",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.46272,
+    18.28086
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA070502",
+   "note_th": "สถานี TA070502 ต.ชมพู อ.เมืองลำปาง จ.ลำปาง"
+  },
+  {
+   "id": "dwr-ta071102",
+   "name_th": "แม่น้ำวังที่บ้านแม่สลิด",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.10172,
+    17.13942
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA071102",
+   "note_th": "สถานี TA071102 ต.แม่สลิด อ.บ้านตาก จ.ตาก"
+  },
+  {
+   "id": "dwr-ta081701",
+   "name_th": "สะพานพระแม่ย่า",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.83128,
+    17.00289
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA081701",
+   "note_th": "สถานี TA081701 ต.ธานี อ.เมือง จ.สุโขทัย"
+  },
+  {
+   "id": "dwr-ta081903",
+   "name_th": "สะพานบ้านโพทะเล",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.26015,
+    16.0947
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA081903",
+   "note_th": "สถานี TA081903 ต.โพทะเล อ.โพทะเล จ.พิจิตร"
+  },
+  {
+   "id": "dwr-ta092102",
+   "name_th": "สะพานเฉลิมพระเกียรติ 48 พรรษา",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.30841,
+    16.51584
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA092102",
+   "note_th": "สถานี TA092102 ต.ไผ่ขวาง อ.เมือง จ.พิจิตร"
+  },
+  {
+   "id": "dwr-ta100213",
+   "name_th": "บ้านเนินไผ่",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.10897,
+    15.32742
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA100213",
+   "note_th": "สถานี TA100213 ต.วัดโคก อ.มโนรมย์ จ.ชัยนาท"
+  },
+  {
+   "id": "dwr-ta100216",
+   "name_th": "บ้านบางปี",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.60588,
+    14.79442
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA100216",
+   "note_th": "สถานี TA100216 ต.โพธิ์เก้าต้น อ.เมือง จ.ลพบุรี"
+  },
+  {
+   "id": "dwr-ta100217",
+   "name_th": "ศาลากลางอ่างทอง",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.45375,
+    14.59002
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA100217",
+   "note_th": "สถานี TA100217 ต.บางแก้ว อ.เมือง จ.อ่างทอง"
   },
   {
    "id": "dwr-ta100219",
@@ -996,12 +1399,12 @@
    "owner_th": "กรมทรัพยากรน้ำ",
    "kind": "river",
    "location": [
-    100.53879,
-    14.02606
+    100.53942,
+    14.02506
    ],
-   "position": "approximate",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "สถานี TA100219 ต.บางปรอก อ.เมืองปทุมธานี · หมุดอยู่ที่สะพาน (ตำแหน่งจาก OpenStreetMap) · เปิดดูในหน้ากล้องของกรมทรัพยากรน้ำ"
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA100219",
+   "note_th": "สถานี TA100219 ต.บางปรอก อ.เมือง จ.ปทุมธานี"
   },
   {
    "id": "dwr-ta100220",
@@ -1009,12 +1412,597 @@
    "owner_th": "กรมทรัพยากรน้ำ",
    "kind": "river",
    "location": [
-    100.49758,
-    13.73928
+    100.49633,
+    13.73869
    ],
-   "position": "approximate",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "สถานี TA100220 แขวงวัดกัลยาณ์ เขตธนบุรี · หมุดอยู่ที่สะพาน (ตำแหน่งจาก OpenStreetMap) · เปิดดูในหน้ากล้องของกรมทรัพยากรน้ำ"
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA100220",
+   "note_th": "สถานี TA100220 ต.วัดกัลยาณ์ อ.ธนบุรี จ.กรุงเทพมหานคร"
+  },
+  {
+   "id": "dwr-ta100221",
+   "name_th": "ศาลากลางสมุทรปราการ",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.59622,
+    13.59801
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA100221",
+   "note_th": "สถานี TA100221 ต.ปากน้ำ อ.เมือง จ.สมุทรปราการ"
+  },
+  {
+   "id": "dwr-ta100222",
+   "name_th": "สะพานปรีดี-ธำรง",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.58076,
+    14.35169
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA100222",
+   "note_th": "สถานี TA100222 ต.หอรัตนไชย อ.พระนครศรีอยุธยา จ.พระนครศรีอยุธยา"
+  },
+  {
+   "id": "dwr-ta110307",
+   "name_th": "คลองท่าข้ามที่บ้านท่าข้าม",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "canal",
+   "location": [
+    99.6631,
+    15.67062
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA110307",
+   "note_th": "สถานี TA110307 ต.ห้วยน้ำหอม อ.ลาดยาว จ.นครสวรรค์"
+  },
+  {
+   "id": "dwr-ta110403",
+   "name_th": "ห้วยทับเสลาที่บ้านนาไร่เดียว",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.5581,
+    15.45007
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA110403",
+   "note_th": "สถานี TA110403 ต.ลานสัก อ.ลานสัก จ.อุทัยธานี"
+  },
+  {
+   "id": "dwr-ta110608",
+   "name_th": "แม่น้ำตากแดดที่บ้านหนองขาลาย",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.88732,
+    15.54495
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA110608",
+   "note_th": "สถานี TA110608 ต.หนองหลวง อ.สว่างอารมณ์ จ.อุทัยธานี"
+  },
+  {
+   "id": "dwr-ta110609",
+   "name_th": "แม่น้ำตากแดดที่บ้านบุญลือ",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.0319,
+    15.45277
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA110609",
+   "note_th": "สถานี TA110609 ต.เนินแจง อ.เมืองอุทัยธานี จ.อุทัยธานี"
+  },
+  {
+   "id": "dwr-ta120204",
+   "name_th": "ห้วยน้ำพุงที่ อ.หล่มเก่า",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    101.21864,
+    16.89236
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA120204",
+   "note_th": "สถานี TA120204 ต.หล่มเก่า อ.หล่มเก่า จ.เพชรบูรณ์"
+  },
+  {
+   "id": "dwr-ta120302",
+   "name_th": "แม่น้ำป่าสักที่บ้านจางวาง",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    101.21354,
+    16.65049
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA120302",
+   "note_th": "สถานี TA120302 ต.ลานบ่า อ.หล่มสัก จ.เพชรบูรณ์"
+  },
+  {
+   "id": "dwr-ta120304",
+   "name_th": "สะพานเพชบุระ3",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    101.16346,
+    16.4302
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA120304",
+   "note_th": "สถานี TA120304 ต.สะเดียง อ.เมืองเพชรบูรณ์ จ.เพชรบูรณ์"
+  },
+  {
+   "id": "dwr-ta120501",
+   "name_th": "แม่น้ำป่าสักที่บ้านหนองแหวน",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    101.13815,
+    16.20944
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA120501",
+   "note_th": "สถานี TA120501 ต.นายม อ.เมืองเพชรบูรณ์ จ.เพชรบูรณ์"
+  },
+  {
+   "id": "dwr-ta120802",
+   "name_th": "ลำสนธิที่บ้านท่ายาง",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    101.23848,
+    15.23593
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA120802",
+   "note_th": "สถานี TA120802 ต.หนองยายโต๊ะ อ.ชัยบาดาล จ.ลพบุรี"
+  },
+  {
+   "id": "dwr-ta130202",
+   "name_th": "แม่น้ำท่าจีนที่ท่าฉลอม",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.26536,
+    13.53065
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA130202",
+   "note_th": "สถานี TA130202 ต.ท่าฉลอม อ.เมือง จ.สมุทรสาคร"
+  },
+  {
+   "id": "dwr-ta130213",
+   "name_th": "แม่น้ำท่าจีนที่สะพานสามง่าม-ท่าโบสถ์",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.0098,
+    15.0608
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA130213",
+   "note_th": "สถานี TA130213 ต.สามง่ามท่าโบสถ์ อ.หันคา จ.ชัยนาท"
+  },
+  {
+   "id": "dwr-ta170102",
+   "name_th": "สะพานข้ามคลองนาเกลือ",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.9112,
+    12.97109
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA170102",
+   "note_th": "สถานี TA170102 ต.นาเกลือ อ.บางละมุง จ.ชลบุรี"
+  },
+  {
+   "id": "dwr-ta170203",
+   "name_th": "สะพานข้ามคลองใหญ่ที่ระยอง",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    101.29278,
+    12.68
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA170203",
+   "note_th": "สถานี TA170203 ต..เชิงเนิน อ.เมือง จ.ระยอง"
+  },
+  {
+   "id": "dwr-ta170406",
+   "name_th": "สะพานข้ามคลองประแสร์ที่คลองสะพานดำ",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    101.65397,
+    12.78338
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA170406",
+   "note_th": "สถานี TA170406 ต.ทางเกวียน อ.แกลง จ.ระยอง"
+  },
+  {
+   "id": "dwr-ta170706",
+   "name_th": "สะพานข้ามคลองจันทบุรีที่วัดกระทิง",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    102.11273,
+    12.79391
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA170706",
+   "note_th": "สถานี TA170706 ต.พลวง อ.เขาคิชฌกูฏ จ.จันทบุรี"
+  },
+  {
+   "id": "dwr-ta170707",
+   "name_th": "สะพานข้ามแม่น้ำจันทบุรี",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    102.13756,
+    12.63654
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA170707",
+   "note_th": "สถานี TA170707 ต.พลับพลา อ.เมือง จ.จันทบุรี"
+  },
+  {
+   "id": "dwr-ta170905",
+   "name_th": "สะพานข้ามคลองห้วยแร้ง",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    102.54693,
+    12.38189
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA170905",
+   "note_th": "สถานี TA170905 ต.ห้วยแร้ง อ.เมือง จ.ตราด"
+  },
+  {
+   "id": "dwr-ta170906",
+   "name_th": "สะพานข้ามคลองเขาสมิง",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    102.438,
+    12.35721
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA170906",
+   "note_th": "สถานี TA170906 ต.ทุ่งนนทรี อ.เขาสมิง จ.ตราด"
+  },
+  {
+   "id": "dwr-ta170907",
+   "name_th": "สะพานข้ามแม่น้ำตราด",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    102.52712,
+    12.26258
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA170907",
+   "note_th": "สถานี TA170907 ต.เนินทราย อ.เมือง จ.ตราด"
+  },
+  {
+   "id": "dwr-ta180304",
+   "name_th": "สะพานท่าแลงพัฒนา",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.85466,
+    12.94889
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA180304",
+   "note_th": "สถานี TA180304 ต.ท่าคอย อ.ท่ายาง จ.เพชรบุรี"
+  },
+  {
+   "id": "dwr-ta180305",
+   "name_th": "สะพานวัดตำหรุ",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.89685,
+    13.02399
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA180305",
+   "note_th": "สถานี TA180305 ต.ถ้ำรงค์ อ.บ้านลาด จ.เพชรบุรี"
+  },
+  {
+   "id": "dwr-ta180307",
+   "name_th": "สะพานท่าสรง",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.94893,
+    13.09939
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA180307",
+   "note_th": "สถานี TA180307 ต.ท่าราบ อ.เมืองเพชรบุรี จ.เพชรบุรี"
+  },
+  {
+   "id": "dwr-ta180308",
+   "name_th": "สะพานข้ามแม่น้ำเพชรบุรีที่ อบต.บางครก",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.94999,
+    13.18379
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA180308",
+   "note_th": "สถานี TA180308 ต.บางครก อ.บ้านแหลม จ.เพชรบุรี"
+  },
+  {
+   "id": "dwr-ta180404",
+   "name_th": "สะพานธรรมรัชต์",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.88329,
+    12.40816
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA180404",
+   "note_th": "สถานี TA180404 ต.เขาน้อย อ.ปราณบุรี จ.ประจวบคีรีขันธ์"
+  },
+  {
+   "id": "dwr-ta180601",
+   "name_th": "สะพานข้ามคลองกุย",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.85737,
+    12.05869
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA180601",
+   "note_th": "สถานี TA180601 ต.กุยบุรี อ.กุยบุรี จ.ประจวบคีรีขันธ์"
+  },
+  {
+   "id": "dwr-ta180704",
+   "name_th": "สะพานอุดมศักดิ์",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.60916,
+    11.50096
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA180704",
+   "note_th": "สถานี TA180704 ต.นาหูกวาง อ.ทับสะแก จ.ประจวบคีรีขันธ์"
+  },
+  {
+   "id": "dwr-ta180807",
+   "name_th": "สะพานบางสะพาน",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.4362,
+    11.24079
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA180807",
+   "note_th": "สถานี TA180807 ต.ทองมงคล อ.บางสะพาน จ.ประจวบคีรีขันธ์"
+  },
+  {
+   "id": "dwr-ta200207",
+   "name_th": "คลองนาท่อม",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "canal",
+   "location": [
+    99.98739,
+    7.55912
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA200207",
+   "note_th": "สถานี TA200207 ต.ร่มเมือง อ.เมือง จ.พัทลุง"
+  },
+  {
+   "id": "dwr-ta200208",
+   "name_th": "คลองท่าแนะ",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "canal",
+   "location": [
+    99.89406,
+    7.74352
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA200208",
+   "note_th": "สถานี TA200208 ต.เขาย่า อ.ศรีบรรพต จ.พัทลุง"
+  },
+  {
+   "id": "dwr-ta200303",
+   "name_th": "คลองอู่ตะเภาตอนบนทุ่งลาน",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "canal",
+   "location": [
+    100.46416,
+    6.85646
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA200303",
+   "note_th": "สถานี TA200303 ต.ทุ่งลาน อ.คลองหอยโข่ง จ.สงขลา"
+  },
+  {
+   "id": "dwr-ta210310",
+   "name_th": "บันนังสตา",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    101.26845,
+    6.26253
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA210310",
+   "note_th": "สถานี TA210310 ต.บันนังสตา อ.บันนังสตา จ.ยะลา"
+  },
+  {
+   "id": "dwr-ta210311",
+   "name_th": "สะพานอาเส็น",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    101.12802,
+    6.47587
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA210311",
+   "note_th": "สถานี TA210311 ต.บาโร๊ะ อ.ยะหา จ.ยะลา"
+  },
+  {
+   "id": "dwr-ta210312",
+   "name_th": "สะพานเฉลิมพระเกียรติ 72 พรรษา มหาราชินี",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    101.24951,
+    6.54089
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA210312",
+   "note_th": "สถานี TA210312 ต.สะเตง อ.เมือง จ.ยะลา"
+  },
+  {
+   "id": "dwr-ta210506",
+   "name_th": "สะพานแม่น้ำสายบุรี",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    101.49738,
+    6.22808
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA210506",
+   "note_th": "สถานี TA210506 ต.ซากอ อ.ศรีสาคร จ.นราธิวาส"
+  },
+  {
+   "id": "dwr-ta210507",
+   "name_th": "4066-แม่น้ำสายบุรี",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    101.44526,
+    6.47985
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA210507",
+   "note_th": "สถานี TA210507 ต.ตะโล๊ะหะลอ อ.รามัน จ.ยะลา"
+  },
+  {
+   "id": "dwr-ta210508",
+   "name_th": "4157-แม่น้ำสายบุรี",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    101.62211,
+    6.7072
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA210508",
+   "note_th": "สถานี TA210508 ต.ตะลุบัน อ.สายบุรี จ.ปัตตานี"
+  },
+  {
+   "id": "dwr-tc020107",
+   "name_th": "อุทกวิทยาเชียงแสน",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.08839,
+    20.27418
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC020107",
+   "note_th": "สถานี TC020107 ต.เวียง อ.แม่สาย จ.เชียงราย"
+  },
+  {
+   "id": "dwr-tc031506",
+   "name_th": "บ้านท่าตูม",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    102.79682,
+    17.48222
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC031506",
+   "note_th": "สถานี TC031506 ต.หมูม่น อ.เมือง จ.อุดรธานี"
+  },
+  {
+   "id": "dwr-tc031703",
+   "name_th": "สะพานห้วยหลวงอนุสรณ์",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    103.07455,
+    18.01821
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC031703",
+   "note_th": "สถานี TC031703 ต.จุมพล อ.โพนพิสัย จ.หนองคาย"
+  },
+  {
+   "id": "dwr-tc032703",
+   "name_th": "บ้านตาลปากน้ำ",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    104.46243,
+    17.64356
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC032703",
+   "note_th": "สถานี TC032703 ต.ไชยบุรี อ.ท่าอุเทน จ.นครพนม"
+  },
+  {
+   "id": "dwr-tc032905",
+   "name_th": "วัดน้ำอัตโนมัตินครพนม",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    104.7737,
+    17.42516
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC032905",
+   "note_th": "สถานี TC032905 ต.ในเมือง อ.เมือง จ.นครพนม"
+  },
+  {
+   "id": "dwr-tc040905",
+   "name_th": "สะพานท่าราชไชยศรี",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    102.84694,
+    16.37475
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC040905",
+   "note_th": "สถานี TC040905 ต.เมืองเก่า อ.เมือง จ.ขอนแก่น"
+  },
+  {
+   "id": "dwr-tc060901",
+   "name_th": "สะพานหลวงพ่อบุญเย็น",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    98.92619,
+    18.53814
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC060901",
+   "note_th": "สถานี TC060901 ต.ปากบ่อง อ.ป่าซาง จ.ลำพูน"
   },
   {
    "id": "dwr-tc100224",
@@ -1022,12 +2010,181 @@
    "owner_th": "กรมทรัพยากรน้ำ",
    "kind": "river",
    "location": [
-    100.53425,
-    13.96584
+    100.53591,
+    13.96576
    ],
-   "position": "approximate",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "สถานี TC100224 ต.บ้านใหม่ อ.เมืองปทุมธานี · หมุดอยู่ที่สะพาน (ตำแหน่งจาก OpenStreetMap) · เปิดดูในหน้ากล้องของกรมทรัพยากรน้ำ"
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC100224",
+   "note_th": "สถานี TC100224 ต.บ้านใหม่ อ.เมือง จ.ปทุมธานี"
+  },
+  {
+   "id": "dwr-tc180301",
+   "name_th": "เทศบาลเมืองเพชรบุรี",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.9483,
+    13.11141
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC180301",
+   "note_th": "สถานี TC180301 ต.คลองกระแชง อ.เมือง จ.เพชรบุรี"
+  },
+  {
+   "id": "dwr-tc180701",
+   "name_th": "สะพานบ้านหนองหญ้าปล้อง",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.51922,
+    11.4041
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC180701",
+   "note_th": "สถานี TC180701 ต.ชัยเกษม อ.บางสะพาน จ.ประจวบคีรีขันธ์"
+  },
+  {
+   "id": "dwr-tc191601",
+   "name_th": "สภ.เมืองสุราษฎร์ธานี",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.32055,
+    9.13903
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC191601",
+   "note_th": "สถานี TC191601 ต.ตลาด อ.เมือง จ.สุราษฎร์ธานี"
+  },
+  {
+   "id": "dwr-tc191705",
+   "name_th": "สะพานปากน้ำสิชล",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.89003,
+    9.00878
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC191705",
+   "note_th": "สถานี TC191705 ต.สิชล อ.สิชล จ.นครศรีธรรมราช"
+  },
+  {
+   "id": "dwr-tc191802",
+   "name_th": "สะพานบ้านโรงเหล็ก",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.74612,
+    8.73099
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC191802",
+   "note_th": "สถานี TC191802 ต.นบพิตำ อ.นบพิตำ จ.นครศรีธรรมราช"
+  },
+  {
+   "id": "dwr-tc191911",
+   "name_th": "สะพานวัดท่าแพ",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.95274,
+    8.51459
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC191911",
+   "note_th": "สถานี TC191911 ต.ปากพูน อ.เมือง จ.นครศรีธรรมราช"
+  },
+  {
+   "id": "dwr-tc191912",
+   "name_th": "สะพานคลองท่าวัง",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.95959,
+    8.4441
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC191912",
+   "note_th": "สถานี TC191912 ต.เทศบาลนครนครศรีธรรมราช อ.เมือง จ.นครศรีธรรมราช"
+  },
+  {
+   "id": "dwr-tc191918",
+   "name_th": "สะพานตลาดเชียรใหญ่",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.14914,
+    8.17389
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC191918",
+   "note_th": "สถานี TC191918 ต.เชียรใหญ่ อ.เชียรใหญ่ จ.นครศรีธรรมราช"
+  },
+  {
+   "id": "dwr-tc220303",
+   "name_th": "สะพานบ่อน้ำร้อน",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    98.64858,
+    9.95836
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC220303",
+   "note_th": "สถานี TC220303 ต.บางริ้น อ.เมือง จ.ระนอง"
+  },
+  {
+   "id": "dwr-tc220402",
+   "name_th": "สะพานท่านเจ้าฟ้า",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    98.36329,
+    8.84296
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC220402",
+   "note_th": "สถานี TC220402 ต.ตะกั่วป่า อ.ตะกั่วป่า จ.พังงา"
+  },
+  {
+   "id": "dwr-tc220509",
+   "name_th": "สะพานวัดนิโครธาราม",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    98.63373,
+    8.5178
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC220509",
+   "note_th": "สถานี TC220509 ต.ทับปุด อ.ทับปุด จ.พังงา"
+  },
+  {
+   "id": "dwr-tc220904",
+   "name_th": "สะพานอนุสาวรีย์พระยารัษฏานุประดิษฐ์มหิศรภักดี",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    99.62431,
+    7.56459
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC220904",
+   "note_th": "สถานี TC220904 ต.ทับเที่ยง อ.เมือง จ.ตรัง"
+  },
+  {
+   "id": "dwr-tc221203",
+   "name_th": "สะพานบ้านนาลาน",
+   "owner_th": "กรมทรัพยากรน้ำ",
+   "kind": "river",
+   "location": [
+    100.06116,
+    6.62522
+   ],
+   "position": "source",
+   "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC221203",
+   "note_th": "สถานี TC221203 ต.ควนขัน อ.เมือง จ.สตูล"
   },
   {
    "id": "egat-105",

@@ -848,6 +848,9 @@ function flowPopup(site: FlowSite, file: RidFlows, now: number): HTMLElement {
     root.append(old);
   }
   root.append(linkOut(file.source_url, `ที่มา: ${shortCredit(file.credit_th)} (รายงาน PDF) ↗`));
+  // a station the PDF gives no figure for (C.35) has it drawn on RID's chart of the same morning
+  if (file.chart_url && [...main, ...gates].some((point) => point.flow_cms === null))
+    root.append(linkOut(file.chart_url, 'ดูตัวเลขในผังน้ำของกรมชลฯ (ภาพ) ↗'));
   return root;
 }
 
@@ -1122,10 +1125,12 @@ function cameraPopup(camera: Camera): HTMLElement {
   link.href = camera.page_url;
   link.target = '_blank';
   link.rel = 'noopener noreferrer';
-  // the department's page lists every camera: say which one to look for there
-  link.textContent = camera.page_url.startsWith('https://telemetry.dwr.go.th/reportCctv')
-    ? `เปิดหน้ากล้องของกรมทรัพยากรน้ำ แล้วหา “${camera.name_th}” ↗`
-    : 'เปิดดูกล้องที่เว็บเจ้าของ ↗';
+  // the department's relay opens one camera's live view; its list page needs the name to look for
+  link.textContent = camera.page_url.startsWith('https://telemetry.dwr.go.th/cctv/mjpeg/')
+    ? 'ดูภาพสดจากระบบของกรมทรัพยากรน้ำ ↗'
+    : camera.page_url.startsWith('https://telemetry.dwr.go.th/reportCctv')
+      ? `เปิดหน้ากล้องของกรมทรัพยากรน้ำ แล้วหา “${camera.name_th}” ↗`
+      : 'เปิดดูกล้องที่เว็บเจ้าของ ↗';
   root.append(link);
   return root;
 }

@@ -52,7 +52,12 @@ export function radarPixel(
 }
 
 export type RadarLegendItem = RadarFeed['legend'][number];
-/** Legend class of an RGBA pixel: frames show legend colours blended over white (legend_opacity). */
+/** Squared RGB distance still counted as a legend colour (the pipeline's tmd_radar.MATCH_DISTANCE). */
+const MATCH_DISTANCE = 3 * 12 ** 2;
+/**
+ * Legend class of an RGBA pixel: frames show legend colours blended over white (legend_opacity). A colour far from
+ * every legend colour (a line, a label) is no class, never the nearest one.
+ */
 export function radarClass(
   rgba: ArrayLike<number>,
   legend: RadarLegendItem[],
@@ -72,7 +77,7 @@ export function radarClass(
       best = item;
     }
   }
-  return best;
+  return bestDistance <= MATCH_DISTANCE ? best : null;
 }
 
 /** Plain Thai words for a rain-rate class (mm/hr lower bound of the radar legend). */

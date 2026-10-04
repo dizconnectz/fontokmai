@@ -82,7 +82,7 @@ describe("RID's daily figures on the map (D35)", () => {
     expect(flowText(point('east_intake'))).toBe('246 ลบ.ม./วิ · ลดจากเมื่อวาน 257');
     // no flow in the report: none is made up, the state and the channel's capacity still say something
     expect(flowText(point('c35'))).toBe(
-      'รายงานไม่มีตัวเลขน้ำของจุดนี้ · ลำน้ำรับได้ 1,159 ลบ.ม./วิ · กรมชลฯ จัดว่าท่วม',
+      'รายงาน PDF ไม่มีตัวเลขของจุดนี้ ดูในผังน้ำของกรมชลฯ · ลำน้ำรับได้ 1,159 ลบ.ม./วิ · กรมชลฯ จัดว่าท่วม',
     );
     // a site named after its one station says only the station's code under its name
     expect(pointLabel(point('c35'), site('ayutthaya'))).toBe('สถานี C.35');

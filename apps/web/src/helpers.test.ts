@@ -106,6 +106,8 @@ describe('map helpers', () => {
     expect(radarClass([0x2f, 0x35, 0xec, 255], legend, 0.816)?.label).toBe('2');
     expect(radarClass([0x2f, 0x8d, 0xcb, 255], legend, 0.816)?.label).toBe('0.1');
     expect(radarClass([255, 255, 255, 0], legend, 0.816)).toBeNull();
+    // pure red is no legend colour: not the nearest class (a line or a label on the frame)
+    expect(radarClass([255, 0, 0, 255], legend, 0.816)).toBeNull();
     expect(rainWords(2)).toBe('ฝนเบา');
     expect(rainWords(8)).toBe('ฝนปานกลาง');
   });
