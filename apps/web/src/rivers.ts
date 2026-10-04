@@ -95,9 +95,9 @@ export type RiverStretches = FeatureCollection<
   { code: string; trend: Trend; color: string; rising: boolean }
 >;
 /**
- * The stretches of river coloured as the pins by their point's trend of the next 7 days (user 2026-10-02: rivers
- * orange or red where the water will rise, and the lines seen where the forecast is); one whose trend cannot be told
- * is not drawn.
+ * The stretches of river where the water is forecast to rise in the next 7 days, coloured as the pins (user
+ * 2026-10-02: rivers orange or red where the water will rise). A steady or falling river is not coloured at all
+ * (user 2026-10-04: "แม่น้ำที่ปกติดี ไม่ต้องแสดงสีใดๆ แสดงแค่ที่ไม่ปกติ"); its pin still says its trend.
  */
 export function riverStretches(
   lines: RiverLines,
@@ -110,7 +110,7 @@ export function riverStretches(
     features: lines.stretches.flatMap((stretch) => {
       const point = points.get(stretch.point_id);
       const trend = point ? riverOutlook(file, point, now)?.trend : undefined;
-      if (!trend) return [];
+      if (trend !== 'rising' && trend !== 'rising_fast') return [];
       return [
         {
           type: 'Feature' as const,

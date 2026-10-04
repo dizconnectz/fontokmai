@@ -77,7 +77,7 @@ describe('stretches of river by the system’s 7-day forecast (user, 2026-10-02)
       'utf8',
     ),
   ) as RiverLines;
-  it('draws every stretch whose point has a trend, bold when it rises', () => {
+  it('draws only the stretches whose point is forecast to rise', () => {
     const shapes = riverStretches(lines, rivers, AT);
     const drawn = Object.fromEntries(shapes.features.map((f) => [f.properties.code, f.properties]));
     expect(drawn['cp-bangkok']).toMatchObject({
@@ -86,9 +86,10 @@ describe('stretches of river by the system’s 7-day forecast (user, 2026-10-02)
       rising: true,
     });
     expect(drawn['bangpakong-chachoengsao']).toMatchObject({ trend: 'rising_fast', rising: true });
-    // steady and falling show where the forecast is, thin
-    expect(drawn['yom-sukhothai']).toMatchObject({ trend: 'steady', rising: false });
-    expect(drawn['mekong-nongkhai']).toMatchObject({ trend: 'falling', rising: false });
+    // a steady or falling river is not coloured (user 2026-10-04)
+    expect(drawn['yom-sukhothai']).toBeUndefined();
+    expect(drawn['mekong-nongkhai']).toBeUndefined();
+    expect(shapes.features.every((f) => f.properties.rising)).toBe(true);
     // a stretch whose point the file does not have (a reach point here) is not drawn
     expect(Object.keys(drawn).every((code) => rivers.points.some((p) => p.id === code))).toBe(true);
     expect(shapes.features[0].geometry.type).toBe('MultiLineString');

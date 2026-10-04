@@ -280,7 +280,7 @@ export default function App() {
     [riverShown, rivers, riverLines, riverDay(now)],
   );
   const riverKey = !!riverShapes?.features.length;
-  // the canals of the pilot by the trial outlook (D35): coloured lines, thin where nothing adds up
+  // the canals by the trial outlook (D35): only those at watch or warn (or not assessed) are drawn
   const canalShown = layers.canals && !!canalLines && step.kind !== 'forecast';
   const canalShapes = useMemo(
     () => (canalShown ? canalFeatures(canalLines, canals) : null),
@@ -684,7 +684,9 @@ export default function App() {
                       {item.label}
                     </span>
                   ))}
-                  <small>เส้นและหมุดสีเดียวกัน · พยากรณ์ของระบบ (แบบจำลอง)</small>
+                  <small>
+                    วาดเส้นเฉพาะแม่น้ำที่น้ำจะเพิ่ม · หมุดสีเดียวกัน · พยากรณ์ของระบบ (แบบจำลอง)
+                  </small>
                 </div>
               )}
               {satelliteKey && satellite && (
@@ -708,7 +710,7 @@ export default function App() {
               {canalKey && (
                 <div className="legend-row legend-canals" aria-label="เส้นคลองตามเกณฑ์ทดลอง">
                   <span>คลอง</span>
-                  {CANAL_CLASSES.map((item) => (
+                  {CANAL_CLASSES.filter((item) => item.level !== 'none').map((item) => (
                     <span key={item.level}>
                       <i
                         className={`legend-line ${item.level === 'none' || item.level === 'unknown' ? 'thin' : ''}`}
@@ -722,7 +724,10 @@ export default function App() {
                       {item.label}
                     </span>
                   ))}
-                  <small>เกณฑ์ทดลองของเว็บ ไม่ใช่ประกาศ · แตะเส้นเพื่อดูเหตุผล</small>
+                  <small>
+                    คลองที่ยังไม่ถึงเกณฑ์ไม่วาด · เกณฑ์ทดลองของเว็บ ไม่ใช่ประกาศ ·
+                    แตะเส้นเพื่อดูเหตุผล
+                  </small>
                 </div>
               )}
               {bankKey && (

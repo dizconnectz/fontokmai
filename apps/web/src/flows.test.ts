@@ -106,10 +106,9 @@ describe("RID's daily figures on the map (D35)", () => {
 });
 
 describe('the canals by the trial outlook (D35)', () => {
-  it('colours each canal by its level, thin where nothing adds up', () => {
-    const plain = canalFeatures(lines, outlook).features;
-    expect(plain).toHaveLength(lines.canals.length);
-    expect(new Set(plain.map((f) => f.properties?.level))).toEqual(new Set(['none']));
+  it('colours the canals at watch or warn, and draws none of those below the rules', () => {
+    // every canal of the example is below the rules: nothing drawn (user 2026-10-04)
+    expect(canalFeatures(lines, outlook).features).toEqual([]);
     const shapes = canalFeatures(lines, raised).features;
     const level = (id: string) => shapes.find((f) => f.properties?.id === id)!.properties;
     expect([level('rangsit')?.level, level('rangsit')?.color]).toEqual(['warn', '#d32f2f']);

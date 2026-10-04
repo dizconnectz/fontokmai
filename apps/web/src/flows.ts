@@ -223,11 +223,14 @@ export function canalsOld(outlook: CanalOutlook, now: number): boolean {
 export type CanalShapes = FeatureCollection<MultiLineString>;
 
 /** The canals as map lines, coloured by the outlook; one it could not assess or does not list is unknown. */
+/** The canals to draw: those at watch or warn, and those that could not be assessed (never shown as fine, M50); a
+ * canal below the rules is not drawn (user 2026-10-04: "แสดงแค่ที่ไม่ปกติ") */
 export function canalFeatures(lines: CanalLines | null, outlook: CanalOutlook | null): CanalShapes {
   return {
     type: 'FeatureCollection',
-    features: (lines?.canals ?? []).map((canal) => {
+    features: (lines?.canals ?? []).flatMap((canal) => {
       const level = canalLevel(outlook?.canals.find((watch) => watch.id === canal.id));
+      if (level === 'none') return [];
       return {
         type: 'Feature' as const,
         geometry: { type: 'MultiLineString' as const, coordinates: canal.line.coordinates },
