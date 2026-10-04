@@ -56,7 +56,7 @@ def _station(code: str, name: str, location: list[float], online: bool = True) -
     return {"code": code, "name_th": name, "place_th": "ต.ก อ.ข จ.ค", "online": online, "location": location}
 
 
-def test_dwr_merge_links_by_place_adds_new_stations_and_notes_the_missing():
+def test_dwr_merge_links_by_place_adds_new_stations_and_drops_the_missing():
     registry = {"schema_version": "1", "updated": "2026-09-27", "notes_th": [], "cameras": [
         _camera("dwr-1", "ชื่อเดิม", [100.0, 14.0]),  # 0.1 km from TA000001 under another name
         _camera("dwr-2", "อ.เสนา", [100.4, 14.3], "approximate"),  # 1.1 km, and the names agree
@@ -77,8 +77,8 @@ def test_dwr_merge_links_by_place_adds_new_stations_and_notes_the_missing():
     assert cameras["dwr-1"]["page_url"] == stream(code="TA000001")
     assert cameras["dwr-2"]["page_url"] == stream(code="TA000002")
     assert cameras["dwr-2"]["location"] == [100.41, 14.3] and cameras["dwr-2"]["position"] == "source"
-    assert cameras["dwr-3"]["page_url"] == build_cctv_dwr.PAGE_URL and "ไม่พบ" in cameras["dwr-3"]["note_th"]
-    assert cameras["dwr-4"]["page_url"] == build_cctv_dwr.PAGE_URL
+    # no station of the department is theirs: nothing to open, so no pin
+    assert "dwr-3" not in cameras and "dwr-4" not in cameras
     assert cameras["user-x"]["page_url"] == "https://a.example/"
     assert cameras["dwr-ta000003"]["kind"] == "canal" and cameras["dwr-ta000003"]["page_url"] == stream(code="TA000003")
     assert "dwr-ta000004" in cameras and "dwr-ta000005" not in cameras  # an offline station is not added
