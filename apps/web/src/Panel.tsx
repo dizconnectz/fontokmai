@@ -1377,10 +1377,13 @@ export function Overview({
       )}
       {/* a verified empty feed gets one compact line (no alert card); an old or missing feed keeps its warning card */}
       {snapshot?.feed && trusted && alerts.length === 0 ? (
-        <p className="verified-no-alerts" role="status" data-testid="verified-no-alerts">
-          <ShieldCheck size={17} aria-hidden="true" />
-          ไม่มีประกาศเตือนภัยที่มีผลตอนนี้
-        </p>
+        <div className="verified-no-alerts" role="status" data-testid="verified-no-alerts">
+          <div className="verified-no-alerts-title">
+            <ShieldCheck size={17} aria-hidden="true" />
+            ไม่มีประกาศเตือนภัยที่มีผลตอนนี้
+          </div>
+          <small>ข้อมูลจากประกาศกรมอุตุฯ ไม่ครอบคลุมความเสี่ยงทุกประเภท</small>
+        </div>
       ) : (
         <section id="alerts" className="panel-section" aria-labelledby="alerts-heading">
           <h2

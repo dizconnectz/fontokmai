@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import http.cookiejar
 import json
+import math
 import re
 import urllib.request
 from collections.abc import Callable
@@ -71,7 +72,11 @@ def _number(value) -> float | None:
     """A figure, or None for the service's marks ('*', '-', null)."""
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         return None
-    return float(value)
+    try:
+        number = float(value)
+    except OverflowError:
+        return None
+    return number if math.isfinite(number) else None
 
 
 def parse_station(code: str, answer: bytes) -> HydroStation | None:
@@ -89,10 +94,12 @@ def parse_station(code: str, answer: bytes) -> HydroStation | None:
         at = datetime.fromtimestamp(int(stamp.group(1)) / 1000, tz=UTC)
         # a flow is a figure only when the hour has no notation (the page shows the notation instead)
         flow = _number(row.get("Q")) if row.get("notationid") in (0, None) else None
+        if flow is not None and flow < 0:
+            flow = None
         level = _number(row.get("waterlevelvalue"))
         if (flow is None and level is None) or (best is not None and at <= best.observed_at):
             continue
-        best = HydroStation(code=code, flow_cms=flow if flow is not None and flow >= 0 else None,
+        best = HydroStation(code=code, flow_cms=flow,
                             level_m=round(level, 2) if level is not None else None, observed_at=at)
     return best
 

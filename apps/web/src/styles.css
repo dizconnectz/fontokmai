@@ -1019,14 +1019,24 @@ svg {
   gap: 8px;
 }
 .verified-no-alerts {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 32px;
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  min-height: 5.25rem;
   margin: 0;
   color: var(--ok-ink);
   font-size: 0.88rem;
   font-weight: 600;
+}
+.verified-no-alerts-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.verified-no-alerts small {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 400;
 }
 .alert-more > summary {
   width: fit-content;
