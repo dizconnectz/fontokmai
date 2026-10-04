@@ -104,3 +104,14 @@ rm -f /tmp/gp.json
 ```
 
 อย่าใช้ `read` แล้ววางหลายบรรทัดพร้อมกัน เพราะบรรทัดถัดไปจะถูกอ่านแทน key (เกิดขึ้นแล้ว 2026-10-04)
+
+## เมื่อ GISTDA ออกสถิติท่วมซ้ำซากชุดใหม่ (ผู้ใช้สั่ง 2026-10-04: จดไว้ ไม่ตั้งตรวจอัตโนมัติ)
+
+ชุดที่ใช้อยู่สร้างเมื่อ 2025-06-17 (`data_created` ใน `ref/flood_freq.json`) · agent ที่เห็นว่ามีชุดใหม่ ให้แจ้งผู้ใช้ให้รันบน VPS (ใน `~/fontokmai/app/deploy/vps`):
+
+```
+docker rm fontokmai-flood-freq 2>/dev/null; docker compose run -d --name fontokmai-flood-freq cap-collector flood-freq --key /run/secrets/gistda_key --out /var/lib/fontokmai/out/data/v1 --provinces all --again
+```
+
+ใช้เวลาหลายชั่วโมง ดาวน์โหลดราว 27 GB ไม่กินดิสก์ ดูความคืบหน้า `docker logs --tail 3 fontokmai-flood-freq` · เสร็จแล้ว `docker rm fontokmai-flood-freq` (ลบแค่ตัวรันงาน ไฟล์ผลยังอยู่) · วิธีเช็กว่ามีชุดใหม่: ดู `_createdAt` ของรายการแรกด้วยคำสั่งทดลองบน VPS ข้างบน (`P="features/flood-freq?limit=1"`)
+
