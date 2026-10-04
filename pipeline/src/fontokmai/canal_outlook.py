@@ -32,10 +32,11 @@ from fontokmai.contracts.bkk import CanalLevels
 from fontokmai.contracts.canals import CanalFactor, CanalGap, CanalInput, CanalLines, CanalOutlook, CanalWatch
 from fontokmai.contracts.flows import RidFlows
 from fontokmai.contracts.forecast import RainForecast
+from fontokmai.forecast_windows import full_future_hour_indices
 
 CANALS_PATH = "summary/canals.json"
 LINES_PATH = "ref/canals.json"
-RULES = "canals-v4"  # v4: per-factor gaps, complete rain windows and no future-dated inputs (M53)
+RULES = "canals-v5"  # v5: today's rain counts full forecast hours still ahead, shared with the overview (M58)
 ICT = timezone(timedelta(hours=7))
 FLOWS_MAX_AGE = timedelta(days=2)  # the report is daily
 RAIN_MAX_AGE = timedelta(hours=12)  # refreshed every 6 hours
@@ -149,18 +150,35 @@ def _drainage(canal: Any, points: dict[str, Any], at: datetime) -> list[CanalFac
 
 
 def _rain(canal: Any, forecast: RainForecast, cells: dict[str, set[int]], names: dict[str, str],
-          today: date) -> tuple[list[CanalFactor] | None, bool]:
+          today: date, now: datetime) -> tuple[list[CanalFactor] | None, bool]:
     """Known rain and whether all district cells and all three days were covered; missing is never dry."""
     expected_days = {today + timedelta(days=i) for i in range(3)}
-    complete = expected_days <= set(forecast.days) and all(cells.get(code) for code in canal.districts)
+    midnight = datetime.combine(today + timedelta(days=1), datetime.min.time(), tzinfo=ICT)
+    hour_indices, hour_axis_complete = full_future_hour_indices(forecast.hours, now, midnight)
+    complete = (expected_days <= set(forecast.days) and all(cells.get(code) for code in canal.districts)
+                and hour_axis_complete)
     best: tuple[int, date, str] | None = None
     for d, day in enumerate(forecast.days):
-        if not 0 <= (day - today).days <= 2:
+        offset = (day - today).days
+        if not 0 <= offset <= 2:
             continue
         for district in canal.districts:
-            values = [forecast.day_rain[d][i] for i in cells.get(district, ()) if forecast.day_rain[d][i] is not None]
-            if len(values) != len(cells.get(district, ())):
-                complete = False
+            district_cells = cells.get(district, set())
+            values = []
+            if offset == 0:
+                for i in district_cells:
+                    hourly = [forecast.rain[h][i] for h in hour_indices if forecast.rain[h][i] is not None]
+                    if len(hourly) != len(hour_indices) or not hour_axis_complete:
+                        complete = False
+                    if hourly:
+                        values.append(sum(hourly))
+                if not hour_axis_complete:
+                    complete = False
+            else:
+                values = [forecast.day_rain[d][i] for i in district_cells
+                          if forecast.day_rain[d][i] is not None]
+                if len(values) != len(district_cells):
+                    complete = False
             if values and (best is None or max(values) > best[0]):
                 best = (max(values), day, district)
     if best is None:
@@ -168,7 +186,9 @@ def _rain(canal: Any, forecast: RainForecast, cells: dict[str, set[int]], names:
     value, day, district = best
     score = 2 if value >= VERY_HEAVY else 1 if value >= HEAVY else 0
     word = "ฝนหนักมาก" if score == 2 else "ฝนหนัก" if score == 1 else "ฝนไม่ถึงเกณฑ์ฝนหนัก"
-    text = f"พยากรณ์{word} สูงสุดราว {_mm(value)} มม. วันที่ {_thai_day(day)} แถว {names.get(district, district)}"
+    remainder = " ช่วงที่เหลือของวัน" if day == today else ""
+    text = (f"พยากรณ์{word} สูงสุดราว {_mm(value)} มม. วันที่ {_thai_day(day)}{remainder} "
+            f"แถว {names.get(district, district)}")
     factor = CanalFactor(kind="rain", points=score, text_th=text, source_th="Open-Meteo", at=forecast.fetched_at)
     return [factor], complete
 
@@ -280,13 +300,13 @@ def build_canal_outlook(files: dict[str, bytes], now: datetime) -> CanalOutlook 
             gaps += [CanalGap(kind=kind, text_th=gap_text("flows"))
                      for kind, applies in (("inflow", bool(canal.fed_by)), ("drainage", bool(canal.drains_to)),
                                            ("flooding", True)) if applies]
-        rain, complete = _rain(canal, forecast, cells, names, today) if forecast is not None else (None, False)
+        rain, complete = _rain(canal, forecast, cells, names, today, now) if forecast is not None else (None, False)
         if rain is not None:
             factors += rain
             # Partial data can establish that a threshold was exceeded, never that it was not.
             judged += int(complete or any(f.points > 0 for f in rain))
             if not complete:
-                gaps.append(CanalGap(kind="rain", text_th="ค่าฝนของวันนี้ถึงอีก 2 วันหรือพื้นที่ที่ใช้ประเมินไม่ครบ"))
+                gaps.append(CanalGap(kind="rain", text_th="ค่าฝนช่วงที่เหลือของวันนี้/อีก 2 วันหรือพื้นที่ที่ใช้ประเมินไม่ครบ"))
         else:
             gaps.append(CanalGap(kind="rain", text_th=gap_text("rain") if forecast is None
                                  else "พยากรณ์ฝนไม่มีค่าของอำเภอที่คลองผ่าน"))

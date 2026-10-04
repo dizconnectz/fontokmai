@@ -1,7 +1,7 @@
 """The canals that may overflow, by this site's trial rules (D35, contract section 27): each factor's points, old data
 left out, and a canal without data said to be not assessed (Codex M48–M50)."""
 
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta, timezone
 from importlib import resources
 
 import pytest
@@ -14,6 +14,8 @@ from fontokmai.sources.rid_report import Figure
 
 NOW = datetime(2026, 10, 3, 4, 0, tzinfo=UTC)  # 11:00 in Thailand
 TODAY = date(2026, 10, 3)
+ICT = timezone(timedelta(hours=7))
+NOW_ICT = NOW.astimezone(ICT)
 LINES = resources.files("fontokmai.ref_data").joinpath("canals.json").read_bytes()
 
 
@@ -24,13 +26,15 @@ def flows(figures: dict[str, float], states: dict[str, str] | None = None, day: 
 
 
 def rain(mm: float) -> bytes:
-    """A lattice over the Rangsit pilot with the same rain each day at every point."""
+    """A lattice over the Rangsit pilot: daily totals match, with dry future hours by default."""
     points = [[col, row] for row in range(5) for col in range(4)]
     days = [TODAY + timedelta(days=d) for d in range(3)]
+    hours = [NOW_ICT + timedelta(hours=h) for h in range(1, 73)]
     value = round(mm * 10)
     return RainForecast(
         name_th="test", credit_th="test", source_url="https://open-meteo.com/", fetched_at=NOW,
-        lattice=ForecastLattice(west=100.375, south=13.75, step=0.25), points=points, hours=[], rain=[],
+        lattice=ForecastLattice(west=100.375, south=13.75, step=0.25), points=points, hours=hours,
+        rain=[[0] * len(points) for _ in hours],
         days=days, day_rain=[[value] * len(points) for _ in days], day_probability=[[50] * len(points) for _ in days],
         day_code=[[61] * len(points) for _ in days], notes_th=[]).model_dump_json().encode()
 
@@ -49,9 +53,9 @@ def levels(rise_cm: float) -> bytes:
     return levels_at(at, at - timedelta(hours=3), rise_cm)
 
 
-def outlook(**files: bytes):
+def outlook(now: datetime = NOW, **files: bytes):
     names = {"flows": "water/flows.json", "rain": "forecast/rain.json", "levels": "bkk/water.json"}
-    result = build_canal_outlook({"ref/canals.json": LINES, **{names[k]: v for k, v in files.items()}}, NOW)
+    result = build_canal_outlook({"ref/canals.json": LINES, **{names[k]: v for k, v in files.items()}}, now)
     return {canal.id: canal for canal in result.canals}, result
 
 
@@ -135,6 +139,42 @@ def test_m49_the_rain_classes_are_tmds_from_35_1_and_90_1_mm():
     assert next(f for f in canals["raphiphat"].factors).text_th.startswith("พยากรณ์ฝนไม่ถึงเกณฑ์ฝนหนัก สูงสุดราว 35 มม.")
 
 
+def test_m58_canal_rain_uses_only_the_full_forecast_hours_still_ahead_today():
+    forecast = RainForecast.model_validate_json(rain(0))
+    rows = [[0] * len(forecast.points) for _ in forecast.hours]
+    rows[0] = [500] * len(forecast.points)  # 50 mm in the hour that started before now; exclude it
+    rows[1] = [200] * len(forecast.points)
+    rows[2] = [200] * len(forecast.points)
+    daily = [[1000] * len(forecast.points), [0] * len(forecast.points), [0] * len(forecast.points)]
+    forecast = forecast.model_copy(update={"rain": rows, "day_rain": daily})
+    canals, _ = outlook(now=NOW + timedelta(minutes=30), rain=forecast.model_dump_json().encode())
+    factor = next(f for f in canals["raphiphat"].factors if f.kind == "rain")
+    assert factor.points == 1  # 40 mm from full hours ahead; neither past daily rain nor the current partial hour
+    assert "สูงสุดราว 40 มม." in factor.text_th and "ช่วงที่เหลือของวัน" in factor.text_th
+
+
+def test_m58_a_partly_elapsed_hour_is_not_counted_as_future_canal_rain():
+    forecast = RainForecast.model_validate_json(rain(0))
+    rows = [[0] * len(forecast.points) for _ in forecast.hours]
+    rows[0] = [1000] * len(forecast.points)  # 100 mm for 11:00–12:00; now is 11:30
+    forecast = forecast.model_copy(update={"rain": rows})
+    canals, _ = outlook(now=NOW + timedelta(minutes=30), rain=forecast.model_dump_json().encode())
+    canal = canals["raphiphat"]
+    factor = next(f for f in canal.factors if f.kind == "rain")
+    assert factor.points == 0 and canal.level is None
+
+
+def test_m58_missing_future_hour_cannot_prove_a_dry_canal_forecast():
+    forecast = RainForecast.model_validate_json(rain(0))
+    rows = [list(row) for row in forecast.rain]
+    rows[3] = [None] * len(forecast.points)
+    forecast = forecast.model_copy(update={"rain": rows})
+    canals, _ = outlook(rain=forecast.model_dump_json().encode())
+    canal = canals["raphiphat"]
+    assert not canal.assessed and canal.level is None
+    assert any(g.kind == "rain" for g in canal.gaps)
+
+
 def test_m50_without_its_data_a_canal_is_not_assessed_never_below_the_rules():
     canals, result = outlook()  # the lines alone
     assert all(not c.assessed and c.level is None and c.score == 0 for c in result.canals)
@@ -193,6 +233,10 @@ def test_m53_partial_rid_figures_expose_the_unassessed_inflow_and_drainage():
 @pytest.mark.parametrize("mm", [0, 95])
 def test_m53_partial_forecast_cannot_establish_below_threshold(mm):
     forecast = RainForecast.model_validate_json(rain(mm))
+    if mm:
+        rows = [list(row) for row in forecast.rain]
+        rows[0] = [round(mm * 10)] * len(forecast.points)
+        forecast = forecast.model_copy(update={"rain": rows})
     partial = forecast.model_copy(update={"day_rain": [forecast.day_rain[0]] +
                                          [[None] * len(forecast.points) for _ in range(2)]})
     canals, _ = outlook(rain=partial.model_dump_json().encode())

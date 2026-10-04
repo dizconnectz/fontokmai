@@ -30,6 +30,7 @@ from fontokmai.contracts.places import Place, PlaceGazetteer
 from fontokmai.contracts.radar import RadarFeed
 from fontokmai.contracts.satellite import SatelliteFloods
 from fontokmai.downstream import downstream_table, downstream_th
+from fontokmai.forecast_windows import full_future_hour_indices
 from fontokmai.sources.bma_dxs import has_figures, release_up
 from fontokmai.sources.tmd_radar import rain_samples
 
@@ -393,14 +394,16 @@ def build_overview(files: dict[str, bytes], now: datetime, gazetteer: Gazetteer 
                     cells[place.code[:2]].add(index[key])
         days = [(d, day, (day - today).days) for d, day in enumerate(forecast.days)
                 if 0 <= (day - today).days < AHEAD_DAYS]
-        # today counts only the hours still to come, not rain that has already fallen
+        # Full forecast hours that start now or later; hourly bins partly elapsed are not future rainfall.
         midnight = datetime.combine(today + timedelta(days=1), time.min, tzinfo=ICT)
-        rest = [h for h, end in enumerate(forecast.hours) if now < end <= midnight]
+        rest, rest_axis_complete = full_future_hour_indices(forecast.hours, now, midnight)
 
         def day_values(d: int, away: int, members: set[int]) -> dict[int, int]:
-            """Rain of the day at each cell with a value (0.1 mm); today = the hours still to come."""
+            """Rain of the day at each cell with a value (0.1 mm); today = full future hours with known values."""
             if away > 0:
                 return {i: forecast.day_rain[d][i] for i in members if forecast.day_rain[d][i] is not None}
+            if not rest:
+                return {}
             return {i: sum(forecast.rain[h][i] for h in rest) for i in members
                     if rest and all(forecast.rain[h][i] is not None for h in rest)}
 
@@ -431,13 +434,15 @@ def build_overview(files: dict[str, bytes], now: datetime, gazetteer: Gazetteer 
                 else:
                     text = f"ฝนหนัก{heavy_extent}"
                 text += f" สูงสุดราว {max(values) / 10:.0f} มม." + ("" if covered else " (ข้อมูลพยากรณ์ไม่ครบทั้งจังหวัด)")
+                if away == 0 and not rest_axis_complete:
+                    text += " (ข้อมูลชั่วโมงพยากรณ์ไม่ครบ)"
                 wide = (heavy_share >= 0.4) + (heavy_share >= 0.8) if covered else 0
                 score = base + wide + (2 if away == 0 else 1 if away == 1 else 0)
                 ahead[province].append((score, OverviewReason(
                     kind="rain_forecast", text_th=text, day=day, source_th="Open-Meteo", at=forecast.fetched_at)))
             # the forecast of today (hours to come), tomorrow and the day after at one cell (experimental 150 mm)
             three = [(d, away) for d, _, away in days if away < 3]
-            if len(three) == 3:
+            if len(three) == 3 and rest_axis_complete:
                 parts = [day_values(d, away, members) for d, away in three]
                 sums = [sum(part[i] for part in parts) for i in members if all(i in part for part in parts)]
                 if sums and max(sums) >= THREE_DAYS_WATCH:
@@ -561,4 +566,3 @@ def with_earlier(overview: Overview, recent: str | None) -> tuple[Overview, str]
     kept.append({"at": now.isoformat(), "now": [i.place_th for i in overview.items if i.when == "now"],
                  "next": [i.place_th for i in overview.items if i.when == "next"]})
     return overview.model_copy(update={"earlier": earlier}), json.dumps(kept, ensure_ascii=False)
-
