@@ -1408,8 +1408,8 @@ test('the rivers by the system’s 7-day forecast: stretches on the map, a card 
   // the Chao Phraya at Bangkok rises, the Bang Pakong rises a lot (user, 2026-10-02)
   await expect(surface).toHaveAttribute('data-rivers', /cp-bangkok:rising(?!_)/);
   await expect(surface).toHaveAttribute('data-rivers', /bangpakong-chachoengsao:rising_fast/);
-  // the falling and steady stretches are drawn too, thin, so the lines show where the forecast is
-  await expect(surface).toHaveAttribute('data-rivers', /mekong-nongkhai:falling/);
+  // a falling or steady river is not coloured (user 2026-10-04: only what is not normal)
+  await expect(surface).not.toHaveAttribute('data-rivers', /mekong-nongkhai/);
   const key = page.locator('.legend-rivers');
   await expect(key).toContainText('เพิ่มขึ้นมาก');
   await expect(key).toContainText('พยากรณ์ของระบบ (แบบจำลอง)');
@@ -1426,10 +1426,11 @@ test('the rivers by the system’s 7-day forecast: stretches on the map, a card 
   await page.getByRole('button', { name: 'แนวโน้มน้ำแม่น้ำ' }).click();
   await expect(surface).toHaveAttribute('data-rivers', '');
   await expect(key).toHaveCount(0);
-  // nothing forecast to rise: no card and nothing in the status bar (user, 2026-10-02); the thin lines stay
+  // nothing forecast to rise: no card, nothing in the status bar (user, 2026-10-02) and no coloured river
   for (const point of rivers.points) point.median = point.median.map(() => 100);
   await page.goto('/');
-  await expect(surface).toHaveAttribute('data-rivers', /cp-bangkok:steady/);
+  await expect(surface).toHaveAttribute('aria-busy', 'false', { timeout: 15_000 });
+  await expect(surface).toHaveAttribute('data-rivers', '');
   await expect(card).toHaveCount(0);
   await expect(page.getByTestId('status-bar')).not.toContainText('แม่น้ำ');
 });
@@ -1525,7 +1526,8 @@ test('the canals by the trial outlook: coloured lines, a card, a chip and a popu
   await expect(surface).toHaveAttribute('aria-busy', 'false', { timeout: 15_000 });
   await expect(surface).toHaveAttribute('data-canals', /rangsit:warn/);
   await expect(surface).toHaveAttribute('data-canals', /hokwa:watch/);
-  await expect(surface).toHaveAttribute('data-canals', /raphiphat:none/);
+  // a canal below the rules is not drawn (user 2026-10-04)
+  await expect(surface).not.toHaveAttribute('data-canals', /raphiphat/);
   // a card lists the canals at watch or warn with what adds up; the status bar counts them
   const card = page.getByTestId('canals');
   await expect(card.getByRole('heading')).toHaveText('คลองที่อาจล้น (ทดลอง) · ต้องระวัง 1 สาย');
@@ -1566,10 +1568,11 @@ test('the canals by the trial outlook: coloured lines, a card, a chip and a popu
     '/method/#canals',
   );
   await expect(page.getByTestId('pin-card')).not.toBeVisible();
-  // nothing at watch or warn: no card and nothing in the status bar; the thin lines stay
+  // nothing at watch or warn: no card, nothing in the status bar and no canal drawn
   for (const watch of outlook.canals) Object.assign(watch, { score: 1, level: null });
   await page.goto('/');
-  await expect(surface).toHaveAttribute('data-canals', /rangsit:none/);
+  await expect(surface).toHaveAttribute('aria-busy', 'false', { timeout: 15_000 });
+  await expect(surface).toHaveAttribute('data-canals', '');
   await expect(card).toHaveCount(0);
   await expect(page.getByTestId('status-bar')).not.toContainText('คลอง');
   // without its data a canal is not assessed: dashed grey and said so, never "below the rules" (Codex M50)
