@@ -51,6 +51,12 @@ import {
   type Snapshot,
 } from './data';
 import {
+  satelliteSource,
+  satelliteWords,
+  type SatelliteFloods,
+  type SatelliteShapes,
+} from './satellite';
+import {
   LEVEL_LABEL,
   dateTime,
   feedTrust,
@@ -1423,6 +1429,8 @@ export function PinCard({
   rain,
   rainState,
   flooding,
+  satellite = null,
+  satelliteShapes = null,
   onClose,
   onSelectAlert,
   onRoad,
@@ -1430,6 +1438,9 @@ export function PinCard({
   onFavorite,
 }: {
   pin: number[];
+  /** GISTDA's flooded area by district, and the outlines drawn for it (null while off or not loaded) */
+  satellite?: SatelliteFloods | null;
+  satelliteShapes?: SatelliteShapes | null;
   /** chosen in the search box */
   place: FoundPlace | null;
   /** nearest subdistrict point, for a pin dropped on the map */
@@ -1512,6 +1523,15 @@ export function PinCard({
       pin[1] >= roads.bbox[1] &&
       pin[1] <= roads.bbox[3]);
   const nearAll = useMemo(() => (roads ? roadsNear(roads, pin) : []), [roads, pin]);
+  // the district of the pin among those GISTDA saw water in (their outlines are drawn on the map)
+  const satelliteHere = useMemo(() => {
+    const shape = satelliteShapes?.features.find((f) =>
+      inMultiPolygon(pin, f.geometry.coordinates),
+    );
+    return shape
+      ? (satellite?.districts.find((d) => d.code === shape.properties.code) ?? null)
+      : null;
+  }, [satellite, satelliteShapes, pin]);
   const near = nearAll.slice(0, 5);
   // today's report of the department on the roads around the pin (matched by road name)
   const reportedHere = useMemo(
@@ -1862,6 +1882,25 @@ export function PinCard({
           <p className="inline-warning">
             <Info size={15} /> รายงานน้ำท่วมไม่อัปเดตตั้งแต่ {formatTime(floods!.fetched_at)} น.
           </p>
+        )}
+        {satelliteHere && satellite && (
+          <div className="satellite-here" data-testid="satellite-here">
+            <strong>
+              ดาวเทียมเห็นน้ำท่วมใน{satelliteHere.name_th.split(' ')[0]} (ในรอบ{' '}
+              {satellite.window_days} วัน)
+            </strong>
+            <span>{satelliteWords(satelliteHere)}</span>
+            <small>
+              {satelliteSource(satellite)} · ทั้งอำเภอ ไม่ได้บอกว่าจุดนี้ท่วม ·{' '}
+              <a
+                href={safeLink(satellite.source_url) ?? undefined}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                ดูแผนที่ของ GISTDA ↗
+              </a>
+            </small>
+          </div>
         )}
         {reportedHere.length > 0 && (
           <div className="road-report-here" data-testid="road-report-here">

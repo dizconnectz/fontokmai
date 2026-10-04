@@ -95,6 +95,7 @@ import {
   type FlowSite,
 } from './flows';
 import type { RiverStretches } from './rivers';
+import type { SatelliteShapes } from './satellite';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 
@@ -112,6 +113,8 @@ export interface Layers {
   flows: boolean;
   /** the canals of the pilot by the site's trial outlook (D35) */
   canals: boolean;
+  /** GISTDA's flooded area seen from satellites, by district */
+  satellite: boolean;
   /** outlines of the places the summary lists */
   watch: boolean;
 }
@@ -148,6 +151,8 @@ interface Props {
   flows: RidFlows | null;
   /** the canals of the pilot coloured by the outlook, or null (layer off, or the timeline on the forecast) */
   canalShapes: CanalShapes | null;
+  /** GISTDA's districts with flood water seen from satellites (an agency's map) */
+  satelliteShapes: SatelliteShapes | null;
   /** the outlook the canal lines are coloured by: their popups read its factors */
   canalOutlook: CanalOutlook | null;
   /** outlines of the summary's places (empty when the layer is off) */
@@ -326,6 +331,21 @@ function addOverlays(instance: LibreMap) {
         ['literal', [1, 0]],
       ],
     },
+  });
+  // districts where GISTDA saw flood water from satellites: a light tint and a coloured edge, under the river lines,
+  // the outlines and the pins; a tap goes through to the pin, whose card says it
+  instance.addSource('satellite', { type: 'geojson', data: empty });
+  instance.addLayer({
+    id: 'satellite-fill',
+    type: 'fill',
+    source: 'satellite',
+    paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.22 },
+  });
+  instance.addLayer({
+    id: 'satellite-line',
+    type: 'line',
+    source: 'satellite',
+    paint: { 'line-color': ['get', 'color'], 'line-opacity': 0.9, 'line-width': 1.6 },
   });
   // stretches of river forecast to rise (model, 7 days): over the rain, under the outlines and the pins
   instance.addSource('river-lines', { type: 'geojson', data: empty });
@@ -1818,6 +1838,15 @@ export default function MapView(props: Props) {
     if (!props.canalShapes?.features.length && popupKind.current === 'canal')
       popup.current?.remove();
   }, [props.canalShapes, props.theme, ready, styleVersion]);
+
+  // GISTDA's flooded districts (an agency's map of water, summed by district)
+  useEffect(() => {
+    const instance = map.current;
+    if (!ready || !instance) return;
+    (instance.getSource('satellite') as GeoJSONSource | undefined)?.setData(
+      props.satelliteShapes ?? { type: 'FeatureCollection', features: [] },
+    );
+  }, [props.satelliteShapes, ready, styleVersion]);
 
   // An open popup follows the clock and the files: its age labels change, and it closes when what it shows is
   // gone (a report past its time, a station no longer in the file). Rebuilt only when its words change.

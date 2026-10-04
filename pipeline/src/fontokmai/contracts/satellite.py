@@ -12,6 +12,7 @@ from fontokmai.contracts.common import SCHEMA_VERSION, ContractModel
 
 class SatelliteDistrict(ContractModel):
     code: str = Field(pattern=r"^\d{4}$", description="DOPA district code, as in ref/places.json")
+    name_th: str = Field(description="The district and province, e.g. อ.คีรีมาศ จ.สุโขทัย (ref/places.json label)")
     area_km2: float = Field(ge=0, description="Water GISTDA mapped as flood in the district, km²")
     cells: int = Field(ge=1, description="H3 cells (resolution 9, about 0.1 km² each) with flood water")
     population: int | None = Field(description="People GISTDA estimates live in the flooded cells")

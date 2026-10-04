@@ -26,6 +26,7 @@ from typing import Any, BinaryIO
 from urllib.parse import urlencode
 
 from fontokmai.contracts.satellite import SatelliteDistrict, SatelliteFloods
+from fontokmai.downstream import places
 from fontokmai.publish.snapshot import atomic_write
 from fontokmai.sources.open_data.http import TIMEOUT_S, OpenDataError
 from fontokmai.sources.tmd_cap.fetch import USER_AGENT, make_ssl_context
@@ -116,12 +117,15 @@ def summarize(features: Iterator[dict[str, Any]], now: datetime) -> SatelliteFlo
     people: dict[str, float] = defaultdict(float)
     buildings: dict[str, float] = defaultdict(float)
     scenes: set[str] = set()
+    known = {code: place.label for code, place in places().items() if place.kind == "district"}
     for feature in features:
         props = feature.get("properties") or {}
         code, size = props.get("ap_idn"), _number(props.get("f_area"))
         if isinstance(code, bool) or not isinstance(code, int) or not 1000 <= code <= 9999 or size is None:
             continue  # a feature without a district or an area cannot be summed; it is never guessed
         key = f"{code:04d}"
+        if key not in known:
+            continue  # a code that is no DOPA district of ours cannot be placed
         area[key] += size
         cells[key].add(str(props.get("h3_address") or props.get("_id") or id(feature)))
         people[key] += _number(props.get("population")) or 0.0
@@ -137,8 +141,9 @@ def summarize(features: Iterator[dict[str, Any]], now: datetime) -> SatelliteFlo
             latest = date(int(day[:4]), int(day[4:6]), int(day[6:]))
         except ValueError:
             latest = None
-    districts = [SatelliteDistrict(code=code, area_km2=round(area[code] / 1e6, 3), cells=len(cells[code]),
-                                   population=round(people[code]), buildings=round(buildings[code]))
+    districts = [SatelliteDistrict(code=code, name_th=known[code], area_km2=round(area[code] / 1e6, 3),
+                                   cells=len(cells[code]), population=round(people[code]),
+                                   buildings=round(buildings[code]))
                  for code in sorted(area, key=lambda c: -area[c])]
     return SatelliteFloods(name_th=NAME_TH, credit_th=CREDIT_TH, source_url=PAGE_URL, fetched_at=now,
                            window_days=WINDOW_DAYS, scenes=ordered, latest_scene_day=latest,

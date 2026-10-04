@@ -20,6 +20,7 @@ import {
   Dam,
   Gauge,
   Spline,
+  Satellite,
   Thermometer,
   TrendingUp,
   X,
@@ -36,6 +37,7 @@ import { distanceM } from './roads';
 import Timeline, { type TimeStep } from './Timeline';
 import { FORECAST_LEVELS, forecastAreas, RAIN_LEGEND } from './forecast';
 import { RIVER_CLASSES, riverDay, riverStretches } from './rivers';
+import { SATELLITE_CLASSES, satelliteOld, satelliteShapes, satelliteSource } from './satellite';
 import { feedTrust, LEVEL_FILL, LEVEL_LABEL, worstLevel, type Level } from './alerts';
 import { nearestSubdistrict, type FoundPlace } from './places';
 import {
@@ -122,6 +124,7 @@ export default function App() {
     flows,
     canalLines,
     canals,
+    satellite,
   } = data;
   const [layers, setLayers] = useState<Layers>({
     alerts: true,
@@ -135,6 +138,7 @@ export default function App() {
     rivers: true,
     flows: true,
     canals: true,
+    satellite: true,
     watch: true,
   });
   // the time the map shows: null = now (the latest radar frame); otherwise a radar or forecast time
@@ -279,7 +283,19 @@ export default function App() {
     [canalShown, canalLines, canals],
   );
   const canalKey = !!canalShapes?.features.length;
-  const panelKey = pinKey || bankKey || watchKey || riverKey || canalKey;
+  // GISTDA's flooded area seen from satellites (an agency's map): districts outlined and tinted by their water
+  const satelliteShown =
+    layers.satellite && !!satellite?.districts.length && !satelliteOld(satellite, now);
+  useEffect(() => {
+    if (satelliteShown) void loadBoundaries();
+  }, [satelliteShown, loadBoundaries]);
+  const satelliteLayer = useMemo(
+    () =>
+      satelliteShown && satellite && boundaries ? satelliteShapes(satellite, boundaries) : null,
+    [satelliteShown, satellite, boundaries],
+  );
+  const satelliteKey = !!satelliteLayer?.features.length;
+  const panelKey = pinKey || bankKey || watchKey || riverKey || canalKey || satelliteKey;
   // the saved place in one line on top; naming its district needs the DOPA places, loaded once a place is saved
   useEffect(() => {
     if (favorite) void loadPlaces();
@@ -295,10 +311,11 @@ export default function App() {
             areas: summaryAreas,
             floods,
             forecast,
+            satellite,
             now,
           })
         : [],
-    [favorite, alerts, snapshot, now, places, summaryAreas, floods, forecast],
+    [favorite, alerts, snapshot, now, places, summaryAreas, floods, forecast, satellite],
   );
   const forecastLayer = useMemo(
     () => (step.kind === 'forecast' && forecast ? forecastAreas(forecast, step.hour) : null),
@@ -496,6 +513,7 @@ export default function App() {
               rivers={step.kind === 'forecast' ? null : rivers}
               flows={step.kind === 'forecast' ? null : flows}
               canalShapes={canalShapes}
+              satelliteShapes={satelliteLayer}
               canalOutlook={canals}
               watch={watch}
               riverStretches={riverShapes}
@@ -600,6 +618,11 @@ export default function App() {
                 <Spline size={16} /> คลองที่อาจล้น (ทดลอง)
               </button>
             )}
+            {!!satellite?.districts.length && (
+              <button aria-pressed={layers.satellite} onClick={() => toggle('satellite')}>
+                <Satellite size={16} /> น้ำท่วมจากดาวเทียม (GISTDA)
+              </button>
+            )}
             {overview && (
               <button aria-pressed={layers.watch} onClick={() => toggle('watch')}>
                 <SquareDashed size={16} /> กรอบพื้นที่ที่ต้องระวัง
@@ -657,6 +680,24 @@ export default function App() {
                     </span>
                   ))}
                   <small>เส้นและหมุดสีเดียวกัน · พยากรณ์ของระบบ (แบบจำลอง)</small>
+                </div>
+              )}
+              {satelliteKey && satellite && (
+                <div
+                  className="legend-row legend-satellite"
+                  aria-label="พื้นที่น้ำท่วมจากภาพดาวเทียม"
+                >
+                  <span>ดาวเทียม ตร.กม.</span>
+                  {SATELLITE_CLASSES.map((item) => (
+                    <span key={item.label}>
+                      <i
+                        className="legend-outline"
+                        style={{ borderColor: item.color, background: `${item.color}55` }}
+                      />{' '}
+                      {item.label}
+                    </span>
+                  ))}
+                  <small>{satelliteSource(satellite)}</small>
                 </div>
               )}
               {canalKey && (
@@ -962,6 +1003,8 @@ export default function App() {
             rain={rain}
             rainState={rainState}
             flooding={flooding}
+            satellite={satellite}
+            satelliteShapes={satelliteLayer}
             onClose={() => setPin(null)}
             onSelectAlert={selectAlert}
             onRoad={(r) => openRoad(r.key)}

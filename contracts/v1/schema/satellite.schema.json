@@ -33,6 +33,11 @@
           "title": "Code",
           "type": "string"
         },
+        "name_th": {
+          "description": "The district and province, e.g. อ.คีรีมาศ จ.สุโขทัย (ref/places.json label)",
+          "title": "Name Th",
+          "type": "string"
+        },
         "population": {
           "anyOf": [
             {
@@ -48,6 +53,7 @@
       },
       "required": [
         "code",
+        "name_th",
         "area_km2",
         "cells",
         "population",
