@@ -65,6 +65,10 @@ def test_requests_come_in_batches_and_odd_answers_are_refused():
     assert PAUSE_S * CALLS_PER_MINUTE / 60 == BATCH and CALLS_PER_MINUTE < 600  # the free per-minute limit
     assert asked[0].startswith("https://api.open-meteo.com/v1/forecast?")
     one = {"hourly": {"time": ["2026-09-26T12:00"], "precipitation": [-1]},
+           "utc_offset_seconds": 25200,
+           "hourly_units": {"time": "iso8601", "precipitation": "mm"},
+           "daily_units": {"time": "iso8601", "precipitation_sum": "mm",
+                           "precipitation_probability_max": "%", "weather_code": "wmo code"},
            "daily": {"time": ["2026-09-26"], "precipitation_sum": [None], "precipitation_probability_max": [101],
                      "weather_code": [95]}}
     odd = build_forecast([one], lattice, points[:1], FETCHED)
@@ -75,7 +79,7 @@ def test_requests_come_in_batches_and_odd_answers_are_refused():
     with pytest.raises(OpenDataError, match="no hour after now"):
         build_forecast([one], lattice, points[:1], FETCHED + timedelta(hours=3))
     with pytest.raises(OpenDataError, match="not understood"):
-        build_forecast([{"hourly": {}}], lattice, points[:1], FETCHED)
+        build_forecast([{**one, "hourly": {}}], lattice, points[:1], FETCHED)
 
 
 def test_the_forecast_is_rebuilt_every_six_hours_and_published_with_the_snapshot(tmp_path):
@@ -97,3 +101,28 @@ def test_forecast_example_is_reproducible(tmp_path):
     assert RainForecast.model_validate_json(first[0].read_bytes()).fetched_at == FETCHED
     rivers = RiverForecast.model_validate_json(first[1].read_bytes())
     assert len(rivers.points) == 14 and len(rivers.days) == 37
+
+
+@pytest.mark.parametrize("fault", ["offset", "units", "duplicate_hour", "missing_hour", "duplicate_day",
+                                  "hour_offset", "short_series"])
+def test_m54_rain_rejects_ambiguous_units_and_misaligned_time_axes(fault):
+    answers = json.loads((OPEN_METEO / "bangkok_12_points.json").read_text(encoding="utf-8"))[:1]
+    answer = answers[0]
+    if fault == "offset":
+        answer["utc_offset_seconds"] = 0
+    elif fault == "units":
+        answer["daily_units"]["precipitation_sum"] = "inch"
+    elif fault == "duplicate_hour":
+        answer["hourly"]["time"][15] = answer["hourly"]["time"][14]
+    elif fault == "missing_hour":
+        for series in answer["hourly"].values():
+            series.pop(15)
+    elif fault == "duplicate_day":
+        answer["daily"]["time"][1] = answer["daily"]["time"][0]
+    elif fault == "hour_offset":
+        answer["hourly"]["time"] = [t + "+00:00" for t in answer["hourly"]["time"]]
+    else:
+        answer["hourly"]["precipitation"].pop()
+    lattice, points = default_lattice()
+    with pytest.raises(OpenDataError):
+        build_forecast(answers, lattice, points[:1], FETCHED)

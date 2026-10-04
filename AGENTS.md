@@ -45,13 +45,13 @@
 ### A5. งานที่กำลังทำ (Active claims)
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
-| Codex | 2026-10-03 23:15 | `AGENTS.md`, `pipeline/src/fontokmai/canal_outlook.py`, `pipeline/tests/test_canal_outlook.py`, `pipeline/src/fontokmai/sources/{open_meteo,glofas}.py`, `pipeline/tests/{test_forecast,test_glofas}.py`, `contracts/v1/examples/*/{manifest,outlook}.json`, `contracts/v1/README.md`, `docs/design/fontokmai-design.md`, `apps/web/public/method/index.html`, `private/handoffs/2026-10-03-codex-formula-recheck.md`, `private/handoffs/README.md`, `local-notes/recheck-*` | ทวนสูตร/แก้ช่องว่างคะแนนคลอง ทดสอบและpushทีละชุด | formulas |
+| Codex | 2026-10-03 23:15 | `AGENTS.md`, `pipeline/src/fontokmai/canal_outlook.py`, `pipeline/tests/test_canal_outlook.py`, `pipeline/src/fontokmai/sources/{open_meteo,glofas}.py`, `pipeline/tests/{test_forecast,test_glofas,test_river_lines}.py`, `contracts/v1/examples/*/{manifest,outlook}.json`, `contracts/v1/README.md`, `docs/design/fontokmai-design.md`, `apps/web/public/method/index.html`, `private/handoffs/2026-10-03-codex-formula-recheck.md`, `private/handoffs/README.md`, `local-notes/recheck-*` | ทวนสูตร/แก้ช่องว่างคะแนนคลอง ทดสอบและpushทีละชุด | formulas |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md`)
 
-#### 2026-10-04 11:47 ICT — ทวนสูตรและทยอยแก้ M52–M53 (Codex)
+#### 2026-10-04 11:47 ICT — ทวนสูตรและทยอยแก้ M52–M54 (Codex)
 - M48/M49 เดิมแก้แล้ว; พบต่อ M52: ขึ้น9.6ซม.ถูกปัดเป็น10ก่อนให้คะแนน และไม่มีคู่ค่าวัดยังassessed=true → canals-v3 ใช้ค่าจริง/คู่เวลาเรียงถูก; testใหม่9กรณี ชุดคลอง17ผ่าน+ruff; สัญญา27/วิธีคิด/designแก้ตรงกัน ไม่เปลี่ยนschema
-- M52 push446d766/CIผ่าน; M53 canals-v4 เพิ่มgapเมื่อข้อมูลบางส่วน/เวลาอนาคต ชุดคลอง21ผ่าน · กำลังทวนพยากรณ์ต่อ; รายงาน private/handoffs/2026-10-03-codex-formula-recheck.md (เก็บA6 21:32เดิม) · ความแม่นยังไม่ผ่านbacktest · รอCI/deploy
+- M52 push446d766/CIผ่าน; M53 canals-v4 เพิ่มgapเมื่อข้อมูลบางส่วน/เวลาอนาคต ชุดคลอง21ผ่าน pushbfae8f5 · M54 ตรวจหน่วย/แกนเวลา/percentile ก่อนเผยแพร่ ทดสอบจำลอง13กรณี; รายงาน private/handoffs/2026-10-03-codex-formula-recheck.md (เก็บA6 21:32เดิม) · ความแม่นยังไม่ผ่านbacktest · รอCI/deploy
 
 #### 2026-10-03 23:10 ICT — ประตูน้ำ/คลอง D35 และปิดรีวิว M40–M51 (Claude)
 - D35 9d9a6a8 + M48–M51 34d92e6 + 95103af (ฉบับเต็ม private/handoffs/2026-10-03-claude-gates.md) · M45 60d66e7 เรดาร์ล้มไม่ซ่อนประกาศ · M40 0120995 แถบสรุปไม่เขียวเมื่ออ่านสรุปไม่ได้ · M44 62ef3dd อำเภอจากกรอบ `areas.py` · M46 0b401e1 · M47 76c35bb sha/size (live) · M42 ef7d0b9 · M41 182282a CLS มือถือ 0.127→0.026

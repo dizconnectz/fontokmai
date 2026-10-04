@@ -113,3 +113,38 @@ def test_a_failed_refresh_waits_before_trying_again(tmp_path):
     later = (NOW + timedelta(hours=1), NOW + timedelta(hours=2))
     assert refresh_river_forecast(out, db, later[0], opener=_opener(), points=POINTS) == "waiting to retry"
     assert refresh_river_forecast(out, db, later[1], opener=_opener(), points=POINTS) == "built 14 rivers x 37 days"
+
+
+@pytest.mark.parametrize("fault", ["offset", "units", "duplicate_day", "missing_day", "percentiles"])
+def test_m54_rivers_reject_incompatible_units_days_and_percentiles(fault):
+    answers = json.loads(FIXTURE.read_text(encoding="utf-8"))[:1]
+    answer = answers[0]
+    if fault == "offset":
+        answer["utc_offset_seconds"] = 0
+    elif fault == "units":
+        answer["daily_units"]["river_discharge_median"] = "m3/day"
+    elif fault == "duplicate_day":
+        answer["daily"]["time"][9] = answer["daily"]["time"][8]
+    elif fault == "missing_day":
+        for series in answer["daily"].values():
+            series.pop(9)
+    else:
+        for field, value in (("river_discharge_p25", 300), ("river_discharge_median", 200),
+                             ("river_discharge_p75", 100)):
+            answer["daily"][field][9] = value
+    with pytest.raises(OpenDataError):
+        glofas.build_forecast(answers, POINTS[:1], NOW)
+
+
+def test_m54_failed_quality_checks_keep_the_previous_forecast_and_its_timestamp(tmp_path):
+    out, db = tmp_path / "out", tmp_path / "state.db"
+    refresh_river_forecast(out, db, NOW, opener=_opener(), points=POINTS)
+    previous = (out / RIVERS_PATH).read_bytes()
+    answers = json.loads(FIXTURE.read_text(encoding="utf-8"))
+    answers[0]["daily_units"]["river_discharge"] = "m3/day"
+    wrong = tmp_path / "wrong-units.json"
+    wrong.write_text(json.dumps(answers), encoding="utf-8")
+    result = refresh_river_forecast(out, db, NOW + timedelta(hours=21), opener=_opener(wrong), points=POINTS)
+    assert result.startswith("error: OpenDataError")
+    assert (out / RIVERS_PATH).read_bytes() == previous
+    assert RiverForecast.model_validate_json(previous).fetched_at == NOW

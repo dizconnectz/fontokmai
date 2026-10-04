@@ -108,20 +108,44 @@ def build_forecast(answers: list[dict[str, Any]], lattice: ForecastLattice, poin
                    now: datetime) -> RainForecast:
     """Hours ending after the start of the current hour, for HOURS hours, and DAYS days from today."""
     try:
+        expected_units = {"hourly_units": {"time": "iso8601", "precipitation": "mm"},
+                          "daily_units": {"time": "iso8601", "precipitation_sum": "mm",
+                                          "precipitation_probability_max": "%", "weather_code": "wmo code"}}
+        for answer in answers:
+            if answer.get("utc_offset_seconds") != 25200:
+                raise OpenDataError("Open-Meteo timezone is not Asia/Bangkok")
+            for field, expected in expected_units.items():
+                units = answer.get(field)
+                if not isinstance(units, dict) or any(units.get(k) != v for k, v in expected.items()):
+                    raise OpenDataError(f"Open-Meteo {field} not supported")
         times = answers[0]["hourly"]["time"]
         days = answers[0]["daily"]["time"]
         if any(a["hourly"]["time"] != times or a["daily"]["time"] != days for a in answers):
             raise OpenDataError("Open-Meteo points disagree on the time axis")
-        ends = [datetime.fromisoformat(t).replace(tzinfo=ICT) for t in times]
+        raw_times = [datetime.fromisoformat(t) for t in times]
+        if any(t.minute or t.second or t.microsecond or
+               (t.tzinfo is not None and t.utcoffset() != timedelta(hours=7)) for t in raw_times):
+            raise OpenDataError("Open-Meteo hourly time axis has a wrong offset or alignment")
+        ends = [t.replace(tzinfo=ICT) if t.tzinfo is None else t for t in raw_times]
+        parsed_days = [date.fromisoformat(d) for d in days]
+        if (any(b - a != timedelta(hours=1) for a, b in zip(ends, ends[1:], strict=False)) or not parsed_days
+                or parsed_days[0] != now.astimezone(ICT).date()
+                or any(b - a != timedelta(days=1) for a, b in zip(parsed_days, parsed_days[1:], strict=False))):
+            raise OpenDataError("Open-Meteo time axis must be ordered, unique and contiguous from today")
         hour = now.astimezone(ICT).replace(minute=0, second=0, microsecond=0)
         keep = [i for i, end in enumerate(ends) if hour < end <= hour + timedelta(hours=HOURS)]
         hourly = [a["hourly"]["precipitation"] for a in answers]
         daily = [a["daily"] for a in answers]
+        daily_fields = ("precipitation_sum", "precipitation_probability_max", "weather_code")
+        if (any(not isinstance(values, list) or len(values) != len(times) for values in hourly)
+                or any(not isinstance(d[field], list) or len(d[field]) != len(days)
+                       for d in daily for field in daily_fields)):
+            raise OpenDataError("Open-Meteo value series does not match the time axis")
         forecast = RainForecast(
             name_th=NAME_TH, credit_th=CREDIT_TH, source_url=PAGE_URL, fetched_at=now, lattice=lattice,
             points=points, hours=[ends[i] for i in keep],
             rain=[[_tenths(values[i], 500) for values in hourly] for i in keep],
-            days=[date.fromisoformat(d) for d in days],
+            days=parsed_days,
             day_rain=[[_tenths(d["precipitation_sum"][k], 2000) for d in daily] for k in range(len(days))],
             day_probability=[[_whole(d["precipitation_probability_max"][k], 100) for d in daily]
                              for k in range(len(days))],

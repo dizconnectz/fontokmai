@@ -78,14 +78,22 @@ def _flow(value: Any) -> float | None:
 def build_forecast(answers: list[dict[str, Any]], points: list[dict[str, Any]], now: datetime) -> RiverForecast:
     """The days of the answer (Thai calendar), which must include the day of the fetch."""
     try:
+        for answer in answers:
+            units = answer.get("daily_units")
+            if (answer.get("utc_offset_seconds") != 25200 or not isinstance(units, dict)
+                    or units.get("time") != "iso8601" or any(units.get(field) != "m³/s" for field in FIELDS)):
+                raise OpenDataError("Open-Meteo flood units or timezone not supported")
         days = answers[0]["daily"]["time"]
         if any(a["daily"]["time"] != days for a in answers):
             raise OpenDataError("Open-Meteo flood points disagree on the days")
         if now.astimezone(ICT).date().isoformat() not in days:
             raise OpenDataError("Open-Meteo flood answer does not reach the day of the fetch")
+        parsed_days = [date.fromisoformat(d) for d in days]
+        if any(b - a != timedelta(days=1) for a, b in zip(parsed_days, parsed_days[1:], strict=False)):
+            raise OpenDataError("Open-Meteo flood days must be ordered, unique and contiguous")
         forecast = RiverForecast(
             name_th=NAME_TH, credit_th=CREDIT_TH, source_url=PAGE_URL, fetched_at=now,
-            days=[date.fromisoformat(d) for d in days],
+            days=parsed_days,
             points=[RiverPoint(
                 id=point["id"], kind=point.get("kind", "station"), name_th=point["name_th"],
                 river_th=point["river_th"], location=point["location"],
@@ -96,6 +104,11 @@ def build_forecast(answers: list[dict[str, Any]], points: list[dict[str, Any]], 
             ) for point, answer in zip(points, answers, strict=True)],
             notes_th=NOTES_TH,
         )
+        for point in forecast.points:
+            for quartiles in zip(point.p25, point.median, point.p75, strict=True):
+                known = [value for value in quartiles if value is not None]
+                if known != sorted(known):
+                    raise OpenDataError("Open-Meteo flood percentiles are inconsistent")
     except (KeyError, IndexError, TypeError, ValueError) as exc:
         raise OpenDataError(f"Open-Meteo flood answer not understood: {type(exc).__name__}: {exc}") from exc
     return forecast

@@ -65,7 +65,9 @@ def test_reach_points_join_the_daily_fetch_but_not_the_summary(tmp_path, monkeyp
 
 def test_a_point_says_whether_it_is_a_station_or_a_reach():
     days = ["2026-10-01", "2026-10-02"]
-    answer = {"daily": {"time": days, **{field: [1.0, 2.0] for field in glofas.FIELDS}}}
+    answer = {"utc_offset_seconds": 25200,
+              "daily_units": {"time": "iso8601", **dict.fromkeys(glofas.FIELDS, "m³/s")},
+              "daily": {"time": days, **{field: [1.0, 2.0] for field in glofas.FIELDS}}}
     points = glofas.load_points()[:1] + glofas.load_reaches()[:1]
     forecast = glofas.build_forecast([answer, answer], points, datetime(2026, 10, 2, 4, 0, tzinfo=UTC))
     assert [p.kind for p in forecast.points] == ["station", "reach"]
