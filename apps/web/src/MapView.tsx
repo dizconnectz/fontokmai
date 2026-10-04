@@ -848,6 +848,9 @@ function flowPopup(site: FlowSite, file: RidFlows, now: number): HTMLElement {
     root.append(old);
   }
   root.append(linkOut(file.source_url, `ที่มา: ${shortCredit(file.credit_th)} (รายงาน PDF) ↗`));
+  // a station the PDF gives no figure for (C.35) has it drawn on RID's chart of the same morning
+  if (file.chart_url && [...main, ...gates].some((point) => point.flow_cms === null))
+    root.append(linkOut(file.chart_url, 'ดูตัวเลขในผังน้ำของกรมชลฯ (ภาพ) ↗'));
   return root;
 }
 

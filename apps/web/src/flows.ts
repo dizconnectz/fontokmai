@@ -112,7 +112,8 @@ export function stateWords(state: FlowPoint['state']): string | null {
 export function flowText(point: FlowPoint): string {
   const parts: string[] = [];
   if (point.flow_cms === null) {
-    parts.push('รายงานไม่มีตัวเลขน้ำของจุดนี้');
+    // the daily PDF prints no figure for some stations (C.35): RID's chart of the day draws it, linked in the popup
+    parts.push('รายงาน PDF ไม่มีตัวเลขของจุดนี้ ดูในผังน้ำของกรมชลฯ');
     if (point.capacity_cms && point.capacity_kind === 'channel')
       parts.push(`ลำน้ำรับได้ ${cms(point.capacity_cms)}`);
   } else if (point.kind === 'gate' && point.flow_cms <= 0) {
