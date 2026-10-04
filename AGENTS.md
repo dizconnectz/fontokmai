@@ -1,7 +1,7 @@
 # AGENTS.md — fontokmai (ฝนตกไหม): ข้อตกลงทีม สถานะ และการตัดสินใจ
 
 > **สถานะ**: เว็บแบบแผนที่เป็นหลักออนไลน์ที่ `https://dizconnectz.github.io/fontokmai/` (D28, D29): ประกาศกรมอุตุฯ ระบายสีตามระดับ, เรดาร์ฝน, กล้อง CCTV, ปักหมุดดูข้อมูลจุด, ค้นหาสถานที่ (ตำบล/อำเภอ/จังหวัด/สถานที่/ถนน), แถบเลื่อนเวลา (เรดาร์ย้อนหลัง → พยากรณ์ฝน 72 ชม.), ฝน 7 วัน + แนวโน้ม ensemble14วัน/18จุด (ทดลอง), สายด่วน, รายงานน้ำท่วมตอนนี้ (Longdo/iTIC), ที่ของฉัน, ตัวเฝ้าข้อมูลหยุด (data-watch), ระดับน้ำคลอง/ฝนวัดจริง/ถนนท่วม กทม. + เขื่อนใหญ่ + สถานีอุตุฯ (DXS ดึงเป็นครั้งๆ D31), หน้าเกี่ยวกับ/คำถามที่พบบ่อย + SEO/AEO, แนวโน้มน้ำแม่น้ำ 14 จุด (GloFAS วันละครั้ง), การ์ดสรุปจุดที่ต้องระวังบนสุดของแถบข้าง (`summary/overview.json` กฎ v0 + เรดาร์ + ท้ายน้ำของเขื่อน) พร้อมแถบสรุป แนวโน้ม 1 ชม. และกรอบอำเภอ/จังหวัดพร้อมชื่อบนแผนที่ (`ref/boundaries.json`) · ประตูน้ำ/สถานีกรมชลฯ + คลองที่อาจล้น (ทดลอง D35) · ข้อมูลจาก VPS ทุก 15 นาที · สำรองรายวัน + คลังตรวจความแม่น (P0-B2) · แบบระบบ v6.1
-> อัปเดตล่าสุด: 2026-10-04 18:15 ICT (Codex) · เวลาเป็น ICT (UTC+7) · วันที่แบบ ISO (ค.ศ.)
+> อัปเดตล่าสุด: 2026-10-04 18:56 ICT (Codex) · เวลาเป็น ICT (UTC+7) · วันที่แบบ ISO (ค.ศ.)
 > ไฟล์นี้เป็นช่องทางสื่อสารหลักระหว่าง Claude ↔ Codex ↔ ผู้ใช้ และ **ต้องมีขนาดไม่เกิน 32 KiB (UTF-8)** เพื่อให้ Codex โหลดได้ครบ
 > เอกสารอื่น: แบบระบบ `docs/design/fontokmai-design.md` · แหล่งข้อมูลและสิทธิ์ `docs/sources.md` · ประวัติเต็ม `private/handoffs/` (อยู่ใน private repo ไม่อยู่ใน repo สาธารณะ)
 
@@ -45,14 +45,14 @@
 ### A5. งานที่กำลังทำ (Active claims)
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
-| Codex | 2026-10-03 23:15 | `AGENTS.md`, `.github/workflows/{ci,pages,web,data-watch}.yml`, `pipeline/src/fontokmai/{canal_outlook,overview_build,forecast_windows}.py`, `pipeline/tests/{test_canal_outlook,test_overview,test_forecast_windows}.py`, `tests/consumer/{test_overview_delivery.py,overview-browser.spec.mjs}`, `pipeline/src/fontokmai/sources/{open_meteo,glofas,gistda}.py`, `pipeline/tests/{test_forecast,test_glofas,test_river_lines,test_gistda}.py`, `contracts/v1/examples/*/{manifest,outlook}.json`, `contracts/v1/README.md`, `docs/design/fontokmai-design.md`, `docs/apis/gistda.md`, `apps/web/src/{overview,Panel}.ts*`, `apps/web/src/styles.css`, `apps/web/tests/app.spec.ts`, `apps/web/public/method/index.html`, `private/handoffs/2026-10-03-codex-formula-recheck.md`, `private/handoffs/README.md`, `local-notes/recheck-*` | M56 กัน GISTDA ซ้ำ cell; M57 ย่อสรุปให้ CLS ต่ำลง; M58 เทียบฝนเฉพาะชั่วโมงเต็มที่ยังไม่ถึงกันทั้งเว็บกับคลองและ consumer; แก้ CLS ตอนข้อมูลประกาศเปลี่ยนจากว่างเป็นมีประกาศ | formulas |
+| Codex | 2026-10-03 23:15 | `AGENTS.md`, `.github/workflows/{ci,pages,web,data-watch}.yml`, `pipeline/src/fontokmai/{canal_outlook,overview_build,forecast_windows}.py`, `pipeline/tests/{test_canal_outlook,test_overview,test_forecast_windows}.py`, `tests/consumer/{test_overview_delivery.py,overview-browser.spec.mjs}`, `pipeline/src/fontokmai/sources/{open_meteo,glofas,gistda}.py`, `pipeline/tests/{test_forecast,test_glofas,test_river_lines,test_gistda}.py`, `contracts/v1/examples/*/{manifest,outlook}.json`, `contracts/v1/README.md`, `docs/design/fontokmai-design.md`, `docs/apis/gistda.md`, `apps/web/src/{overview,Panel,StatusBar}.ts*`, `apps/web/src/styles.css`, `apps/web/tests/app.spec.ts`, `apps/web/public/method/index.html`, `private/handoffs/{2026-10-03-codex-formula-recheck,2026-10-04-codex-cls-m59}.md`, `private/handoffs/README.md`, `local-notes/recheck-*` | M56 กัน GISTDA ซ้ำ cell; M57 ย่อสรุปให้ CLS ต่ำลง; M58 เทียบฝนเฉพาะชั่วโมงเต็มที่ยังไม่ถึงกันทั้งเว็บกับคลองและ consumer; แก้ CLS ตอนข้อมูลประกาศเปลี่ยนจากว่างเป็นมีประกาศ | formulas |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md` · ส่วนที่ย้ายออกเมื่อเข้าถึง private ไม่ได้: `docs/agents-archive.md`)
 
-#### 2026-10-04 18:15 ICT — ลดการขยับของแถบข้อมูล (M59) (Codex)
-- เว็บจริงก่อนแก้ CLS เดสก์ท็อป 0.165; การ์ดประกาศยุบ/กลับมาทำให้ส่วนถัดไปเลื่อน 404 px และสรุประหว่างโหลดสูง 256 px เทียบข้อมูลจริง 644 px · พับวันหน้าและประกาศที่เหลือ
-- แก้ `apps/web/src/Panel.tsx`, `styles.css`, `tests/app.spec.ts`, design§4.1; build + Vitest166 + E2E Chromium110 + consumer browser64 ผ่าน · WebKit บน Windows ปิดก่อนสร้างหน้า (`browserContext.newPage`); รอ CI Linux
-- สูตร/ความแม่นไม่เปลี่ยนและยังไม่มี backtest · ขั้นต่อไป push/CI, ตรวจ Pages จริง, deploy VPS ตามที่ผู้ใช้อนุญาต · รายละเอียด `private/handoffs/2026-10-04-codex-cls-m59.md`
+#### 2026-10-04 18:56 ICT — แถบสรุป/CLS (M59–M60) (Codex)
+- เว็บจริงก่อน M60: CLS desktop 0.277, มือถือ 0.083; แถบ 7 สถานะตัดบรรทัด และ feed ว่างถอดส่วนสูง 227 px · พับสถานะรองไว้ใต้ “ดูอีก N สถานะ”; ประกาศว่างยืนยันด้วยบรรทัดเดียว ไม่มีการ์ดซ้ำ
+- build/license, Vitest 166 และ E2E จุดเสี่ยง 8 ผ่าน · VPS slot 18:48 สำเร็จ (`20261004T114800Z-vps`) · รอ push/CI/Pages/VPS และวัด CLS ซ้ำ
+- ไม่เปลี่ยนสูตร; ความแม่นยังไม่มี backtest · รายละเอียด `private/handoffs/2026-10-04-codex-cls-m59.md`
 
 #### 2026-10-04 18:45 ICT — GISTDA, M55, กล้อง DWR, C.35 ตัวเลขสำรอง (Claude)
 - merged PR #3–#11: M55 สีนอกแถบสีไม่นับเป็นฝน · กล้อง DWR 128 ตัว `cctv/mjpeg/{code}` · GISTDA `floods/satellite.json` (สัญญา28) + ชั้นแผนที่ + การ์ดหมุด + "ที่ของฉัน" + overview `satellite_flood` · ท่วมซ้ำ `ref/flood_freq.json` (สัญญา29, `flood-freq` รันมือ) · คู่มือ `docs/apis/gistda.md` · DXS วันที่ พ.ศ. 29 ก.พ. · key GISTDA อยู่ VPS เท่านั้น

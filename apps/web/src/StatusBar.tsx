@@ -8,9 +8,9 @@ import type { RiverRow } from './rivers';
 import type { Alert, CanalOutlook, LiveFloods } from './data';
 
 /**
- * The whole picture in one line at the top of the side panel (user 2026-10-01): how many places to watch now and to
- * prepare for, flood reports, dams over capacity or releasing a lot more, official alerts. Each chip opens its
- * section. Counts only: the sections below say what and where, with sources and times.
+ * A compact status summary at the top of the side panel (user 2026-10-01): the leading risk and official alert state
+ * stay visible, while the other counts fold together. Each chip opens its section. Counts only: the sections below say
+ * what and where, with sources and times.
  */
 export type Tone = 'danger' | 'warn' | 'ok' | 'unknown';
 
@@ -219,23 +219,39 @@ export function statusCounts({
 }
 
 export function StatusBar({ counts }: { counts: StatusCounts }) {
+  const chips = statusChips(counts);
+  const announcement = chips.find((chip) => chip.key === 'alerts' || chip.key === 'no-alerts');
+  const first = chips[0];
+  const visible = first
+    ? [first, ...(announcement && announcement !== first ? [announcement] : chips.slice(1, 2))]
+    : [];
+  const extra = chips.filter((chip) => !visible.includes(chip));
+
   return (
     <nav className="status-bar" aria-label="สรุปสถานการณ์" data-testid="status-bar">
-      {statusChips(counts).map((chip) =>
-        chip.target ? (
-          <button
-            key={chip.key}
-            className={`status-chip ${chip.tone}`}
-            onClick={() => openSection(chip.target!)}
-          >
-            {chip.text}
-          </button>
-        ) : (
-          <span key={chip.key} className={`status-chip ${chip.tone}`}>
-            {chip.text}
-          </span>
-        ),
+      {visible.map((chip) => (
+        <StatusChip key={chip.key} chip={chip} />
+      ))}
+      {extra.length > 0 && (
+        <details className="status-more" data-testid="status-more">
+          <summary>ดูอีก {extra.length} สถานะ</summary>
+          <div className="status-more-list">
+            {extra.map((chip) => (
+              <StatusChip key={chip.key} chip={chip} />
+            ))}
+          </div>
+        </details>
       )}
     </nav>
+  );
+}
+
+function StatusChip({ chip }: { chip: Chip }) {
+  return chip.target ? (
+    <button className={`status-chip ${chip.tone}`} onClick={() => openSection(chip.target!)}>
+      {chip.text}
+    </button>
+  ) : (
+    <span className={`status-chip ${chip.tone}`}>{chip.text}</span>
   );
 }

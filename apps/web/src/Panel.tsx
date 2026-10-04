@@ -1375,9 +1375,13 @@ export function Overview({
           </ul>
         </section>
       )}
-      {/* no alert in effect, from a feed that can be trusted: the status bar says so and the card is not shown
-          (user 2026-10-02); an old or missing feed keeps the card, which says it cannot tell */}
-      {!(snapshot?.feed && trusted && alerts.length === 0) && (
+      {/* a verified empty feed gets one compact line (no alert card); an old or missing feed keeps its warning card */}
+      {snapshot?.feed && trusted && alerts.length === 0 ? (
+        <p className="verified-no-alerts" role="status" data-testid="verified-no-alerts">
+          <ShieldCheck size={17} aria-hidden="true" />
+          ไม่มีประกาศเตือนภัยที่มีผลตอนนี้
+        </p>
+      ) : (
         <section id="alerts" className="panel-section" aria-labelledby="alerts-heading">
           <h2
             id="alerts-heading"

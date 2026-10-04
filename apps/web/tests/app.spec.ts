@@ -288,6 +288,9 @@ test('no active alert is never shown as a safe area, and an ended alert is not s
   await page.goto('/');
   // a trusted feed with no alert in effect: one plain chip says so, and no card (user, 2026-10-02); never "safe"
   await expect(page.getByTestId('status-bar')).toContainText('ไม่มีประกาศกรมอุตุฯ');
+  await expect(page.getByTestId('verified-no-alerts')).toContainText(
+    'ไม่มีประกาศเตือนภัยที่มีผลตอนนี้',
+  );
   await expect(page.locator('#alerts')).toHaveCount(0);
   await expect(page.locator('#panel')).not.toContainText('ปลอดภัย');
   await expect(page.getByTestId('alert-card')).toHaveCount(0);
@@ -1238,6 +1241,9 @@ test('a status bar says the whole picture and takes the reader to the section it
   await expect(
     page.getByTestId('dams').locator('.dam-line').filter({ hasText: 'เขื่อนป่าสักชลสิทธิ์' }),
   ).toBeVisible();
+  const extraStatuses = bar.getByTestId('status-more');
+  await expect(extraStatuses).toBeVisible();
+  await extraStatuses.locator('summary').click();
   await bar.getByRole('button', { name: 'เขื่อนเกินความจุ 1 แห่ง' }).click();
   await expect(page.locator('#dams-heading')).toBeFocused();
 });

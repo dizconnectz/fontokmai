@@ -761,23 +761,57 @@ svg {
   gap: 7px;
   font-size: 1rem;
 }
-/* the whole picture in one line at the top of the panel (user 2026-10-01) */
+/* the leading risk and official alert stay visible at the top of the panel */
 .status-bar {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  min-height: 5.5rem;
   gap: 6px;
 }
-.status-chip {
-  display: inline-flex;
+.status-more {
+  min-width: 0;
+}
+.status-more > summary {
+  display: flex;
   align-items: center;
+  justify-content: center;
   min-height: 32px;
-  padding: 4px 12px;
-  border: 1px solid var(--line);
+  padding: 4px 8px;
+  border: 1px dashed var(--line);
   border-radius: 999px;
-  font: inherit;
+  color: var(--muted);
   font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
+  list-style: none;
+}
+.status-more > summary::-webkit-details-marker {
+  display: none;
+}
+.status-more[open] {
+  grid-column: 1 / -1;
+}
+.status-more-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding-top: 6px;
+}
+.status-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
 }
 .status-chip.danger {
   border-color: transparent;
@@ -983,6 +1017,16 @@ svg {
 .alert-list {
   display: grid;
   gap: 8px;
+}
+.verified-no-alerts {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  margin: 0;
+  color: var(--ok-ink);
+  font-size: 0.88rem;
+  font-weight: 600;
 }
 .alert-more > summary {
   width: fit-content;
