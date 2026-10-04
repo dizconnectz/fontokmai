@@ -48,7 +48,9 @@ VERSIONED = ("forecast/outlook.json", "forecast/rain.json", "forecast/rivers.jso
              "bkk/flooding.json", "bkk/news.json", "water/dams.json", "weather/today.json",
              # RID's daily flows (D35), once a day: with the rain and Bangkok's levels it lets the canal outlook be
              # made again to test its trial rules later, so the outlook itself (new every round) is not kept
-             "water/flows.json")
+             "water/flows.json",
+             # GISTDA's satellite water by district (~20 KB, new once or twice a day), read by the overview's rules
+             "floods/satellite.json")
 FLOOD_FACTS = ("id", "title_th", "road_th", "location", "start", "stop", "reporter", "url")
 
 

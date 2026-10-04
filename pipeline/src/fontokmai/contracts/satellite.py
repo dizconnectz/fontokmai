@@ -32,3 +32,24 @@ class SatelliteFloods(ContractModel):
     total_km2: float = Field(ge=0)
     districts: list[SatelliteDistrict] = Field(description="Districts with flood water, the largest area first")
     notes_th: list[str]
+
+
+class FloodFrequencyArea(ContractModel):
+    code: str = Field(pattern=r"^\d{6}$", description="DOPA subdistrict code, as in ref/places.json")
+    name_th: str = Field(description="The subdistrict, district and province (ref/places.json label)")
+    area_rai: float = Field(ge=0, description="Land GISTDA mapped as flooded at least once, rai (1 rai = 1,600 m²)")
+    max_freq: int = Field(ge=1, description="The most times any part of it was mapped flooded")
+    rai_by_freq: list[float] = Field(description="rai_by_freq[k]: rai mapped flooded exactly k + 1 times")
+
+
+class FloodFrequency(ContractModel):
+    schema_version: Literal["1"] = SCHEMA_VERSION
+    product: Literal["gistda_flood_freq"] = "gistda_flood_freq"
+    name_th: str
+    credit_th: str
+    source_url: str = Field(description="GISTDA's disaster platform, to link to (never an API address)")
+    built_at: AwareDatetime = Field(description="When fontokmai read the layer (a statistic GISTDA rarely changes)")
+    data_created: dt.date | None = Field(description="Newest _createdAt of the features read: when GISTDA made them")
+    provinces: list[str] = Field(description="DOPA province codes read (2 digits); other places are not covered")
+    subdistricts: list[FloodFrequencyArea] = Field(description="Subdistricts with land flooded more than once or once")
+    notes_th: list[str]

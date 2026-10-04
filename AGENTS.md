@@ -49,8 +49,10 @@
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md` · ส่วนที่ย้ายออกเมื่อเข้าถึง private ไม่ได้: `docs/agents-archive.md`)
 
-#### 2026-10-04 12:40 ICT — M55 เรดาร์ + กล้องDWRภาพสด (Claude)
-- M55 สีนอกแถบสีไม่นับเป็นฝน · กล้อง128ตัวเปิด`cctv/mjpeg/{code}` · pytest/vitest ผ่าน · PR#3,#4 merged · GISTDA→แผนที่+เตือนที่ของฉัน · ต้องdeployใหม่ · **งานต่อ**: `docs/handoff-claude-2026-10-04.md`
+#### 2026-10-04 14:10 ICT — GISTDA ดาวเทียม/ท่วมซ้ำ, เรดาร์ M55, กล้อง DWR (Claude)
+- merged PR #3–#6: M55 สีนอกแถบสีไม่นับเป็นฝน · กล้อง DWR 128 ตัวเปิดภาพสด `cctv/mjpeg/{code}` · GISTDA `floods/satellite.json` (สัญญา28, VPS ทุก 3 ชม.; รอบแรก 158 อำเภอ 4,400 ตร.กม.) + ชั้นแผนที่ + การ์ดหมุด + "ที่ของฉัน" เตือนอำเภอเดียวกัน/ใกล้ 10 กม. · คู่มือ API `docs/apis/gistda.md` · ย้ายส่วนที่ปิดแล้วไป `docs/agents-archive.md`
+- PR ถัดไป: overview เหตุผล `satellite_flood` · `ref/flood_freq.json` ท่วมซ้ำรายตำบล (สัญญา29, คำสั่ง `fontokmai flood-freq` รันมือครั้งเดียวบน VPS) · archive เก็บ satellite.json · ทดสอบ pytest/ruff/vitest166/tsc ผ่าน
+- key GISTDA อยู่ VPS เท่านั้น (ผู้ใช้สั่ง) · C.35 อ่านเลขจากภาพยังไม่ผ่าน (กำลังลองตัวจับคู่รูปเอง) · รายละเอียด/งานต่อ `docs/handoff-claude-2026-10-04.md`
 
 #### 2026-10-04 11:47 ICT — ทวนสูตรและทยอยแก้ M52–M54 (Codex)
 - M48/M49 เดิมแก้แล้ว; พบต่อ M52: ขึ้น9.6ซม.ถูกปัดเป็น10ก่อนให้คะแนน และไม่มีคู่ค่าวัดยังassessed=true → canals-v3 ใช้ค่าจริง/คู่เวลาเรียงถูก; testใหม่9กรณี ชุดคลอง17ผ่าน+ruff; สัญญา27/วิธีคิด/designแก้ตรงกัน ไม่เปลี่ยนschema

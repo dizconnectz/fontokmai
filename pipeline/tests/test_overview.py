@@ -328,3 +328,33 @@ def test_what_is_happening_says_until_when_it_holds():
     assert reason.until == NOW + timedelta(hours=1)
     two = build_overview({"live/floods.json": _dump(_floods(reports[:2]))}, NOW, G).items[0].reasons[0]
     assert two.until == NOW + timedelta(minutes=20)  # the first to end leaves one: the rule no longer holds
+
+
+def _satellite(districts, fetched=NOW):
+    from fontokmai.contracts.satellite import SatelliteDistrict, SatelliteFloods
+    return SatelliteFloods(
+        name_th="น้ำท่วมจากภาพดาวเทียม", credit_th="GISTDA", source_url="https://disaster.gistda.or.th/",
+        fetched_at=fetched, window_days=3, scenes=["S1D_20260926_0609"], latest_scene_day=date(2026, 9, 26),
+        total_km2=sum(a for _, a in districts),
+        districts=[SatelliteDistrict(code=c, name_th=c, area_km2=a, cells=1, population=0, buildings=0)
+                   for c, a in districts], notes_th=[])
+
+
+def test_water_seen_from_satellites_lists_large_districts_and_follows_listed_ones():
+    reports = [_report(n, RANGSIT, timedelta(minutes=5)) for n in range(3)]  # Thanyaburi listed by reports
+    files = {"live/floods.json": _dump(_floods(reports)),
+             # Khlong Luang wide (alone), Nong Suea small (not alone), Thanyaburi small (taken along)
+             "floods/satellite.json": _dump(_satellite([("1302", 25.0), ("1304", 2.0), ("1303", 0.4)]))}
+    overview = build_overview(files, NOW, G)
+    by_area = {item.area_code: item for item in overview.items if item.when == "now"}
+    assert set(by_area) == {"1302", "1303"}
+    khlong_luang = by_area["1302"].reasons
+    assert [(r.kind, r.text_th, r.source_th) for r in khlong_luang] == [
+        ("satellite_flood", "ดาวเทียมเห็นน้ำท่วมราว 25 ตร.กม. (ภาพ 26 ก.ย.)", "GISTDA")]
+    assert khlong_luang[0].until == NOW + timedelta(hours=36) and khlong_luang[0].day is None
+    assert [r.kind for r in by_area["1303"].reasons] == ["flood_reports", "satellite_flood"]
+    assert by_area["1303"].score > by_area["1302"].score  # reports happening lead the satellite's plains
+    # older than 36 hours: nothing, and said so
+    old = build_overview({"floods/satellite.json": _dump(_satellite([("1302", 25.0)], NOW - timedelta(hours=37)))},
+                         NOW, G)
+    assert old.items == [] and {i.name_th: i.status for i in old.inputs}["น้ำท่วมจากภาพดาวเทียม (GISTDA)"] == "stale"

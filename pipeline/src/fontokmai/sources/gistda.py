@@ -25,14 +25,22 @@ from pathlib import Path
 from typing import Any, BinaryIO
 from urllib.parse import urlencode
 
-from fontokmai.contracts.satellite import SatelliteDistrict, SatelliteFloods
+from fontokmai.contracts.satellite import (
+    FloodFrequency,
+    FloodFrequencyArea,
+    SatelliteDistrict,
+    SatelliteFloods,
+)
 from fontokmai.downstream import places
 from fontokmai.publish.snapshot import atomic_write
 from fontokmai.sources.open_data.http import TIMEOUT_S, OpenDataError
 from fontokmai.sources.tmd_cap.fetch import USER_AGENT, make_ssl_context
 from fontokmai.state import StateStore
 
-API_URL = "https://api-gateway.gistda.or.th/api/2.0/resources/features/flood/3days"
+API_BASE = "https://api-gateway.gistda.or.th/api/2.0/resources/features"
+API_URL = f"{API_BASE}/flood/3days"
+FREQ_URL = f"{API_BASE}/flood-freq"
+FREQ_PATH = "ref/flood_freq.json"
 PAGE_URL = "https://disaster.gistda.or.th/"
 PATH = "floods/satellite.json"
 WINDOW_DAYS = 3
@@ -68,8 +76,8 @@ def keyed_opener(key: str) -> Opener:
 
     @contextmanager
     def opener(url: str) -> Iterator[BinaryIO]:
-        if not url.startswith(API_URL):
-            raise OpenDataError(f"{url}: not GISTDA's flood API")
+        if not url.startswith(API_BASE + "/"):
+            raise OpenDataError(f"{url}: not GISTDA's features API")
         request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "API-Key": key})
         try:
             with urllib.request.urlopen(request, timeout=TIMEOUT_S, context=make_ssl_context()) as response:
@@ -81,8 +89,9 @@ def keyed_opener(key: str) -> Opener:
     return opener
 
 
-def _page(opener: Opener, offset: int, limit: int) -> dict[str, Any]:
-    url = f"{API_URL}?{urlencode({'limit': limit, 'offset': offset})}"
+def _page(opener: Opener, offset: int, limit: int, base: str = API_URL,
+          query: dict[str, Any] | None = None) -> dict[str, Any]:
+    url = f"{base}?{urlencode({**(query or {}), 'limit': limit, 'offset': offset})}"
     with opener(url) as fh:
         data = fh.read(PAGE_LIMIT + 1)
     if len(data) > PAGE_LIMIT:
@@ -211,3 +220,70 @@ def refresh(out_dir: Path, db: Path, now: datetime, key_path: Path | None, *,
     with StateStore(db) as store:
         store.set_meta(SIGNATURE_KEY, mark)
     return f"built {len(floods.districts)} districts, {floods.total_km2:.1f} km² (scene {floods.latest_scene_day})"
+
+
+FREQ_NAME_TH = "พื้นที่น้ำท่วมซ้ำซาก (สถิติจากภาพดาวเทียม)"
+FREQ_NOTES_TH = [
+    "สถิติพื้นที่ที่ GISTDA เคยแปลว่าน้ำท่วมจากภาพดาวเทียมในอดีต นับว่าท่วมกี่ครั้ง ไม่ใช่การพยากรณ์",
+    "พื้นที่ที่ไม่มีในรายการอาจไม่เคยมีภาพตอนท่วม ไม่ได้แปลว่าไม่เคยท่วม",
+]
+FREQ_PROVINCES = ("10", "11", "12", "13", "14")  # the pilot (D15): Bangkok and the provinces around it
+
+
+def collect_freq(opener: Opener, now: datetime, provinces: tuple[str, ...] = FREQ_PROVINCES, *,
+                 page: int | None = None) -> FloodFrequency:
+    """GISTDA's recurrent flooding of the provinces, summed by subdistrict: a statistic, read by hand once."""
+    page = page or PAGE
+    known = {code: place.label for code, place in places().items() if place.kind == "subdistrict"}
+    area: dict[str, dict[int, float]] = defaultdict(lambda: defaultdict(float))
+    created = ""
+    for province in provinces:
+        query = {"pv_idn": int(province)}
+        first = _page(opener, 0, page, FREQ_URL, query)
+        matched, offset, current, seen = first["numberMatched"], 0, first, 0
+        if matched > MAX_PAGES * page:
+            raise OpenDataError(f"GISTDA flood-freq of {province} has {matched} features, more than {MAX_PAGES} pages")
+        while True:
+            if current["numberMatched"] != matched:
+                raise OpenDataError(f"GISTDA flood-freq of {province} changed while it was read")
+            batch = [f for f in current["features"] if isinstance(f, dict)]
+            seen += len(batch)
+            for feature in batch:
+                props = feature.get("properties") or {}
+                code = f"{props.get('pv_code', '')}{props.get('ap_code', '')}{props.get('tb_code', '')}"
+                freq, rai = props.get("freq"), _number(props.get("area_rai"))
+                if (code not in known or isinstance(freq, bool) or not isinstance(freq, int) or not 1 <= freq <= 100
+                        or rai is None):
+                    continue  # a piece without a subdistrict of ours, a count or an area is never guessed
+                area[code][freq] += rai
+                created = max(created, str(props.get("_createdAt") or ""))
+            offset += page
+            if offset >= matched or not batch:
+                break
+            current = _page(opener, offset, page, FREQ_URL, query)
+        if seen != matched:
+            raise OpenDataError(f"GISTDA flood-freq of {province} gave {seen} of {matched} features")
+    try:
+        data_created = date.fromisoformat(created[:10]) if created else None
+    except ValueError:
+        data_created = None
+    subdistricts = []
+    for code in sorted(area):
+        top = max(area[code])
+        subdistricts.append(FloodFrequencyArea(
+            code=code, name_th=known[code], area_rai=round(sum(area[code].values()), 1), max_freq=top,
+            rai_by_freq=[round(area[code].get(k, 0.0), 1) for k in range(1, top + 1)]))
+    return FloodFrequency(name_th=FREQ_NAME_TH, credit_th=CREDIT_TH, source_url=PAGE_URL, built_at=now,
+                          data_created=data_created, provinces=list(provinces), subdistricts=subdistricts,
+                          notes_th=FREQ_NOTES_TH)
+
+
+def build_freq(out_dir: Path, now: datetime, key_path: Path, provinces: tuple[str, ...] = FREQ_PROVINCES, *,
+               opener_for: Callable[[str], Opener] = keyed_opener) -> FloodFrequency:
+    """The hand-run command: read the provinces and replace out_dir/ref/flood_freq.json (the rounds publish it)."""
+    key = load_key(key_path)
+    if key is None:
+        raise OpenDataError("no GISTDA key in the key file")
+    freq = collect_freq(opener_for(key), now, provinces)
+    atomic_write(out_dir / FREQ_PATH, freq.model_dump_json().encode("utf-8"))
+    return freq

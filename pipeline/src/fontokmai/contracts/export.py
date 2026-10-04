@@ -29,7 +29,7 @@ from fontokmai.contracts.places import PlaceGazetteer
 from fontokmai.contracts.radar import RadarFeed
 from fontokmai.contracts.river_lines import RiverLines
 from fontokmai.contracts.road_flood import RoadFloodHistory
-from fontokmai.contracts.satellite import SatelliteFloods
+from fontokmai.contracts.satellite import FloodFrequency, SatelliteFloods
 
 SCHEMAS: dict[str, type[BaseModel]] = {
     "alerts.schema.json": AlertsFeed,
@@ -42,6 +42,7 @@ SCHEMAS: dict[str, type[BaseModel]] = {
     "canals.schema.json": CanalLines,
     "cctv.schema.json": CctvRegistry,
     "dams.schema.json": DamReport,
+    "flood_freq.schema.json": FloodFrequency,
     "flows.schema.json": RidFlows,
     "forecast.schema.json": RainForecast,
     "forecast_rivers.schema.json": RiverForecast,

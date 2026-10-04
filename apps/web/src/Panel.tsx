@@ -41,6 +41,7 @@ import {
   formatTime,
   radarAgeMinutes,
   safeLink,
+  type FloodFrequency,
   staleAfter,
   type Alert,
   type Camera,
@@ -51,6 +52,8 @@ import {
   type Snapshot,
 } from './data';
 import {
+  frequencyAt,
+  frequencyWords,
   satelliteSource,
   satelliteWords,
   type SatelliteFloods,
@@ -1431,6 +1434,7 @@ export function PinCard({
   flooding,
   satellite = null,
   satelliteShapes = null,
+  floodFreq = null,
   onClose,
   onSelectAlert,
   onRoad,
@@ -1441,6 +1445,8 @@ export function PinCard({
   /** GISTDA's flooded area by district, and the outlines drawn for it (null while off or not loaded) */
   satellite?: SatelliteFloods | null;
   satelliteShapes?: SatelliteShapes | null;
+  /** GISTDA's recurrent flooding of the pilot by subdistrict */
+  floodFreq?: FloodFrequency | null;
   /** chosen in the search box */
   place: FoundPlace | null;
   /** nearest subdistrict point, for a pin dropped on the map */
@@ -1523,6 +1529,12 @@ export function PinCard({
       pin[1] >= roads.bbox[1] &&
       pin[1] <= roads.bbox[3]);
   const nearAll = useMemo(() => (roads ? roadsNear(roads, pin) : []), [roads, pin]);
+  // GISTDA's recurrent flooding of the pin's subdistrict (a place chosen in the search, else the nearest point)
+  const subdistrict =
+    place?.id.startsWith('dopa:') && place.id.length === 11
+      ? place.id.slice(5)
+      : (nearby?.place.code ?? null);
+  const frequency = floodFreq && subdistrict ? frequencyAt(floodFreq, subdistrict) : undefined;
   // the district of the pin among those GISTDA saw water in (their outlines are drawn on the map)
   const satelliteHere = useMemo(() => {
     const shape = satelliteShapes?.features.find((f) =>
@@ -1882,6 +1894,22 @@ export function PinCard({
           <p className="inline-warning">
             <Info size={15} /> รายงานน้ำท่วมไม่อัปเดตตั้งแต่ {formatTime(floods!.fetched_at)} น.
           </p>
+        )}
+        {frequency && floodFreq && (
+          <div className="satellite-here" data-testid="flood-frequency">
+            <strong>
+              พื้นที่น้ำท่วมซ้ำซากของ
+              {(frequency.area?.name_th ?? nearby?.place.label ?? '').split(' ')[0] || 'ตำบลนี้'}
+            </strong>
+            <span>
+              {frequency.area
+                ? frequencyWords(frequency.area)
+                : 'ไม่พบพื้นที่ท่วมในสถิติของ GISTDA · ไม่ได้แปลว่าไม่เคยท่วม'}
+            </span>
+            <small>
+              สถิติจากภาพดาวเทียมในอดีต (GISTDA ข้อมูลเปิดภาครัฐ) · ทั้งตำบล ไม่ได้บอกว่าจุดนี้ท่วม
+            </small>
+          </div>
         )}
         {satelliteHere && satellite && (
           <div className="satellite-here" data-testid="satellite-here">

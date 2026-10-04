@@ -28,6 +28,7 @@ from fontokmai.contracts.live_floods import LiveFloods
 from fontokmai.contracts.overview import Overview, OverviewEarlier, OverviewInput, OverviewItem, OverviewReason
 from fontokmai.contracts.places import Place, PlaceGazetteer
 from fontokmai.contracts.radar import RadarFeed
+from fontokmai.contracts.satellite import SatelliteFloods
 from fontokmai.downstream import downstream_table, downstream_th
 from fontokmai.sources.bma_dxs import has_figures, release_up
 from fontokmai.sources.tmd_radar import rain_samples
@@ -48,6 +49,7 @@ FORECAST_MAX_AGE = timedelta(hours=12)
 RIVERS_MAX_AGE = timedelta(hours=36)
 DAMS_MAX_AGE = timedelta(days=3)
 RADAR_MAX_AGE = timedelta(minutes=45)  # the web marks the radar old after 45 minutes
+SATELLITE_MAX_AGE = timedelta(hours=36)  # checked every 3 hours (sources/gistda.py); the web marks it old after this
 
 # experimental thresholds of the site (not confirmed as ThaiWater's: Codex M23) and TMD's day classes;
 # forecast/rain.json counts in 0.1 mm
@@ -77,6 +79,12 @@ THAILAND = (97.3, 5.6, 105.7, 20.5)  # west, south, east, north: the part of the
 COVERED = 0.8  # below this share of a province's cells with a value, no extent wider than บางพื้นที่ is claimed
 DAMS_REPORT_DAYS = 1  # a dam report of today or yesterday (RID reports once a day); older is not current (M26)
 THAI_MONTHS = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."]
+# GISTDA's water seen from satellites (user 2026-10-04): an agency's map, not this site's estimate. A district with this
+# much water is listed now on its own; one already listed for another reason takes any water along. Flooded plains
+# can be a hundred districts in a season, so those listed on their own are the largest SATELLITE_MAX_ITEMS
+SATELLITE_ALONE_KM2 = 5.0
+SATELLITE_WIDE_KM2 = 20.0
+SATELLITE_MAX_ITEMS = 15
 MAX_NOW = 40  # a morning after a storm had more than 20 districts (2026-09-28); the web folds after five
 MAX_NEXT = 40
 
@@ -344,6 +352,30 @@ def build_overview(files: dict[str, bytes], now: datetime, gazetteer: Gazetteer 
                 spot.reasons.append((3 if strong else 2, OverviewReason(
                     kind="rain_radar", text_th=f"เรดาร์เห็น{word}ต่อเนื่อง ราว {area:.0f} ตร.กม.", day=None,
                     source_th="เรดาร์กรมอุตุฯ", at=latest.time, until=latest.time + RADAR_MAX_AGE)))
+
+    # ---------- now: flood water GISTDA saw from satellites, by district (an agency's map) ----------
+    satellite = _load(files, "floods/satellite.json", SatelliteFloods)
+    state = _input("น้ำท่วมจากภาพดาวเทียม (GISTDA)", satellite.fetched_at if satellite else None, now,
+                   SATELLITE_MAX_AGE)
+    inputs.append(state)
+    if satellite and state.status == "fresh":
+        seen_on = satellite.latest_scene_day
+        at = datetime.combine(seen_on, time.min, tzinfo=ICT) if seen_on else satellite.fetched_at
+        on_day = f" (ภาพ {_thai_day(seen_on)})" if seen_on else ""
+        alone = 0
+        for district in satellite.districts:  # the largest area first
+            place = g.places.get(district.code)
+            if place is None or place.kind != "district":
+                continue
+            listed = district.code in spots
+            if not listed and (district.area_km2 < SATELLITE_ALONE_KM2 or alone >= SATELLITE_MAX_ITEMS):
+                continue
+            alone += not listed
+            area = f"{district.area_km2:.0f}" if district.area_km2 >= 10 else f"{district.area_km2:.1f}"
+            spot = _district_spot(spots, place)
+            spot.reasons.append((2 if district.area_km2 >= SATELLITE_WIDE_KM2 else 1, OverviewReason(
+                kind="satellite_flood", text_th=f"ดาวเทียมเห็นน้ำท่วมราว {area} ตร.กม.{on_day}", day=None,
+                source_th="GISTDA", at=at, until=satellite.fetched_at + SATELLITE_MAX_AGE)))
 
     # ---------- next: forecast rain by province (Open-Meteo lattice, TMD day classes) ----------
     forecast = _load(files, "forecast/rain.json", RainForecast)
