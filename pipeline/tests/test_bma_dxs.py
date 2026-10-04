@@ -4,7 +4,7 @@ import io
 import json
 import xml.etree.ElementTree as ET
 from contextlib import contextmanager
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -328,3 +328,14 @@ def test_the_published_canal_levels_are_read_or_left_out():
 
     assert published_water(site) == published
     assert published_water(offline) is None
+
+
+def test_a_buddhist_era_leap_day_is_read():
+    from fontokmai.sources.bma_dxs import _when
+    assert _when("2567-02-29T10:00:00") == datetime(2024, 2, 29, 10, 0, tzinfo=timezone(timedelta(hours=7)))
+    assert _when("2567-03-01T10:00:00+07:00").day == 1 and _when("2024-02-29T03:00:00Z").hour == 10
+    assert _when("not a time") is None and _when("") is None
+    from fontokmai.sources.bma_dxs import _day
+    for raw in ("2567-02-29", "29/02/2567", "25670229", "29-02-2567", "2024-02-29 08:00"):
+        assert _day(raw) == date(2024, 2, 29), raw
+    assert _day("2026-10-04") == date(2026, 10, 4) and _day("nonsense") is None

@@ -15,7 +15,12 @@ function loadImage(url: string): Promise<HTMLImageElement> {
       const image = new Image();
       image.crossOrigin = 'anonymous';
       image.onload = () => resolve(image);
-      image.onerror = () => reject(new Error('radar frame unavailable'));
+      image.onerror = () => {
+        // a frame that failed once (a network blip, a frame not yet published) is asked again next time, not
+        // remembered as failed while it stays among the last eight
+        if (images.get(url) === pending) images.delete(url);
+        reject(new Error('radar frame unavailable'));
+      };
       image.src = url;
     });
     images.set(url, pending);

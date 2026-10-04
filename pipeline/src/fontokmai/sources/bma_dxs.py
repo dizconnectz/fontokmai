@@ -210,12 +210,14 @@ def _when(value: str | None) -> datetime | None:
     """A DXS time; one without an offset is Thai time, and a Buddhist-era year is turned into the common era."""
     if not value:
         return None
+    value = value.strip().replace("Z", "+00:00")
+    # the year is turned before parsing: 2567-02-29 is 29 Feb 2024, though 2567 itself is no leap year
+    if value[:4].isdigit() and int(value[:4]) > 2400:
+        value = f"{int(value[:4]) - 543:04d}{value[4:]}"
     try:
-        moment = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        moment = datetime.fromisoformat(value)
     except ValueError:
         return None
-    if moment.year > 2400:
-        moment = moment.replace(year=moment.year - 543)
     return (moment if moment.tzinfo else moment.replace(tzinfo=ICT)).astimezone(ICT)
 
 
@@ -365,12 +367,15 @@ def _day(value: str | None) -> date | None:
     if not value:
         return None
     head = value.strip().split(" ")[0].split("T")[0]
+    # a Buddhist-era year is turned before parsing (29 Feb 2567 is 29 Feb 2024, though 2567 is no leap year)
+    head = re.sub(r"(?<!\d)(2[4-9]\d\d)(?!\d)", lambda m: str(int(m.group(1)) - 543), head, count=1)
+    if head.isdigit() and len(head) == 8 and int(head[:4]) > 2400:
+        head = f"{int(head[:4]) - 543}{head[4:]}"
     for pattern in DAY_FORMATS:
         try:
-            parsed = datetime.strptime(head, pattern).date()
+            return datetime.strptime(head, pattern).date()
         except ValueError:
             continue
-        return parsed.replace(year=parsed.year - 543) if parsed.year > 2400 else parsed
     return None
 
 
