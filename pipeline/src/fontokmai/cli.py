@@ -142,7 +142,8 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     freq.add_argument("--out", type=Path, required=True, help="snapshot directory; the file goes to ref/")
     freq.add_argument("--key", type=Path, required=True, help="GISTDA API key file")
     freq.add_argument("--provinces", default=",".join(gistda.FREQ_PROVINCES),
-                      help="DOPA province codes, comma separated (default: the pilot)")
+                      help="DOPA province codes, comma separated, or all (default: the pilot)")
+    freq.add_argument("--again", action="store_true", help="read provinces already in the file again")
     restore = sub.add_parser("restore-db", help="put a daily backup in place of the state database (collector stopped)")
     restore.add_argument("--backup", type=Path, required=True, help="fontokmai-YYYYMMDD.db.gz")
     restore.add_argument("--db", type=Path, required=True, help="the database file to replace (or a new file)")
@@ -363,8 +364,10 @@ def main(argv: list[str] | None = None) -> int:
         run_forever(_scheduled_job(args), max_rounds=args.max_rounds)
         return 0
     if args.command == "flood-freq":
-        provinces = tuple(code.strip() for code in args.provinces.split(",") if code.strip())
-        result = gistda.build_freq(args.out, datetime.now(UTC), args.key, provinces)
+        provinces = (gistda.all_provinces() if args.provinces.strip() == "all"
+                     else tuple(code.strip() for code in args.provinces.split(",") if code.strip()))
+        result = gistda.build_freq(args.out, datetime.now(UTC), args.key, provinces, again=args.again,
+                                   log=lambda line: print(line, flush=True))
         print(json.dumps({"subdistricts": len(result.subdistricts), "provinces": result.provinces,
                           "data_created": str(result.data_created)}, ensure_ascii=False))
         return 0

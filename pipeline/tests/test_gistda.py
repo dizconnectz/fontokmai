@@ -104,13 +104,15 @@ def test_the_opener_never_puts_the_key_in_an_error():
     assert "secret-key" not in str(caught.value)
 
 
-def _freq_api(by_province, calls=None):
+def _freq_api(by_province, calls=None, fail=()):
     def opener_for(key):
         @contextmanager
         def opener(url):
             assert url.startswith(gistda.FREQ_URL) and key not in url
             if calls is not None:
                 calls.append(url)
+            if len(calls or []) in fail:
+                raise OpenDataError(f"{url}: HTTPError: 504")
             q = parse_qs(urlsplit(url).query)
             rows = by_province.get(q["pv_idn"][0], [])
             limit, offset = int(q["limit"][0]), int(q["offset"][0])
@@ -133,7 +135,8 @@ def test_flood_frequency_is_summed_by_subdistrict(tmp_path, monkeypatch):
     rows = {"13": [_piece("13", "01", "01", 1, 9.5), _piece("13", "01", "01", 3, 2.0),
                    _piece("13", "01", "02", 2, 4.0), _piece("13", "99", "99", 2, 1.0),  # no such subdistrict
                    _piece("13", "01", "02", None, 1.0)]}  # no count
-    freq = gistda.build_freq(tmp_path, NOW, key, ("13",), opener_for=_freq_api(rows))
+    freq = gistda.build_freq(tmp_path, NOW, key, ("13",), opener_for=_freq_api(rows), sleep=lambda s: None,
+                             log=lambda line: None)
     by_code = {s.code: s for s in freq.subdistricts}
     assert set(by_code) == {"130101", "130102"}
     assert by_code["130101"].max_freq == 3 and by_code["130101"].rai_by_freq == [9.5, 0.0, 2.0]
@@ -141,3 +144,24 @@ def test_flood_frequency_is_summed_by_subdistrict(tmp_path, monkeypatch):
     assert freq.data_created == date(2025, 6, 17) and freq.provinces == ["13"]
     text = (tmp_path / gistda.FREQ_PATH).read_text(encoding="utf-8")
     assert "secret-key" not in text and "api-gateway" not in text
+
+
+def test_flood_frequency_resumes_province_by_province_and_retries(tmp_path, monkeypatch):
+    monkeypatch.setattr(gistda, "PAGE", 2)
+    key = tmp_path / "gistda_key"
+    key.write_text("secret-key")
+    rows = {"13": [_piece("13", "01", "01", 1, 1.0)], "12": [_piece("12", "01", "01", 2, 3.0)]}
+    quiet = {"sleep": lambda s: None, "log": lambda line: None}
+    gistda.build_freq(tmp_path, NOW, key, ("13",), opener_for=_freq_api(rows), **quiet)
+    calls: list[str] = []
+    # a dropped page is asked again; the province already in the file is not read again
+    freq = gistda.build_freq(tmp_path, NOW, key, ("13", "12"), opener_for=_freq_api(rows, calls, fail={1}), **quiet)
+    assert freq.provinces == ["12", "13"] and [s.code for s in freq.subdistricts] == ["120101", "130101"]
+    assert all("pv_idn=12" in url for url in calls) and len(calls) == 2
+    # a server that keeps failing stops the run; what was read stays in the file
+    with pytest.raises(OpenDataError):
+        gistda.build_freq(tmp_path, NOW, key, ("11",), opener_for=_freq_api({"11": []}, [], fail={1, 2, 3, 4}),
+                          **quiet)
+    kept = gistda.FloodFrequency.model_validate_json((tmp_path / gistda.FREQ_PATH).read_bytes())
+    assert kept.provinces == ["12", "13"]
+    assert len(gistda.all_provinces()) == 77
