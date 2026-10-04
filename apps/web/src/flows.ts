@@ -130,6 +130,11 @@ export function flowText(point: FlowPoint): string {
     if (of) parts.push(of);
     const since = change(point);
     if (since) parts.push(since);
+    // the report had no figure: this one is the backup from RID's hydrology centre, with its own time
+    if (point.flow_backup_at)
+      parts.push(
+        `ตัวเลขสำรองจากศูนย์อุทกวิทยาฯ ${BACKUP_TIME.format(new Date(point.flow_backup_at))} น.`,
+      );
   }
   if (point.below_bank_m !== null && point.below_bank_m !== undefined)
     parts.push(
@@ -141,6 +146,14 @@ export function flowText(point: FlowPoint): string {
   if (state) parts.push(state);
   return parts.join(' · ');
 }
+
+const BACKUP_TIME = new Intl.DateTimeFormat('th-TH', {
+  timeZone: 'Asia/Bangkok',
+  day: 'numeric',
+  month: 'short',
+  hour: '2-digit',
+  minute: '2-digit',
+});
 
 /** "ท้ายเขื่อนเจ้าพระยา (C.13)": a point's name with its station code when it has one */
 export function pointName(point: FlowPoint): string {

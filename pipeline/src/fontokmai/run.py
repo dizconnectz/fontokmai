@@ -15,7 +15,7 @@ from fontokmai.contracts.boundaries import Boundaries
 from fontokmai.contracts.canals import CanalLines
 from fontokmai.contracts.cctv import CctvRegistry
 from fontokmai.contracts.common import SourceStatus
-from fontokmai.contracts.flows import RidFlows
+from fontokmai.contracts.flows import RidFlows, RidHydro
 from fontokmai.contracts.forecast import RainForecast, RiverForecast
 from fontokmai.contracts.manifest import Manifest
 from fontokmai.contracts.outlook import RainOutlook
@@ -27,7 +27,7 @@ from fontokmai.contracts.satellite import FloodFrequency, SatelliteFloods
 from fontokmai.feeds.alerts import LIVE_STATUSES, AlertCandidate, assemble_alerts_feed
 from fontokmai.overview_build import OVERVIEW_PATH, RECENT_KEY, build_overview, with_earlier
 from fontokmai.publish.snapshot import atomic_write, write_snapshot
-from fontokmai.sources import bma_dxs
+from fontokmai.sources import bma_dxs, rid_hydro
 from fontokmai.sources.open_data import longdo_live
 from fontokmai.sources.open_data.http import Opener
 from fontokmai.sources.tmd_cap.collect import collect, load_messages
@@ -146,6 +146,15 @@ def run_cap_snapshot(*, db: Path, out: Path, fetch: Fetcher, now: datetime, writ
                                     recovery_epoch=recovery_epoch, source_status=[status])
         sync_static_refs(out)
         files = {"alerts.json": feed.model_dump_json().encode("utf-8"), **read_ref_files(out)}
+        # a station the daily report gives no figure (C.35) takes the backup the manual Bangkok run brought, while
+        # it is recent: shown with its own time, and counted by the canal outlook (user 2026-10-04)
+        if "water/flows.json" in files:
+            try:
+                backup = RidHydro.model_validate_json((out / rid_hydro.PATH).read_bytes())
+            except (OSError, ValidationError):
+                backup = None
+            flows_now = rid_hydro.with_backup(RidFlows.model_validate_json(files["water/flows.json"]), backup, now)
+            files["water/flows.json"] = flows_now.model_dump_json().encode("utf-8")
         statuses = [status]
         radar = collect_radar(radar_fetch, out, generation_id) if radar_fetch is not None else None
         if radar is not None:
