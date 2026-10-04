@@ -58,6 +58,20 @@
           "description": "RID's station code, e.g. C.29B",
           "title": "Code"
         },
+        "flow_backup_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Set when flow_cms (and level_m, if the report has none) come from the backup instead of the report: RID's hydrology centre page, read by the manual run from a computer in Thailand (user 2026-10-04), at this time. Null when the figures are the report's own",
+          "title": "Flow Backup At"
+        },
         "flow_cms": {
           "anyOf": [
             {
@@ -204,6 +218,19 @@
   },
   "additionalProperties": false,
   "properties": {
+    "backup_url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "RID's hydrology centre page the backup figures come from (points with flow_backup_at), to link to",
+      "title": "Backup Url"
+    },
     "chart_url": {
       "anyOf": [
         {

@@ -29,6 +29,10 @@ class FlowPoint(ContractModel):
                                                             " gives it")
     below_bank_m: float | None = Field(default=None, description=(
         "How far the water is below the bank (m), when the report says it; negative = above the bank"))
+    flow_backup_at: AwareDatetime | None = Field(default=None, description=(
+        "Set when flow_cms (and level_m, if the report has none) come from the backup instead of the report: RID's"
+        " hydrology centre page, read by the manual run from a computer in Thailand (user 2026-10-04), at this time."
+        " Null when the figures are the report's own"))
     state: Literal["normal", "critical", "flood"] | None = Field(default=None, description=(
         "RID's own state of the station from the coloured dot of its chart (green, yellow, red): RID's assessment,"
         " not this site's; null when the chart has no dot there or could not be read"))
@@ -57,4 +61,27 @@ class RidFlows(ContractModel):
     flooded_districts: list[str] = Field(default_factory=list, description=(
         "DOPA codes of the districts the report's flood section (section 6) names as affected by flooding that day:"
         " RID's report, not this site's assessment"))
+    backup_url: str | None = Field(default=None, description=(
+        "RID's hydrology centre page the backup figures come from (points with flow_backup_at), to link to"))
     notes_th: list[str]
+
+
+class HydroStation(ContractModel):
+    code: str = Field(description="RID's station code as the page prints it, e.g. C.35")
+    flow_cms: float | None = Field(description="m³/s the page gives at observed_at")
+    level_m: float | None = Field(description="Water level, m above mean sea level, the page gives at observed_at")
+
+
+class RidHydro(ContractModel):
+    """bkk/rid_hydro.json: the backup figures of RID's Chao Phraya stations, from the page of RID's hydrology centre
+    (hyd-app-db.rid.go.th), which answers computers in Thailand only: read by the manual Bangkok run (D31) and
+    copied to the server with the Bangkok files. Used only where the daily report gives a station no figure."""
+
+    schema_version: Literal["1"] = SCHEMA_VERSION
+    fetched_at: AwareDatetime = Field(description="When the manual run read the page")
+    observed_at: AwareDatetime = Field(description="The time the page prints for its figures")
+    source_url: str
+    credit_th: str
+    stations: list[HydroStation]
+    notes_th: list[str]
+

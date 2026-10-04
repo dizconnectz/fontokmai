@@ -1,6 +1,10 @@
 /* Generated from contracts/v1/schema/flows.schema.json by scripts/gen-ts-types.sh. Do not edit by hand. */
 
 /**
+ * RID's hydrology centre page the backup figures come from (points with flow_backup_at), to link to
+ */
+export type BackupUrl = string | null;
+/**
  * RID's chart of that day (picture), to link to; null when not read
  */
 export type ChartUrl = string | null;
@@ -36,6 +40,10 @@ export type CapacityKind = ("channel" | "release") | null;
  * RID's station code, e.g. C.29B
  */
 export type Code = string | null;
+/**
+ * Set when flow_cms (and level_m, if the report has none) come from the backup instead of the report: RID's hydrology centre page, read by the manual run from a computer in Thailand (user 2026-10-04), at this time. Null when the figures are the report's own
+ */
+export type FlowBackupAt = string | null;
 /**
  * m³/s at 06:00 of report_date, as the report gives it; null when the report gives none
  */
@@ -92,6 +100,7 @@ export type Sites = FlowSite[];
 export type SourceUrl = string;
 
 export interface RidFlows {
+  backup_url?: BackupUrl;
   chart_url: ChartUrl;
   credit_th: CreditTh;
   fetched_at: FetchedAt;
@@ -111,6 +120,7 @@ export interface FlowPoint {
   capacity_cms?: CapacityCms;
   capacity_kind?: CapacityKind;
   code?: Code;
+  flow_backup_at?: FlowBackupAt;
   flow_cms: FlowCms;
   id: Id;
   into_th?: IntoTh;

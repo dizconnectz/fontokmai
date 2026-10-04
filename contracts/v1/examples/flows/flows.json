@@ -21,6 +21,7 @@
       "into_th": null,
       "level_m": 23.33,
       "below_bank_m": 2.37,
+      "flow_backup_at": null,
       "state": "critical"
     },
     {
@@ -35,6 +36,7 @@
       "into_th": null,
       "level_m": null,
       "below_bank_m": null,
+      "flow_backup_at": null,
       "state": "critical"
     },
     {
@@ -49,6 +51,7 @@
       "into_th": null,
       "level_m": null,
       "below_bank_m": null,
+      "flow_backup_at": null,
       "state": "critical"
     },
     {
@@ -63,6 +66,7 @@
       "into_th": null,
       "level_m": null,
       "below_bank_m": null,
+      "flow_backup_at": null,
       "state": "critical"
     },
     {
@@ -77,6 +81,7 @@
       "into_th": null,
       "level_m": null,
       "below_bank_m": null,
+      "flow_backup_at": null,
       "state": "flood"
     },
     {
@@ -91,6 +96,7 @@
       "into_th": null,
       "level_m": null,
       "below_bank_m": null,
+      "flow_backup_at": null,
       "state": "normal"
     },
     {
@@ -105,6 +111,7 @@
       "into_th": null,
       "level_m": null,
       "below_bank_m": null,
+      "flow_backup_at": null,
       "state": "critical"
     },
     {
@@ -119,6 +126,7 @@
       "into_th": null,
       "level_m": null,
       "below_bank_m": null,
+      "flow_backup_at": null,
       "state": null
     },
     {
@@ -133,6 +141,7 @@
       "into_th": "คลองระพีพัฒน์ → ทุ่งรังสิต",
       "level_m": null,
       "below_bank_m": null,
+      "flow_backup_at": null,
       "state": null
     },
     {
@@ -147,6 +156,7 @@
       "into_th": "คลองระพีพัฒน์แยกตก",
       "level_m": null,
       "below_bank_m": null,
+      "flow_backup_at": null,
       "state": null
     },
     {
@@ -161,6 +171,7 @@
       "into_th": "คลองระพีพัฒน์แยกใต้",
       "level_m": null,
       "below_bank_m": null,
+      "flow_backup_at": null,
       "state": null
     },
     {
@@ -175,6 +186,7 @@
       "into_th": null,
       "level_m": null,
       "below_bank_m": null,
+      "flow_backup_at": null,
       "state": null
     },
     {
@@ -189,6 +201,7 @@
       "into_th": "คลองชัยนาท-ป่าสัก",
       "level_m": null,
       "below_bank_m": null,
+      "flow_backup_at": null,
       "state": null
     },
     {
@@ -203,6 +216,7 @@
       "into_th": "คลองชัยนาท-อยุธยา",
       "level_m": null,
       "below_bank_m": null,
+      "flow_backup_at": null,
       "state": null
     },
     {
@@ -217,6 +231,7 @@
       "into_th": null,
       "level_m": null,
       "below_bank_m": null,
+      "flow_backup_at": null,
       "state": null
     },
     {
@@ -231,6 +246,7 @@
       "into_th": "คลองมะขามเฒ่า-อู่ทอง",
       "level_m": null,
       "below_bank_m": null,
+      "flow_backup_at": null,
       "state": null
     },
     {
@@ -245,6 +261,7 @@
       "into_th": "คลองมะขามเฒ่า-กระเสียว",
       "level_m": null,
       "below_bank_m": null,
+      "flow_backup_at": null,
       "state": null
     },
     {
@@ -259,6 +276,7 @@
       "into_th": "แม่น้ำสุพรรณ (ท่าจีน)",
       "level_m": null,
       "below_bank_m": null,
+      "flow_backup_at": null,
       "state": null
     },
     {
@@ -273,6 +291,7 @@
       "into_th": "แม่น้ำน้อย",
       "level_m": null,
       "below_bank_m": null,
+      "flow_backup_at": null,
       "state": null
     },
     {
@@ -287,6 +306,7 @@
       "into_th": null,
       "level_m": null,
       "below_bank_m": null,
+      "flow_backup_at": null,
       "state": null
     }
   ],
@@ -409,6 +429,7 @@
     "1301",
     "1306"
   ],
+  "backup_url": null,
   "notes_th": [
     "ตัวเลขจากรายงานสถานการณ์น้ำประจำวันของกรมชลประทาน (SWOC) และสีสถานะจากผังน้ำเจ้าพระยาตอนล่าง เวลา 06:00 น.",
     "จุดบนแผนที่ของสถานีอยู่บนแม่น้ำใกล้ตัวอำเภอ ไม่ใช่ตำแหน่งเครื่องวัดจริง ประตูที่รับน้ำเข้าคลองอยู่ที่หัวคลองตาม OpenStreetMap"

@@ -871,6 +871,8 @@ function flowPopup(site: FlowSite, file: RidFlows, now: number): HTMLElement {
   // a station the PDF gives no figure for (C.35) has it drawn on RID's chart of the same morning
   if (file.chart_url && [...main, ...gates].some((point) => point.flow_cms === null))
     root.append(linkOut(file.chart_url, 'ดูตัวเลขในผังน้ำของกรมชลฯ (ภาพ) ↗'));
+  if (file.backup_url && [...main, ...gates].some((point) => point.flow_backup_at))
+    root.append(linkOut(file.backup_url, 'ตัวเลขสำรอง: ศูนย์อุทกวิทยาชลประทานภาคกลาง ↗'));
   return root;
 }
 

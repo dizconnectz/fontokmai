@@ -115,6 +115,8 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     fetch_bkk = sub.add_parser("bkk-fetch", help="fetch the Bangkok DXS files once (from a computer in Thailand)")
     fetch_bkk.add_argument("--account", type=Path, required=True, help="file with the DXS user name and password")
     fetch_bkk.add_argument("--out", type=Path, required=True, help="directory; the files go to bkk/ under it")
+    hydro = sub.add_parser("rid-hydro-probe", help="save RID's hydrology centre page and say what it holds (Thailand)")
+    hydro.add_argument("--out", type=Path, required=True, help="directory for the saved page and files")
     probe = sub.add_parser("dxs-probe", help="call one BMA DXS service and print the shape of its answer")
     probe.add_argument("operation", help="service function, e.g. GetWaterLastData")
     probe.add_argument("--account", type=Path, required=True, help="file with the DXS user name and password")
@@ -348,12 +350,28 @@ def main(argv: list[str] | None = None) -> int:
             if model is not None:
                 atomic_write(args.out / rel, model.model_dump_json().encode("utf-8"))
                 written[rel] = model.fetched_at.isoformat()
+        # the backup figures of RID's stations (C.35 has none in the daily report): this computer is in Thailand,
+        # the server is not; a failure here is said and never fails the Bangkok files (user 2026-10-04)
+        from fontokmai.sources import rid_hydro
+        try:
+            hydro = rid_hydro.collect(datetime.now(UTC))
+            if hydro is not None:
+                atomic_write(args.out / rid_hydro.PATH, hydro.model_dump_json().encode("utf-8"))
+                written[rid_hydro.PATH] = hydro.observed_at.isoformat()
+            else:
+                problems = [*problems, "rid_hydro: the page has another shape (run rid-hydro-probe)"]
+        except Exception as exc:  # noqa: BLE001
+            problems = [*problems, f"rid_hydro: {type(exc).__name__}: {exc}"[:200]]
         message = "; ".join(filter(None, [fetched.message, *problems])) or None
         dams = extras.get(bma_dxs.DAMS_PATH)
         print(json.dumps({"ok": fetched.ok and not problems, "seen": fetched.seen, "message": message,
                           "written": written, "dams_compared_with": str(dams.previous_report_date)
                           if dams is not None and dams.previous_report_date else None}, ensure_ascii=False))
         return 0 if fetched.ok and not problems else 1
+    if args.command == "rid-hydro-probe":
+        from fontokmai.sources import rid_hydro
+        print("\n".join(rid_hydro.probe(args.out)))
+        return 0
     if args.command == "dxs-probe":
         from fontokmai.sources import bma_dxs
         params = dict(item.split("=", 1) for item in args.param)

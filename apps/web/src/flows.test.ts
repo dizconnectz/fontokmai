@@ -84,6 +84,17 @@ describe("RID's daily figures on the map (D35)", () => {
     expect(flowText(point('c35'))).toBe(
       'รายงาน PDF ไม่มีตัวเลขของจุดนี้ ดูในผังน้ำของกรมชลฯ · ลำน้ำรับได้ 1,159 ลบ.ม./วิ · กรมชลฯ จัดว่าท่วม',
     );
+    // the backup of RID's hydrology centre where the report had none (user 2026-10-04): said with its own time
+    expect(
+      flowText({
+        ...point('c35'),
+        flow_cms: 1486,
+        level_m: 5.41,
+        flow_backup_at: '2026-10-04T16:00:00+07:00',
+      }),
+    ).toBe(
+      'น้ำไหลผ่าน 1,486 ลบ.ม./วิ · 128% ของที่ลำน้ำรับได้ · ตัวเลขสำรองจากศูนย์อุทกวิทยาฯ 4 ต.ค. 16:00 น. · กรมชลฯ จัดว่าท่วม',
+    );
     // a site named after its one station says only the station's code under its name
     expect(pointLabel(point('c35'), site('ayutthaya'))).toBe('สถานี C.35');
     expect(pointLabel(point('c29b'), site('samkhok'))).toBe('สถานี C.29B');
