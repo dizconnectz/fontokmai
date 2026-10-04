@@ -36,7 +36,7 @@ from fontokmai.publish.git_pages import publish_snapshot
 from fontokmai.road_flood_build import build_road_flood_history, fixture_files, is_fresh
 from fontokmai.run import SnapshotResult, run_cap_snapshot
 from fontokmai.schedule import run_forever
-from fontokmai.sources import rid_dams, rid_report
+from fontokmai.sources import gistda, rid_dams, rid_report
 from fontokmai.sources.glofas import all_points as glofas_points
 from fontokmai.sources.open_data.http import fixture_opener, open_url
 from fontokmai.sources.open_data.longdo_live import FEED_URL as LONGDO_FEED_URL
@@ -133,6 +133,8 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
                        help="iTIC cache directory; when set, rebuild ref/road_flood_history.json once a week")
     sched.add_argument("--dxs-account", type=Path,
                        help="BMA DXS account file (user name, password); empty or missing = no DXS data")
+    sched.add_argument("--gistda-key", type=Path,
+                       help="GISTDA API key file; empty or missing = no satellite flood layer")
     sched.add_argument("--forecast", action="store_true",
                        help="rebuild forecast/rain.json from Open-Meteo every 6 hours (network)")
     sched.add_argument("--max-rounds", type=int, help=argparse.SUPPRESS)
@@ -226,6 +228,10 @@ def _scheduled_job(args: argparse.Namespace) -> Callable[[datetime], dict[str, A
             flows = rid_report.refresh(args.out, args.db, now) if args.forecast else None
             if flows:
                 summary["flows"] = flows
+            # GISTDA's flooded area seen from satellites, checked every 3 hours, read in full only when it moved
+            satellite = gistda.refresh(args.out, args.db, now, args.gistda_key)
+            if satellite:
+                summary["satellite"] = satellite
         pressure = process_pressure()
         if pressure:
             summary["processes"] = f"{pressure[0]}/{pressure[1]}"

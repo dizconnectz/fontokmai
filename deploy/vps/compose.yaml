@@ -23,11 +23,14 @@ services:
       - --cache=/var/lib/fontokmai/state/cache
       - --forecast
       - --dxs-account=/run/secrets/dxs_account
+      - --gistda-key=/run/secrets/gistda_key
     volumes:
       - ${FONTOKMAI_VAR}:/var/lib/fontokmai
       - ${DEPLOY_KEY}:/run/secrets/deploy_key:ro
       # without DXS_ACCOUNT the file is empty and the DXS part of a round is skipped
       - ${DXS_ACCOUNT:-/dev/null}:/run/secrets/dxs_account:ro
+      # GISTDA's API key (user 2026-10-04); without GISTDA_KEY the file is empty and the satellite layer is skipped
+      - ${GISTDA_KEY:-/dev/null}:/run/secrets/gistda_key:ro
       - ./github_known_hosts:/etc/fontokmai/github_known_hosts:ro
     restart: unless-stopped
     # a small init as PID 1 reaps what git leaves behind (its background gc and ssh): without it the zombies piled

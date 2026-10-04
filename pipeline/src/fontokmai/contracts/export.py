@@ -29,6 +29,7 @@ from fontokmai.contracts.places import PlaceGazetteer
 from fontokmai.contracts.radar import RadarFeed
 from fontokmai.contracts.river_lines import RiverLines
 from fontokmai.contracts.road_flood import RoadFloodHistory
+from fontokmai.contracts.satellite import SatelliteFloods
 
 SCHEMAS: dict[str, type[BaseModel]] = {
     "alerts.schema.json": AlertsFeed,
@@ -52,6 +53,7 @@ SCHEMAS: dict[str, type[BaseModel]] = {
     "radar.schema.json": RadarFeed,
     "river_lines.schema.json": RiverLines,
     "road_flood_history.schema.json": RoadFloodHistory,
+    "satellite.schema.json": SatelliteFloods,
     "weather_today.schema.json": WeatherToday,
 }
 

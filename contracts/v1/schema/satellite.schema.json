@@ -1,0 +1,154 @@
+{
+  "$defs": {
+    "SatelliteDistrict": {
+      "additionalProperties": false,
+      "properties": {
+        "area_km2": {
+          "description": "Water GISTDA mapped as flood in the district, km²",
+          "minimum": 0,
+          "title": "Area Km2",
+          "type": "number"
+        },
+        "buildings": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Buildings in the flooded cells, by GISTDA",
+          "title": "Buildings"
+        },
+        "cells": {
+          "description": "H3 cells (resolution 9, about 0.1 km² each) with flood water",
+          "minimum": 1,
+          "title": "Cells",
+          "type": "integer"
+        },
+        "code": {
+          "description": "DOPA district code, as in ref/places.json",
+          "pattern": "^\\d{4}$",
+          "title": "Code",
+          "type": "string"
+        },
+        "population": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "People GISTDA estimates live in the flooded cells",
+          "title": "Population"
+        }
+      },
+      "required": [
+        "code",
+        "area_km2",
+        "cells",
+        "population",
+        "buildings"
+      ],
+      "title": "SatelliteDistrict",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "credit_th": {
+      "title": "Credit Th",
+      "type": "string"
+    },
+    "districts": {
+      "description": "Districts with flood water, the largest area first",
+      "items": {
+        "$ref": "#/$defs/SatelliteDistrict"
+      },
+      "title": "Districts",
+      "type": "array"
+    },
+    "fetched_at": {
+      "description": "When fontokmai fetched the layer",
+      "format": "date-time",
+      "title": "Fetched At",
+      "type": "string"
+    },
+    "latest_scene_day": {
+      "anyOf": [
+        {
+          "format": "date",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Day of the newest scene (Thai calendar as GISTDA names it)",
+      "title": "Latest Scene Day"
+    },
+    "name_th": {
+      "title": "Name Th",
+      "type": "string"
+    },
+    "notes_th": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Notes Th",
+      "type": "array"
+    },
+    "product": {
+      "const": "gistda_flood_3days",
+      "default": "gistda_flood_3days",
+      "title": "Product",
+      "type": "string"
+    },
+    "scenes": {
+      "description": "The satellite scenes GISTDA names, e.g. S1D_20261002_0609, newest first",
+      "items": {
+        "type": "string"
+      },
+      "title": "Scenes",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1",
+      "default": "1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_url": {
+      "description": "GISTDA's disaster platform, to link to (never an API address)",
+      "title": "Source Url",
+      "type": "string"
+    },
+    "total_km2": {
+      "minimum": 0,
+      "title": "Total Km2",
+      "type": "number"
+    },
+    "window_days": {
+      "description": "GISTDA's window: flood seen in any scene of the last this many days",
+      "title": "Window Days",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "name_th",
+    "credit_th",
+    "source_url",
+    "fetched_at",
+    "window_days",
+    "scenes",
+    "latest_scene_day",
+    "total_km2",
+    "districts",
+    "notes_th"
+  ],
+  "title": "SatelliteFloods",
+  "type": "object"
+}

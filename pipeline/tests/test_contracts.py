@@ -27,7 +27,7 @@ def test_export_schemas_writes_one_file_per_contract(tmp_path):
         "live_floods.schema.json", "manifest.schema.json", "outlook.schema.json", "overview.schema.json",
         "places.schema.json",
         "radar.schema.json", "river_lines.schema.json",
-        "road_flood_history.schema.json", "weather_today.schema.json"]
+        "road_flood_history.schema.json", "satellite.schema.json", "weather_today.schema.json"]
     schema = json.loads((tmp_path / "alerts.schema.json").read_text(encoding="utf-8"))
     assert schema["title"] == "AlertsFeed"
     assert "Alert" in schema["$defs"]
