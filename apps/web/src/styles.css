@@ -984,6 +984,20 @@ svg {
   display: grid;
   gap: 8px;
 }
+.alert-more > summary {
+  width: fit-content;
+  padding: 5px 8px;
+  border-radius: 7px;
+  color: var(--brand);
+  font-weight: 600;
+  cursor: pointer;
+}
+.alert-more > summary:hover {
+  background: var(--hover);
+}
+.alert-list-more {
+  margin-top: 6px;
+}
 .empty-list {
   display: grid;
   gap: 4px;
@@ -2071,6 +2085,29 @@ details > ul {
   margin: 10px 0 6px;
   font-size: 0.95rem;
 }
+.summary-upcoming > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  margin-top: 4px;
+  padding: 4px 8px;
+  border-top: 1px solid var(--line);
+  cursor: pointer;
+}
+.summary-upcoming > summary::marker {
+  color: var(--muted);
+}
+.summary-upcoming-title strong {
+  font-size: 0.95rem;
+}
+.summary-upcoming-title span {
+  color: var(--brand);
+  font-size: 0.82rem;
+}
+.summary-upcoming-content {
+  padding-top: 2px;
+}
 .summary-list {
   display: grid;
   gap: 6px;
@@ -2187,7 +2224,7 @@ details > ul {
 .status-chip.unknown {
   color: var(--muted);
 }
-/* the summary's place while it loads: about the height of a card of a few places (Codex M41) */
+/* The compact now-summary is around 22rem; reserve close to its height while the file arrives (Codex M59). */
 .summary-waiting {
-  min-height: 16rem;
+  min-height: 22rem;
 }

@@ -1,4 +1,4 @@
-import { test, expect, type Page, type Route } from '@playwright/test';
+import { test, expect, type Locator, type Page, type Route } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 
@@ -78,6 +78,10 @@ async function prepare(page: Page, scenario = 'active') {
       },
     }),
   );
+}
+async function revealAlert(page: Page, card: Locator) {
+  if (!(await card.isVisible())) await page.locator('.alert-more > summary').click();
+  await expect(card).toBeVisible();
 }
 /** Tap the one pin at the centre of the first view; a pin stands on its tip, so aim at its head. */
 /** Ordinary pins show from zoom 8 (user, 2026-10-02: the first view shows only severe ones): zoom in first. */
@@ -226,12 +230,13 @@ test('the summary previews the top area and can expand to all areas', async ({ p
   const overview = read('overview', 'overview');
   overview.generated_at = read('active', 'manifest').generated_at;
   const current = overview.items.find((item: { when: string }) => item.when === 'now');
+  const ahead = overview.items.filter((item: { when: string }) => item.when === 'next');
   overview.items = Array.from({ length: 8 }, (_, index) => ({
     ...current,
     place_th: `อ.ทดสอบ${index} จ.ทดสอบ${index}`,
     province_code: '99',
     score: 100 - index,
-  }));
+  })).concat(ahead);
   await page.route('**/summary/overview.json?*', (route) => route.fulfill({ json: overview }));
   await page.goto('/');
 
@@ -239,6 +244,11 @@ test('the summary previews the top area and can expand to all areas', async ({ p
   const currentList = summary.locator('.summary-list').first();
   await expect(currentList.locator('li')).toHaveCount(1);
   await expect(summary).toContainText('ต้องระวังตอนนี้ 8 แห่ง');
+  const upcoming = summary.locator('.summary-upcoming');
+  await expect(upcoming).toContainText('เตรียมรับมือในวันข้างหน้า 6 แห่ง');
+  await expect(upcoming).not.toHaveAttribute('open', '');
+  await upcoming.locator('summary').click();
+  await expect(upcoming).toContainText('จ.สมุทรปราการ');
   await summary.getByRole('button', { name: 'ดูทั้งหมด' }).click();
   await expect(currentList.locator('li')).toHaveCount(8);
 });
@@ -250,8 +260,11 @@ test('official alerts show their severity and a one-line summary, then open in f
   await page.goto('/');
   const cards = page.getByTestId('alert-card');
   await expect(cards).toHaveCount(3);
+  await expect(cards.filter({ visible: true })).toHaveCount(1);
+  await expect(page.locator('.alert-more > summary')).toHaveText('ดูประกาศอีก 2 ฉบับ');
   await expect(page.getByText('กำลังแสดงชุดข้อมูลตัวอย่าง')).toBeVisible();
   const veryHeavy = cards.filter({ hasText: 'ฝนตกหนักมาก' });
+  await revealAlert(page, veryHeavy);
   await expect(veryHeavy).toContainText('รุนแรงมาก');
   await expect(veryHeavy).toContainText('30 จังหวัด รวม กทม.');
   await veryHeavy.getByRole('button', { name: /ดูพื้นที่และรายละเอียด/ }).click();
@@ -397,11 +410,9 @@ test('the map keeps the zoom someone chose while the data refreshes', async ({ p
   const surface = page.getByTestId('map-surface');
   await expect(surface).toHaveAttribute('aria-busy', 'false', { timeout: 15_000 });
   // selecting an alert fits the map to its area once
-  await page
-    .getByTestId('alert-card')
-    .filter({ hasText: 'ฝนตกหนักมาก' })
-    .getByRole('button', { name: /ดูพื้นที่และรายละเอียด/ })
-    .click();
+  const veryHeavy = page.getByTestId('alert-card').filter({ hasText: 'ฝนตกหนักมาก' });
+  await revealAlert(page, veryHeavy);
+  await veryHeavy.getByRole('button', { name: /ดูพื้นที่และรายละเอียด/ }).click();
   await expect(page.getByTestId('alert-detail')).toBeVisible();
   await expect(surface).not.toHaveAttribute('data-zoom', '5');
   const fitted = Number(await surface.getAttribute('data-zoom'));

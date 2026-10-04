@@ -866,91 +866,116 @@ function WatchSummary({
           {tooOld && ' เก่าเกินไปจึงไม่แสดงรายการ'}
         </p>
       )}
-      {lists.map((list) => (
-        <div key={list.when} className="summary-group">
-          <h3>
-            {list.title}
-            {list.items.length > 0 && ` ${list.items.length} แห่ง`}
-            {list.groups.length > 1 &&
-              list.groups.length < list.items.length &&
-              ` ใน ${list.groups.length} จังหวัด`}
-          </h3>
-          {list.change && (
-            <p className="summary-change">
-              เทียบกับรอบ {reportTime(list.change.at, now)}:{' '}
-              {list.change.added.length || list.change.passed
-                ? [
-                    list.change.added.length && `ใหม่ ${list.change.added.length} แห่ง`,
-                    list.change.passed && `พ้นเกณฑ์แล้ว ${list.change.passed} แห่ง`,
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')
-                : 'เท่าเดิม'}
-            </p>
-          )}
-          {list.items.length === 0 ? (
-            <p className="quiet">
-              {tooOld ? 'ไม่มีข้อมูลที่ใหม่พอ' : `${list.empty} (ไม่ได้แปลว่าปลอดภัย)`}
-            </p>
-          ) : (
-            <ul className="summary-list">
-              {(all ? list.groups : list.groups.slice(0, OVERVIEW_TOP)).map((group) => {
-                if (group.items.length === 1) return placeButton(group.items[0]);
-                // a province with several districts: one card, the first line of each kind of reason (what is
-                // happening before what is forecast), the districts as chips
-                const top = group.items[0];
-                const alert = officialFor(top, alerts, now);
-                const kinds = new Set<string>();
-                const happening: string[] = [];
-                const ahead: string[] = [];
-                for (const item of group.items)
-                  for (const reason of item.reasons) {
-                    const text = kinds.has(reason.kind) ? null : reasonLine(reason, now);
-                    if (text === null) continue;
-                    kinds.add(reason.kind);
-                    (reason.day ? ahead : happening).push(text);
-                  }
-                const lines = [...happening, ...ahead].slice(0, 3);
-                const unit = group.items.every((item) => item.place_th.startsWith('เขต'))
-                  ? 'เขต'
-                  : 'อำเภอ';
-                return (
-                  <li key={`${list.when}:province:${group.province}`} className="summary-province">
-                    <button className="summary-item" onClick={() => onPlaces(group.items)}>
-                      <span className="summary-place">
-                        <strong>{group.province}</strong> · {group.items.length} {unit}
-                        {alert && (
-                          <span className={`level-chip level-${alert.level}`}>
-                            {alert.pending ? 'ประกาศล่วงหน้า' : 'มีประกาศ'}{' '}
-                            {LEVEL_LABEL[alert.level]}
-                          </span>
-                        )}
-                      </span>
-                      <span className="summary-reasons">
-                        {lines.map((line) => (
-                          <span key={line}>{line}</span>
+      {lists.map((list) => {
+        const content = (
+          <>
+            {list.when === 'now' && (
+              <h3>
+                {list.title}
+                {list.items.length > 0 && ` ${list.items.length} แห่ง`}
+                {list.groups.length > 1 &&
+                  list.groups.length < list.items.length &&
+                  ` ใน ${list.groups.length} จังหวัด`}
+              </h3>
+            )}
+            {list.when === 'next' && list.items.length === 0 && <h3>{list.title}</h3>}
+            {list.change && (
+              <p className="summary-change">
+                เทียบกับรอบ {reportTime(list.change.at, now)}:{' '}
+                {list.change.added.length || list.change.passed
+                  ? [
+                      list.change.added.length && `ใหม่ ${list.change.added.length} แห่ง`,
+                      list.change.passed && `พ้นเกณฑ์แล้ว ${list.change.passed} แห่ง`,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')
+                  : 'เท่าเดิม'}
+              </p>
+            )}
+            {list.items.length === 0 ? (
+              <p className="quiet">
+                {tooOld ? 'ไม่มีข้อมูลที่ใหม่พอ' : `${list.empty} (ไม่ได้แปลว่าปลอดภัย)`}
+              </p>
+            ) : (
+              <ul className="summary-list">
+                {(all ? list.groups : list.groups.slice(0, OVERVIEW_TOP)).map((group) => {
+                  if (group.items.length === 1) return placeButton(group.items[0]);
+                  // a province with several districts: one card, the first line of each kind of reason (what is
+                  // happening before what is forecast), the districts as chips
+                  const top = group.items[0];
+                  const alert = officialFor(top, alerts, now);
+                  const kinds = new Set<string>();
+                  const happening: string[] = [];
+                  const ahead: string[] = [];
+                  for (const item of group.items)
+                    for (const reason of item.reasons) {
+                      const text = kinds.has(reason.kind) ? null : reasonLine(reason, now);
+                      if (text === null) continue;
+                      kinds.add(reason.kind);
+                      (reason.day ? ahead : happening).push(text);
+                    }
+                  const lines = [...happening, ...ahead].slice(0, 3);
+                  const unit = group.items.every((item) => item.place_th.startsWith('เขต'))
+                    ? 'เขต'
+                    : 'อำเภอ';
+                  return (
+                    <li
+                      key={`${list.when}:province:${group.province}`}
+                      className="summary-province"
+                    >
+                      <button className="summary-item" onClick={() => onPlaces(group.items)}>
+                        <span className="summary-place">
+                          <strong>{group.province}</strong> · {group.items.length} {unit}
+                          {alert && (
+                            <span className={`level-chip level-${alert.level}`}>
+                              {alert.pending ? 'ประกาศล่วงหน้า' : 'มีประกาศ'}{' '}
+                              {LEVEL_LABEL[alert.level]}
+                            </span>
+                          )}
+                        </span>
+                        <span className="summary-reasons">
+                          {lines.map((line) => (
+                            <span key={line}>{line}</span>
+                          ))}
+                        </span>
+                      </button>
+                      <span className="summary-districts">
+                        {group.items.map((item) => (
+                          <button
+                            key={item.place_th}
+                            className="district-chip"
+                            onClick={() => onPlace(item)}
+                          >
+                            {placeParts(item.place_th)[0]}
+                            {isNew(item) && <span className="new-chip">ใหม่</span>}
+                          </button>
                         ))}
                       </span>
-                    </button>
-                    <span className="summary-districts">
-                      {group.items.map((item) => (
-                        <button
-                          key={item.place_th}
-                          className="district-chip"
-                          onClick={() => onPlace(item)}
-                        >
-                          {placeParts(item.place_th)[0]}
-                          {isNew(item) && <span className="new-chip">ใหม่</span>}
-                        </button>
-                      ))}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
-      ))}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </>
+        );
+        if (list.when === 'next' && list.items.length > 0)
+          return (
+            <details key={list.when} className="summary-group summary-upcoming">
+              <summary className="summary-upcoming-title">
+                <strong>
+                  {list.title} {list.items.length} แห่ง
+                </strong>
+                <span>ดูพื้นที่และวัน</span>
+              </summary>
+              <div className="summary-upcoming-content">{content}</div>
+            </details>
+          );
+        return (
+          <div key={list.when} className="summary-group">
+            {content}
+          </div>
+        );
+      })}
       {more && (
         <button className="link-button" aria-expanded={all} onClick={() => setAll((open) => !open)}>
           {all ? 'แสดงน้อยลง' : 'ดูทั้งหมด'}
@@ -1385,9 +1410,24 @@ export function Overview({
                 <p>ไม่มีข้อมูลหรือไม่พบประกาศ ไม่ได้แปลว่าพื้นที่ปลอดภัย</p>
               </div>
             )}
-            {alerts.map((alert) => (
+            {alerts.slice(0, 1).map((alert) => (
               <AlertCard key={alert.event_id} alert={alert} now={now} onSelect={onSelectAlert} />
             ))}
+            {alerts.length > 1 && (
+              <details className="alert-more">
+                <summary>ดูประกาศอีก {alerts.length - 1} ฉบับ</summary>
+                <div className="alert-list alert-list-more">
+                  {alerts.slice(1).map((alert) => (
+                    <AlertCard
+                      key={alert.event_id}
+                      alert={alert}
+                      now={now}
+                      onSelect={onSelectAlert}
+                    />
+                  ))}
+                </div>
+              </details>
+            )}
           </div>
         </section>
       )}
