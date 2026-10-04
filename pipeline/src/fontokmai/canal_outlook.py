@@ -35,7 +35,7 @@ from fontokmai.contracts.forecast import RainForecast
 
 CANALS_PATH = "summary/canals.json"
 LINES_PATH = "ref/canals.json"
-RULES = "canals-v3"  # v3: unrounded level thresholds and a valid pair required to assess a level trend
+RULES = "canals-v4"  # v4: per-factor gaps, complete rain windows and no future-dated inputs (M53)
 ICT = timezone(timedelta(hours=7))
 FLOWS_MAX_AGE = timedelta(days=2)  # the report is daily
 RAIN_MAX_AGE = timedelta(hours=12)  # refreshed every 6 hours
@@ -149,23 +149,28 @@ def _drainage(canal: Any, points: dict[str, Any], at: datetime) -> list[CanalFac
 
 
 def _rain(canal: Any, forecast: RainForecast, cells: dict[str, set[int]], names: dict[str, str],
-          today: date) -> list[CanalFactor] | None:
-    """The rain factor, or None when the forecast has no value for the canal's districts in these days."""
+          today: date) -> tuple[list[CanalFactor] | None, bool]:
+    """Known rain and whether all district cells and all three days were covered; missing is never dry."""
+    expected_days = {today + timedelta(days=i) for i in range(3)}
+    complete = expected_days <= set(forecast.days) and all(cells.get(code) for code in canal.districts)
     best: tuple[int, date, str] | None = None
     for d, day in enumerate(forecast.days):
         if not 0 <= (day - today).days <= 2:
             continue
         for district in canal.districts:
             values = [forecast.day_rain[d][i] for i in cells.get(district, ()) if forecast.day_rain[d][i] is not None]
+            if len(values) != len(cells.get(district, ())):
+                complete = False
             if values and (best is None or max(values) > best[0]):
                 best = (max(values), day, district)
     if best is None:
-        return None
+        return None, False
     value, day, district = best
     score = 2 if value >= VERY_HEAVY else 1 if value >= HEAVY else 0
     word = "ฝนหนักมาก" if score == 2 else "ฝนหนัก" if score == 1 else "ฝนไม่ถึงเกณฑ์ฝนหนัก"
     text = f"พยากรณ์{word} สูงสุดราว {_mm(value)} มม. วันที่ {_thai_day(day)} แถว {names.get(district, district)}"
-    return [CanalFactor(kind="rain", points=score, text_th=text, source_th="Open-Meteo", at=forecast.fetched_at)]
+    factor = CanalFactor(kind="rain", points=score, text_th=text, source_th="Open-Meteo", at=forecast.fetched_at)
+    return [factor], complete
 
 
 def _levels(canal: Any, levels: CanalLevels, now: datetime) -> list[CanalFactor] | None:
@@ -211,6 +216,9 @@ def _flooding(canal: Any, flows: RidFlows, names: dict[str, str]) -> list[CanalF
 
 
 def _input(source: str, document: Any, at: datetime | None, max_age: timedelta, now: datetime) -> CanalInput:
+    if at is not None and at > now + CLOCK_SLACK:
+        # An impossible timestamp is unreadable input, not fresh data. Keep the reason in the canal's gaps.
+        document, at = None, None
     status = "missing" if document is None or at is None else "stale" if now - at > max_age else "fresh"
     return CanalInput(source=source, name_th=SOURCE_NAMES[source], status=status, at=at)
 
@@ -229,6 +237,9 @@ def build_canal_outlook(files: dict[str, bytes], now: datetime) -> CanalOutlook 
     flows = _load(files, "water/flows.json", RidFlows)
     forecast = _load(files, "forecast/rain.json", RainForecast)
     levels = _load(files, "bkk/water.json", CanalLevels)
+    clocks = {"flows": flows.observed_at if flows else None, "rain": forecast.fetched_at if forecast else None,
+              "levels": levels.fetched_at if levels else None}
+    future = {source for source, at in clocks.items() if at is not None and at > now + CLOCK_SLACK}
     inputs = {
         "flows": _input("flows", flows, flows.observed_at if flows else None, FLOWS_MAX_AGE, now),
         "rain": _input("rain", forecast, forecast.fetched_at if forecast else None, RAIN_MAX_AGE, now),
@@ -237,6 +248,11 @@ def build_canal_outlook(files: dict[str, bytes], now: datetime) -> CanalOutlook 
     flows = flows if inputs["flows"].status == "fresh" else None
     forecast = forecast if inputs["rain"].status == "fresh" else None
     levels = levels if inputs["levels"].status == "fresh" else None
+
+    def gap_text(source: str) -> str:
+        return (f"{SOURCE_NAMES[source]} เวลาข้อมูลอยู่ในอนาคต จึงยังไม่ใช้ประเมิน" if source in future
+                else _gap_text(inputs[source]))
+
     points = {point.id: point for point in flows.points} if flows else {}
     cells = district_cells(forecast) if forecast else {}
     names = district_names()
@@ -248,17 +264,31 @@ def build_canal_outlook(files: dict[str, bytes], now: datetime) -> CanalOutlook 
         if flows is not None:
             factors += _inflow(canal, points, flows.observed_at) + _drainage(canal, points, flows.observed_at)
             factors += _flooding(canal, flows, names)
+            # A fresh report may omit individual figures: freshness of the file is not completeness.
+            missing_inflow = [point_id for point_id in canal.fed_by if (point := points.get(point_id)) is None
+                              or point.flow_cms is None or (point.flow_cms > 0 and not point.capacity_cms)]
+            if missing_inflow:
+                names_missing = [points[i].name_th if i in points else i for i in missing_inflow]
+                gaps.append(CanalGap(kind="inflow", text_th="ไม่มีตัวเลขน้ำหรือความจุที่ใช้เทียบเกณฑ์ของ "
+                                     + ", ".join(names_missing)))
+            drain = points.get(canal.drains_to)
+            if canal.drains_to and (drain is None or (drain.state is None and
+                    (drain.flow_cms is None or not drain.capacity_cms))):
+                gaps.append(CanalGap(kind="drainage", text_th="ไม่มีสถานะหรือตัวเลขเทียบความจุของสถานีปลายทาง"))
             judged += 1
         else:
-            gaps += [CanalGap(kind=kind, text_th=_gap_text(inputs["flows"]))
+            gaps += [CanalGap(kind=kind, text_th=gap_text("flows"))
                      for kind, applies in (("inflow", bool(canal.fed_by)), ("drainage", bool(canal.drains_to)),
                                            ("flooding", True)) if applies]
-        rain = _rain(canal, forecast, cells, names, today) if forecast is not None else None
+        rain, complete = _rain(canal, forecast, cells, names, today) if forecast is not None else (None, False)
         if rain is not None:
             factors += rain
-            judged += 1
+            # Partial data can establish that a threshold was exceeded, never that it was not.
+            judged += int(complete or any(f.points > 0 for f in rain))
+            if not complete:
+                gaps.append(CanalGap(kind="rain", text_th="ค่าฝนของวันนี้ถึงอีก 2 วันหรือพื้นที่ที่ใช้ประเมินไม่ครบ"))
         else:
-            gaps.append(CanalGap(kind="rain", text_th=_gap_text(inputs["rain"]) if forecast is None
+            gaps.append(CanalGap(kind="rain", text_th=gap_text("rain") if forecast is None
                                  else "พยากรณ์ฝนไม่มีค่าของอำเภอที่คลองผ่าน"))
         if canal.dxs_canals:
             level = _levels(canal, levels, now) if levels is not None else None
@@ -266,7 +296,7 @@ def build_canal_outlook(files: dict[str, bytes], now: datetime) -> CanalOutlook 
                 factors += level
                 judged += 1
             else:
-                gaps.append(CanalGap(kind="level", text_th=_gap_text(inputs["levels"]) if levels is None
+                gaps.append(CanalGap(kind="level", text_th=gap_text("levels") if levels is None
                                      else "ไม่มีค่าวัดระดับน้ำล่าสุดพร้อมค่าก่อนหน้าที่เทียบกันได้ภายใน 6 ชม."))
         score = sum(factor.points for factor in factors)
         assessed = judged > 0

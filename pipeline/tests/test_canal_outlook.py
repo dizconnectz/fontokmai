@@ -152,7 +152,7 @@ def test_m50_without_its_data_a_canal_is_not_assessed_never_below_the_rules():
     assert next(i for i in result.inputs if i.source == "flows").status == "stale"
     assert canals["rangsit"].gaps[0].text_th == "รายงานกรมชลประทาน เก่าเกินเกณฑ์ (ข้อมูล 30/09 06:00 น.)"
     # all of it there and nothing adding up: assessed, nothing missing, no points
-    canals, result = outlook(flows=flows({"phranarai": 0}), rain=rain(5), levels=levels(0))
+    canals, result = outlook(flows=flows({"phranarai": 0, "phrasrisaowaphak": 0}), rain=rain(5), levels=levels(0))
     assert (canals["hokwa"].assessed, canals["hokwa"].gaps, canals["hokwa"].score) == (True, [], 0)
     assert {i.status for i in result.inputs} == {"fresh"}
 
@@ -180,3 +180,31 @@ def test_m52_a_current_level_without_a_valid_comparison_cannot_establish_a_trend
     canal = canals["hokwa"]
     assert not canal.assessed and canal.score == 0 and canal.level is None
     assert any(g.kind == "level" for g in canal.gaps)
+
+
+def test_m53_partial_rid_figures_expose_the_unassessed_inflow_and_drainage():
+    canals, _ = outlook(flows=flows({}))
+    assert {g.kind for g in canals["rangsit"].gaps} >= {"inflow", "drainage"}
+    canals, _ = outlook(flows=flows({"phranarai": 0, "phrasrisin": 0, "phrasrisaowaphak": 0,
+                                   "c29b": 2000}))
+    assert not {g.kind for g in canals["rangsit"].gaps} & {"inflow", "drainage"}
+
+
+@pytest.mark.parametrize("mm", [0, 95])
+def test_m53_partial_forecast_cannot_establish_below_threshold(mm):
+    forecast = RainForecast.model_validate_json(rain(mm))
+    partial = forecast.model_copy(update={"day_rain": [forecast.day_rain[0]] +
+                                         [[None] * len(forecast.points) for _ in range(2)]})
+    canals, _ = outlook(rain=partial.model_dump_json().encode())
+    canal = canals["rangsit"]
+    assert any(g.kind == "rain" for g in canal.gaps)
+    assert canal.assessed == (mm > 0)
+    assert canal.level == ("watch" if mm > 0 else None)
+
+
+def test_m53_documents_dated_in_the_future_are_not_used_as_current_factors():
+    forecast = RainForecast.model_validate_json(rain(95)).model_copy(update={"fetched_at": NOW + timedelta(days=1)})
+    canals, result = outlook(flows=flows({"phranarai": 200}, day=TODAY + timedelta(days=1)),
+                              rain=forecast.model_dump_json().encode())
+    assert all(not c.assessed and c.score == 0 for c in canals.values())
+    assert all(item.status != "fresh" for item in result.inputs)

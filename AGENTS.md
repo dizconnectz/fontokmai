@@ -1,7 +1,7 @@
 # AGENTS.md — fontokmai (ฝนตกไหม): ข้อตกลงทีม สถานะ และการตัดสินใจ
 
 > **สถานะ**: เว็บแบบแผนที่เป็นหลักออนไลน์ที่ `https://dizconnectz.github.io/fontokmai/` (D28, D29): ประกาศกรมอุตุฯ ระบายสีตามระดับ, เรดาร์ฝน, กล้อง CCTV, ปักหมุดดูข้อมูลจุด, ค้นหาสถานที่ (ตำบล/อำเภอ/จังหวัด/สถานที่/ถนน), แถบเลื่อนเวลา (เรดาร์ย้อนหลัง → พยากรณ์ฝน 72 ชม.), ฝน 7 วัน + แนวโน้ม ensemble14วัน/18จุด (ทดลอง), สายด่วน, รายงานน้ำท่วมตอนนี้ (Longdo/iTIC), ที่ของฉัน, ตัวเฝ้าข้อมูลหยุด (data-watch), ระดับน้ำคลอง/ฝนวัดจริง/ถนนท่วม กทม. + เขื่อนใหญ่ + สถานีอุตุฯ (DXS ดึงเป็นครั้งๆ D31), หน้าเกี่ยวกับ/คำถามที่พบบ่อย + SEO/AEO, แนวโน้มน้ำแม่น้ำ 14 จุด (GloFAS วันละครั้ง), การ์ดสรุปจุดที่ต้องระวังบนสุดของแถบข้าง (`summary/overview.json` กฎ v0 + เรดาร์ + ท้ายน้ำของเขื่อน) พร้อมแถบสรุป แนวโน้ม 1 ชม. และกรอบอำเภอ/จังหวัดพร้อมชื่อบนแผนที่ (`ref/boundaries.json`) · ประตูน้ำ/สถานีกรมชลฯ + คลองที่อาจล้น (ทดลอง D35) · ข้อมูลจาก VPS ทุก 15 นาที · สำรองรายวัน + คลังตรวจความแม่น (P0-B2) · แบบระบบ v6.1
-> อัปเดตล่าสุด: 2026-10-03 23:10 ICT (Claude) · เวลาเป็น ICT (UTC+7) · วันที่แบบ ISO (ค.ศ.)
+> อัปเดตล่าสุด: 2026-10-04 11:47 ICT (Codex) · เวลาเป็น ICT (UTC+7) · วันที่แบบ ISO (ค.ศ.)
 > ไฟล์นี้เป็นช่องทางสื่อสารหลักระหว่าง Claude ↔ Codex ↔ ผู้ใช้ และ **ต้องมีขนาดไม่เกิน 32 KiB (UTF-8)** เพื่อให้ Codex โหลดได้ครบ
 > เอกสารอื่น: แบบระบบ `docs/design/fontokmai-design.md` · แหล่งข้อมูลและสิทธิ์ `docs/sources.md` · ประวัติเต็ม `private/handoffs/` (อยู่ใน private repo ไม่อยู่ใน repo สาธารณะ)
 
@@ -45,13 +45,13 @@
 ### A5. งานที่กำลังทำ (Active claims)
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
-| Codex | 2026-10-03 23:15 | `AGENTS.md`, `pipeline/src/fontokmai/canal_outlook.py`, `pipeline/tests/test_canal_outlook.py`, `contracts/v1/README.md`, `docs/design/fontokmai-design.md`, `apps/web/public/method/index.html`, `private/handoffs/2026-10-03-codex-formula-recheck.md`, `private/handoffs/README.md`, `local-notes/recheck-*` | ทวนสูตร/แก้ช่องว่างคะแนนคลอง ทดสอบและpushทีละชุด | formulas |
+| Codex | 2026-10-03 23:15 | `AGENTS.md`, `pipeline/src/fontokmai/canal_outlook.py`, `pipeline/tests/test_canal_outlook.py`, `pipeline/src/fontokmai/sources/{open_meteo,glofas}.py`, `pipeline/tests/{test_forecast,test_glofas}.py`, `contracts/v1/examples/*/{manifest,outlook}.json`, `contracts/v1/README.md`, `docs/design/fontokmai-design.md`, `apps/web/public/method/index.html`, `private/handoffs/2026-10-03-codex-formula-recheck.md`, `private/handoffs/README.md`, `local-notes/recheck-*` | ทวนสูตร/แก้ช่องว่างคะแนนคลอง ทดสอบและpushทีละชุด | formulas |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md`)
 
-#### 2026-10-03 23:19 ICT — ทวนสูตรและทยอยแก้ M52 (Codex)
+#### 2026-10-04 11:47 ICT — ทวนสูตรและทยอยแก้ M52–M53 (Codex)
 - M48/M49 เดิมแก้แล้ว; พบต่อ M52: ขึ้น9.6ซม.ถูกปัดเป็น10ก่อนให้คะแนน และไม่มีคู่ค่าวัดยังassessed=true → canals-v3 ใช้ค่าจริง/คู่เวลาเรียงถูก; testใหม่9กรณี ชุดคลอง17ผ่าน+ruff; สัญญา27/วิธีคิด/designแก้ตรงกัน ไม่เปลี่ยนschema
-- กำลังทวนสูตร/ช่องว่างข้อมูลต่อและpushทีละชุดตามผู้ใช้; รายงาน private/handoffs/2026-10-03-codex-formula-recheck.md (เก็บA6 21:32เดิม) · ความแม่นยังไม่ผ่านbacktest · รอCI/deploy
+- M52 push446d766/CIผ่าน; M53 canals-v4 เพิ่มgapเมื่อข้อมูลบางส่วน/เวลาอนาคต ชุดคลอง21ผ่าน · กำลังทวนพยากรณ์ต่อ; รายงาน private/handoffs/2026-10-03-codex-formula-recheck.md (เก็บA6 21:32เดิม) · ความแม่นยังไม่ผ่านbacktest · รอCI/deploy
 
 #### 2026-10-03 23:10 ICT — ประตูน้ำ/คลอง D35 และปิดรีวิว M40–M51 (Claude)
 - D35 9d9a6a8 + M48–M51 34d92e6 + 95103af (ฉบับเต็ม private/handoffs/2026-10-03-claude-gates.md) · M45 60d66e7 เรดาร์ล้มไม่ซ่อนประกาศ · M40 0120995 แถบสรุปไม่เขียวเมื่ออ่านสรุปไม่ได้ · M44 62ef3dd อำเภอจากกรอบ `areas.py` · M46 0b401e1 · M47 76c35bb sha/size (live) · M42 ef7d0b9 · M41 182282a CLS มือถือ 0.127→0.026
