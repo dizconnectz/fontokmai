@@ -6,12 +6,12 @@
 - ทดสอบแล้ว: pytest และ ruff ผ่าน · vitest 161 ผ่าน · tsc และ prettier ผ่าน · ยังไม่ได้รัน E2E (เบราว์เซอร์ในเครื่องที่ทำงานเป็นคนละรุ่นกับที่ Playwright ต้องการ)
 
 ## งานถัดไป (เรียงตามลำดับ)
-1. **รวม branch เข้า `main`**: เปิด PR แล้ว https://github.com/dizconnectz/fontokmai/pull/3 (ผู้ใช้สั่งให้รวม 2026-10-04) → รอ CI ผ่านแล้ว merge → deploy ด้วย `deploy/vps/deploy.sh` (Claude ในเครื่อง cloud เข้า VPS ไม่ได้)
-2. **GISTDA พื้นที่น้ำท่วมจากดาวเทียม** (ผู้ใช้ขอ 2026-10-04)
-   - ผู้ใช้วาง key ไว้ที่ `~/fontokmai/secrets/gistda_key` (สิทธิ์ 600) และเพิ่ม `GISTDA_KEY=<path>` ใน `deploy/vps/.env` แล้ว
-   - ต้องทำ: เพิ่มบรรทัด mount ใน `compose.yaml` แบบเดียวกับ DXS `${GISTDA_KEY:-/dev/null}:/run/secrets/gistda_key:ro` · ลงทะเบียนใน `docs/sources.md` (ต้องให้ผู้ใช้ยืนยันเงื่อนไขการเผยแพร่ต่อจากหน้าที่สมัคร key) · ห้ามส่ง key ไปที่เว็บ
-   - API: `https://api-gateway.gistda.or.th/api/2.0/resources` → `/features/flood/1day`, `/3days`, `/7days`, `/30days`, `/features/flood-freq` (ท่วมซ้ำซาก), `/features/water_hyacinth` (ผักตบชวา) และมี WMS/WMTS/TMS · คู่มือ `https://disaster.gistda.or.th/manual_api.pdf` (อธิบายแค่วิธีขอ key) · ยังไม่ได้ลองเรียกจริง จึงไม่รู้ว่าส่ง key อย่างไร (header หรือ param) และไฟล์ใหญ่เท่าไร
-   - แผน: ดึง 1day/3days บน VPS → ตัดให้เหลือเฉพาะในไทย ปรับเส้นให้เรียบ แล้วเผยแพร่เป็นไฟล์สัญญาใหม่พร้อมเวลาข้อมูลและเครดิต GISTDA → เพิ่มชั้นแผนที่ "พื้นที่น้ำท่วมจากดาวเทียม (GISTDA)" → ให้การ์ดสรุป (overview) และคะแนนคลองนับพื้นที่ท่วมนี้ · ต้องระวังขนาดดิสก์บน VPS
+1. **PR #3 merge เข้า `main` แล้ว** (f427544, CI ผ่านทั้ง 5) → ยังต้อง deploy ด้วย `deploy/vps/deploy.sh` (Claude ในเครื่อง cloud เข้า VPS ไม่ได้)
+2. **GISTDA พื้นที่น้ำท่วมจากดาวเทียม** (ผู้ใช้ขอ 2026-10-04 ยืนยันว่าไม่มีข้อห้ามเผยแพร่ต่อ แต่**ห้าม key อยู่ใน repo หรือหน้าเว็บ**)
+   - key อยู่ที่ VPS `~/fontokmai/secrets/gistda_key` (600) และ `GISTDA_KEY=` ใน `.env` แล้ว · compose mount เป็น `/run/secrets/gistda_key` · ส่งผ่าน header `API-Key` เท่านั้น
+   - ทำแล้ว (ฝั่ง pipeline): `sources/gistda.py` อ่าน `features/flood/3days` ทีละหน้า 1,000 รายการ สรุปรายอำเภอเป็น `floods/satellite.json` (สัญญาข้อ 28, `contracts/satellite.py`) ตรวจหน้าแรกทุก 3 ชม. อ่านทั้งชุดเมื่อเปลี่ยน · CLI `--gistda-key` · ผลทดลองบน VPS ดู `docs/sources.md` แถว GISTDA
+   - ยังไม่ทำ: (ก) ชั้นแผนที่บนเว็บ: ระบายสีอำเภอตาม `area_km2` ด้วยกรอบใน `ref/boundaries.json` พร้อมเครดิตและวันของภาพ (ส่วนของ Codex ตาม D24 แต่ผู้ใช้ให้ทำได้) (ข) ให้การ์ดสรุป (overview) นับอำเภอที่มีน้ำท่วมจากดาวเทียม (ต้องเพิ่มชนิดเหตุผลใน `contracts/overview.py` และให้เว็บรองรับ) (ค) ถ้าจะวาดหกเหลี่ยม: ใช้ `bbox` เฉพาะพื้นที่นำร่อง (กทม. ~9,000 ช่อง) หรือ h3-js (Apache-2.0)
+   - หลัง deploy ตรวจ log รอบว่ามี `"satellite": "built N districts ..."`
 3. **C.35 อยุธยา** รายงาน PDF ไม่มีตัวเลขสถานีนี้ แต่ภาพแผนผัง `Chao_low{ddmmyyyy}.jpg` เขียนไว้ (4 ต.ค. = 1,496 ลบ.ม./วิ)
    - ทำแล้ว: popup ของจุดที่ PDF ไม่มีเลข มีลิงก์ "ดูตัวเลขในผังน้ำของกรมชลฯ (ภาพ)" ไป `chart_url` ของวันนั้น
    - ผู้ใช้ตกลงวิธี (2026-10-04): อ่านเลขจากภาพ โดยใช้เฉพาะวันที่อ่าน C.2, C.13, C.29B ได้ตรงกับ PDF ครบ แล้วค้างเลขล่าสุดพร้อมบอกวันที่ (รูปแบบเดียวกับ `last_known` ของเขื่อน)
