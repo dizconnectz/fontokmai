@@ -18,6 +18,10 @@ export type Cells = number;
  */
 export type Code = string;
 /**
+ * The district and province, e.g. อ.คีรีมาศ จ.สุโขทัย (ref/places.json label)
+ */
+export type NameTh = string;
+/**
  * People GISTDA estimates live in the flooded cells
  */
 export type Population = number | null;
@@ -33,7 +37,7 @@ export type FetchedAt = string;
  * Day of the newest scene (Thai calendar as GISTDA names it)
  */
 export type LatestSceneDay = string | null;
-export type NameTh = string;
+export type NameTh1 = string;
 export type NotesTh = string[];
 export type Product = "gistda_flood_3days";
 /**
@@ -56,7 +60,7 @@ export interface SatelliteFloods {
   districts: Districts;
   fetched_at: FetchedAt;
   latest_scene_day: LatestSceneDay;
-  name_th: NameTh;
+  name_th: NameTh1;
   notes_th: NotesTh;
   product?: Product;
   scenes: Scenes;
@@ -70,5 +74,6 @@ export interface SatelliteDistrict {
   buildings: Buildings;
   cells: Cells;
   code: Code;
+  name_th: NameTh;
   population: Population;
 }

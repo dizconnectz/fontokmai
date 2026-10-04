@@ -6,6 +6,7 @@ import { dayRainWords, daysAt } from './forecast';
 import { inMultiPolygon } from './geo';
 import { placeParts, type WatchArea } from './overview';
 import { nearestSubdistrict } from './places';
+import { satelliteNear, satelliteOld, type SatelliteFloods } from './satellite';
 
 export type LineTone = 'danger' | 'warn' | 'ok' | 'muted';
 export interface LinePart {
@@ -18,7 +19,8 @@ const FORECAST_STALE_MS = 12 * 3_600_000;
 
 /**
  * The saved place in one line at the top of the side panel (user 2026-10-01): an official alert over it, its
- * district or province on the summary's lists, flood reports near it and today's rain. What was not found is said
+ * district or province on the summary's lists, flood reports near it, flood water GISTDA saw from satellites in its
+ * district or near it (user 2026-10-04) and today's rain. What was not found is said
  * as such, never as "safe"; a part whose data is missing is left out.
  */
 export function favoriteLine({
@@ -29,6 +31,7 @@ export function favoriteLine({
   areas,
   floods,
   forecast,
+  satellite = null,
   now,
 }: {
   point: number[];
@@ -41,6 +44,8 @@ export function favoriteLine({
   areas: WatchArea[];
   floods: LiveFloods | null;
   forecast: RainForecast | null;
+  /** GISTDA's flooded area by district (floods/satellite.json); an old file says nothing */
+  satellite?: SatelliteFloods | null;
   now: number;
 }): LinePart[] {
   const parts: LinePart[] = [];
@@ -78,6 +83,17 @@ export function favoriteLine({
   if (floods) {
     const near = floodsNear(floods, point, now).filter((hit) => isOngoing(hit.report, now));
     if (near.length) parts.push({ text: `น้ำท่วมใกล้ๆ ${near.length} จุด`, tone: 'danger' });
+  }
+
+  // an agency's map of water (GISTDA), not a forecast: in the district of the point, or near it
+  if (satellite && places && !satelliteOld(satellite, now)) {
+    const seen = satelliteNear(satellite, places, point, district);
+    if (seen.here) parts.push({ text: 'ดาวเทียมเห็นน้ำท่วมในอำเภอนี้', tone: 'danger' });
+    else if (seen.near.length)
+      parts.push({
+        text: `ดาวเทียมเห็นน้ำท่วมใกล้ๆ (${seen.near[0].district.name_th.split(' ')[0]})`,
+        tone: 'warn',
+      });
   }
 
   if (forecast && now - Date.parse(forecast.fetched_at) <= FORECAST_STALE_MS) {
