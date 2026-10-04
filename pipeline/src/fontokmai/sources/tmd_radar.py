@@ -264,8 +264,8 @@ def _blend(color: str, opacity: float) -> tuple[float, float, float]:
 def rain_samples(feed: RadarFeed, png: bytes, box: tuple[float, float, float, float],
                  min_mm: float) -> list[tuple[float, float, float, float]]:
     """(lon, lat, km², mm/hr) of the samples of a frame inside box (west, south, east, north) whose rain-rate class
-    is at least min_mm. A pixel takes the nearest legend colour, as the web reads one (geo.radarClass); a frame of
-    another shape is not read at all."""
+    is at least min_mm. A pixel takes the nearest legend colour, as the web reads one (geo.radarClass), only when it is
+    within MATCH_DISTANCE of it; a frame of another shape is not read at all."""
     image = Image.open(BytesIO(png))
     width, height = image.size
     if not feed.legend or abs(height - mercator_height(width, feed.coordinates)) > SHAPE_TOLERANCE * height:
@@ -288,8 +288,10 @@ def rain_samples(feed: RadarFeed, png: bytes, box: tuple[float, float, float, fl
     for _, rgba in sample.getcolors(cols * rows) or []:
         if rgba[3] < 16:  # transparent: no echo
             continue
-        value = min(legend, key=lambda item: sum((a - b) ** 2 for a, b in zip(item[1], rgba, strict=False)))[0]
-        if value is not None and value >= min_mm:
+        distance, value = min(((sum((a - b) ** 2 for a, b in zip(colour, rgba, strict=False)), rate)
+                               for rate, colour in legend), key=lambda pair: pair[0])
+        # a colour far from every legend colour (a line, a label, a border) is not rain of any class
+        if distance <= MATCH_DISTANCE and value is not None and value >= min_mm:
             rates[bytes(rgba)] = value
     if not rates:
         return []

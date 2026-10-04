@@ -246,3 +246,12 @@ def test_rain_rates_are_read_where_the_frame_draws_them():
     assert rain_samples(_feed([], "g", []), png, THAILAND, 35.0) == []  # no legend: nothing is read
     assert rain_samples(feed, _png(0, colour="#F3F453"), THAILAND, 35.0) == []  # light rain everywhere
 
+
+def test_colours_off_the_legend_are_not_rain():
+    # pure red is nearest the 36.5 class and brown the 74.6 one, but neither is a legend colour: a line or a label
+    feed = _feed([], "g", LEGEND)
+    png = _frame([(100.63, 13.99, "#FF0000"), (100.3, 16.0, "#782828"), (101.0, 15.0, "#D43320")])
+    heavy = rain_samples(feed, png, THAILAND, 35.0)
+    assert heavy and {value for *_, value in heavy} == {36.5}
+    assert all(abs(lon - 101.0) < 0.1 for lon, *_ in heavy)
+
