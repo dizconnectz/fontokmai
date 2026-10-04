@@ -125,6 +125,7 @@ test("summary badges are driven by live provincial alerts and disappear on expir
   ];
   await prepare(page, overview, { "alerts.json": alerts }, true);
   const card = page.getByTestId("summary");
+  await card.getByRole("button", { name: "ดูทั้งหมด", exact: true }).click();
   await expect(card.locator(".level-chip")).toHaveCount(1);
   await expect(
     card.getByRole("button", { name: /จ.ปทุมธานี/ }),
@@ -195,7 +196,7 @@ for (const width of [1440, 390]) {
     await unfold(page, "dams");
     const card = page.getByTestId("summary");
     await expect(card).toContainText("ต้องระวังตอนนี้ 40 แห่ง");
-    await expect(card.locator(".summary-item")).toHaveCount(5);
+    await expect(card.locator(".summary-item")).toHaveCount(1);
     const more = card.locator("button.link-button");
     await more.focus();
     await page.keyboard.press("Enter");
