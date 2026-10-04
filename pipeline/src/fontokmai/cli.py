@@ -115,8 +115,9 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     fetch_bkk = sub.add_parser("bkk-fetch", help="fetch the Bangkok DXS files once (from a computer in Thailand)")
     fetch_bkk.add_argument("--account", type=Path, required=True, help="file with the DXS user name and password")
     fetch_bkk.add_argument("--out", type=Path, required=True, help="directory; the files go to bkk/ under it")
-    hydro = sub.add_parser("rid-hydro-probe", help="save RID's hydrology centre page and say what it holds (Thailand)")
-    hydro.add_argument("--out", type=Path, required=True, help="directory for the saved page and files")
+    hydro = sub.add_parser("rid-hydro-probe",
+                           help="save what RID's hydrology centre service gives each station, and what is read")
+    hydro.add_argument("--out", type=Path, required=True, help="directory for the saved answers")
     probe = sub.add_parser("dxs-probe", help="call one BMA DXS service and print the shape of its answer")
     probe.add_argument("operation", help="service function, e.g. GetWaterLastData")
     probe.add_argument("--account", type=Path, required=True, help="file with the DXS user name and password")
@@ -359,7 +360,7 @@ def main(argv: list[str] | None = None) -> int:
                 atomic_write(args.out / rid_hydro.PATH, hydro.model_dump_json().encode("utf-8"))
                 written[rid_hydro.PATH] = hydro.observed_at.isoformat()
             else:
-                problems = [*problems, "rid_hydro: the page has another shape (run rid-hydro-probe)"]
+                problems = [*problems, "rid_hydro: the service gave no station a figure (run rid-hydro-probe)"]
         except Exception as exc:  # noqa: BLE001
             problems = [*problems, f"rid_hydro: {type(exc).__name__}: {exc}"[:200]]
         message = "; ".join(filter(None, [fetched.message, *problems])) or None
