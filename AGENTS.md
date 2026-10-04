@@ -54,12 +54,11 @@
 - แก้ `apps/web/src/Panel.tsx`, `styles.css`, `tests/app.spec.ts`, design§4.1; build + Vitest166 + E2E Chromium110 + consumer browser64 ผ่าน · WebKit บน Windows ปิดก่อนสร้างหน้า (`browserContext.newPage`); รอ CI Linux
 - สูตร/ความแม่นไม่เปลี่ยนและยังไม่มี backtest · ขั้นต่อไป push/CI, ตรวจ Pages จริง, deploy VPS ตามที่ผู้ใช้อนุญาต · รายละเอียด `private/handoffs/2026-10-04-codex-cls-m59.md`
 
-#### 2026-10-04 14:10 ICT — GISTDA ดาวเทียม/ท่วมซ้ำ, เรดาร์ M55, กล้อง DWR (Claude)
-- merged PR #3–#6: M55 สีนอกแถบสีไม่นับเป็นฝน · กล้อง DWR 128 ตัวเปิดภาพสด `cctv/mjpeg/{code}` · GISTDA `floods/satellite.json` (สัญญา28, VPS ทุก 3 ชม.; รอบแรก 158 อำเภอ 4,400 ตร.กม.) + ชั้นแผนที่ + การ์ดหมุด + "ที่ของฉัน" เตือนอำเภอเดียวกัน/ใกล้ 10 กม. · คู่มือ API `docs/apis/gistda.md` · ย้ายส่วนที่ปิดแล้วไป `docs/agents-archive.md`
-- PR ถัดไป: overview เหตุผล `satellite_flood` · `ref/flood_freq.json` ท่วมซ้ำรายตำบล (สัญญา29, คำสั่ง `fontokmai flood-freq` รันมือครั้งเดียวบน VPS) · archive เก็บ satellite.json · ทดสอบ pytest/ruff/vitest166/tsc ผ่าน
-- รีวิวต่อ (ผู้ใช้ให้ทำระหว่างไม่อยู่): วันที่ พ.ศ. 29 ก.พ. ของ DXS ถูกทิ้ง (2567 ไม่ใช่ปีอธิกสุรทินแบบ ค.ศ.) แก้ `_when`/`_day` · เว็บไม่จำภาพเรดาร์ที่โหลดพลาด · รายงานกรมชลฯ วันนี้อ่านครบ 16/16 · flood-freq ทั้งประเทศรอผู้ใช้รันบน VPS
-- C.35 ตัวเลขสำรอง: `bkk-fetch` อ่านหน้าศูนย์อุทกวิทยาฯ (ตอบเฉพาะในไทย) → `bkk/rid_hydro.json` → `flow_backup_at` เมื่อรายงานไม่มีเลข · ตัวอ่านยังไม่ได้ตรวจกับหน้าจริง (รอผู้ใช้รัน `rid-hydro-probe`)
-- key GISTDA อยู่ VPS เท่านั้น (ผู้ใช้สั่ง) · C.35 อ่านเลขจากภาพยังไม่ผ่าน (กำลังลองตัวจับคู่รูปเอง) · รายละเอียด/งานต่อ `docs/handoff-claude-2026-10-04.md`
+#### 2026-10-04 18:45 ICT — GISTDA, M55, กล้อง DWR, C.35 ตัวเลขสำรอง (Claude)
+- merged PR #3–#11: M55 สีนอกแถบสีไม่นับเป็นฝน · กล้อง DWR 128 ตัว `cctv/mjpeg/{code}` · GISTDA `floods/satellite.json` (สัญญา28) + ชั้นแผนที่ + การ์ดหมุด + "ที่ของฉัน" + overview `satellite_flood` · ท่วมซ้ำ `ref/flood_freq.json` (สัญญา29, `flood-freq` รันมือ) · คู่มือ `docs/apis/gistda.md` · DXS วันที่ พ.ศ. 29 ก.พ. · key GISTDA อยู่ VPS เท่านั้น
+- C.35 ตัวเลขสำรอง: `bkk-fetch` ถามบริการ JSON ของหน้าศูนย์อุทกวิทยาฯ (ตอบเฉพาะในไทย, ต้องเปิดหน้าก่อนเพื่อคุกกี้ ไม่งั้น 401) → `bkk/rid_hydro.json` → `flow_backup_at` เมื่อรายงานไม่มีเลข (ดู `docs/sources.md`)
+- **PC ผู้ใช้**: สคริปต์อัปเดต กทม. รันจาก clone แยก `~/.fontokmai/app` (`git pull --ff-only` ตาม main ทุกรอบ) ไม่ใช่โฟลเดอร์ทำงานของ Codex · ห้ามแก้โค้ดในนั้น
+- รายละเอียด/งานต่อ `docs/handoff-claude-2026-10-04.md`
 
 #### 2026-10-04 11:47 ICT — ทวนสูตรและทยอยแก้ M52–M54 (Codex)
 - M48/M49 เดิมแก้แล้ว; พบต่อ M52: ขึ้น9.6ซม.ถูกปัดเป็น10ก่อนให้คะแนน และไม่มีคู่ค่าวัดยังassessed=true → canals-v3 ใช้ค่าจริง/คู่เวลาเรียงถูก; testใหม่9กรณี ชุดคลอง17ผ่าน+ruff; สัญญา27/วิธีคิด/designแก้ตรงกัน ไม่เปลี่ยนschema

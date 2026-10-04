@@ -140,7 +140,8 @@ export default function App() {
     rivers: true,
     flows: true,
     canals: true,
-    satellite: true,
+    // many tinted districts are busy on the eye: the satellite map opens from its own button (user 2026-10-04)
+    satellite: false,
     watch: true,
   });
   // the time the map shows: null = now (the latest radar frame); otherwise a radar or forecast time
@@ -529,6 +530,7 @@ export default function App() {
               favoriteLabel={favorite?.label ?? null}
               favoriteLocation={favorite && !pinIsFavorite ? favorite.location : null}
               onFavorite={openFavorite}
+              onSatellite={satellite?.districts.length ? () => toggle('satellite') : null}
               theme={theme}
               onList={() => panel.current?.focus()}
               openFlood={openFlood}

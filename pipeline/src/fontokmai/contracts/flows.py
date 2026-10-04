@@ -70,6 +70,7 @@ class HydroStation(ContractModel):
     code: str = Field(description="RID's station code as the page prints it, e.g. C.35")
     flow_cms: float | None = Field(description="m³/s the page gives at observed_at")
     level_m: float | None = Field(description="Water level, m above mean sea level, the page gives at observed_at")
+    observed_at: AwareDatetime | None = Field(default=None, description="The station's own hour (else the file's)")
 
 
 class RidHydro(ContractModel):
@@ -79,7 +80,7 @@ class RidHydro(ContractModel):
 
     schema_version: Literal["1"] = SCHEMA_VERSION
     fetched_at: AwareDatetime = Field(description="When the manual run read the page")
-    observed_at: AwareDatetime = Field(description="The time the page prints for its figures")
+    observed_at: AwareDatetime = Field(description="The newest hour among the stations")
     source_url: str
     credit_th: str
     stations: list[HydroStation]
