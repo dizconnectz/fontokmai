@@ -1,5 +1,6 @@
 import io
 import json
+import math
 from contextlib import contextmanager
 from datetime import UTC, date, datetime, timedelta
 from urllib.parse import parse_qs, urlsplit
@@ -42,10 +43,12 @@ def _api(features, *, change_after=None, calls=None):
 
 FEATURES = [
     _feature(6403, 54392.6, "a", population=10.4, building=2),
-    _feature(6403, 942.6, "a"),  # a second piece of water in the same cell
+    _feature(6403, 942.6, "a", population=10.4, building=2),  # same cell estimates must not be counted twice
     _feature(3804, 105520.3, "b", scenes="S1C_20260928_0550, S1D_20261002_0609, rd2_20260926_0613"),
     _feature(None, 5000.0, "c"),  # no district: left out, never guessed
     _feature(3804, -1, "d"),  # no area
+    _feature(3804, 10, "e", population=math.inf, building=3),  # an invalid estimate makes population unknown
+    _feature(6403, math.inf, "f", population=5, building=1),  # an infinite area is not flood area
 ]
 
 
@@ -55,9 +58,19 @@ def test_summarize_sums_by_district_and_names_the_scenes():
     assert [d.code for d in floods.districts] == ["3804", "6403"]  # the largest first
     assert by_code["6403"].area_km2 == pytest.approx(0.055, abs=0.001) and by_code["6403"].cells == 1
     assert by_code["6403"].population == 10 and by_code["6403"].buildings == 2
+    assert by_code["3804"].population is None and by_code["3804"].buildings == 3
     assert floods.scenes[0] == "S1D_20261002_0609" and floods.latest_scene_day == date(2026, 10, 2)
     assert floods.total_km2 == pytest.approx(0.161, abs=0.001)
     SatelliteFloods.model_validate_json(floods.model_dump_json())
+
+
+def test_a_cell_with_conflicting_population_estimates_is_not_guessed():
+    floods = gistda.summarize(iter([
+        _feature(6403, 10, "same-cell", population=10, building=2),
+        _feature(6403, 20, "same-cell", population=12, building=2),
+    ]), NOW)
+    district = floods.districts[0]
+    assert district.population is None and district.buildings == 2
 
 
 def test_refresh_pages_through_the_layer_and_keeps_the_key_out(tmp_path, monkeypatch):

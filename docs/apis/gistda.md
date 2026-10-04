@@ -52,6 +52,8 @@ GeoJSON ตามมาตรฐาน OGC API Features (`type: FeatureCollectio
 | `file_name` | ภาพดาวเทียมที่ใช้ คั่นด้วย `, ` รูปแบบ `<ดาวเทียม>_<YYYYMMDD>_<HHMM>` เช่น `S1D_20261002_0609` (Sentinel-1), `rd2_...`, `cg2_...` |
 | `_createdAt`, `_updatedAt`, `_id`, `mongo_id`, `objectid` | ข้อมูลภายในระบบของ GISTDA · `_createdAt` ใช้ดูว่าชุดข้อมูลเปลี่ยน |
 
+การสรุปน้ำท่วมของ fontokmai บวก `f_area` ทุกชิ้นพื้นที่ แต่ `population`/`building` เป็นค่าของ H3 cell จึงนับหนึ่งครั้งต่อ cell ที่มี `h3_address`; ถ้าค่าในชิ้นของ cell เดียวกันขัดกัน หรือไม่มีรหัส cell ที่ใช้รวมได้ จะไม่แสดงยอดประชากร/อาคารของอำเภอนั้นแทนการเดา
+
 ชุด `flood-freq` ช่องต่างออกไป: `freq` (จำนวนครั้งที่ท่วม), `area_rai`, `pv_code`/`ap_code`/`tb_code`, `com_tn` (ชุมชน), `re_nesdb`, `shape_area`, `shape_length`
 
 ## พารามิเตอร์ที่ทดลองแล้ว

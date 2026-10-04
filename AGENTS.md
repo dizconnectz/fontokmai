@@ -1,7 +1,7 @@
 # AGENTS.md — fontokmai (ฝนตกไหม): ข้อตกลงทีม สถานะ และการตัดสินใจ
 
 > **สถานะ**: เว็บแบบแผนที่เป็นหลักออนไลน์ที่ `https://dizconnectz.github.io/fontokmai/` (D28, D29): ประกาศกรมอุตุฯ ระบายสีตามระดับ, เรดาร์ฝน, กล้อง CCTV, ปักหมุดดูข้อมูลจุด, ค้นหาสถานที่ (ตำบล/อำเภอ/จังหวัด/สถานที่/ถนน), แถบเลื่อนเวลา (เรดาร์ย้อนหลัง → พยากรณ์ฝน 72 ชม.), ฝน 7 วัน + แนวโน้ม ensemble14วัน/18จุด (ทดลอง), สายด่วน, รายงานน้ำท่วมตอนนี้ (Longdo/iTIC), ที่ของฉัน, ตัวเฝ้าข้อมูลหยุด (data-watch), ระดับน้ำคลอง/ฝนวัดจริง/ถนนท่วม กทม. + เขื่อนใหญ่ + สถานีอุตุฯ (DXS ดึงเป็นครั้งๆ D31), หน้าเกี่ยวกับ/คำถามที่พบบ่อย + SEO/AEO, แนวโน้มน้ำแม่น้ำ 14 จุด (GloFAS วันละครั้ง), การ์ดสรุปจุดที่ต้องระวังบนสุดของแถบข้าง (`summary/overview.json` กฎ v0 + เรดาร์ + ท้ายน้ำของเขื่อน) พร้อมแถบสรุป แนวโน้ม 1 ชม. และกรอบอำเภอ/จังหวัดพร้อมชื่อบนแผนที่ (`ref/boundaries.json`) · ประตูน้ำ/สถานีกรมชลฯ + คลองที่อาจล้น (ทดลอง D35) · ข้อมูลจาก VPS ทุก 15 นาที · สำรองรายวัน + คลังตรวจความแม่น (P0-B2) · แบบระบบ v6.1
-> อัปเดตล่าสุด: 2026-10-04 11:47 ICT (Codex) · เวลาเป็น ICT (UTC+7) · วันที่แบบ ISO (ค.ศ.)
+> อัปเดตล่าสุด: 2026-10-04 16:08 ICT (Codex) · เวลาเป็น ICT (UTC+7) · วันที่แบบ ISO (ค.ศ.)
 > ไฟล์นี้เป็นช่องทางสื่อสารหลักระหว่าง Claude ↔ Codex ↔ ผู้ใช้ และ **ต้องมีขนาดไม่เกิน 32 KiB (UTF-8)** เพื่อให้ Codex โหลดได้ครบ
 > เอกสารอื่น: แบบระบบ `docs/design/fontokmai-design.md` · แหล่งข้อมูลและสิทธิ์ `docs/sources.md` · ประวัติเต็ม `private/handoffs/` (อยู่ใน private repo ไม่อยู่ใน repo สาธารณะ)
 
@@ -45,7 +45,7 @@
 ### A5. งานที่กำลังทำ (Active claims)
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
-| Codex | 2026-10-03 23:15 | `AGENTS.md`, `pipeline/src/fontokmai/canal_outlook.py`, `pipeline/tests/test_canal_outlook.py`, `pipeline/src/fontokmai/sources/{open_meteo,glofas}.py`, `pipeline/tests/{test_forecast,test_glofas,test_river_lines}.py`, `contracts/v1/examples/*/{manifest,outlook}.json`, `contracts/v1/README.md`, `docs/design/fontokmai-design.md`, `apps/web/public/method/index.html`, `private/handoffs/2026-10-03-codex-formula-recheck.md`, `private/handoffs/README.md`, `local-notes/recheck-*` | ทวนสูตร/แก้ช่องว่างคะแนนคลอง ทดสอบและpushทีละชุด | formulas |
+| Codex | 2026-10-03 23:15 | `AGENTS.md`, `pipeline/src/fontokmai/canal_outlook.py`, `pipeline/tests/test_canal_outlook.py`, `pipeline/src/fontokmai/sources/{open_meteo,glofas,gistda}.py`, `pipeline/tests/{test_forecast,test_glofas,test_river_lines,test_gistda}.py`, `contracts/v1/examples/*/{manifest,outlook}.json`, `contracts/v1/README.md`, `docs/design/fontokmai-design.md`, `docs/apis/gistda.md`, `apps/web/public/method/index.html`, `private/handoffs/2026-10-03-codex-formula-recheck.md`, `private/handoffs/README.md`, `local-notes/recheck-*` | ทวนสูตร/กัน GISTDA ซ้ำ cell และค่าผิดรูป ทดสอบและpushทีละชุด | formulas |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md` · ส่วนที่ย้ายออกเมื่อเข้าถึง private ไม่ได้: `docs/agents-archive.md`)
 

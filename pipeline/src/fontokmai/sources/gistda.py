@@ -15,6 +15,7 @@ from the site (its own links carry an api_key parameter).
 from __future__ import annotations
 
 import json
+import math
 import re
 import time
 import urllib.request
@@ -115,7 +116,7 @@ def signature(opener: Opener) -> str:
 
 
 def _number(value: Any) -> float | None:
-    if isinstance(value, bool) or not isinstance(value, int | float) or value != value or value < 0:
+    if isinstance(value, bool) or not isinstance(value, int | float) or not math.isfinite(value) or value < 0:
         return None
     return float(value)
 
@@ -124,8 +125,10 @@ def summarize(features: Iterator[dict[str, Any]], now: datetime) -> SatelliteFlo
     """The sums by district of every feature, and the scenes they were seen on."""
     area: dict[str, float] = defaultdict(float)
     cells: dict[str, set[str]] = defaultdict(set)
-    people: dict[str, float] = defaultdict(float)
-    buildings: dict[str, float] = defaultdict(float)
+    people: dict[str, dict[str, float]] = defaultdict(dict)
+    buildings: dict[str, dict[str, float]] = defaultdict(dict)
+    unknown_people: set[str] = set()
+    unknown_buildings: set[str] = set()
     scenes: set[str] = set()
     known = {code: place.label for code, place in places().items() if place.kind == "district"}
     for feature in features:
@@ -137,9 +140,21 @@ def summarize(features: Iterator[dict[str, Any]], now: datetime) -> SatelliteFlo
         if key not in known:
             continue  # a code that is no DOPA district of ours cannot be placed
         area[key] += size
-        cells[key].add(str(props.get("h3_address") or props.get("_id") or id(feature)))
-        people[key] += _number(props.get("population")) or 0.0
-        buildings[key] += _number(props.get("building")) or 0.0
+        h3 = props.get("h3_address")
+        cells[key].add(str(h3 or props.get("_id") or id(feature)))
+        # GISTDA can return multiple flooded polygons from one H3 cell. Area belongs to each polygon; the cell's
+        # population/building estimates belong to the cell, so add each estimate once and reject conflicts.
+        for field, samples, unknown in (("population", people, unknown_people),
+                                        ("building", buildings, unknown_buildings)):
+            value = _number(props.get(field))
+            if not isinstance(h3, str) or not h3 or value is None:
+                unknown.add(key)
+                continue
+            previous = samples[key].get(h3)
+            if previous is not None and not math.isclose(previous, value, rel_tol=0, abs_tol=1e-9):
+                unknown.add(key)
+            else:
+                samples[key][h3] = value
         for name in str(props.get("file_name") or "").split(","):
             if _SCENE.match(name.strip()):
                 scenes.add(name.strip())
@@ -151,9 +166,11 @@ def summarize(features: Iterator[dict[str, Any]], now: datetime) -> SatelliteFlo
             latest = date(int(day[:4]), int(day[4:6]), int(day[6:]))
         except ValueError:
             latest = None
-    districts = [SatelliteDistrict(code=code, name_th=known[code], area_km2=round(area[code] / 1e6, 3),
-                                   cells=len(cells[code]), population=round(people[code]),
-                                   buildings=round(buildings[code]))
+    districts = [SatelliteDistrict(
+        code=code, name_th=known[code], area_km2=round(area[code] / 1e6, 3), cells=len(cells[code]),
+        population=None if code in unknown_people else round(sum(people[code].values())),
+        buildings=None if code in unknown_buildings else round(sum(buildings[code].values())),
+    )
                  for code in sorted(area, key=lambda c: -area[c])]
     return SatelliteFloods(name_th=NAME_TH, credit_th=CREDIT_TH, source_url=PAGE_URL, fetched_at=now,
                            window_days=WINDOW_DAYS, scenes=ordered, latest_scene_day=latest,
