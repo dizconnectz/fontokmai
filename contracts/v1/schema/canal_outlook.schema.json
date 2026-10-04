@@ -17,12 +17,13 @@
           "title": "At"
         },
         "kind": {
-          "description": "inflow: water let into the canal network (RID's gates); rain: rain forecast over its districts; drainage: the state of the river it drains to; level: Bangkok's gauges on it rising; flooding: RID's report of flooded districts along it",
+          "description": "inflow: water let into the canal network (RID's gates); rain: rain forecast over its districts; drainage: the state of the river it drains to; level: Bangkok's gauges on it rising; pumps: every pump of a Bangkok station on it running (draining at its full power); flooding: RID's report of flooded districts along it",
           "enum": [
             "inflow",
             "rain",
             "drainage",
             "level",
+            "pumps",
             "flooding"
           ],
           "title": "Kind",
@@ -64,6 +65,7 @@
             "rain",
             "drainage",
             "level",
+            "pumps",
             "flooding"
           ],
           "title": "Kind",

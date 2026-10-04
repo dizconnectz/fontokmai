@@ -108,7 +108,7 @@ describe("RID's daily figures on the map (D35)", () => {
 describe('the canals by the trial outlook (D35)', () => {
   it('colours each canal by its level, thin where nothing adds up', () => {
     const plain = canalFeatures(lines, outlook).features;
-    expect(plain).toHaveLength(6);
+    expect(plain).toHaveLength(lines.canals.length);
     expect(new Set(plain.map((f) => f.properties?.level))).toEqual(new Set(['none']));
     const shapes = canalFeatures(lines, raised).features;
     const level = (id: string) => shapes.find((f) => f.properties?.id === id)!.properties;

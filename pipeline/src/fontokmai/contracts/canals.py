@@ -32,13 +32,14 @@ class CanalLines(ContractModel):
     notes_th: list[str]
 
 
-FactorKind = Literal["inflow", "rain", "drainage", "level", "flooding"]
+FactorKind = Literal["inflow", "rain", "drainage", "level", "pumps", "flooding"]
 
 
 class CanalFactor(ContractModel):
     kind: FactorKind = Field(description=(
         "inflow: water let into the canal network (RID's gates); rain: rain forecast over its districts; drainage:"
-        " the state of the river it drains to; level: Bangkok's gauges on it rising; flooding: RID's report of"
+        " the state of the river it drains to; level: Bangkok's gauges on it rising; pumps: every pump of a Bangkok"
+        " station on it running (draining at its full power); flooding: RID's report of"
         " flooded districts along it"))
     points: int = Field(ge=0, le=2, description="What this factor adds to the canal's score (0 = noted, no points)")
     text_th: str
