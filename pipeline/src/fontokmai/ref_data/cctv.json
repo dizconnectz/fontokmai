@@ -29,58 +29,6 @@
    "note_th": "สถานี TC032103 ต.ท่าสะอาด อ.เซกา จ.บึงกาฬ"
   },
   {
-   "id": "dwr-10",
-   "name_th": "โรงเรียนเชียงใหม่คริสเตียน",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    98.95967,
-    19.01347
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
-   "id": "dwr-100",
-   "name_th": "สะพานสมเด็จพระศรีสุริเยนทร์",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    99.96122,
-    13.41918
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
-   "id": "dwr-101",
-   "name_th": "สะพานประวัติศาสตร์",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    98.46504,
-    19.29733
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
-   "id": "dwr-102",
-   "name_th": "สะพานข้ามคลองแม่ลาง",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    98.24709,
-    19.519
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
    "id": "dwr-11",
    "name_th": "บ้านหาดเสลา",
    "owner_th": "กรมทรัพยากรน้ำ",
@@ -94,19 +42,6 @@
    "note_th": "สถานี TA063006 ต.หัวดง อ.เก้าเลี้ยว จ.นครสวรรค์"
   },
   {
-   "id": "dwr-12",
-   "name_th": "ปากแม่น้ำปิง",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    99.97699,
-    15.93482
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
    "id": "dwr-13",
    "name_th": "วัดเกาะวารุการาม",
    "owner_th": "กรมทรัพยากรน้ำ",
@@ -118,110 +53,6 @@
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC070301",
    "note_th": "สถานี TC070301 ต.สวนดอก อ.เมือง จ.ลำปาง"
-  },
-  {
-   "id": "dwr-16",
-   "name_th": "บ้านทับกฤช",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    100.24618,
-    15.74971
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
-   "id": "dwr-17",
-   "name_th": "ปากแม่น้ำน่าน",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    100.2644,
-    15.86877
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
-   "id": "dwr-18",
-   "name_th": "แม่น้ำน่านที่ อ.เมือง พิษณุโลก",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    100.26024,
-    16.82232
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
-   "id": "dwr-20",
-   "name_th": "สามเสน",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    100.50978,
-    13.78875
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
-   "id": "dwr-21",
-   "name_th": "ปากคลองลัดโพธิ์",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    100.54004,
-    13.66731
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
-   "id": "dwr-22",
-   "name_th": "สุวรรณภูมิ",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    100.74515,
-    13.50768
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
-   "id": "dwr-24",
-   "name_th": "ปากเกร็ด",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    100.49194,
-    13.89474
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
-   "id": "dwr-25",
-   "name_th": "บ้านท้ายดง",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    100.53529,
-    14.11974
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-26",
@@ -250,19 +81,6 @@
    "note_th": "สถานี TC100222 ต.บ้านแพน อ.เสนา จ.พระนครศรีอยุธยา"
   },
   {
-   "id": "dwr-29",
-   "name_th": "ปากคลองบางบาล",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    100.48342,
-    14.42791
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
    "id": "dwr-3",
    "name_th": "วัดศรีชมภูองค์ตื้อ",
    "owner_th": "กรมทรัพยากรน้ำ",
@@ -276,71 +94,6 @@
    "note_th": "สถานี TC031106 ต.น้ำโมง อ.ท่าบ่อ จ.หนองคาย"
   },
   {
-   "id": "dwr-30",
-   "name_th": "C.35 บางบาล",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    100.52755,
-    14.36906
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
-   "id": "dwr-32",
-   "name_th": "ป่าสัก",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    100.58044,
-    14.35861
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
-   "id": "dwr-33",
-   "name_th": "บางไทร",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    100.50262,
-    14.19457
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
-   "id": "dwr-34",
-   "name_th": "ปากคลองบางแก้ว-อ่างทอง",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    100.46041,
-    14.58934
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
-   "id": "dwr-35",
-   "name_th": "ปากคลองโผงเผง(บางหลวง)",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    100.46069,
-    14.44824
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
    "id": "dwr-37",
    "name_th": "สะพานสิงห์บุรี",
    "owner_th": "กรมทรัพยากรน้ำ",
@@ -352,149 +105,6 @@
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC100223",
    "note_th": "สถานี TC100223 ต.บางมัญ อ.เมือง จ.สิงห์บุรี"
-  },
-  {
-   "id": "dwr-38",
-   "name_th": "ปากแม่น้ำลพบุรี",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    100.40802,
-    14.87816
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
-   "id": "dwr-4",
-   "name_th": "วัดบ้านทุ่งธาตุ",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    103.09077,
-    18.00995
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
-   "id": "dwr-40",
-   "name_th": "ปตร.มโนรมย์",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    100.10329,
-    15.33047
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
-   "id": "dwr-41",
-   "name_th": "ปากแม่น้ำสะแกกรัง",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    100.08334,
-    15.30343
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
-   "id": "dwr-42",
-   "name_th": "ปตร.พลเทพ",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    100.0727,
-    15.21595
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
-   "id": "dwr-43",
-   "name_th": "ปตร.บรมธาตุ",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    100.15431,
-    15.15702
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
-   "id": "dwr-44",
-   "name_th": "ปตร.มหาราช",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    100.17307,
-    15.15998
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
-   "id": "dwr-49",
-   "name_th": "สะพานเดชาติวงศ์",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    100.12306,
-    15.68933
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
-   "id": "dwr-50",
-   "name_th": "แม่น้ำเจ้าพระยา",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    100.1096,
-    15.67049
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
-   "id": "dwr-52",
-   "name_th": "อุทัยใหม่",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    100.05767,
-    15.41132
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
-   "id": "dwr-53",
-   "name_th": "ปตร.มะขามเฒ่า-อู่ทอง",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    100.06305,
-    15.22315
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-55",
@@ -536,19 +146,6 @@
    "note_th": "สถานี TA200206 ต.แม่ขรี อ.ตะโหมด จ.พัทลุง"
   },
   {
-   "id": "dwr-59",
-   "name_th": "ลำปำ",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    100.158,
-    7.625
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
    "id": "dwr-65",
    "name_th": "สำนักงานส่วนอุทกหนองคาย",
    "owner_th": "กรมทรัพยากรน้ำ",
@@ -588,32 +185,6 @@
    "note_th": "สถานี TC033612 ต.โขงเจียม อ.โขงเจียม จ.อุบลราชธานี"
   },
   {
-   "id": "dwr-68",
-   "name_th": "สถานี ประปาบ้านปากล้อง",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    98.93584,
-    18.54331
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
-   "id": "dwr-69",
-   "name_th": "บ้านปากร้องห้วยจี้",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    99.08279,
-    17.02019
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
    "id": "dwr-7",
    "name_th": "จุดสกัดหัวฝาย",
    "owner_th": "กรมทรัพยากรน้ำ",
@@ -625,19 +196,6 @@
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TC020106",
    "note_th": "สถานี TC020106 ต.เวียงพางคำ อ.แม่สาย จ.เชียงราย"
-  },
-  {
-   "id": "dwr-70",
-   "name_th": "สะพานมหาโพธิ์",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    100.13763,
-    18.15035
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-71",
@@ -664,19 +222,6 @@
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA081902",
    "note_th": "สถานี TA081902 ต.บางระกำ อ.บางระกำ จ.พิษณุโลก"
-  },
-  {
-   "id": "dwr-73",
-   "name_th": "วัดเกยไชยเหนือ",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    100.26407,
-    15.8692
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-74",
@@ -937,58 +482,6 @@
    "position": "source",
    "page_url": "https://telemetry.dwr.go.th/cctv/mjpeg/TA052203",
    "note_th": "สถานี TA052203 ต.สตึก อ.สตึก จ.บุรีรัมย์"
-  },
-  {
-   "id": "dwr-95",
-   "name_th": "สะพานบ้านหนองปรือ",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    99.45713,
-    14.60692
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
-   "id": "dwr-96",
-   "name_th": "สะพานแควใหญ่",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    99.51567,
-    14.03401
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
-   "id": "dwr-97",
-   "name_th": "สะพานบ้านท่าเรือ",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    99.74969,
-    13.94975
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
-  },
-  {
-   "id": "dwr-99",
-   "name_th": "สะพานธนะรัชต์",
-   "owner_th": "กรมทรัพยากรน้ำ",
-   "kind": "river",
-   "location": [
-    99.82409,
-    13.54085
-   ],
-   "position": "source",
-   "page_url": "https://telemetry.dwr.go.th/reportCctv",
-   "note_th": "ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ 2026-10-04) อาจปิดหรือย้ายแล้ว"
   },
   {
    "id": "dwr-ta020510",

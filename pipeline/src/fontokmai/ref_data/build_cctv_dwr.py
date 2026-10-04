@@ -10,7 +10,8 @@ open the list and ask the reader to look for the camera's name (user 2026-10-04:
 - a camera of the registry within MATCH_KM of a station (or NAME_KM when one name holds the other) opens that
   station's relay; a pin placed by hand takes the department's coordinates
 - a station that is online and matches no camera is added as a new pin
-- a camera that matches no station keeps its link to the list, with a note that the list does not have it
+- a camera that matches no station is dropped: the department no longer shows it (its video, where ThaiWater still
+  names it, does not play; user 2026-10-04)
 Only the code, the name, the place words and the point of a station are read. The list also carries the cameras'
 own addresses with a password in them: they are never read into the registry, never written and never linked.
 """
@@ -125,9 +126,10 @@ def merge(registry: dict[str, Any], stations: list[dict[str, Any]], today: date)
         camera["note_th"] = f"สถานี {code} {station['place_th']}".strip()
         if camera["position"] == "approximate":
             camera["location"], camera["position"] = station["location"], "source"
-    for i, camera in enumerate(cameras):
-        if _is_dwr(camera) and i not in taken_camera and camera["page_url"] == PAGE_URL:
-            camera["note_th"] = f"ไม่พบในรายการกล้องของกรมทรัพยากรน้ำ (ตรวจ {today.isoformat()}) อาจปิดหรือย้ายแล้ว"
+    # a camera the department no longer lists has nothing to open: ThaiWater still names some (สามเสน) but their
+    # video does not play (user 2026-10-04), so the pin is dropped; a camera that comes back is added as a station
+    cameras = [camera for i, camera in enumerate(cameras)
+               if not (_is_dwr(camera) and i not in taken_camera and camera["page_url"] == PAGE_URL)]
     ids = {camera["id"] for camera in cameras}
     for station in located:
         new_id = f"dwr-{station['code'].lower()}"
