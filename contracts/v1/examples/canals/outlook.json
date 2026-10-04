@@ -1,7 +1,7 @@
 {
   "schema_version": "1",
   "generated_at": "2026-10-03T11:00:00+07:00",
-  "rules": "canals-v2",
+  "rules": "canals-v3",
   "canals": [
     {
       "id": "raphiphat-west",
