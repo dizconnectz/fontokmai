@@ -9,9 +9,9 @@ export type Assessed = boolean;
  */
 export type At = string | null;
 /**
- * inflow: water let into the canal network (RID's gates); rain: rain forecast over its districts; drainage: the state of the river it drains to; level: Bangkok's gauges on it rising; flooding: RID's report of flooded districts along it
+ * inflow: water let into the canal network (RID's gates); rain: rain forecast over its districts; drainage: the state of the river it drains to; level: Bangkok's gauges on it rising; pumps: every pump of a Bangkok station on it running (draining at its full power); flooding: RID's report of flooded districts along it
  */
-export type Kind = "inflow" | "rain" | "drainage" | "level" | "flooding";
+export type Kind = "inflow" | "rain" | "drainage" | "level" | "pumps" | "flooding";
 /**
  * What this factor adds to the canal's score (0 = noted, no points)
  */
@@ -22,7 +22,7 @@ export type Factors = CanalFactor[];
 /**
  * A factor that applies to the canal but could not be judged
  */
-export type Kind1 = "inflow" | "rain" | "drainage" | "level" | "flooding";
+export type Kind1 = "inflow" | "rain" | "drainage" | "level" | "pumps" | "flooding";
 /**
  * Why, e.g. ไม่มีพยากรณ์ฝนที่ใหม่พอ
  */

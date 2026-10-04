@@ -8,6 +8,7 @@ import pytest
 
 from fontokmai.canal_outlook import build_canal_outlook
 from fontokmai.contracts.bkk import CanalLevels, CanalStation
+from fontokmai.contracts.canals import CanalLines
 from fontokmai.contracts.forecast import ForecastLattice, RainForecast
 from fontokmai.sources import rid_report
 from fontokmai.sources.rid_report import Figure
@@ -99,7 +100,7 @@ def test_old_data_is_left_out_and_said_so():
     assert not [f for f in canals["raphiphat"].factors if f.kind == "inflow"]
     assert any("ไม่มีรายงานกรมชลประทานที่ใหม่พอ" in note for note in result.notes_th)
     assert [c.id for c in result.canals][0] in canals  # every canal is listed, the highest score first
-    assert len(result.canals) == len(canals) == 6
+    assert len(result.canals) == len(canals) == len(CanalLines.model_validate_json(LINES).canals)
 
 
 def test_m48_a_level_counts_by_the_time_of_its_reading_never_by_the_file_that_brought_it():
@@ -252,3 +253,35 @@ def test_m53_documents_dated_in_the_future_are_not_used_as_current_factors():
                               rain=forecast.model_dump_json().encode())
     assert all(not c.assessed and c.score == 0 for c in canals.values())
     assert all(item.status != "fresh" for item in result.inputs)
+
+
+def _pump_levels(pumps: int, running: int, at: datetime = NOW - timedelta(minutes=20)) -> bytes:
+    station = CanalStation(code="WL.SSB.01", name_th="ค.แสนแสบ-ทดสอบ", canal_th="คลองแสนแสบ", district_th=None,
+                           location=None, observed_at=at, level_in_m=0.5, level_out_m=None, pumps=pumps,
+                           pumps_running=running, previous_level_in_m=0.5, previous_observed_at=at - timedelta(hours=1))
+    return CanalLevels(fetched_at=NOW, source_url="https://weather.bangkok.go.th/water/summary", credit_th="x",
+                       stations=[station], notes_th=[]).model_dump_json().encode()
+
+
+def test_bangkoks_canals_are_drawn_and_scored_by_their_own_gauges():
+    lines = CanalLines.model_validate_json(LINES)
+    bangkok = [canal for canal in lines.canals if canal.id.startswith("bkk-")]
+    assert len(bangkok) >= 40
+    saen_saep = next(canal for canal in bangkok if canal.name_th == "คลองแสนแสบ")
+    assert saen_saep.dxs_canals == ["คลองแสนแสบ"] and "1010" in saen_saep.districts  # Min Buri
+    assert not saen_saep.fed_by and saen_saep.drains_to is None
+    # the canals already drawn for the Rangsit pilot keep their own line
+    assert sum(1 for canal in lines.canals if "คลองเปรมประชากร" in canal.dxs_canals) == 1
+
+
+def test_every_pump_of_a_station_running_adds_a_point():
+    canals, _ = outlook(levels=_pump_levels(4, 4))
+    pumps = [f for f in canals["bkk-ssb"].factors if f.kind == "pumps"]
+    assert pumps and pumps[0].points == 1 and "เดินครบ 4 เครื่อง" in pumps[0].text_th
+    assert canals["bkk-ssb"].assessed
+    canals, _ = outlook(levels=_pump_levels(4, 3))  # three of four: room left
+    assert not [f for f in canals["bkk-ssb"].factors if f.kind == "pumps"]
+    canals, _ = outlook(levels=_pump_levels(4, 5))  # more running than it has is a wrong count
+    assert not [f for f in canals["bkk-ssb"].factors if f.kind == "pumps"]
+    canals, _ = outlook(levels=_pump_levels(4, 4, at=NOW - timedelta(hours=7)))  # too old to say anything
+    assert not [f for f in canals["bkk-ssb"].factors if f.kind == "pumps"]

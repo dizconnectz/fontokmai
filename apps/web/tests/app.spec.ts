@@ -1051,9 +1051,13 @@ test('a canal level says whether it rose or fell, what the number is, and that c
   await expect(popup).toContainText(
     'ฝั่งที่ระบายออก +0.95 ม.รทก. · เครื่องสูบน้ำเดินอยู่ 2 จาก 4 เครื่อง',
   );
-  // one link only, to the department's page that shows the bank and critical levels
-  await expect(popup.locator('a')).toHaveCount(1);
-  await expect(popup.locator('a')).toHaveAttribute(
+  // two links: Longdo Water at the station for the bank this file lacks (user 2026-10-04), and the department's page
+  await expect(popup.locator('a')).toHaveCount(2);
+  await expect(popup.getByRole('link', { name: /Longdo Water/ })).toHaveAttribute(
+    'href',
+    'https://water.longdo.com/?lat=13.20000&lon=101.00000&zoom=15&mode=bank',
+  );
+  await expect(popup.getByRole('link', { name: /^ที่มา:/ })).toHaveAttribute(
     'href',
     /weather\.bangkok\.go\.th\/water\/summary/,
   );
@@ -1159,7 +1163,7 @@ for (const viewport of [
     await expect(page.locator('.timeline')).toBeVisible();
     const popup = await tapCentrePin(page);
     await expect(popup).toContainText('ส.คลองเตย');
-    const link = popup.locator('a');
+    const link = popup.getByRole('link', { name: /^ที่มา:/ });
     await link.scrollIntoViewIfNeeded();
     // the link takes the pointer itself: nothing lies over it
     await link.click({ trial: true, timeout: 5_000 });

@@ -78,6 +78,7 @@ import {
 import { MAP_IMAGE_RATIO, mapImage } from './mapIcons';
 import { resetSent, send } from './mapSources';
 import { distanceM } from './roads';
+import { LONGDO_WATER_TH, longdoWaterUrl } from './longdo';
 import { WATCH_COLOR, type WatchShapes } from './overview';
 import {
   canalLevel,
@@ -1019,6 +1020,8 @@ function waterPopup(
   }
   root.append(
     line(LEVEL_NO_BANK_TH, 'small'),
+    // the bank this file lacks: Longdo Water shows it from BMA's own levels (a link out, user 2026-10-04)
+    ...(station.location ? [linkOut(longdoWaterUrl(station.location), LONGDO_WATER_TH)] : []),
     line(measuredText(station.observed_at, now)),
     ...note(file.fetched_at, now),
     sourceLink(file.source_url, file.credit_th),

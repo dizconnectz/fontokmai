@@ -1,5 +1,5 @@
-"""summary/canals.json: which canals of the Rangsit pilot may overflow, by this site's trial rules (contract section 27;
-user 2026-10-03: the gates' figures as "1 ใน factor ในการพยากรณ์ด้วยว่าจะท่วมคลองเส้นไหน").
+"""summary/canals.json: which canals of the Rangsit pilot and of Bangkok may overflow, by this site's trial rules
+(contract section 27; user 2026-10-03: the gates' figures as "1 ใน factor ในการพยากรณ์ด้วยว่าจะท่วมคลองเส้นไหน").
 
 Each canal of ref/canals.json gets points from five factors, each with its words, source and time:
 - inflow: water let into its network by RID's gates (water/flows.json): the Raphiphat intake at 50% / 80% of the
@@ -9,6 +9,8 @@ Each canal of ref/canals.json gets points from five factors, each with its words
 - drainage: the river it drains to (its RID station): RID's own state critical 1 / flood 2, or the flow at 80% / 100%
   of the channel capacity, whichever is more
 - level: a Bangkok gauge on it (bkk/water.json) rising 10 cm or more within 6 hours, read in the last 6 hours: 1
+- pumps: a Bangkok station on it with every pump running, read in the last 6 hours: 1 (the station drains at its
+  full power, so more water cannot be pumped away faster; user 2026-10-04, Bangkok's canals)
 - flooding: RID's report naming a district along it as flooded that day: 1
 A score of 3 or more is "warn", 2 "watch". These are trial rules of this site, not an announcement, and not tested
 against past events yet; the factors are shown so a reader can judge them. Data too old is left out and said so: a
@@ -36,7 +38,7 @@ from fontokmai.forecast_windows import full_future_hour_indices
 
 CANALS_PATH = "summary/canals.json"
 LINES_PATH = "ref/canals.json"
-RULES = "canals-v5"  # v5: today's rain counts full forecast hours still ahead, shared with the overview (M58)
+RULES = "canals-v6"  # v6: Bangkok's canals and their pumps (user 2026-10-04); v5: full forecast hours ahead (M58)
 ICT = timezone(timedelta(hours=7))
 FLOWS_MAX_AGE = timedelta(days=2)  # the report is daily
 RAIN_MAX_AGE = timedelta(hours=12)  # refreshed every 6 hours
@@ -227,6 +229,31 @@ def _levels(canal: Any, levels: CanalLevels, now: datetime) -> list[CanalFactor]
                         at=station.observed_at)]
 
 
+def _pumps(canal: Any, levels: CanalLevels, now: datetime) -> list[CanalFactor] | None:
+    """A station on the canal running every pump it has, by readings of the last LEVELS_MAX_AGE; None when no station
+    on it reports its pumps recently (nothing to judge), [] when some do and none runs them all."""
+    read, full = False, []
+    for station in levels.stations:
+        at = station.observed_at
+        if (station.canal_th not in canal.dxs_canals or not station.pumps or station.pumps_running is None
+                or at is None or not now - LEVELS_MAX_AGE <= at <= now + CLOCK_SLACK):
+            continue
+        read = True
+        # a station listing more running pumps than it has is a wrong count, not full power
+        if station.pumps_running == station.pumps:
+            full.append(station)
+    if not read:
+        return None
+    if not full:
+        return []
+    station = max(full, key=lambda item: item.pumps or 0)
+    more = f" (และอีก {len(full) - 1} สถานี)" if len(full) > 1 else ""
+    text = (f"เครื่องสูบน้ำที่ {station.name_th} เดินครบ {station.pumps} เครื่อง ระบายเต็มกำลังแล้ว "
+            f"(วัดเมื่อ {_clock(station.observed_at)}){more}")
+    return [CanalFactor(kind="pumps", points=1, text_th=text, source_th="สำนักการระบายน้ำ กทม.",
+                        at=station.observed_at)]
+
+
 def _flooding(canal: Any, flows: RidFlows, names: dict[str, str]) -> list[CanalFactor]:
     hit = [code for code in canal.districts if code in flows.flooded_districts]
     if not hit:
@@ -318,6 +345,10 @@ def build_canal_outlook(files: dict[str, bytes], now: datetime) -> CanalOutlook 
             else:
                 gaps.append(CanalGap(kind="level", text_th=gap_text("levels") if levels is None
                                      else "ไม่มีค่าวัดระดับน้ำล่าสุดพร้อมค่าก่อนหน้าที่เทียบกันได้ภายใน 6 ชม."))
+            pumps = _pumps(canal, levels, now) if levels is not None else None
+            if pumps is not None:
+                factors += pumps
+                judged += 1
         score = sum(factor.points for factor in factors)
         assessed = judged > 0
         level_name = ("warn" if score >= WARN else "watch" if score >= WATCH else None) if assessed else None

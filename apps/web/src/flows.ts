@@ -205,6 +205,7 @@ const KIND_TH: Record<CanalFactor['kind'], string> = {
   rain: 'ฝน',
   drainage: 'การระบาย',
   level: 'ระดับน้ำ',
+  pumps: 'เครื่องสูบน้ำ',
   flooding: 'รายงานน้ำท่วม',
 };
 /** "ฝน: พยากรณ์ฝน เก่าเกินเกณฑ์ (…)", the factors that could not be judged, those of one reason together */

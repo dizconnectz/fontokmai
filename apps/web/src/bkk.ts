@@ -143,7 +143,7 @@ export function levelChangeWords(change: LevelChange): string {
  * is never guessed; its own page, the source link, shows them.
  */
 export const LEVEL_NO_BANK_TH =
-  'ตัวเลขคือความสูงผิวน้ำเทียบระดับน้ำทะเล ไม่ใช่ความลึก · ระบบบอกไม่ได้ว่าวิกฤตหรือยัง เพราะต้นทางไม่ได้ส่งระดับตลิ่งมา (ดูได้ที่ลิงก์ที่มา)';
+  'ตัวเลขคือความสูงผิวน้ำเทียบระดับน้ำทะเล ไม่ใช่ความลึก · ระบบบอกไม่ได้ว่าวิกฤตหรือยัง เพราะต้นทางไม่ได้ส่งระดับตลิ่งมา (ดูได้ที่ลิงก์ Longdo Water ด้านล่าง)';
 
 /** "วัดเมื่อ 19:25 น. (27 นาทีก่อน)", with the date when it was another day */
 export function measuredText(observedAt: string | null, now: number): string {
