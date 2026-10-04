@@ -47,7 +47,7 @@
 |---|---|---|---|---|
 | Codex | 2026-10-03 23:15 | `AGENTS.md`, `pipeline/src/fontokmai/canal_outlook.py`, `pipeline/tests/test_canal_outlook.py`, `pipeline/src/fontokmai/sources/{open_meteo,glofas}.py`, `pipeline/tests/{test_forecast,test_glofas,test_river_lines}.py`, `contracts/v1/examples/*/{manifest,outlook}.json`, `contracts/v1/README.md`, `docs/design/fontokmai-design.md`, `apps/web/public/method/index.html`, `private/handoffs/2026-10-03-codex-formula-recheck.md`, `private/handoffs/README.md`, `local-notes/recheck-*` | ทวนสูตร/แก้ช่องว่างคะแนนคลอง ทดสอบและpushทีละชุด | formulas |
 
-### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md`)
+### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md` · ส่วนที่ย้ายออกเมื่อเข้าถึง private ไม่ได้: `docs/agents-archive.md`)
 
 #### 2026-10-04 12:40 ICT — M55 เรดาร์ + กล้องDWRภาพสด (Claude)
 - M55 สีนอกแถบสีไม่นับเป็นฝน · กล้อง128ตัวเปิด`cctv/mjpeg/{code}` · pytest/vitest ผ่าน · PR#3,#4 merged · GISTDA→แผนที่+เตือนที่ของฉัน · ต้องdeployใหม่ · **งานต่อ**: `docs/handoff-claude-2026-10-04.md`
@@ -55,11 +55,6 @@
 #### 2026-10-04 11:47 ICT — ทวนสูตรและทยอยแก้ M52–M54 (Codex)
 - M48/M49 เดิมแก้แล้ว; พบต่อ M52: ขึ้น9.6ซม.ถูกปัดเป็น10ก่อนให้คะแนน และไม่มีคู่ค่าวัดยังassessed=true → canals-v3 ใช้ค่าจริง/คู่เวลาเรียงถูก; testใหม่9กรณี ชุดคลอง17ผ่าน+ruff; สัญญา27/วิธีคิด/designแก้ตรงกัน ไม่เปลี่ยนschema
 - M52 push446d766/CIผ่าน; M53 canals-v4 เพิ่มgapเมื่อข้อมูลบางส่วน/เวลาอนาคต ชุดคลอง21ผ่าน pushbfae8f5 · M54 ตรวจหน่วย/แกนเวลา/percentile ก่อนเผยแพร่ ทดสอบจำลอง13กรณี; รายงาน private/handoffs/2026-10-03-codex-formula-recheck.md (เก็บA6 21:32เดิม) · ความแม่นยังไม่ผ่านbacktest · รอCI/deploy
-
-#### 2026-10-03 23:10 ICT — ประตูน้ำ/คลอง D35 และปิดรีวิว M40–M51 (Claude)
-- D35 9d9a6a8 + M48–M51 34d92e6 + 95103af (ฉบับเต็ม private/handoffs/2026-10-03-claude-gates.md) · M45 60d66e7 เรดาร์ล้มไม่ซ่อนประกาศ · M40 0120995 แถบสรุปไม่เขียวเมื่ออ่านสรุปไม่ได้ · M44 62ef3dd อำเภอจากกรอบ `areas.py` · M46 0b401e1 · M47 76c35bb sha/size (live) · M42 ef7d0b9 · M41 182282a CLS มือถือ 0.127→0.026
-- **ทดสอบ** pytest/ruff, vitest161, consumer64/57, E2E108, consumer browser64 ผ่าน · CI ผ่าน · **Deploy** VPS 76c35bb, Pages · ทวนตามเกณฑ์: private/handoffs/2026-10-03-claude-review-fixes.md (M44 ไม่ตัดจุดใกล้เส้น มีเหตุผล)
-
 
 ## B. การตัดสินใจ
 ข้อเสนอเดิม D1–D10 จากร่างแรกถูกแทนด้วยตารางนี้เพราะขัดกับ D12 (ดูเหตุผลเดิมได้ใน snapshot)
@@ -94,32 +89,16 @@
 ## C. คำถามและงานที่ยังรอ
 
 ### C1. ผู้ใช้ (งานที่ต้องทำเอง)
-- **เลือกสมัครเพิ่มได้ (Codex ตรวจ 2026-09-26)**: [Google Flood Forecasting API](https://developers.google.com/flood-forecasting) มีลิงก์ waitlist ทางการ ฟรี/CC BY 4.0 สำหรับพยากรณ์น้ำท่วมแม่น้ำรวมไทย; หรือ [GISTDA API Gateway](https://api-gateway.gistda.or.th) สำหรับ Disaster Platform (ต้องตรวจสิทธิ์เผยแพร่ที่อนุมัติ และไม่ถือว่าได้เช็คน้ำด้วย) · รายละเอียด `docs/sources.md` ข้อ 10.4–10.5; ผู้ใช้ตัดสินและสมัครเอง ไม่ผูกบริการเสียเงิน/บัตรตาม D12
+- **เลือกสมัครเพิ่มได้ (Codex ตรวจ 2026-09-26)**: [Google Flood Forecasting API](https://developers.google.com/flood-forecasting) มีลิงก์ waitlist ทางการ ฟรี/CC BY 4.0 สำหรับพยากรณ์น้ำท่วมแม่น้ำรวมไทย; (GISTDA สมัครแล้ว 2026-10-04 ใช้งานอยู่ ดู `docs/apis/gistda.md`) · รายละเอียด `docs/sources.md` ข้อ 10.4–10.5; ผู้ใช้ตัดสินและสมัครเอง ไม่ผูกบริการเสียเงิน/บัตรตาม D12
 - **DXS**: รหัสแก้แล้ว ใช้ได้ (D31: ดึงเป็นครั้งๆ จากเครื่องนี้เมื่อเปิดอยู่ ไม่ตั้งตาราง)
 - ตัดออก 2026-09-29: `GetWaterHistory` มีในรายการเทคนิค (WSDL) ของเซิร์ฟเวอร์ DXS ซึ่งรวมระบบภายใน (จองห้อง ปฏิทินลา) แต่พอร์ทัลไม่เปิดให้ขอ (ผู้ใช้ตรวจ บัญชีประชาชนได้ 13 บริการ) → ตาม D27 ไม่ขอต่อ · ตัวตรวจเว็บล่มจากนอกเครื่อง: ผู้ใช้ไม่ทำ (2026-09-29)
-- ทำแล้ว 2026-09-28: Search Console/Bing ยืนยันและส่ง sitemap · กรมอุตุฯ ไม่ให้ token NWP (ตัดออกจากแผน)
 - ไม่บังคับ: ถ้าทราบเจ้าของหรือพิกัดของกล้องสะพานแดงและกล้องเจ้าพระยา ให้แจ้ง
 
 ### C2. Codex (D34: รับช่วง implementation ตามผู้ใช้สำหรับงานที่จอง; นอกงานนี้คง D29 · M40–M51 Claudeแก้แล้ว รอทวน; M43ปิด; ใหม่ M52…)
-- **ทำแล้ว 2026-09-27**: รีวิว DXS/หมุด/GloFAS/ภาษา/SEO/กล้อง/สิทธิ์ → M13–M22 (แก้แล้ว) · รายงาน `private/handoffs/2026-09-27-codex-*.md`
-- **2026-09-28 ข้อ 1–5 รีวิวแล้ว** (สรุป เกณฑ์ สสน. M17–M22 การเข้าถึง แผนวัดความแม่น) → M23–M28 Claude แก้แล้ว `9d9d5d0` · รายงาน `private/handoffs/2026-09-28-codex-overview-review.md`
-6–9. **ปิด M23–M34 ตามเกณฑ์เดิมแล้ว 30 ก.ย.** เครื่องสูบ/เรดาร์/restore/retention/backup/มือถือผ่าน ดูรายงาน29–30ก.ย.; งบรวมเพิ่มเติม M36 แก้แล้ว 1 ต.ค.
-10. **รีวิวระบายน้ำ fdc301a แล้ว** เพิ่ม consumer ตรวจ baseline/เกณฑ์/null/วันที่/schema/summary/UI ผ่าน; เทียบรายวันตามรอบผู้ใช้กด ไม่ใช่แผนระบายหรือเวลาน้ำถึง
-11. **M35 Codexแก้ตามD34** ถอด expected-failureแล้ว · **M36 Codexแก้ตามD34** งบรวมคลัง ผ่าน260tests; CCTV/ข้อมูลเส้นท้ายน้ำยังตามแผนใน `private/handoffs/2026-09-30-codex-review.md`, `docs/sources.md` §14
-
-12. **M37 แก้แล้ว 1 ต.ค.** `live-smoke.mjs` ใช้ `map-surface` และรอ `aria-busy=false`; รันกับเว็บจริงdesktop/Pixel7ผ่าน
-13. **ทวนงาน 1 ต.ค.**: กันข้อมูลค้าง (`950994a`, `8305881`: init, git ไม่ทำงานเบื้องหลัง, restart เมื่อ publish ล้ม 3 รอบ/pids ≥ 80%) · ลบข้อมูลเองตามขั้นดิสก์ 80/85/90% (`ebb9802`) · ตัดการ์ดสองใบ (`96a2673`) · M38 ที่ Claude commit แทนพร้อมแก้ test 2 จุด (`0f7e971`)
-
-14. **ปิด M38/M39 แล้ว 1 ต.ค.** ทวน0f7e971/d016f56/d07ddbfและเพิ่มกันชุดเดิมว่าง/บางส่วน/วันที่สับสน; ผลโค้ด/ข้อมูลจริง/PagesในA6และhandoffเขื่อน
-
-15. **ทวนงาน 1–2 ต.ค.** `04ba201`…`b392ff9`: สัญญาข้อ 20 (`kind`), 21 (`area_code`, `earlier`), 22 (`ref/boundaries.json`), 23 (`ref/river_lines.json`) · ที่ของฉันบรรทัดเดียวไม่บอก “ปลอดภัย” · ป้าย “ใหม่”/เพิ่ม-ลด นับจากที่การ์ดแสดง · หมุดร้ายแรงนอกกลุ่ม (popup/คีย์บอร์ด) · consumer specs ที่ Claude แก้ตามคำขอผู้ใช้
-
+- ข้อ 1–15 (รีวิว/งานที่ปิดแล้ว M13–M39) ย้ายไป `docs/agents-archive.md` 2026-10-04
 16. **ลงมือ 3 ต.ค. ตามผู้ใช้**: ฝน ensemble14วัน/18จุด ECMWF+GFS (สัญญา24), การ์ดพับ/เลือกพื้นที่ และทะเบียนไฮดรอลิก; ยังไม่มีตลิ่ง/พารามิเตอร์ครบ ไม่เปิดคาดน้ำล้น/ไม่รับรองความแม่น · ขึ้นเว็บ/VPSจริงแล้ว ตรวจทั้งdesktop/Pixel7
 
 ## D. ขั้นต่อไป
-1. (เสร็จ) เว็บแผนที่เป็นหลักพร้อมประกาศ เรดาร์ กล้อง หมุด ค้นถนน และค้นหาสถานที่ (D29)
-2. (เสร็จ รอ Codex ทวน) แก้ M1–M3 และแถบเลื่อนเวลา + พยากรณ์ฝน 72 ชม./7 วัน (Open-Meteo)
-3. Claude: ชั้นพื้นที่น้ำท่วมจากดาวเทียม GISTDA ถ้าผู้ใช้สมัคร key
 4. Claude: P0-B2 ที่เหลือ: takeover/failback, งบรวม image/cache, ระดับ 85/90% (design 4.9; สำรอง/retention/`restore-db`/คลัง เสร็จแล้ว)
 5. (ใช้งานแล้ว D31) DXS ดึงเป็นครั้งๆ จากเครื่องผู้ใช้เมื่อสั่ง รวมเขื่อน สรุปสถานการณ์ สถานีอุตุฯ และเครื่องสูบ
 6. Codex รีวิวตาม C2 (กลับมา 2026-09-27)
