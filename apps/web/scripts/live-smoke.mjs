@@ -26,7 +26,11 @@ try {
     );
     await page.goto(origin);
     const manifest = await (await manifestRequest).json();
-    await page.waitForFunction(() => document.querySelector('.source-times small'));
+    // the header's data chip says the time of the published round once the snapshot has loaded (Codex 2026-10-04:
+    // the old `.source-times` selector is gone)
+    await expect(page.locator('.data-chip')).toContainText(/ข้อมูล \d{1,2}:\d{2} น\./, {
+      timeout: 30_000,
+    });
     const surface = page.getByTestId('map-surface');
     const mapReady = await expect(surface)
       .toHaveAttribute('aria-busy', 'false', { timeout: 30_000 })
