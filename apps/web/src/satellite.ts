@@ -157,3 +157,23 @@ export function frequencyWords(area: FloodFrequencyArea): string {
       : ' · ท่วมครั้งเดียว ไม่พบท่วมซ้ำ';
   return `เคยท่วมรวมราว ${RAI(area.area_rai)} ไร่${again}`;
 }
+
+const CLOCK = new Intl.DateTimeFormat('th-TH', {
+  timeZone: 'Asia/Bangkok',
+  day: 'numeric',
+  month: 'short',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+/**
+ * Why the satellite map has nothing to draw, said when its button is pressed (user 2026-10-05: on a day GISTDA maps
+ * no water the button vanished and looked broken); null when there are districts to show.
+ */
+export function satelliteEmptyWords(file: SatelliteFloods, now: number): string | null {
+  const at = `ข้อมูล ${CLOCK.format(Date.parse(file.fetched_at))} น.`;
+  if (satelliteOld(file, now)) return `แผนที่น้ำท่วมจากดาวเทียมไม่อัปเดต (${at}) จึงไม่แสดง`;
+  if (!file.districts.length)
+    return `ดาวเทียมไม่พบพื้นที่น้ำท่วมในรอบ ${file.window_days} วัน (${at}) · ไม่ได้แปลว่าไม่มีน้ำท่วม`;
+  return null;
+}
