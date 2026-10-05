@@ -37,7 +37,13 @@ import { distanceM } from './roads';
 import Timeline, { type TimeStep } from './Timeline';
 import { FORECAST_LEVELS, forecastAreas, RAIN_LEGEND } from './forecast';
 import { RIVER_CLASSES, riverDay, riverStretches } from './rivers';
-import { SATELLITE_CLASSES, satelliteOld, satelliteShapes, satelliteSource } from './satellite';
+import {
+  SATELLITE_CLASSES,
+  satelliteEmptyWords,
+  satelliteOld,
+  satelliteShapes,
+  satelliteSource,
+} from './satellite';
 import { feedTrust, LEVEL_FILL, LEVEL_LABEL, worstLevel, type Level } from './alerts';
 import { nearestSubdistrict, type FoundPlace } from './places';
 import {
@@ -530,7 +536,8 @@ export default function App() {
               favoriteLabel={favorite?.label ?? null}
               favoriteLocation={favorite && !pinIsFavorite ? favorite.location : null}
               onFavorite={openFavorite}
-              onSatellite={satellite?.districts.length ? () => toggle('satellite') : null}
+              onSatellite={satellite ? () => toggle('satellite') : null}
+              satelliteEmpty={satellite ? satelliteEmptyWords(satellite, now) : null}
               theme={theme}
               onList={() => panel.current?.focus()}
               openFlood={openFlood}

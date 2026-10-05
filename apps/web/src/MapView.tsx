@@ -175,6 +175,8 @@ interface Props {
   onFavorite: () => void;
   /** shows or hides GISTDA's satellite flood map; null when there is none to show */
   onSatellite: (() => void) | null;
+  /** why the satellite map has nothing to draw now (said on its button), or null when it has */
+  satelliteEmpty: string | null;
   onList: () => void;
   /** a report chosen in the list: fly there and open its popup, without touching the side panel */
   openFlood: { id: string; key: string } | null;
@@ -2189,15 +2191,21 @@ export default function MapView(props: Props) {
           )}
           {props.onSatellite && (
             <button
-              aria-pressed={props.layers.satellite}
+              aria-pressed={props.layers.satellite && !props.satelliteEmpty}
               aria-label={
-                props.layers.satellite
+                props.layers.satellite && !props.satelliteEmpty
                   ? 'ซ่อนแผนที่น้ำท่วมจากดาวเทียม'
                   : 'เปิดดูแผนที่น้ำท่วมจากดาวเทียม'
               }
-              onClick={props.onSatellite}
+              onClick={() => {
+                if (!props.satelliteEmpty) return props.onSatellite?.();
+                // nothing to draw: the button stays, and says why (user 2026-10-05)
+                const words = props.satelliteEmpty;
+                setNotice(words);
+                window.setTimeout(() => setNotice((now) => (now === words ? '' : now)), 6000);
+              }}
               style={
-                props.layers.satellite
+                props.layers.satellite && !props.satelliteEmpty
                   ? {
                       borderColor: 'var(--brand)',
                       background: 'var(--chip-bg)',
@@ -2207,7 +2215,11 @@ export default function MapView(props: Props) {
               }
             >
               <Waves size={17} />
-              <span>{props.layers.satellite ? 'ซ่อนแผนที่น้ำท่วม' : 'ดูแผนที่น้ำท่วม'}</span>
+              <span>
+                {props.layers.satellite && !props.satelliteEmpty
+                  ? 'ซ่อนแผนที่น้ำท่วม'
+                  : 'ดูแผนที่น้ำท่วม'}
+              </span>
             </button>
           )}
         </div>

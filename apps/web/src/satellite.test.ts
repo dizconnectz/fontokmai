@@ -7,6 +7,7 @@ import {
   frequencyAt,
   frequencyWords,
   satelliteColor,
+  satelliteEmptyWords,
   satelliteNear,
   satelliteOld,
   satelliteShapes,
@@ -137,5 +138,17 @@ describe('GISTDA recurrent flooding by subdistrict (user 2026-10-04)', () => {
     );
     expect(frequencyAt(freq, '130102')).toEqual({ area: null }); // read, but no land of it in the statistic
     expect(frequencyAt(freq, '100101')).toBeUndefined(); // Bangkok was not read: nothing is said
+  });
+});
+
+describe('the satellite button when there is nothing to draw (user 2026-10-05)', () => {
+  it('says why: no water mapped, or a file too old; nothing when there are districts', () => {
+    expect(satelliteEmptyWords(file([district(own, 3, 'อ.ทดสอบ')]), AT)).toBeNull();
+    expect(satelliteEmptyWords(file([]), AT)).toBe(
+      'ดาวเทียมไม่พบพื้นที่น้ำท่วมในรอบ 3 วัน (ข้อมูล 4 ต.ค. 12:00 น.) · ไม่ได้แปลว่าไม่มีน้ำท่วม',
+    );
+    expect(satelliteEmptyWords(file([district(own, 3, 'อ.ทดสอบ')]), AT + 3 * 86_400_000)).toMatch(
+      /^แผนที่น้ำท่วมจากดาวเทียมไม่อัปเดต \(ข้อมูล 4 ต.ค. 12:00 น.\)/,
+    );
   });
 });
