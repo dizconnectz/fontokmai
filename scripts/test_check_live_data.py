@@ -164,19 +164,23 @@ class Watch(unittest.TestCase):
         self.assertEqual(outlook_problems(None, NOW), [("warning", "เปิดไฟล์แนวโน้มฝน 14 วันไม่ได้")])
         [(_, old)] = outlook_problems(outlook(full, age_hours=30), NOW)
         self.assertTrue(old.startswith("แนวโน้มฝน 14 วันไม่อัปเดต"))
-        # one point without GFS, and one model short of members on the last day (nulls): partial
-        partial = ([model("ecmwf", 51, 51)], ["gfs"])
-        short = ([model("ecmwf", 51, 51, nulls=20), model("gfs", 31, 31)], [])
-        [(_, text)] = outlook_problems(outlook(full, partial, short), NOW)
-        self.assertEqual(text, "แนวโน้มฝน 14 วันไม่ครบ: ขาดโมเดลหรือสมาชิกไม่พอ 2 ชุด (ใช้ได้ 4 ชุด)")
+        # ECMWF short of members on the last day at every point while GFS has it: shown, marked, no problem (the
+        # live file of 2026-10-08 is so every day: its 15-day run ends inside the 14th Thai day)
+        tail = ([model("ecmwf", 51, 51, nulls=20), model("gfs", 31, 31)], [])
+        self.assertEqual(outlook_problems(outlook(tail, tail, tail), NOW), [])
+        # a point whose GFS failed and whose ECMWF lacks the last day: one point-day no model can show
+        lost = ([model("ecmwf", 51, 51, nulls=20)], ["gfs"])
+        self.assertEqual(outlook_problems(outlook(full, lost), NOW), [
+            ("warning", "แนวโน้มฝน 14 วันไม่ครบ: 1 จุด-วันไม่มีโมเดลใดมีสมาชิกพอ (แสดงได้ 27)"),
+            ("warning", "แนวโน้มฝน 14 วันขาดโมเดล: gfs 1 จุด")])
         # nothing readable at all
         none = ([model("ecmwf", 51, 10)], ["gfs"])
         [(_, text)] = outlook_problems(outlook(none, none), NOW)
-        self.assertEqual(text, "แนวโน้มฝน 14 วันใช้ไม่ได้: ไม่มีจุดใดที่มีสมาชิกพอทุกวัน")
+        self.assertEqual(text, "แนวโน้มฝน 14 วันใช้ไม่ได้: ไม่มีวันใดที่โมเดลมีสมาชิกพอ")
         # read in the round's check once listed
         listed = manifest()
         problems = evaluate(listed, FRESH_FORECAST, NOW, FRESH_RADAR, outlook=outlook(none))
-        self.assertEqual([text for _, text in problems], ["แนวโน้มฝน 14 วันใช้ไม่ได้: ไม่มีจุดใดที่มีสมาชิกพอทุกวัน"])
+        self.assertEqual([text for _, text in problems], ["แนวโน้มฝน 14 วันใช้ไม่ได้: ไม่มีวันใดที่โมเดลมีสมาชิกพอ"])
 
     def test_the_report_lists_the_problems_and_mentions_no_one(self):
         # the owner asked for no emails (2026-10-01): a mention in a report would send one

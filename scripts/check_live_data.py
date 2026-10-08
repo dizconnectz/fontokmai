@@ -172,31 +172,40 @@ def evaluate(manifest: dict, forecast: dict | None, now: datetime, radar: dict |
 
 
 def outlook_problems(outlook: dict | None, now: datetime) -> list[tuple[str, str]]:
-    """The 14-day ensemble (Codex M46): unreadable, old, or with models that cannot be read on some or all points.
-    A missing member's rain is null, never 0: it does not count towards a model's members."""
+    """The 14-day ensemble (Codex M46), judged as the web reads it: a day of a point is shown when one model at least
+    has 80% of its members that day, and a day of one model only is marked (ECMWF's 15-day run ends inside the 14th
+    Thai day, every day: that is no problem). A problem is a file that cannot be read or is old, days of points that
+    no model can show, or a model that failed at some points. A null rain is no member, never 0 mm."""
     fetched = _time((outlook or {}).get("fetched_at"))
     if outlook is None or fetched is None:
         return [("warning", "เปิดไฟล์แนวโน้มฝน 14 วันไม่ได้")]
     if now - fetched > OUTLOOK_OLD:
         return [("warning", f"แนวโน้มฝน 14 วันไม่อัปเดต (ดึงล่าสุด {_clock(fetched)} น.)")]
     days = len(outlook.get("days") or [])
-    readable = gaps = 0  # (point, model) pairs readable on every day / not readable on some day or missing
+    shown = dark = 0  # (point, day) pairs some model can show / none can
+    failed: dict[str, int] = {}  # model -> points where it is missing
     for point in outlook.get("points") or []:
-        gaps += len(point.get("missing_models") or [])
+        for name in point.get("missing_models") or []:
+            failed[name] = failed.get(name, 0) + 1
+        readable: set[int] = set()
         for model in point.get("models") or []:
             need = OUTLOOK_SHARE * (model.get("expected_members") or 0)
             members = model.get("members") or []
-            counts = [sum(1 for m in members if d < len(m.get("rain_mm") or []) and m["rain_mm"][d] is not None)
-                      for d in range(days)]
-            if days and need and all(count >= need for count in counts):
-                readable += 1
-            else:
-                gaps += 1
-    if not readable:
-        return [("warning", "แนวโน้มฝน 14 วันใช้ไม่ได้: ไม่มีจุดใดที่มีสมาชิกพอทุกวัน")]
-    if gaps:
-        return [("warning", f"แนวโน้มฝน 14 วันไม่ครบ: ขาดโมเดลหรือสมาชิกไม่พอ {gaps} ชุด (ใช้ได้ {readable} ชุด)")]
-    return []
+            for d in range(days):
+                count = sum(1 for m in members if d < len(m.get("rain_mm") or []) and m["rain_mm"][d] is not None)
+                if need and count >= need:
+                    readable.add(d)
+        shown += len(readable)
+        dark += days - len(readable)
+    if not shown:
+        return [("warning", "แนวโน้มฝน 14 วันใช้ไม่ได้: ไม่มีวันใดที่โมเดลมีสมาชิกพอ")]
+    problems = []
+    if dark:
+        problems.append(("warning", f"แนวโน้มฝน 14 วันไม่ครบ: {dark} จุด-วันไม่มีโมเดลใดมีสมาชิกพอ (แสดงได้ {shown})"))
+    if failed:
+        problems.append(("warning", "แนวโน้มฝน 14 วันขาดโมเดล: "
+                                    + ", ".join(f"{name} {count} จุด" for name, count in sorted(failed.items()))))
+    return problems
 
 
 def report(problems: list[tuple[str, str]], now: datetime) -> str:
