@@ -36,7 +36,7 @@ from fontokmai.publish.git_pages import publish_snapshot
 from fontokmai.road_flood_build import build_road_flood_history, fixture_files, is_fresh
 from fontokmai.run import SnapshotResult, run_cap_snapshot
 from fontokmai.schedule import run_forever
-from fontokmai.sources import gistda, rid_dams, rid_report
+from fontokmai.sources import gistda, rid_dams, rid_report, tmd_radar
 from fontokmai.sources.glofas import all_points as glofas_points
 from fontokmai.sources.open_data.http import fixture_opener, open_url
 from fontokmai.sources.open_data.longdo_live import FEED_URL as LONGDO_FEED_URL
@@ -164,6 +164,22 @@ def _dxs_account(path: Path | None) -> Any:
         return None
     from fontokmai.sources.bma_dxs import load_account
     return load_account(path)
+
+
+def _radar_ready(args: argparse.Namespace) -> Callable[[datetime], bool]:
+    """Whether TMD has posted a radar frame newer than the site's: the round then starts at once instead of at the
+    next slot (schedule.py, user 2026-10-09). The list is fetched only while the next frame is due."""
+
+    def ready(now: datetime) -> bool:
+        if tmd_radar.frame_due(args.out, now) is None:
+            return False
+        fetch = LiveFetcher()
+        try:
+            return tmd_radar.new_frame_listed(fetch, args.out, now)
+        finally:
+            fetch.close()
+
+    return ready
 
 
 def _scheduled_job(args: argparse.Namespace) -> Callable[[datetime], dict[str, Any]]:
@@ -380,7 +396,7 @@ def main(argv: list[str] | None = None) -> int:
         print("\n".join(bma_dxs.outline(answer)))
         return 0
     if args.command == "schedule":
-        run_forever(_scheduled_job(args), max_rounds=args.max_rounds)
+        run_forever(_scheduled_job(args), max_rounds=args.max_rounds, ready=_radar_ready(args))
         return 0
     if args.command == "flood-freq":
         provinces = (gistda.all_provinces() if args.provinces.strip() == "all"

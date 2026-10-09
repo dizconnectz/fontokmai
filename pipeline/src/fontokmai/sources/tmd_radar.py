@@ -16,7 +16,7 @@ import math
 import re
 import struct
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from io import BytesIO
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -189,6 +189,43 @@ def _previous_feed(out: Path, generation_id: str) -> RadarFeed:
         return _feed([], generation_id, [])
     frames = [frame for frame in previous.frames if (out / frame.path).is_file()]
     return previous.model_copy(update={"generation_id": generation_id, "frames": frames})
+
+
+# TMD posts each 15-minute frame about 12 minutes after its time (11.5–12 min, measured 2026-10-09; 487 of 510
+# rounds of the week before got it 15–19 minutes after its time). The schedule asks for the list only from a little
+# before the next frame can be there until well after, so a minute's check sends a request only while it is due.
+FRAME_STEP = timedelta(minutes=15)
+DUE_FROM = timedelta(minutes=10)  # after the next frame's time
+DUE_UNTIL = timedelta(minutes=30)  # later than this, the fixed grid of rounds fetches it
+
+
+def newest_published(out: Path) -> datetime | None:
+    """The time of the newest frame the site has published (radar.json of the round's output), or None."""
+    try:
+        feed = RadarFeed.model_validate_json((out / "radar.json").read_bytes())
+    except (OSError, ValueError):
+        return None
+    return feed.frames[-1].time if feed.frames else None
+
+
+def frame_due(out: Path, now: datetime) -> datetime | None:
+    """The newest published frame's time while the next one is due to be posted, else None (also without one: the
+    grid then fetches the first)."""
+    newest = newest_published(out)
+    if newest is None or not newest + FRAME_STEP + DUE_FROM <= now <= newest + FRAME_STEP + DUE_UNTIL:
+        return None
+    return newest
+
+
+def new_frame_listed(fetch: Fetcher, out: Path, now: datetime) -> bool:
+    """Whether TMD lists a frame newer than the newest published one, so that a round can start at once
+    (user 2026-10-09: the radar should not wait for the next slot of the grid). The list is asked for only while
+    the next frame is due."""
+    newest = frame_due(out, now)
+    if newest is None:
+        return False
+    listed = parse_list(_fetch_allowed(fetch, LIST_URL).decode("utf-8", errors="replace"))
+    return bool(listed) and listed[-1][0] > newest
 
 
 def collect_radar(fetch: Fetcher, out: Path, generation_id: str) -> RadarRound:

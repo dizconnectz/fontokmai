@@ -1,6 +1,6 @@
 import struct
 import zlib
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -15,8 +15,10 @@ from fontokmai.sources.tmd_radar import (
     PAGE_URL,
     _feed,
     collect_radar,
+    frame_due,
     mercator_height,
     mercator_y,
+    new_frame_listed,
     parse_legend,
     parse_list,
     png_size,
@@ -255,3 +257,29 @@ def test_colours_off_the_legend_are_not_rain():
     assert heavy and {value for *_, value in heavy} == {36.5}
     assert all(abs(lon - 101.0) < 0.1 for lon, *_ in heavy)
 
+
+
+def test_tmd_is_asked_for_a_new_frame_only_while_it_is_due_and_says_so_once_listed(tmp_path):
+    """User 2026-10-09: a round starts as soon as TMD posts the next frame (schedule.py). Its list is asked for only
+    from 10 to 30 minutes after the next frame's time; without a published frame the grid fetches the first."""
+    newest = datetime(2026, 10, 9, 4, 30, tzinfo=UTC)
+    asked = []
+
+    def fetch(url):
+        asked.append(url)
+        return b'background_THA.png "2026-10-09 04:30" overlay=zr/23.png\n' + listed[0]
+
+    listed = [b""]
+    assert not new_frame_listed(fetch, tmp_path, newest + timedelta(minutes=27)) and asked == []  # no radar.json yet
+    (tmp_path / "radar.json").write_text(
+        _feed([(newest, "radar/20261009T0430Z.png")], "g", []).model_dump_json(), encoding="utf-8")
+    # 04:50 is too soon for the frame of 04:45, 05:20 too late (the grid has it): nothing is asked
+    for minute in (50, 80):
+        assert frame_due(tmp_path, newest + timedelta(minutes=minute - 30)) is None
+        assert not new_frame_listed(fetch, tmp_path, newest + timedelta(minutes=minute - 30))
+    assert asked == []
+    # due: not listed yet, then listed
+    at = newest + timedelta(minutes=26)  # 04:56
+    assert not new_frame_listed(fetch, tmp_path, at) and len(asked) == 1
+    listed[0] = b'background_THA.png "2026-10-09 04:45" overlay=zr/24.png\n'
+    assert new_frame_listed(fetch, tmp_path, at + timedelta(minutes=1))
