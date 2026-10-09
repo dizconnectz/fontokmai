@@ -136,8 +136,25 @@ def probe(out: Path, fetch: Fetch | None = None) -> list[str]:
     return lines
 
 
+def _without_backup(flows: RidFlows) -> RidFlows:
+    """The report's own points: a figure an earlier round filled from the backup is taken out again.
+
+    A round writes the file it publishes into the directory the next round reads (write_snapshot), so a backup put
+    in once was kept as if the report had given it: it never expired and a newer backup never replaced it, until the
+    next daily report rewrote the file (found 2026-10-09: figures of 7 Oct 16:00 still shown after 42 hours, past the
+    36 hours MAX_AGE allows). A station the report gives no figure has no level either (a Figure needs its flow), so
+    nothing else of such a point is the report's to keep.
+    """
+    if not any(point.flow_backup_at is not None for point in flows.points):
+        return flows
+    points = [point.model_copy(update={"flow_cms": None, "level_m": None, "flow_backup_at": None})
+              if point.flow_backup_at is not None else point for point in flows.points]
+    return flows.model_copy(update={"points": points, "backup_url": None})
+
+
 def with_backup(flows: RidFlows, backup: RidHydro | None, now: datetime) -> RidFlows:
     """The report's figures, with the backup's where the report has none for a station, while that hour is recent."""
+    flows = _without_backup(flows)
     if backup is None:
         return flows
     by_code = {station.code: station for station in backup.stations}
