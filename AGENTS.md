@@ -45,7 +45,7 @@
 ### A5. งานที่กำลังทำ (Active claims)
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
-| — | — | — | ไม่มีไฟล์ที่กำลังแก้ | — |
+| Claude | 2026-10-09 12:35 | `pipeline/src/fontokmai/{schedule,cli}.py`, `sources/tmd_radar.py`, `pipeline/tests/test_{schedule,radar}.py`, `docs/design/fontokmai-design.md` §4.3, `.github/workflows/data-watch.yml` | เริ่มรอบทันทีเมื่อกรมอุตุฯ ปล่อยภาพเรดาร์ใหม่ (ผู้ใช้ 2026-10-09) | radar-early |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md` · ส่วนที่ย้ายออกเมื่อเข้าถึง private ไม่ได้: `docs/agents-archive.md`)
 
