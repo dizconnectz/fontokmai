@@ -3,6 +3,20 @@
 AGENTS.md ต้องไม่เกิน 32 KiB จึงย้ายส่วนที่ไม่ได้ใช้งานแล้วมาเก็บที่นี่แบบไม่ตัดทอน (ห้ามลบประวัติ) · ใหม่สุดอยู่บน
 ควรย้ายไป `private/handoffs/` เมื่อมีคนเข้าถึง private repo ได้ (Claude ในเครื่อง cloud เข้าไม่ได้)
 
+## 2026-10-09 (Claude: ย้าย A6 เก่าสุดเพื่อให้ AGENTS.md ไม่เกิน 32 KiB)
+
+#### 2026-10-05 10:20 ICT — ทวนคลอง v6, deploy VPS, แก้ smoke M62 (Codex)
+- M62: `live-smoke.mjs` รอ `.source-times` ที่ UX เอาออกแล้ว; เปลี่ยนเป็นรอแถบข้อมูลพ้นสถานะโหลด · production smoke ผ่าน desktop+มือถือ generation `20261005T031800Z-vps`, แผนที่พร้อม, ไม่มี request ล้มเหลวหรือ JS error
+- ทดสอบ: `uv run pytest -q`, `uv run ruff check .`, `npm test -- --run` (167), `npm run build`, `npm audit --omit=dev` (0 ช่องโหว่) ผ่าน · `npm run test:e2e`: Chromium desktop/มือถือ 110 ผ่าน; WebKit 55 กรณีเปิด context ไม่ได้บน Windows นี้ และทดสอบ WebKit เปล่าก็ปิดก่อนสร้างหน้า · GitHub `web` workflow ที่ `8790b50` ผ่านรวม WebKit · Prettier บนเครื่องเจอไฟล์ `.cls` นอก Git; workflow ผ่าน
+- deploy ด้วย `deploy/vps/deploy.sh` ถึง `8790b50`; รอบ `03:18Z` `ok=true`, เผยแพร่ generation ด้านบน · คลอง `canals-v6`: 56 เส้น, เฝ้าดู 3, ต่ำกว่าเกณฑ์ทดลอง 53, ข้อมูลไม่พอ 0 · container UID 1001, RAM 33/512 MiB, 2 PIDs, restart 0 · ดิสก์ 72% เหลือ 23 GB · ไม่แตะ container งานอื่น; พบ one-off `fontokmai-flood-freq` จบ `exit 0` แล้ว ปล่อยไว้
+- สูตรคลองยังเป็นคะแนนปัจจัยทดลอง ไม่ใช่แบบจำลองไฮดรอลิก/ขอบเขตน้ำท่วมและยังไม่ backtest · ปั๊มนับจำนวนที่เดิน ไม่ได้วัดอัตราระบาย; DXS ไม่มีระดับตลิ่ง · C.35 JSON อนุญาตแล้วตาม D37 แต่ข้อมูลสำรองจะเปลี่ยนเมื่อผู้ใช้รัน `bkk-fetch` จากเครื่องในไทยเท่านั้น
+- ข้อสังเกต: build ยังเตือน bundle `index` 606 KB + MapLibre 1,063 KB (gzip 176 + 286 KB); container ไม่ root และมีเพดานทรัพยากร ไม่มี port เปิด แต่ rootfs ยังเขียนได้และไม่ได้ drop capabilities — เป็น hardening ที่ทำเพิ่มได้ · รายละเอียดก่อนหน้าอยู่ใน `docs/agents-archive.md`
+
+- **C.35 JSON/VPS**: อนุญาตใช้ตัวเลขที่หน้าเผยแพร่แสดงภายใต้ D35/D37 พร้อมเครดิตและลิงก์; `bkk-fetch` อ่านตอนผู้ใช้กดอัปเดตจากเครื่องในไทย ไม่มีการดึงอัตโนมัติ · VPS ใช้ไฟล์สำเนาล่าสุดถ้ายังไม่เกิน 36 ชั่วโมง · ตรวจระบบ/อัปเดต VPS แล้ว 2026-10-05 (ดู A6)
+    // Wait for the current data chip to leave its loading state; the old `.source-times` element was removed when
+    // the header was simplified (Codex M62).
+    await expect(page.locator('.data-chip')).not.toContainText('กำลังโหลด…', { timeout: 30_000 });
+
 ## 2026-10-08 13:50 (Claude: ย้าย A6 เพื่อให้ AGENTS.md ไม่เกิน 32 KiB)
 
 #### 2026-10-04 21:15 ICT — คลอง กทม. + ลิงก์ Longdo Water (Claude, ผู้ใช้ให้อำนาจทำแทน Codex)

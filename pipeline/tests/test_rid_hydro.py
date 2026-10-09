@@ -71,3 +71,25 @@ def test_the_backup_fills_only_what_the_report_lacks_while_it_is_recent():
     # too old, or none: nothing changes
     assert rid_hydro.with_backup(flows, hydro, NOW + timedelta(hours=37)) == flows
     assert rid_hydro.with_backup(flows, None, NOW) == flows
+
+
+def test_a_published_backup_is_judged_again_each_round_not_kept_once_filled():
+    """write_snapshot writes the published file into the directory the next round reads: the backup filled in one
+    round must expire after MAX_AGE and give way to a newer one, never stay as if the report had given it."""
+    report = _flows()
+    old = rid_hydro.collect(NOW, lambda code: C35 if code == "C.35" else b"[]")
+    published = rid_hydro.with_backup(report, old, NOW)  # what round one wrote to disk and published
+    assert {p.id: p for p in published.points}["c35"].flow_backup_at is not None
+    # 37 hours later with no newer backup: the figure and its level go, and so does the link
+    later = NOW + timedelta(hours=37)
+    again = rid_hydro.with_backup(published, old, later)
+    c35 = {p.id: p for p in again.points}["c35"]
+    assert (c35.flow_cms, c35.level_m, c35.flow_backup_at) == (None, None, None) and again.backup_url is None
+    assert again == report  # exactly the report's own points again
+    # a newer backup replaces the old one
+    newer = rid_hydro.collect(later, lambda code: C35.replace(b"1489", b"1111") if code == "C.35" else b"[]")
+    fresh = rid_hydro.with_backup(published, newer, NOW + timedelta(hours=1))
+    assert {p.id: p for p in fresh.points}["c35"].flow_cms == 1111.0
+    # the report's own figures are never touched, and no backup at all clears a stale one
+    assert {p.id: p for p in published.points}["c2"] == {p.id: p for p in report.points}["c2"]
+    assert rid_hydro.with_backup(published, None, NOW) == report

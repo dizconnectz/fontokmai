@@ -49,21 +49,12 @@
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md` · ส่วนที่ย้ายออกเมื่อเข้าถึง private ไม่ได้: `docs/agents-archive.md`)
 
+#### 2026-10-09 11:10 ICT — แก้ตัวเลขสำรอง C.35 ค้างเกิน 36 ชม. (Claude)
+- `write_snapshot` เขียนไฟล์ที่เผยแพร่ลง `out` ที่รอบถัดไปอ่าน: เลขสำรองที่เติมครั้งเดียวจึงไม่หมดอายุ (เห็น C.35 เลข 7 ต.ค. 16:00 ค้าง 42 ชม.) · `with_backup` ถอดเลขสำรองเดิมก่อนตัดสินใหม่ทุกรอบ + test
+
 #### 2026-10-08 13:50 ICT — ตรวจระบบหลัง 4–7 ต.ค. และแก้ตัวตรวจแนวโน้มฝน (Claude)
 - รวม edit ที่ Codex ค้างไว้ไม่ได้ commit (บันทึก 10-05 ด้านล่าง; `live-smoke.mjs` ใช้ฉบับ 84a337c ที่อยู่ใน main แล้ว) · f948e1f: data-watch เตือน “แนวโน้มฝน 14 วันไม่ครบ” ทุกรอบเพราะ ECMWF ไม่ถึงท้ายวันที่ 14 (GFS มี เว็บแสดงได้) → ตัดสินแบบเดียวกับเว็บ รายงานจริงตอนนี้ “ปกติ”
 - VPS 8790b50 (ไม่มีโค้ด pipeline ใหม่หลังจากนั้น) รอบ 13:33 ok · ลบ `~/fontokmai/secrets/dxs_account` บน VPS ตามผู้ใช้ (ไม่ได้ใช้: `.env` ไม่ตั้ง `DXS_ACCOUNT` compose ต่อ /dev/null) · เรดาร์ 6 ต.ค. 11:48–14:03 DNS ล้ม แล้วภาพค้างที่ 09:15 ถึงราว 7 ต.ค. บ่าย = ต้นทางกรมอุตุฯ กลับมาเอง · ดิสก์ 72%
-
-#### 2026-10-05 10:20 ICT — ทวนคลอง v6, deploy VPS, แก้ smoke M62 (Codex)
-- M62: `live-smoke.mjs` รอ `.source-times` ที่ UX เอาออกแล้ว; เปลี่ยนเป็นรอแถบข้อมูลพ้นสถานะโหลด · production smoke ผ่าน desktop+มือถือ generation `20261005T031800Z-vps`, แผนที่พร้อม, ไม่มี request ล้มเหลวหรือ JS error
-- ทดสอบ: `uv run pytest -q`, `uv run ruff check .`, `npm test -- --run` (167), `npm run build`, `npm audit --omit=dev` (0 ช่องโหว่) ผ่าน · `npm run test:e2e`: Chromium desktop/มือถือ 110 ผ่าน; WebKit 55 กรณีเปิด context ไม่ได้บน Windows นี้ และทดสอบ WebKit เปล่าก็ปิดก่อนสร้างหน้า · GitHub `web` workflow ที่ `8790b50` ผ่านรวม WebKit · Prettier บนเครื่องเจอไฟล์ `.cls` นอก Git; workflow ผ่าน
-- deploy ด้วย `deploy/vps/deploy.sh` ถึง `8790b50`; รอบ `03:18Z` `ok=true`, เผยแพร่ generation ด้านบน · คลอง `canals-v6`: 56 เส้น, เฝ้าดู 3, ต่ำกว่าเกณฑ์ทดลอง 53, ข้อมูลไม่พอ 0 · container UID 1001, RAM 33/512 MiB, 2 PIDs, restart 0 · ดิสก์ 72% เหลือ 23 GB · ไม่แตะ container งานอื่น; พบ one-off `fontokmai-flood-freq` จบ `exit 0` แล้ว ปล่อยไว้
-- สูตรคลองยังเป็นคะแนนปัจจัยทดลอง ไม่ใช่แบบจำลองไฮดรอลิก/ขอบเขตน้ำท่วมและยังไม่ backtest · ปั๊มนับจำนวนที่เดิน ไม่ได้วัดอัตราระบาย; DXS ไม่มีระดับตลิ่ง · C.35 JSON อนุญาตแล้วตาม D37 แต่ข้อมูลสำรองจะเปลี่ยนเมื่อผู้ใช้รัน `bkk-fetch` จากเครื่องในไทยเท่านั้น
-- ข้อสังเกต: build ยังเตือน bundle `index` 606 KB + MapLibre 1,063 KB (gzip 176 + 286 KB); container ไม่ root และมีเพดานทรัพยากร ไม่มี port เปิด แต่ rootfs ยังเขียนได้และไม่ได้ drop capabilities — เป็น hardening ที่ทำเพิ่มได้ · รายละเอียดก่อนหน้าอยู่ใน `docs/agents-archive.md`
-
-- **C.35 JSON/VPS**: อนุญาตใช้ตัวเลขที่หน้าเผยแพร่แสดงภายใต้ D35/D37 พร้อมเครดิตและลิงก์; `bkk-fetch` อ่านตอนผู้ใช้กดอัปเดตจากเครื่องในไทย ไม่มีการดึงอัตโนมัติ · VPS ใช้ไฟล์สำเนาล่าสุดถ้ายังไม่เกิน 36 ชั่วโมง · ตรวจระบบ/อัปเดต VPS แล้ว 2026-10-05 (ดู A6)
-    // Wait for the current data chip to leave its loading state; the old `.source-times` element was removed when
-    // the header was simplified (Codex M62).
-    await expect(page.locator('.data-chip')).not.toContainText('กำลังโหลด…', { timeout: 30_000 });
 
 ## B. การตัดสินใจ
 ข้อเสนอเดิม D1–D10 จากร่างแรกถูกแทนด้วยตารางนี้เพราะขัดกับ D12 (ดูเหตุผลเดิมได้ใน snapshot)
