@@ -1207,7 +1207,9 @@ export default function MapView(props: Props) {
         maplibre.setWorkerUrl(workerUrl);
         const theme = latest.current.theme;
         const loaded = await loadBasemap(theme, controller.signal);
-        if (!loaded && !disposed) setNotice('แผนที่ฐานไม่พร้อม · ข้อมูลของเรายังแสดงได้');
+        // the failures are said for a while, not for good: above the time bar (since 2026-10-12; under it they were
+        // never seen) a lasting line would cover the key
+        if (!loaded && !disposed) say('แผนที่ฐานไม่พร้อม · ข้อมูลของเรายังแสดงได้', 10_000);
         const style = loaded ?? blankStyle(theme);
         shownTheme.current = theme;
         if (disposed || !element.current) return;
@@ -1273,7 +1275,7 @@ export default function MapView(props: Props) {
           );
         instance.on('error', (event) => {
           if (disposed) return;
-          setNotice('แผนที่บางส่วนโหลดไม่สำเร็จ · ข้อมูลยังอ่านได้ในแถบข้าง');
+          say('แผนที่บางส่วนโหลดไม่สำเร็จ · ข้อมูลยังอ่านได้ในแถบข้าง', 10_000);
           if (event.error.message.includes('Worker failed')) setUnavailable(true);
         });
         instance.on('idle', () => {
@@ -2146,7 +2148,7 @@ export default function MapView(props: Props) {
   };
   const locate = () => {
     if (!navigator.geolocation) {
-      setNotice('อุปกรณ์นี้ไม่รองรับการหาตำแหน่ง');
+      say('อุปกรณ์นี้ไม่รองรับการหาตำแหน่ง');
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -2155,7 +2157,7 @@ export default function MapView(props: Props) {
         props.onPin(point);
         map.current?.flyTo({ center: point, zoom: 12 });
       },
-      () => setNotice('ไม่ได้รับอนุญาตให้ใช้ตำแหน่ง · ปักหมุดบนแผนที่แทนได้'),
+      () => say('ไม่ได้รับอนุญาตให้ใช้ตำแหน่ง · ปักหมุดบนแผนที่แทนได้'),
       { enableHighAccuracy: false, timeout: 10_000, maximumAge: 300_000 },
     );
   };

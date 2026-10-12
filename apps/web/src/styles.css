@@ -512,15 +512,17 @@ svg {
   bottom: 46px;
   z-index: 6;
   transform: translateX(-50%);
-  /* from the middle a long line would wrap at half the map */
+  /* from the middle a long line would wrap at half the map; the zoom buttons keep their side */
   width: max-content;
-  max-width: calc(100% - 32px);
+  max-width: calc(100% - 112px);
   padding: 8px 14px;
   border-radius: 16px;
   background: rgb(31 49 52 / 88%);
   color: #fff;
   font-size: 0.85rem;
   text-align: center;
+  /* words only: a tap goes through to the key or the map under them */
+  pointer-events: none;
 }
 /* at 46px the time bar covered it (found 2026-10-12): the words stand above the bar */
 .stage.has-timeline .map-notice {
