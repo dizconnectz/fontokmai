@@ -96,7 +96,7 @@ import {
   type FlowSite,
 } from './flows';
 import type { RiverStretches } from './rivers';
-import type { SatelliteShapes } from './satellite';
+import { boxesMeet, satelliteBoxes, type Box, type SatelliteShapes } from './satellite';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 
@@ -177,6 +177,8 @@ interface Props {
   onSatellite: (() => void) | null;
   /** why the satellite map has nothing to draw now (said on its button), or null when it has */
   satelliteEmpty: string | null;
+  /** what the satellite map shows, said when it is turned on; null without a file */
+  satelliteFound: string | null;
   onList: () => void;
   /** a report chosen in the list: fly there and open its popup, without touching the side panel */
   openFlood: { id: string; key: string } | null;
@@ -186,6 +188,9 @@ interface Props {
   onOverview?: (overview: boolean) => void;
 }
 const THAILAND: { center: LngLat; zoom: number } = { center: [101, 13.2], zoom: 5 };
+/** how close the map goes to show the districts with water seen from satellites; the time bar and the key take
+ * the bottom of the map */
+const SATELLITE_FIT = { padding: { top: 60, right: 60, bottom: 120, left: 60 }, maxZoom: 10 };
 // strong at country scale, light when zoomed in so streets stay readable
 const ALERT_FILL_OPACITY = [
   'interpolate',
@@ -1185,6 +1190,12 @@ export default function MapView(props: Props) {
   const shownTheme = useRef<'light' | 'dark'>(props.theme);
   const [rendering, setRendering] = useState(true);
   const [notice, setNotice] = useState('');
+  /** a line over the map for a while; a newer line replaces it */
+  const say = (words: string | null, ms = 6000) => {
+    if (!words) return;
+    setNotice(words);
+    window.setTimeout(() => setNotice((now) => (now === words ? '' : now)), ms);
+  };
   const [unavailable, setUnavailable] = useState(false);
 
   useEffect(() => {
@@ -1848,14 +1859,33 @@ export default function MapView(props: Props) {
       popup.current?.remove();
   }, [props.canalShapes, props.theme, ready, styleVersion]);
 
-  // GISTDA's flooded districts (an agency's map of water, summed by district)
+  // GISTDA's flooded districts (an agency's map of water, summed by district). Turned on, the map says what it
+  // shows, and brings the water into view when none of it is in view or the view is so far out that the districts
+  // are specks (user 2026-10-12: turned on, it seemed to show nothing; the water was in four small districts far
+  // from the view). Only a turn of the button moves the map, never a refresh of the file.
+  const satelliteIntro = useRef<'off' | 'waiting' | 'done'>('off');
   useEffect(() => {
+    if (!props.layers.satellite) satelliteIntro.current = 'off';
+    else if (satelliteIntro.current === 'off') satelliteIntro.current = 'waiting';
     const instance = map.current;
     if (!ready || !instance) return;
+    const shapes = props.satelliteShapes;
     (instance.getSource('satellite') as GeoJSONSource | undefined)?.setData(
-      props.satelliteShapes ?? { type: 'FeatureCollection', features: [] },
+      shapes ?? { type: 'FeatureCollection', features: [] },
     );
-  }, [props.satelliteShapes, ready, styleVersion]);
+    // the districts come once the outlines have loaded
+    const boxes = shapes && satelliteBoxes(shapes);
+    if (satelliteIntro.current !== 'waiting' || !boxes) return;
+    satelliteIntro.current = 'done';
+    say(latest.current.satelliteFound, 8000);
+    const view = instance.getBounds().toArray() as Box;
+    const fitZoom = instance.cameraForBounds(boxes.all, SATELLITE_FIT)?.zoom;
+    if (
+      !boxes.each.some((box) => boxesMeet(box, view)) ||
+      (fitZoom !== undefined && instance.getZoom() < fitZoom - 1)
+    )
+      instance.fitBounds(boxes.all, { ...SATELLITE_FIT, duration: 600 });
+  }, [props.satelliteShapes, props.layers.satellite, ready, styleVersion]);
 
   // An open popup follows the clock and the files: its age labels change, and it closes when what it shows is
   // gone (a report past its time, a station no longer in the file). Rebuilt only when its words change.
@@ -2200,9 +2230,7 @@ export default function MapView(props: Props) {
               onClick={() => {
                 if (!props.satelliteEmpty) return props.onSatellite?.();
                 // nothing to draw: the button stays, and says why (user 2026-10-05)
-                const words = props.satelliteEmpty;
-                setNotice(words);
-                window.setTimeout(() => setNotice((now) => (now === words ? '' : now)), 6000);
+                say(props.satelliteEmpty);
               }}
               style={
                 props.layers.satellite && !props.satelliteEmpty

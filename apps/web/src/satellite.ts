@@ -1,5 +1,6 @@
 import type { FeatureCollection, MultiPolygon, Polygon } from 'geojson';
 import type { Boundaries, FloodFrequency, PlaceGazetteer, SatelliteFloods } from './data';
+import { placeParts } from './overview';
 
 // GISTDA's flooded area seen from satellites (contract section 28): an agency's map of water, summed by district,
 // never a figure of this site. A district without water in the file was not seen flooded in the window, which is
@@ -56,6 +57,39 @@ export function satelliteShapes(file: SatelliteFloods, boundaries: Boundaries): 
       ];
     }),
   };
+}
+
+/** [[west, south], [east, north]] */
+export type Box = [[number, number], [number, number]];
+
+function boxOf(points: number[][]): Box {
+  let [west, south, east, north] = [Infinity, Infinity, -Infinity, -Infinity];
+  for (const [x, y] of points) {
+    west = Math.min(west, x);
+    east = Math.max(east, x);
+    south = Math.min(south, y);
+    north = Math.max(north, y);
+  }
+  return [
+    [west, south],
+    [east, north],
+  ];
+}
+
+/**
+ * The box around each district drawn (its outer rings) and around them all, for the map to bring the water into
+ * view when the satellite map is turned on; null when nothing is drawn.
+ */
+export function satelliteBoxes(shapes: SatelliteShapes): { each: Box[]; all: Box } | null {
+  const each = shapes.features.map((feature) =>
+    boxOf(feature.geometry.coordinates.flatMap((polygon) => polygon[0])),
+  );
+  return each.length ? { each, all: boxOf(each.flat()) } : null;
+}
+
+/** Whether two boxes share some ground */
+export function boxesMeet(a: Box, b: Box): boolean {
+  return a[0][0] <= b[1][0] && b[0][0] <= a[1][0] && a[0][1] <= b[1][1] && b[0][1] <= a[1][1];
 }
 
 function km(a: number[], b: number[]): number {
@@ -176,4 +210,24 @@ export function satelliteEmptyWords(file: SatelliteFloods, now: number): string 
   if (!file.districts.length)
     return `ดาวเทียมไม่พบพื้นที่น้ำท่วมในรอบ ${file.window_days} วัน (${at}) · ไม่ได้แปลว่าไม่มีน้ำท่วม`;
   return null;
+}
+
+/**
+ * What the satellite map shows, said when it is turned on (user 2026-10-12: turned on, it seemed to show nothing;
+ * the water was in four small districts far from the view): the districts, their provinces with the most water
+ * first (the file's order), the area and the day of the newest image.
+ */
+export function satelliteFoundWords(file: SatelliteFloods): string {
+  const provinces = [
+    ...new Set(file.districts.map((d) => placeParts(d.name_th)[1].replace(/^จ\./, ''))),
+  ];
+  const where =
+    provinces.length > 3
+      ? `${provinces.slice(0, 3).join(' ')} และอีก ${provinces.length - 3} จังหวัด`
+      : provinces.join(' ');
+  const area = file.total_km2 < 0.1 ? 'รวมไม่ถึง 0.1' : `รวมราว ${AREA(file.total_km2)}`;
+  const at = file.latest_scene_day
+    ? `ภาพล่าสุด ${SHORT_DAY.format(Date.parse(`${file.latest_scene_day}T12:00:00+07:00`))}`
+    : `ข้อมูล ${CLOCK.format(Date.parse(file.fetched_at))} น.`;
+  return `ดาวเทียมเห็นน้ำท่วม ${file.districts.length} อำเภอ (${where}) ${area} ตร.กม. · ${at} · GISTDA`;
 }

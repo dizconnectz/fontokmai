@@ -1950,3 +1950,77 @@ test('static sources and method pages remain readable without JavaScript', async
   );
   await context.close();
 });
+
+test('the satellite flood map says what it shows above the time bar, and goes to water far from the view', async ({
+  page,
+}) => {
+  await prepare(page);
+  const manifest = read('active', 'manifest');
+  // the forecast hours make the time bar
+  manifest.files.push({ path: 'forecast/rain.json', sha256: 'f'.repeat(64), size: 1, revision: 1 });
+  manifest.files.push({
+    path: 'floods/satellite.json',
+    sha256: 'f'.repeat(64),
+    size: 1,
+    revision: 1,
+  });
+  await page.route('**/examples/active/manifest.json?*', (route) =>
+    route.fulfill({ json: manifest }),
+  );
+  await page.route('**/forecast/rain.json?*', (route) =>
+    route.fulfill({ json: read('forecast', 'rain') }),
+  );
+  // two small districts of Pathum Thani: specks on the first view of the whole country (user 2026-10-12: turned
+  // on, the map seemed to show nothing)
+  const district = (code: string, name_th: string, area_km2: number) => ({
+    code,
+    name_th,
+    area_km2,
+    cells: 10,
+    population: null,
+    buildings: null,
+  });
+  await page.route('**/floods/satellite.json?*', (route) =>
+    route.fulfill({
+      json: {
+        schema_version: '1',
+        product: 'gistda_flood_3days',
+        name_th: 'พื้นที่น้ำท่วมจากภาพดาวเทียม (ในรอบ 3 วัน)',
+        credit_th: 'GISTDA',
+        source_url: 'https://disaster.gistda.or.th/',
+        fetched_at: '2026-09-25T17:00:00+07:00',
+        window_days: 3,
+        scenes: ['S1D_20260925_0609'],
+        latest_scene_day: '2026-09-25',
+        total_km2: 2.2,
+        districts: [
+          district('1302', 'อ.คลองหลวง จ.ปทุมธานี', 1.8),
+          district('1303', 'อ.ธัญบุรี จ.ปทุมธานี', 0.4),
+        ],
+        notes_th: [],
+      },
+    }),
+  );
+  await page.goto('/');
+  const surface = page.getByTestId('map-surface');
+  await expect(surface).toHaveAttribute('aria-busy', 'false', { timeout: 15_000 });
+  await expect(surface).toHaveAttribute('data-zoom', '5');
+  await expect(page.locator('.timeline')).toBeVisible();
+  await page.getByRole('button', { name: 'เปิดดูแผนที่น้ำท่วมจากดาวเทียม' }).click();
+  const notice = page.getByRole('status').filter({ hasText: 'ดาวเทียมเห็นน้ำท่วม' });
+  await expect(notice).toHaveText(
+    'ดาวเทียมเห็นน้ำท่วม 2 อำเภอ (ปทุมธานี) รวมราว 2.2 ตร.กม. · ภาพล่าสุด 25 ก.ย. · GISTDA',
+  );
+  // the words stand above the time bar, which covered them before
+  const words = (await notice.boundingBox())!;
+  const bar = (await page.locator('.timeline').boundingBox())!;
+  expect(words.y + words.height).toBeLessThanOrEqual(bar.y);
+  // the map goes to the two districts
+  await expect
+    .poll(async () => Number(await surface.getAttribute('data-zoom')), { timeout: 5_000 })
+    .toBeGreaterThan(8);
+  await expect(page.getByRole('button', { name: 'ซ่อนแผนที่น้ำท่วมจากดาวเทียม' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+});

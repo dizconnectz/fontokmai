@@ -510,13 +510,21 @@ svg {
   position: absolute;
   left: 50%;
   bottom: 46px;
+  z-index: 6;
   transform: translateX(-50%);
+  /* from the middle a long line would wrap at half the map */
+  width: max-content;
   max-width: calc(100% - 32px);
   padding: 8px 14px;
-  border-radius: 999px;
+  border-radius: 16px;
   background: rgb(31 49 52 / 88%);
   color: #fff;
   font-size: 0.85rem;
+  text-align: center;
+}
+/* at 46px the time bar covered it (found 2026-10-12): the words stand above the bar */
+.stage.has-timeline .map-notice {
+  bottom: calc(var(--timeline-space) + 12px);
 }
 .map-actions {
   position: absolute;

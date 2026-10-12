@@ -4,14 +4,18 @@ import type { Boundaries, FloodFrequency, PlaceGazetteer, SatelliteFloods } from
 import { favoriteLine } from './favoriteLine';
 import { nearestSubdistrict } from './places';
 import {
+  boxesMeet,
   frequencyAt,
   frequencyWords,
+  satelliteBoxes,
   satelliteColor,
   satelliteEmptyWords,
+  satelliteFoundWords,
   satelliteNear,
   satelliteOld,
   satelliteShapes,
   satelliteWords,
+  type Box,
 } from './satellite';
 
 const example = <T>(path: string) =>
@@ -150,5 +154,66 @@ describe('the satellite button when there is nothing to draw (user 2026-10-05)',
     expect(satelliteEmptyWords(file([district(own, 3, 'อ.ทดสอบ')]), AT + 3 * 86_400_000)).toMatch(
       /^แผนที่น้ำท่วมจากดาวเทียมไม่อัปเดต \(ข้อมูล 4 ต.ค. 12:00 น.\)/,
     );
+  });
+});
+
+describe('the satellite map turned on (user 2026-10-12: it seemed to show nothing)', () => {
+  // the file of 12 Oct: four small districts in the northeast, far from a view of Bangkok
+  const northeast = [
+    district('4811', 1.823, 'อ.นาทม จ.นครพนม'),
+    district('4711', 1.748, 'อ.อากาศอำนวย จ.สกลนคร'),
+    district('3804', 0.432, 'อ.เซกา จ.บึงกาฬ'),
+    district('4808', 0.188, 'อ.ศรีสงคราม จ.นครพนม'),
+  ];
+
+  it('says how many districts, in which provinces, how much water and how new', () => {
+    expect(satelliteFoundWords(file(northeast))).toBe(
+      'ดาวเทียมเห็นน้ำท่วม 4 อำเภอ (นครพนม สกลนคร บึงกาฬ) รวมราว 4.2 ตร.กม. · ภาพล่าสุด 2 ต.ค. · GISTDA',
+    );
+    const wide = file([
+      ...northeast,
+      district(own, 0.05, 'เขตจตุจักร กรุงเทพมหานคร'),
+      district('1302', 0.02, 'อ.คลองหลวง จ.ปทุมธานี'),
+    ]);
+    expect(satelliteFoundWords({ ...wide, latest_scene_day: null })).toBe(
+      'ดาวเทียมเห็นน้ำท่วม 6 อำเภอ (นครพนม สกลนคร บึงกาฬ และอีก 2 จังหวัด) รวมราว 4.3 ตร.กม. · ' +
+        'ข้อมูล 4 ต.ค. 12:00 น. · GISTDA',
+    );
+    expect(satelliteFoundWords(file([district(own, 0.05, 'เขตจตุจักร กรุงเทพมหานคร')]))).toBe(
+      'ดาวเทียมเห็นน้ำท่วม 1 อำเภอ (กรุงเทพมหานคร) รวมไม่ถึง 0.1 ตร.กม. · ภาพล่าสุด 2 ต.ค. · GISTDA',
+    );
+  });
+
+  it('finds the box of each district drawn and of them all, and whether a view meets one', () => {
+    const shapes = satelliteShapes(
+      file([district(own, 1, 'เขตจตุจักร กรุงเทพมหานคร'), northeast[0]]),
+      boundaries,
+    );
+    const boxes = satelliteBoxes(shapes)!;
+    expect(boxes.each).toHaveLength(2);
+    const [[west, south], [east, north]] = boxes.each[0];
+    expect([
+      west < CHATUCHAK[0],
+      CHATUCHAK[0] < east,
+      south < CHATUCHAK[1],
+      CHATUCHAK[1] < north,
+    ]).toEqual([true, true, true, true]);
+    expect(boxes.all).toEqual([
+      [
+        Math.min(boxes.each[0][0][0], boxes.each[1][0][0]),
+        Math.min(boxes.each[0][0][1], boxes.each[1][0][1]),
+      ],
+      [
+        Math.max(boxes.each[0][1][0], boxes.each[1][1][0]),
+        Math.max(boxes.each[0][1][1], boxes.each[1][1][1]),
+      ],
+    ]);
+    // a view of Bangkok meets Chatuchak, not Na Thom on the Mekong
+    const bangkok: Box = [
+      [100.4, 13.6],
+      [100.8, 14.0],
+    ];
+    expect(boxes.each.map((box) => boxesMeet(box, bangkok))).toEqual([true, false]);
+    expect(satelliteBoxes(satelliteShapes(file([]), boundaries))).toBeNull();
   });
 });

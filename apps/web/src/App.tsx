@@ -40,6 +40,7 @@ import { RIVER_CLASSES, riverDay, riverStretches } from './rivers';
 import {
   SATELLITE_CLASSES,
   satelliteEmptyWords,
+  satelliteFoundWords,
   satelliteOld,
   satelliteShapes,
   satelliteSource,
@@ -538,6 +539,7 @@ export default function App() {
               onFavorite={openFavorite}
               onSatellite={satellite ? () => toggle('satellite') : null}
               satelliteEmpty={satellite ? satelliteEmptyWords(satellite, now) : null}
+              satelliteFound={satellite ? satelliteFoundWords(satellite) : null}
               theme={theme}
               onList={() => panel.current?.focus()}
               openFlood={openFlood}
