@@ -45,7 +45,7 @@
 ### A5. งานที่กำลังทำ (Active claims)
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
-| Claude | 2026-10-12 17:20 | `apps/web/src/{satellite,satellite.test,MapView,App}.ts(x)` | กด "ดูแผนที่น้ำท่วม" แล้วไม่เห็นอะไร: บอกว่าดาวเทียมเห็นที่ไหน + เลื่อนแผนที่ไปให้เห็น (ผู้ใช้ขอ) | — |
+| Claude | 2026-10-12 17:20 | `apps/web/src/{satellite,satellite.test,MapView,App}.ts(x)`, `apps/web/src/styles.css` (`.map-notice`), `apps/web/tests/app.spec.ts` (เทสต์ใหม่ 1 อัน) | กด "ดูแผนที่น้ำท่วม" แล้วไม่เห็นอะไร: บอกว่าดาวเทียมเห็นที่ไหน + เลื่อนแผนที่ไปให้เห็น + ข้อความบนแผนที่ถูกแถบเวลาบัง (ผู้ใช้ขอ) | — |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md` · ส่วนที่ย้ายออกเมื่อเข้าถึง private ไม่ได้: `docs/agents-archive.md`)
 
