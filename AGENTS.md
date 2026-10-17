@@ -45,7 +45,7 @@
 ### A5. งานที่กำลังทำ (Active claims)
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
-| — | — | — | ไม่มีไฟล์ที่กำลังแก้ | — |
+| Claude | 2026-10-17 12:50 | repo `fontokmai-data`: branch `main` ใหม่ (ว่าง) + PR `README.md` · ที่นี่แค่ A6 | README ของ repo ข้อมูล (ผู้ใช้ขอ; ไม่แตะ `gh-pages`/Pages) | — |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md` · ส่วนที่ย้ายออกเมื่อเข้าถึง private ไม่ได้: `docs/agents-archive.md`)
 
