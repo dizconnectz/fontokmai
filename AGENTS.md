@@ -1,7 +1,7 @@
 # AGENTS.md — fontokmai (ฝนตกไหม): ข้อตกลงทีม สถานะ และการตัดสินใจ
 
 > **สถานะ**: เว็บแบบแผนที่เป็นหลักออนไลน์ที่ `https://dizconnectz.github.io/fontokmai/` (D28, D29): ประกาศกรมอุตุฯ ระบายสีตามระดับ, เรดาร์ฝน, กล้อง CCTV, ปักหมุดดูข้อมูลจุด, ค้นหาสถานที่ (ตำบล/อำเภอ/จังหวัด/สถานที่/ถนน), แถบเลื่อนเวลา (เรดาร์ย้อนหลัง → พยากรณ์ฝน 72 ชม.), ฝน 7 วัน + แนวโน้ม ensemble14วัน/18จุด (ทดลอง), สายด่วน, รายงานน้ำท่วมตอนนี้ (Longdo/iTIC), ที่ของฉัน, ตัวเฝ้าข้อมูลหยุด (data-watch), ระดับน้ำคลอง/ฝนวัดจริง/ถนนท่วม กทม. + เขื่อนใหญ่ + สถานีอุตุฯ (DXS ดึงเป็นครั้งๆ D31), หน้าเกี่ยวกับ/คำถามที่พบบ่อย + SEO/AEO, แนวโน้มน้ำแม่น้ำ 14 จุด (GloFAS วันละครั้ง), การ์ดสรุปจุดที่ต้องระวังบนสุดของแถบข้าง (`summary/overview.json` กฎ v0 + เรดาร์ + ท้ายน้ำของเขื่อน) พร้อมแถบสรุป แนวโน้ม 1 ชม. และกรอบอำเภอ/จังหวัดพร้อมชื่อบนแผนที่ (`ref/boundaries.json`) · ประตูน้ำ/สถานีกรมชลฯ + คลองที่อาจล้น (ทดลอง D35) · ข้อมูลจาก VPS ทุก 15 นาที · สำรองรายวัน + คลังตรวจความแม่น (P0-B2) · แบบระบบ v6.1
-> อัปเดตล่าสุด: 2026-10-12 18:00 ICT (Claude) · เวลาเป็น ICT (UTC+7) · วันที่แบบ ISO (ค.ศ.)
+> อัปเดตล่าสุด: 2026-10-17 15:50 ICT (Claude) · เวลาเป็น ICT (UTC+7) · วันที่แบบ ISO (ค.ศ.)
 > ไฟล์นี้เป็นช่องทางสื่อสารหลักระหว่าง Claude ↔ Codex ↔ ผู้ใช้ และ **ต้องมีขนาดไม่เกิน 32 KiB (UTF-8)** เพื่อให้ Codex โหลดได้ครบ
 > เอกสารอื่น: แบบระบบ `docs/design/fontokmai-design.md` · แหล่งข้อมูลและสิทธิ์ `docs/sources.md` · ประวัติเต็ม `private/handoffs/` (อยู่ใน private repo ไม่อยู่ใน repo สาธารณะ)
 
@@ -45,9 +45,16 @@
 ### A5. งานที่กำลังทำ (Active claims)
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
-| Claude | 2026-10-17 12:50 | repo `fontokmai-data`: branch `main` ใหม่ (ว่าง) + PR `README.md` · ที่นี่แค่ A6 | README ของ repo ข้อมูล (ผู้ใช้ขอ; ไม่แตะ `gh-pages`/Pages) | — |
+| — | — | — | ไม่มีไฟล์ที่กำลังแก้ | — |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md` · ส่วนที่ย้ายออกเมื่อเข้าถึง private ไม่ได้: `docs/agents-archive.md`)
+
+#### 2026-10-17 15:50 ICT — README ของ repo ข้อมูล `fontokmai-data` (Claude, ผู้ใช้ขอ)
+- repo ข้อมูลมีแค่ `gh-pages` (เป็น default ด้วย) → ผู้ใช้เลือกให้สร้าง `main` ว่าง (orphan 87dfbca ไม่มีไฟล์ ไม่ก๊อปข้อมูล) แล้วเปิด [PR #1](https://github.com/dizconnectz/fontokmai-data/pull/1) `docs/readme` → `main` เพิ่ม `README.md` · ไม่แตะ `gh-pages`/Pages: ตัวเผยแพร่ push แค่ `HEAD:refs/heads/gh-pages` (`publish/git_pages.py`) จึงไม่ลบ `main`
+- เนื้อหา: เริ่มที่ `data/v1/manifest.json` (CORS `*`, cache 600), ไม่มีประวัติ, มีแค่ `alerts.json` ที่เป็นประกาศ, ตารางแหล่ง 12 แถวจาก `docs/sources.md` + `credit_th` ของไฟล์จริง (ตรวจ 2026-10-17), ใบอนุญาตตาม NOTICE + notice ของ COD-AB/OSM/HydroSHEDS (`dams.json` มี `downstream_th`), แจ้งที่ Issues ของ repo หลัก · ไม่มีอีเมล ชื่อ หรือที่อยู่เซิร์ฟเวอร์ (ผ่าน secret/IPv4/denylist) · ลิงก์ 29 อันตอบ 200 · GitHub แสดงตาราง 4×12 ถูก
+- `GITHUB_TOKEN` (fine-grained) เปิด PR ใน repo ข้อมูลไม่ได้ → ผู้ใช้อนุญาตให้ใช้ login ใน keyring เฉพาะเปิด PR นี้และเปลี่ยน default branch (`env -u GITHUB_TOKEN gh …`) ไม่ได้เปลี่ยน login หลัก
+- ตรวจหลังสร้าง main+PR: `gh-pages` ยังได้รอบใหม่จาก "fontokmai publisher" (`20261017T084157Z-vps`), manifest 200, Pages `gh-pages/` built, เว็บ 200
+- ขั้นต่อไป: ผู้ใช้ตรวจและรวม PR #1 → Claude เปลี่ยน default branch เป็น `main` (ผู้ใช้อนุมัติแล้ว) แล้วตรวจ manifest 200 อีกครั้ง
 
 #### 2026-10-17 16:00 ICT — ใส่ Content-Security-Policy (Claude, ผู้ใช้ขอ)
 - GitHub Pages ไม่ส่ง header (`public/_headers` ไม่มีผลที่นั่น) จึงใส่ CSP เป็น `<meta>`: ปลั๊กอิน `contentSecurityPolicy` ใน `vite.config.ts` ใส่ตอน `build` เท่านั้น (dev ต้องใช้ inline script) · สคริปต์ inline ของธีมอนุญาตด้วย hash · หน้า about/method/sources มี meta แบบ `default-src 'none'`
@@ -55,12 +62,6 @@
 - ต้องใส่ `'unsafe-eval'` เพราะ Ajv ใน `data.ts` สร้างตัวตรวจด้วย `new Function` (พบตอนทดสอบ: ไม่มีแล้วไม่โหลดข้อมูลเลย) · ทางแก้ถ้าอยากตัดออก: คอมไพล์ schema ล่วงหน้าด้วย Ajv standalone ตอน build
 - ทดสอบ: `npm run build`; Playwright chromium (desktop+mobile) 113/114 ผ่าน, ที่เหลือ (`a canal level says…`) ล้มตอนรันขนาน แต่ผ่านเมื่อรันเดี่ยว · เพิ่มเทสต์ `the built page carries a Content-Security-Policy…` (ไม่มี CSP violation ในคอนโซล) · webkit รันในเครื่องนี้ไม่ได้ (CI รัน)
 - ข้อจำกัด: CSP ผ่าน meta ใช้ `frame-ancestors` ไม่ได้ (กันถูกฝังใน iframe ไม่ได้บน GitHub Pages) · ขั้นต่อไป: ผู้ใช้เปิด 2FA และตั้งกฎป้องกัน `main` ใน GitHub Settings
-
-#### 2026-10-12 18:00 ICT — กด "ดูแผนที่น้ำท่วม" แล้วไม่เห็นอะไร (Claude, ผู้ใช้แจ้ง)
-- สาเหตุ: GISTDA 12 ต.ค. เห็นน้ำแค่ 4 อำเภอ (นครพนม สกลนคร บึงกาฬ รวม 4.2 ตร.กม. ภาพ 10 ต.ค.) เป็นจุดฟ้าอ่อนเล็กตอนดูทั้งประเทศ · และ `.map-notice` (bottom 46px) อยู่ใต้แถบเวลา (z-index 4) ข้อความบนแผนที่ทุกอันจึงไม่เคยเห็นเมื่อมีแถบเวลา
-- 8b0a46c: เปิดชั้นดาวเทียม → ข้อความ 8 วิ (`satelliteFoundWords`) + `fitBounds` ไปอำเภอที่มีน้ำเมื่อไม่มีอำเภอไหนในจอหรือจอห่างกว่ากรอบ >1 ซูม (เฉพาะตอนกดเปิด) · c35b1c5: CI consumer 390x844 ล้มเพราะข้อความถาวร "แผนที่บางส่วนโหลดไม่สำเร็จ" ที่เคยซ่อนอยู่บังปุ่ม "ย่อ" → notice `pointer-events: none` ไม่ทับปุ่มซูม และทุกข้อความหายเอง (ข้อผิดพลาด 10 วิ)
-- ทดสอบ: vitest 170 · Playwright desktop+mobile chromium 112 (เทสต์ใหม่ล้มถ้าถอด CSS) · consumer 64 · ดูจริงด้วยข้อมูล live ผ่าน preview 1280/390px · CI ci/web/pages ของ c35b1c5 ผ่าน (รวม WebKit) · เว็บจริง 17:42 กดแล้วไป 4 อำเภอและข้อความขึ้นเหนือแถบเวลา
-- ข้อจำกัด: ยังระบายทั้งอำเภอ ไม่ใช่ตำแหน่งน้ำจริง (H3 อยู่ในไอเดียของ `docs/apis/gistda.md`)
 
 ## B. การตัดสินใจ
 ข้อเสนอเดิม D1–D10 จากร่างแรกถูกแทนด้วยตารางนี้เพราะขัดกับ D12 (ดูเหตุผลเดิมได้ใน snapshot)
