@@ -1,3 +1,5 @@
+# Netlify/Cloudflare format. GitHub Pages (where the site is published) ignores this file, so none of it applies there:
+# the Content-Security-Policy is a <meta> added at build (vite.config.ts) and in the static pages.
 /config.json
   Cache-Control: no-store
 /index.html

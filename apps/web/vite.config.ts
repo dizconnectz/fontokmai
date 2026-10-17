@@ -1,6 +1,7 @@
 import { type Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
+import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -67,10 +68,50 @@ function contractExamples(): Plugin {
   };
 }
 
+// GitHub Pages cannot send response headers (public/_headers is ignored there), so the page carries its own
+// Content-Security-Policy as a <meta>. It is added to the built page only: the dev server needs inline scripts for
+// hot reload. Inline scripts are allowed by hash, so nothing injected into the page can run. A new host the page
+// talks to (a different DATA_BASE_URL, another basemap) must be added here, or the browser blocks it.
+function contentSecurityPolicy(): Plugin {
+  return {
+    name: 'content-security-policy',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      handler(html) {
+        const hashes = [
+          ...html.matchAll(
+            /<script(?![^>]*\b(?:src\b|type="application\/ld\+json"))[^>]*>([\s\S]*?)<\/script>/g,
+          ),
+        ].map((match) => `'sha256-${createHash('sha256').update(match[1]).digest('base64')}'`);
+        const policy = [
+          "default-src 'self'",
+          `script-src 'self' 'unsafe-eval' ${hashes.join(' ')}`, // 'unsafe-eval': Ajv builds its checkers with new Function
+          "style-src 'self' 'unsafe-inline'", // MapLibre sets style attributes on its markers and controls
+          "img-src 'self' data: blob: https://dizconnectz.github.io https://tiles.openfreemap.org",
+          "font-src 'self' data: https://tiles.openfreemap.org",
+          "connect-src 'self' https://dizconnectz.github.io https://tiles.openfreemap.org https://photon.komoot.io",
+          "worker-src 'self' blob:",
+          "object-src 'none'",
+          "base-uri 'self'",
+          "form-action 'self'",
+        ].join('; ');
+        return [
+          {
+            tag: 'meta',
+            attrs: { 'http-equiv': 'Content-Security-Policy', content: policy },
+            injectTo: 'head-prepend',
+          },
+        ];
+      },
+    },
+  };
+}
+
 export default defineConfig({
   // GitHub Pages serves the site under /fontokmai/; local dev, preview and tests stay at /
   base: process.env.WEB_BASE ?? '/',
-  plugins: [react(), contractExamples()],
+  plugins: [react(), contractExamples(), contentSecurityPolicy()],
   build: { rolldownOptions: { output: { postBanner: usageNotice } } },
   test: { include: ['src/**/*.test.ts'] },
 });
