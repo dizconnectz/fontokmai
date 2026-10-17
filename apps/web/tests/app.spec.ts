@@ -1888,6 +1888,27 @@ test('a missing map chunk leaves the rest of the page usable', async ({ page }) 
   await expect(page.getByTestId('alert-card')).toHaveCount(3);
 });
 
+test('the built page carries a Content-Security-Policy that the app and its map never break', async ({
+  page,
+}) => {
+  const blocked: string[] = [];
+  page.on('console', (message) => {
+    if (/Content[ -]Security[ -]Policy/i.test(message.text())) blocked.push(message.text());
+  });
+  await prepare(page);
+  await page.goto('/');
+  const policy = await page
+    .locator('meta[http-equiv="Content-Security-Policy"]')
+    .getAttribute('content');
+  expect(policy).toMatch(/script-src 'self'[^;]*'sha256-/);
+  expect(policy).toContain("object-src 'none'");
+  await expect(page.getByTestId('alert-card')).toHaveCount(3);
+  await expect(page.locator('.maplibregl-canvas')).toBeVisible();
+  // the saved theme is read by the one inline script the policy allows by its hash
+  await expect(page.locator('html')).toHaveAttribute('data-theme', /light|dark/);
+  expect(blocked).toEqual([]);
+});
+
 test('the layout never scrolls sideways', async ({ page }) => {
   await prepare(page);
   await page.goto('/');
