@@ -45,7 +45,7 @@
 ### A5. งานที่กำลังทำ (Active claims)
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
-| — | — | — | ไม่มีไฟล์ที่กำลังแก้ | — |
+| Claude | 2026-11-02 18:10 | `pipeline/src/fontokmai/{sources/bma_dxs,cli}.py`, `pipeline/tests/test_bma_dxs.py` | ข้อความ "ส่วนที่ดึงไม่ได้" ของ `bkk-fetch` เป็นภาษาไทย บอกว่าปัญหาฝั่งใคร (getNews ของ กทม. ล้มตั้งแต่ 28 ต.ค.) | — |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md` · ส่วนที่ย้ายออกเมื่อเข้าถึง private ไม่ได้: `docs/agents-archive.md`)
 
