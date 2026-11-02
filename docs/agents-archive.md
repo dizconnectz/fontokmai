@@ -3,6 +3,15 @@
 AGENTS.md ต้องไม่เกิน 32 KiB จึงย้ายส่วนที่ไม่ได้ใช้งานแล้วมาเก็บที่นี่แบบไม่ตัดทอน (ห้ามลบประวัติ) · ใหม่สุดอยู่บน
 ควรย้ายไป `private/handoffs/` เมื่อมีคนเข้าถึง private repo ได้ (Claude ในเครื่อง cloud เข้าไม่ได้)
 
+## 2026-11-02 (Claude: ย้าย A6 เก่าสุดเพื่อให้ AGENTS.md ไม่เกิน 32 KiB)
+
+#### 2026-10-17 16:00 ICT — ใส่ Content-Security-Policy (Claude, ผู้ใช้ขอ)
+- GitHub Pages ไม่ส่ง header (`public/_headers` ไม่มีผลที่นั่น) จึงใส่ CSP เป็น `<meta>`: ปลั๊กอิน `contentSecurityPolicy` ใน `vite.config.ts` ใส่ตอน `build` เท่านั้น (dev ต้องใช้ inline script) · สคริปต์ inline ของธีมอนุญาตด้วย hash · หน้า about/method/sources มี meta แบบ `default-src 'none'`
+- ปลายทางที่อนุญาต: `dizconnectz.github.io` (ข้อมูล), `tiles.openfreemap.org` (แผนที่), `photon.komoot.io` (ค้นหาที่) · เปลี่ยน `DATA_BASE_URL` หรือพื้นหลังแผนที่ ต้องแก้รายการนี้ด้วย ไม่งั้นเบราว์เซอร์บล็อก
+- ต้องใส่ `'unsafe-eval'` เพราะ Ajv ใน `data.ts` สร้างตัวตรวจด้วย `new Function` (พบตอนทดสอบ: ไม่มีแล้วไม่โหลดข้อมูลเลย) · ทางแก้ถ้าอยากตัดออก: คอมไพล์ schema ล่วงหน้าด้วย Ajv standalone ตอน build
+- ทดสอบ: `npm run build`; Playwright chromium (desktop+mobile) 113/114 ผ่าน, ที่เหลือ (`a canal level says…`) ล้มตอนรันขนาน แต่ผ่านเมื่อรันเดี่ยว · เพิ่มเทสต์ `the built page carries a Content-Security-Policy…` (ไม่มี CSP violation ในคอนโซล) · webkit รันในเครื่องนี้ไม่ได้ (CI รัน)
+- ข้อจำกัด: CSP ผ่าน meta ใช้ `frame-ancestors` ไม่ได้ (กันถูกฝังใน iframe ไม่ได้บน GitHub Pages) · ขั้นต่อไป: ผู้ใช้เปิด 2FA และตั้งกฎป้องกัน `main` ใน GitHub Settings
+
 ## 2026-10-17 (Claude: ย้าย A6 เก่าสุดเพื่อให้ AGENTS.md ไม่เกิน 32 KiB)
 
 #### 2026-10-12 18:00 ICT — กด "ดูแผนที่น้ำท่วม" แล้วไม่เห็นอะไร (Claude, ผู้ใช้แจ้ง)
