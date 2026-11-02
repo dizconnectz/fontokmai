@@ -27,6 +27,7 @@ from fontokmai.sources.bma_dxs import (
     fixture_poster,
     load_account,
     outline,
+    problem_th,
     published_dams,
     published_water,
     release_up,
@@ -193,6 +194,25 @@ def test_without_dxs_a_round_lists_the_files_a_manual_run_delivered_for_a_month(
     next_month = run_cap_snapshot(db=tmp_path / "s.db", out=out, fetch=fixture_fetcher(FIXTURES),
                                   now=AT + timedelta(days=31), writer="test", owner_epoch=1)
     assert not ({WATER_PATH, RAIN_PATH, FLOODING_PATH} & {f.path for f in next_month.manifest.files})
+
+
+def test_a_failed_part_is_said_in_plain_words_with_whose_side_the_trouble_is_on():
+    # BMA's own server failed getNews on every run from 2026-10-28, and the raw fault read like our error (user
+    # 2026-11-02); the call's name no longer comes twice
+    news = problem_th("getNews: getNews: Server was unable to process request. ---> Error in deserializing body of "
+                      "reply message for operation 'getNews'.")
+    assert news.startswith("สรุปสถานการณ์ของสำนักการระบายน้ำ: ระบบของ กทม. ขัดข้องฝั่งเขา ไม่ใช่ที่เครื่องนี้ "
+                           "(Server was unable to process request.")
+    assert "getNews: getNews" not in news
+    assert problem_th("water: GetWaterLastData: Server was unable to process request. ---> x").startswith(
+        "ระดับน้ำคลอง: ระบบของ กทม. ขัดข้องฝั่งเขา ไม่ใช่ที่เครื่องนี้ (GetWaterLastData: ")
+    assert problem_th("rain: URLError: <urlopen error timed out>") == (
+        "ฝนวัดจริง: เชื่อมต่อไม่ได้ เน็ตหลุดหรือปลายทางไม่ตอบ (URLError: <urlopen error timed out>)")
+    assert problem_th("flooding: HTTP 502").startswith("ถนนน้ำท่วมขัง: เชื่อมต่อไม่ได้")
+    # a trouble of no known kind keeps its own words after the part's name
+    assert problem_th("rid_hydro: the service gave no station a figure (run rid-hydro-probe)") == (
+        "ตัวเลขสำรองของกรมชลประทาน: the service gave no station a figure (run rid-hydro-probe)")
+    assert problem_th("something odd") == "something odd"
 
 
 def test_the_situation_text_dams_and_weather_stations(tmp_path):

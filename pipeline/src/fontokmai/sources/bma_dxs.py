@@ -670,3 +670,30 @@ def collect_extras(account: Account, now: datetime, *, post: Poster = https_post
 
 
 RELAY_MODELS.update({NEWS_PATH: SituationReport, DAMS_PATH: DamReport, WEATHER_PATH: WeatherToday})
+
+
+# ---------- a failed part in the words of the update script ("ส่วนที่ดึงไม่ได้: …") ----------
+
+PART_TH = {"water": "ระดับน้ำคลอง", "rain": "ฝนวัดจริง", "flooding": "ถนนน้ำท่วมขัง",
+           "getNews": "สรุปสถานการณ์ของสำนักการระบายน้ำ", "GetDam": "เขื่อนใหญ่", "GetWeatherToday": "สถานีกรมอุตุฯ",
+           "rid_hydro": "ตัวเลขสำรองของกรมชลประทาน"}
+# ASMX's words for an exception inside BMA's own server: the request reached it and it failed there
+SERVER_FAULT = "Server was unable to process request"
+NO_LINK = ("URLError", "TimeoutError", "timed out", "ConnectionError", "ConnectionResetError", "RemoteDisconnected",
+           "HTTP 5")
+
+
+def problem_th(problem: str) -> str:
+    """One failed part of a bkk-fetch run in plain words: what it is and whose side the trouble is on, then the
+    detail (user 2026-11-02: BMA's server failed getNews on every run from 2026-10-28 and it read like our error)."""
+    key, sep, detail = problem.partition(": ")
+    if not sep or key not in PART_TH:
+        return problem
+    detail = detail.removeprefix(f"{key}: ")  # a call's own error starts with its name again: "getNews: getNews: …"
+    if SERVER_FAULT in detail:
+        cause = "ระบบของ กทม. ขัดข้องฝั่งเขา ไม่ใช่ที่เครื่องนี้ "
+    elif any(word in detail for word in NO_LINK):
+        cause = "เชื่อมต่อไม่ได้ เน็ตหลุดหรือปลายทางไม่ตอบ "
+    else:
+        return f"{PART_TH[key]}: {detail}"
+    return f"{PART_TH[key]}: {cause}({detail[:90]})"

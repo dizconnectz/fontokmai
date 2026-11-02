@@ -379,7 +379,9 @@ def main(argv: list[str] | None = None) -> int:
                 problems = [*problems, "rid_hydro: the service gave no station a figure (run rid-hydro-probe)"]
         except Exception as exc:  # noqa: BLE001
             problems = [*problems, f"rid_hydro: {type(exc).__name__}: {exc}"[:200]]
-        message = "; ".join(filter(None, [fetched.message, *problems])) or None
+        # the update script prints this line as it is: the failed parts in plain words (user 2026-11-02)
+        failed = [*(fetched.message.split("; ") if fetched.message else []), *problems]
+        message = "; ".join(bma_dxs.problem_th(part) for part in failed) or None
         dams = extras.get(bma_dxs.DAMS_PATH)
         print(json.dumps({"ok": fetched.ok and not problems, "seen": fetched.seen, "message": message,
                           "written": written, "dams_compared_with": str(dams.previous_report_date)
