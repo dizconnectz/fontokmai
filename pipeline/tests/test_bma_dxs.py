@@ -34,6 +34,7 @@ from fontokmai.sources.bma_dxs import (
     text,
     with_previous,
     with_previous_levels,
+    worth_retrying,
 )
 from fontokmai.sources.open_data.http import OpenDataError
 from fontokmai.sources.tmd_cap.fetch import fixture_fetcher
@@ -199,20 +200,26 @@ def test_without_dxs_a_round_lists_the_files_a_manual_run_delivered_for_a_month(
 def test_a_failed_part_is_said_in_plain_words_with_whose_side_the_trouble_is_on():
     # BMA's own server failed getNews on every run from 2026-10-28, and the raw fault read like our error (user
     # 2026-11-02); the call's name no longer comes twice
-    news = problem_th("getNews: getNews: Server was unable to process request. ---> Error in deserializing body of "
-                      "reply message for operation 'getNews'.")
-    assert news.startswith("สรุปสถานการณ์ของสำนักการระบายน้ำ: ระบบของ กทม. ขัดข้องฝั่งเขา ไม่ใช่ที่เครื่องนี้ "
-                           "(Server was unable to process request.")
-    assert "getNews: getNews" not in news
-    assert problem_th("water: GetWaterLastData: Server was unable to process request. ---> x").startswith(
-        "ระดับน้ำคลอง: ระบบของ กทม. ขัดข้องฝั่งเขา ไม่ใช่ที่เครื่องนี้ (GetWaterLastData: ")
+    fault = ("getNews: getNews: Server was unable to process request. ---> Error in deserializing body of reply "
+             "message for operation 'getNews'.")
+    # still there on 2026-11-06 and still read like an error (user): a failure of BMA's server is a short note that
+    # nothing needs doing, without the cut English detail
+    assert problem_th(fault) == (
+        "สรุปสถานการณ์ของสำนักการระบายน้ำ: ระบบของ กทม. ขัดข้องฝั่งเขา ไม่ใช่ที่เครื่องนี้ · ไม่ต้องทำอะไร")
+    assert problem_th("water: GetWaterLastData: Server was unable to process request. ---> x") == (
+        "ระดับน้ำคลอง: ระบบของ กทม. ขัดข้องฝั่งเขา ไม่ใช่ที่เครื่องนี้ · ไม่ต้องทำอะไร")
     assert problem_th("rain: URLError: <urlopen error timed out>") == (
-        "ฝนวัดจริง: เชื่อมต่อไม่ได้ เน็ตหลุดหรือปลายทางไม่ตอบ (URLError: <urlopen error timed out>)")
+        "ฝนวัดจริง: เชื่อมต่อไม่ได้ เน็ตหลุดหรือปลายทางไม่ตอบ · ลองรันใหม่ภายหลัง (URLError: <urlopen error timed out>)")
     assert problem_th("flooding: HTTP 502").startswith("ถนนน้ำท่วมขัง: เชื่อมต่อไม่ได้")
     # a trouble of no known kind keeps its own words after the part's name
     assert problem_th("rid_hydro: the service gave no station a figure (run rid-hydro-probe)") == (
         "ตัวเลขสำรองของกรมชลประทาน: the service gave no station a figure (run rid-hydro-probe)")
     assert problem_th("something odd") == "something odd"
+    # a new run helps only when something other than BMA's server failed: the script's "ดึงได้ไม่ครบทุกชุด" line
+    # follows this (bkk-fetch's exit code)
+    assert not worth_retrying([fault]) and not worth_retrying([])
+    assert worth_retrying([fault, "rain: URLError: <urlopen error timed out>"])
+    assert worth_retrying(["rid_hydro: the service gave no station a figure (run rid-hydro-probe)"])
 
 
 def test_the_situation_text_dams_and_weather_stations(tmp_path):

@@ -386,7 +386,9 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"ok": fetched.ok and not problems, "seen": fetched.seen, "message": message,
                           "written": written, "dams_compared_with": str(dams.previous_report_date)
                           if dams is not None and dams.previous_report_date else None}, ensure_ascii=False))
-        return 0 if fetched.ok and not problems else 1
+        # the exit code says whether a new run may get more (the script then says the set is incomplete); a part BMA's
+        # server fails stays in the message as a note (user 2026-11-06)
+        return 1 if bma_dxs.worth_retrying(failed) else 0
     if args.command == "rid-hydro-probe":
         from fontokmai.sources import rid_hydro
         print("\n".join(rid_hydro.probe(args.out)))

@@ -683,17 +683,38 @@ NO_LINK = ("URLError", "TimeoutError", "timed out", "ConnectionError", "Connecti
            "HTTP 5")
 
 
-def problem_th(problem: str) -> str:
-    """One failed part of a bkk-fetch run in plain words: what it is and whose side the trouble is on, then the
-    detail (user 2026-11-02: BMA's server failed getNews on every run from 2026-10-28 and it read like our error)."""
+def _split(problem: str) -> tuple[str | None, str]:
+    """(part, detail) of a problem line; part is None when it is no part of a bkk-fetch run."""
     key, sep, detail = problem.partition(": ")
     if not sep or key not in PART_TH:
-        return problem
-    detail = detail.removeprefix(f"{key}: ")  # a call's own error starts with its name again: "getNews: getNews: …"
+        return None, problem
+    return key, detail.removeprefix(f"{key}: ")  # a call's own error starts with its name again: "getNews: getNews: …"
+
+
+def problem_kind(problem: str) -> str:
+    """'server' when BMA's server failed the call (a new run does not help), 'link' when the network or the far end
+    did not answer, 'other' for the rest."""
+    _, detail = _split(problem)
     if SERVER_FAULT in detail:
-        cause = "ระบบของ กทม. ขัดข้องฝั่งเขา ไม่ใช่ที่เครื่องนี้ "
-    elif any(word in detail for word in NO_LINK):
-        cause = "เชื่อมต่อไม่ได้ เน็ตหลุดหรือปลายทางไม่ตอบ "
-    else:
-        return f"{PART_TH[key]}: {detail}"
-    return f"{PART_TH[key]}: {cause}({detail[:90]})"
+        return "server"
+    return "link" if any(word in detail for word in NO_LINK) else "other"
+
+
+def problem_th(problem: str) -> str:
+    """One failed part of a bkk-fetch run in plain words: what it is and whose side the trouble is on (user
+    2026-11-02 and 2026-11-06: BMA's server failed getNews on every run from 2026-10-28 and it read like our error).
+    A failure of BMA's server is a short note that nothing needs doing; the rest keep their detail."""
+    key, detail = _split(problem)
+    if key is None:
+        return problem
+    kind = problem_kind(problem)
+    if kind == "server":
+        return f"{PART_TH[key]}: ระบบของ กทม. ขัดข้องฝั่งเขา ไม่ใช่ที่เครื่องนี้ · ไม่ต้องทำอะไร"
+    if kind == "link":
+        return f"{PART_TH[key]}: เชื่อมต่อไม่ได้ เน็ตหลุดหรือปลายทางไม่ตอบ · ลองรันใหม่ภายหลัง ({detail[:90]})"
+    return f"{PART_TH[key]}: {detail}"
+
+
+def worth_retrying(problems: list[str]) -> bool:
+    """Whether a new run may fetch more: some part failed for another reason than BMA's server."""
+    return any(problem_kind(problem) != "server" for problem in problems)
