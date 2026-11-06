@@ -3,6 +3,14 @@
 AGENTS.md ต้องไม่เกิน 32 KiB จึงย้ายส่วนที่ไม่ได้ใช้งานแล้วมาเก็บที่นี่แบบไม่ตัดทอน (ห้ามลบประวัติ) · ใหม่สุดอยู่บน
 ควรย้ายไป `private/handoffs/` เมื่อมีคนเข้าถึง private repo ได้ (Claude ในเครื่อง cloud เข้าไม่ได้)
 
+## 2026-11-06 (Claude: ย้าย A6 เก่าสุดเพื่อให้ AGENTS.md ไม่เกิน 32 KiB)
+
+#### 2026-10-17 16:05 ICT — README ของ repo ข้อมูล `fontokmai-data` (Claude, ผู้ใช้ขอ)
+- repo ข้อมูลมีแค่ `gh-pages` → ผู้ใช้เลือกให้สร้าง `main` ว่าง (orphan) + [PR #1](https://github.com/dizconnectz/fontokmai-data/pull/1) เพิ่ม `README.md` แล้วสั่งให้รวมและตั้ง default branch เป็น `main` เอง · ไม่แตะ `gh-pages`/Pages (ตัวเผยแพร่ push แค่ `HEAD:refs/heads/gh-pages` ใน `publish/git_pages.py`)
+- README: เริ่มที่ `data/v1/manifest.json`, ไม่มีประวัติ, มีแค่ `alerts.json` ที่เป็นประกาศ, ตารางแหล่ง 12 แถวจาก `docs/sources.md` + `credit_th` ของไฟล์จริง (ตรวจ 2026-10-17), ใบอนุญาตตาม NOTICE + notice ของ COD-AB/OSM/HydroSHEDS, แจ้งที่ Issues ของ repo หลัก · ผ่าน secret/IPv4/denylist · ลิงก์ 29 อันตอบ 200 · เครดิตที่มีชื่อเจ้าของให้ดูใน NOTICE ไม่พิมพ์ชื่อ
+- `gh pr merge --rebase` ใส่อีเมลจริงของบัญชีเป็น committer (ee77fb4) → force-with-lease `main` กลับไป f36d1c7 (ไฟล์เหมือนกัน noreply ทั้งคู่) ee77fb4 ยังเปิดได้จาก PR · squash #19/#20 ของ repo หลักก็มีอีเมลจริงเป็น author → กติกาใหม่ใน A4 · `GITHUB_TOKEN` (fine-grained) เปิด/รวม PR และแก้ค่า repo นี้ไม่ได้ จึงใช้ login keyring ตามผู้ใช้อนุญาตเฉพาะงานนี้
+- ตรวจหลังเปลี่ยน: หน้าแรก repo เปิดที่ `main` แสดง README · Pages `gh-pages/` built · รอบ `20261017T085710Z-vps` ลง `gh-pages` ปกติหลังเปลี่ยน default · manifest 200 · เว็บ 200
+
 ## 2026-11-02 (Claude: ย้าย A6 เก่าสุดเพื่อให้ AGENTS.md ไม่เกิน 32 KiB)
 
 #### 2026-10-17 16:00 ICT — ใส่ Content-Security-Policy (Claude, ผู้ใช้ขอ)

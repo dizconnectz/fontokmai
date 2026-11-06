@@ -55,12 +55,6 @@
 - 2026-11-06 ผู้ใช้ถามซ้ำ (getNews ยังล้ม): 867df29 `problem_kind`/`worth_retrying` · ส่วนที่เซิร์ฟเวอร์ กทม. ล้มเป็นหมายเหตุ "ไม่ต้องทำอะไร" ไม่มีรายละเอียดอังกฤษที่ถูกตัดกลางคำ · `bkk-fetch` exit 1 เฉพาะเมื่อรันใหม่อาจได้เพิ่ม (script จึงไม่ขึ้น "ดึงได้ไม่ครบทุกชุด") · `ok` ใน JSON ยังบอกว่าชุดไม่ครบ · pytest + ruff + CI ci ผ่าน
 - อีเมล "Deployment request failed … in progress deployment" มาจาก pages build and deployment ของ repo ข้อมูล (เป็นของ GitHub เอง): 2026-11-01 15:13–16:58 ICT GitHub เริ่มงานช้าไปราว 1 ชม. งานเก่ากับใหม่จึงซ้อนกันและล้ม 3 ครั้ง (ก่อนหน้านี้ 10-04 และ 10-14 ครั้งละ 1) · VPS push รอบละครั้งตามปกติ ฝั่งเราไม่มีอะไรต้องแก้ · ปิดอีเมลได้ทางเดียวคือผู้ใช้ปิดอีเมลของ Actions ในการตั้งค่า GitHub
 
-#### 2026-10-17 16:05 ICT — README ของ repo ข้อมูล `fontokmai-data` (Claude, ผู้ใช้ขอ)
-- repo ข้อมูลมีแค่ `gh-pages` → ผู้ใช้เลือกให้สร้าง `main` ว่าง (orphan) + [PR #1](https://github.com/dizconnectz/fontokmai-data/pull/1) เพิ่ม `README.md` แล้วสั่งให้รวมและตั้ง default branch เป็น `main` เอง · ไม่แตะ `gh-pages`/Pages (ตัวเผยแพร่ push แค่ `HEAD:refs/heads/gh-pages` ใน `publish/git_pages.py`)
-- README: เริ่มที่ `data/v1/manifest.json`, ไม่มีประวัติ, มีแค่ `alerts.json` ที่เป็นประกาศ, ตารางแหล่ง 12 แถวจาก `docs/sources.md` + `credit_th` ของไฟล์จริง (ตรวจ 2026-10-17), ใบอนุญาตตาม NOTICE + notice ของ COD-AB/OSM/HydroSHEDS, แจ้งที่ Issues ของ repo หลัก · ผ่าน secret/IPv4/denylist · ลิงก์ 29 อันตอบ 200 · เครดิตที่มีชื่อเจ้าของให้ดูใน NOTICE ไม่พิมพ์ชื่อ
-- `gh pr merge --rebase` ใส่อีเมลจริงของบัญชีเป็น committer (ee77fb4) → force-with-lease `main` กลับไป f36d1c7 (ไฟล์เหมือนกัน noreply ทั้งคู่) ee77fb4 ยังเปิดได้จาก PR · squash #19/#20 ของ repo หลักก็มีอีเมลจริงเป็น author → กติกาใหม่ใน A4 · `GITHUB_TOKEN` (fine-grained) เปิด/รวม PR และแก้ค่า repo นี้ไม่ได้ จึงใช้ login keyring ตามผู้ใช้อนุญาตเฉพาะงานนี้
-- ตรวจหลังเปลี่ยน: หน้าแรก repo เปิดที่ `main` แสดง README · Pages `gh-pages/` built · รอบ `20261017T085710Z-vps` ลง `gh-pages` ปกติหลังเปลี่ยน default · manifest 200 · เว็บ 200
-
 ## B. การตัดสินใจ
 ข้อเสนอเดิม D1–D10 จากร่างแรกถูกแทนด้วยตารางนี้เพราะขัดกับ D12 (ดูเหตุผลเดิมได้ใน snapshot)
 | ID | เรื่อง | ข้อสรุป | สถานะ |
