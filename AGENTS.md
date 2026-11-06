@@ -45,7 +45,7 @@
 ### A5. งานที่กำลังทำ (Active claims)
 | ผู้ทำ | เริ่ม (ICT) | path | งาน | Task |
 |---|---|---|---|---|
-| — | — | — | ไม่มีไฟล์ที่กำลังแก้ | — |
+| Claude | 2026-11-06 11:10 | `pipeline/src/fontokmai/{sources/bma_dxs,cli}.py`, `pipeline/tests/test_bma_dxs.py` | ส่วนที่ล้มเพราะเซิร์ฟเวอร์ กทม. เป็นหมายเหตุ ไม่เป็น error (ผู้ใช้ถามซ้ำ) | — |
 
 ### A6. บันทึกล่าสุด (ใหม่สุดอยู่บน · บันทึกที่เก่ากว่าและฉบับเต็มอยู่ใน `private/handoffs/` ดูดัชนีที่ `private/handoffs/README.md` · ส่วนที่ย้ายออกเมื่อเข้าถึง private ไม่ได้: `docs/agents-archive.md`)
 
